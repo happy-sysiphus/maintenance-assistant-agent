@@ -1,0 +1,39 @@
+# secrets
+.env
+.env.*
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# node
+node_modules/
+dist/
+build/
+
+# ml artifacts / data
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.h5
+data/
+checkpoints/
+wandb/
+mlruns/
+
+# rag indexes
+chroma/
+*.faiss
+*.index
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
