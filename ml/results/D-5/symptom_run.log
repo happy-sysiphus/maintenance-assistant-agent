@@ -1,0 +1,71 @@
+[1/80] E01_0: 1 events
+[2/80] E01_1: 1 events
+[3/80] E01_10: 1 events
+[4/80] E01_11: 1 events
+[5/80] E01_12: 1 events
+[6/80] E01_13: 1 events
+[7/80] E01_14: 1 events
+[8/80] E01_15: 1 events
+[9/80] E01_16: 1 events
+[10/80] E01_17: 1 events
+[11/80] E01_2: 2 events
+[12/80] E01_3: 3 events
+[13/80] E01_4: 1 events
+[14/80] E01_5: 1 events
+[15/80] E01_6: 1 events
+[16/80] E01_7: 1 events
+[17/80] E01_8: 1 events
+[18/80] E01_9: 1 events
+[19/80] E02_0: 2 events
+[20/80] E02_1: 1 events
+[21/80] E02_10: 8 events
+[22/80] E02_11: 1 events
+[23/80] E02_12: 1 events
+gun warm-up ended with 0 normal welding rows (< 600): keeping the global scaling
+[24/80] E02_13: 2 events
+[25/80] E02_14: 1 events
+[26/80] E02_15: 1 events
+[27/80] E02_16: 1 events
+[28/80] E02_17: 1 events
+[29/80] E02_2: 0 events
+[30/80] E02_3: 1 events
+[31/80] E02_4: 1 events
+gun E02_5 drift: normal alarm rate after warm-up 3.8%, 3.5%, 3.4% > 3% on 3 consecutive days (2020-05-19..2020-05-21): re-warm the gun (DELETE) or check it
+gun E02_5 drift: normal alarm rate after warm-up 3.8%, 3.5%, 3.3% > 3% on 3 consecutive days (2020-05-19..2020-05-21): re-warm the gun (DELETE) or check it
+gun E02_5 drift: normal alarm rate after warm-up 3.8%, 3.5%, 4.3% > 3% on 3 consecutive days (2020-05-19..2020-05-21): re-warm the gun (DELETE) or check it
+gun E02_5 drift: normal alarm rate after warm-up 3.8%, 3.5%, 4.4% > 3% on 3 consecutive days (2020-05-19..2020-05-21): re-warm the gun (DELETE) or check it
+[32/80] E02_5: 8 events
+[33/80] E02_6: 5 events
+gun E02_7 drift: 2 critical terminal-code rule triggers on 2020-04-26
+gun E02_7 drift: 2 critical terminal-code rule triggers on 2020-04-29
+[34/80] E02_7: 14 events
+[35/80] E02_8: 8 events
+[36/80] E02_9: 4 events
+[37/80] E03_0: 2 events
+[38/80] E03_1: 1 events
+[39/80] E03_10: 1 events
+[40/80] E03_11: 1 events
+[41/80] E03_12: 1 events
+[42/80] E03_13: 1 events
+[43/80] E03_14: 1 events
+[44/80] E03_15: 1 events
+[45/80] E03_16: 2 events
+[46/80] E03_17: 2 events
+[47/80] E03_2: 1 events
+gun E03_3 drift: 2 critical terminal-code rule triggers on 2021-09-12
+[48/80] E03_3: 2 events
+[49/80] E03_4: 2 events
+[50/80] E03_5: 1 events
+[51/80] E03_6: 0 events
+[52/80] E03_7: 1 events
+[53/80] E03_8: 1 events
+[54/80] E03_9: 1 events
+[55/80] E04_0: 1 events
+[56/80] E04_1: 1 events
+[57/80] E04_10: 1 events
+[58/80] E04_11: 1 events
+[59/80] E04_12: 1 events
+[60/80] E04_13: 1 events
+[61/80] E04_14: 1 events
+[62/80] E04_15: 1 events
+[63/80] E04_16: 1 events

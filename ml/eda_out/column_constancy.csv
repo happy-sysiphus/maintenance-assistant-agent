@@ -1,0 +1,19 @@
+column,name,files_constant,files,median_nunique
+c1,Electrode cap offset,1,72,22.0
+c2,Electrode force,0,72,2304.0
+c3,Electrode position,0,72,1465.0
+c4,Force build-up,0,72,2.0
+c5,Balance pressure,0,72,3714.0
+c6,Friction,1,72,57.0
+c7,Maximum aperture,69,72,1.0
+c8,Maximum electrode force,69,72,1.0
+c9,Start friction,67,72,1.0
+c11,Welding point count,0,72,38757.0
+c12,Position count,0,72,63016.5
+c13,Setpoint counterbalance pressure,0,72,17.0
+c14,Setpoint electrode force,0,72,11.0
+c15,Setpoint electrode position,0,72,8.0
+c16,Setpoint sheet thickness,0,72,7.0
+c17,Setpoint velocity,17,72,2.0
+c18,Setpoint force build-up,0,72,2.0
+c19,Offset value in robot,0,72,268592.5

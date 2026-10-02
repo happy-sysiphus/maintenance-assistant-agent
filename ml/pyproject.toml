@@ -1,0 +1,12 @@
+[tool.black]
+line-length = 120
+target-version = ["py311"]
+extend-exclude = "(\\.py/Benchmark\\.py|pic code)"   # paper originals, kept verbatim for reference
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [".py/Benchmark.py", "pic code"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

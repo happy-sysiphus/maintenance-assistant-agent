@@ -1,0 +1,38 @@
+{
+ "min_10": {
+  "files": 72,
+  "precursor_files": 10,
+  "precursor_share": 0.139,
+  "normal_blocks_per_day_mean": 0.87,
+  "normal_blocks_per_day_median": 0.83,
+  "files_over_1_per_day": 19,
+  "chance_in_50min_at_normal_rate": 0.03
+ },
+ "min_20": {
+  "files": 72,
+  "precursor_files": 5,
+  "precursor_share": 0.069,
+  "normal_blocks_per_day_mean": 0.66,
+  "normal_blocks_per_day_median": 0.67,
+  "files_over_1_per_day": 12,
+  "chance_in_50min_at_normal_rate": 0.023
+ },
+ "min_30": {
+  "files": 72,
+  "precursor_files": 2,
+  "precursor_share": 0.028,
+  "normal_blocks_per_day_mean": 0.62,
+  "normal_blocks_per_day_median": 0.61,
+  "files_over_1_per_day": 11,
+  "chance_in_50min_at_normal_rate": 0.021
+ },
+ "min_45": {
+  "files": 72,
+  "precursor_files": 2,
+  "precursor_share": 0.028,
+  "normal_blocks_per_day_mean": 0.56,
+  "normal_blocks_per_day_median": 0.53,
+  "files_over_1_per_day": 8,
+  "chance_in_50min_at_normal_rate": 0.019
+ }
+}

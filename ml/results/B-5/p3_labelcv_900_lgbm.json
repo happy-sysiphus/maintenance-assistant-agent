@@ -1,0 +1,149 @@
+{
+ "name": "p3_labelcv_900_lgbm",
+ "note": "lgbm, pre-failure window 900 s, 46 features (c19 dropped)",
+ "kind": "lgbm",
+ "label_window": 900,
+ "drop_warmup": false,
+ "k": 4,
+ "n_features": 46,
+ "val_folds": {
+  "mean": {
+   "auroc": 0.6241371961819708,
+   "auroc_gun_mean": 0.6326166197041849,
+   "auprc": 0.003098383698806292,
+   "recall_pre_failure": 0.0,
+   "alarm_rate_normal": 0.0
+  },
+  "sd": {
+   "auroc": 0.020240649822052884,
+   "auroc_gun_mean": 0.024085173959631397,
+   "auprc": 0.00045755022823113726,
+   "recall_pre_failure": 0.0,
+   "alarm_rate_normal": 0.0
+  },
+  "files_with_final_run": 0,
+  "files_both_ok": 0,
+  "files": 64
+ },
+ "test_over_folds": {
+  "mean": {
+   "auroc": 0.5637799508916383,
+   "auroc_gun_mean": 0.5645861024633136,
+   "auprc": 0.0023573547086807047,
+   "recall_pre_failure": 0.0,
+   "alarm_rate_normal": 0.0
+  },
+  "sd": {
+   "auroc": 0.03582611493060598,
+   "auroc_gun_mean": 0.04025798950378714,
+   "auprc": 0.0004972425998387438,
+   "recall_pre_failure": 0.0,
+   "alarm_rate_normal": 0.0
+  },
+  "files_with_final_run": 0,
+  "files_both_ok": 0,
+  "files": 32
+ },
+ "folds": [
+  {
+   "val_files": [
+    "E01_0",
+    "E01_10",
+    "E01_2",
+    "E01_5",
+    "E01_8",
+    "E02_1",
+    "E02_15",
+    "E02_16",
+    "E03_1",
+    "E03_11",
+    "E03_15",
+    "E03_2",
+    "E03_9",
+    "E04_0",
+    "E04_17",
+    "E04_2",
+    "E04_6",
+    "E04_8"
+   ],
+   "auroc": 0.6366497902672654,
+   "auroc_gun_mean": 0.6623633998783106,
+   "auprc": 0.003869224256039603,
+   "recall_pre_failure": 0.0,
+   "alarm_rate_normal": 0.0
+  },
+  {
+   "val_files": [
+    "E01_12",
+    "E01_16",
+    "E01_17",
+    "E01_6",
+    "E01_9",
+    "E02_10",
+    "E02_11",
+    "E02_9",
+    "E03_10",
+    "E03_12",
+    "E03_17",
+    "E03_4",
+    "E03_7",
+    "E04_10",
+    "E04_13",
+    "E04_15",
+    "E04_16",
+    "E04_3"
+   ],
+   "auroc": 0.6480555336474233,
+   "auroc_gun_mean": 0.6483656858099192,
+   "auprc": 0.002680320511139897,
+   "recall_pre_failure": 0.0,
+   "alarm_rate_normal": 0.0
+  },
+  {
+   "val_files": [
+    "E01_13",
+    "E01_15",
+    "E01_4",
+    "E01_7",
+    "E02_12",
+    "E02_17",
+    "E03_0",
+    "E03_14",
+    "E03_16",
+    "E03_8",
+    "E04_1",
+    "E04_11",
+    "E04_12",
+    "E04_14"
+   ],
+   "auroc": 0.6170230221375997,
+   "auroc_gun_mean": 0.6186020347110343,
+   "auprc": 0.002977721648680954,
+   "recall_pre_failure": 0.0,
+   "alarm_rate_normal": 0.0
+  },
+  {
+   "val_files": [
+    "E01_1",
+    "E01_11",
+    "E01_14",
+    "E01_3",
+    "E02_13",
+    "E02_14",
+    "E03_13",
+    "E03_3",
+    "E03_5",
+    "E03_6",
+    "E04_4",
+    "E04_5",
+    "E04_7",
+    "E04_9"
+   ],
+   "auroc": 0.5948204386755948,
+   "auroc_gun_mean": 0.601135358417476,
+   "auprc": 0.002866268379364716,
+   "recall_pre_failure": 0.0,
+   "alarm_rate_normal": 0.0
+  }
+ ]
+}

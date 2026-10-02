@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>용접건 이상 추적</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Cause chart for GET /guns/{id}/trace (main.py). Served live at /guns/{id}/trace/view (refreshes every 60 s);
+   when window.TRACE_DATA is set (a saved trace), it renders that instead of fetching. */
+:root{
+  --bg:#f3f5f8; --card:#ffffff; --ink:#141820; --ink2:#4d5563; --mute:#6f7785; --line:#dde2e9; --grid:#e9edf2;
+  --model:#4a3aa7; --band1:#e8e5f7; --band2:#f4f2fb;
+  --e01:#2a78d6; --e02:#eb6834; --e03:#1baf7a; --e04:#eda100; --code:#9aa1ab;
+  --crit:#c62828; --crit-bg:#fde8e8; --warn:#9a6700; --warn-bg:#fff4d6; --ok:#1a7f37; --ok-bg:#e3f4e8;
+  --hold:#b7bdc6; --tip:#141820; --tip-ink:#fff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#13161b; --card:#1b1f26; --ink:#eef1f5; --ink2:#bcc3ce; --mute:#9aa2ae; --line:#2c323c; --grid:#252a33;
+    --model:#9085e9; --band1:#2a2748; --band2:#211f36;
+    --e01:#3987e5; --e02:#d95926; --e03:#199e70; --e04:#c98500; --code:#6b727d;
+    --crit:#ff7b72; --crit-bg:#3b1a1a; --warn:#e3b341; --warn-bg:#352a0e; --ok:#56c271; --ok-bg:#16301f;
+    --hold:#4a515c; --tip:#eef1f5; --tip-ink:#13161b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#13161b; --card:#1b1f26; --ink:#eef1f5; --ink2:#bcc3ce; --mute:#9aa2ae; --line:#2c323c; --grid:#252a33;
+  --model:#9085e9; --band1:#2a2748; --band2:#211f36;
+  --e01:#3987e5; --e02:#d95926; --e03:#199e70; --e04:#c98500; --code:#6b727d;
+  --crit:#ff7b72; --crit-bg:#3b1a1a; --warn:#e3b341; --warn-bg:#352a0e; --ok:#56c271; --ok-bg:#16301f;
+  --hold:#4a515c; --tip:#eef1f5; --tip-ink:#13161b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.55 "IBM Plex Sans KR",system-ui,"Malgun Gothic",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding-block:24px 48px;padding-inline:18px;display:grid;gap:16px}
+h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+h2{margin:0;font-size:15px;font-weight:600}
+p{margin:0;color:var(--ink2);max-width:80ch}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end;justify-content:space-between}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--mute)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 10px;border-radius:99px;white-space:nowrap}
+.pill.critical{color:var(--crit);background:var(--crit-bg)} .pill.warning{color:var(--warn);background:var(--warn-bg)} .pill.normal{color:var(--ok);background:var(--ok-bg)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--ink2)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:12.5px;background:transparent;color:var(--ink2);border:0;padding:5px 11px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+.seg button:focus-visible{outline:2px solid var(--model);outline-offset:-2px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kv{display:grid;gap:2px}
+.kv .k{font-size:12px;color:var(--mute)} .kv .v{font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:500}
+.kv .v.t{font-family:inherit;font-size:15px;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+.sw.ln{height:0;border-top:2px solid;width:16px;border-radius:0}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.axis text{fill:var(--mute);font-size:11px;font-family:"IBM Plex Mono",monospace}
+.gridl{stroke:var(--grid)}
+.lbl{fill:var(--ink2);font-size:11.5px}
+.lbl.b{fill:var(--ink);font-weight:600}
+.tip{position:absolute;pointer-events:none;background:var(--tip);color:var(--tip-ink);font-size:12px;line-height:1.5;padding:7px 9px;border-radius:6px;white-space:nowrap;z-index:5}
+.note{font-size:12.5px;color:var(--mute)}
+.empty{padding:28px;text-align:center;color:var(--mute)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--ink2);font-size:12px}
+td.n{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+details summary{cursor:pointer;color:var(--ink2);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div style="display:grid;gap:4px">
+      <span class="note">RSW 용접건 이상탐지 · 이상 추적</span>
+      <h1 id="title">용접건 이상 추적</h1>
+      <div class="meta" id="meta"></div>
+    </div>
+    <div class="controls">
+      <span>표시 구간</span>
+      <div class="seg" role="group" aria-label="표시 구간" id="span">
+        <button data-m="30">30분</button><button data-m="60" aria-pressed="true">60분</button><button data-m="180">3시간</button><button data-m="360">6시간</button>
+      </div>
+      <span id="status" class="note"></span>
+    </div>
+  </div>
+
+  <div class="panel" id="focus-panel">
+    <div class="summary" id="summary"></div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;justify-content:space-between">
+      <h2>이상 기여 센서 <span class="note" id="contrib-when"></span></h2>
+      <span class="note">모델이 이 창을 이상으로 본 이유(피처 하나를 정상값으로 바꿨을 때 점수 감소의 비율). 물리적 원인 판정은 온톨로지 단계 몫입니다.</span>
+    </div>
+    <div class="chart" id="contrib"></div>
+  </div>
+
+  <div class="panel">
+    <div class="legend" id="legend"></div>
+    <div class="chart" id="timeline"></div>
+    <p class="note">가로축은 한국 시각(KST), 1분 = 모델이 판정하는 60초 창 하나. 센서 패널의 세로축은 이 건의 정상 수준에서 몇 σ 벗어났는지(모델 입력 단위, 워밍업 후 건별 보정)이고 ±4σ로 고정했습니다. 넘는 값은 끝에 ▲▼로 표시합니다.</p>
+  </div>
+
+  <details class="panel"><summary>창별 값 표로 보기</summary><div class="tablewrap"><table id="table"></table></div></details>
+</div>
+
+<script>
+(function(){
+const KO = {c1:"전극 캡 오프셋",c2:"전극 힘",c3:"전극 위치",c4:"힘 형성 시간",c5:"보정(밸런스) 압력",c6:"마찰",c7:"최대 열림 폭",c8:"최대 전극 힘",c9:"시작 마찰",c10:"US2 작동 허용 신호",c13:"보정 압력 설정값",c14:"전극 힘 설정값",c15:"전극 위치 설정값",c16:"판 두께 설정값",c17:"속도 설정값",c18:"힘 형성 설정값",welds_delta:"초당 용접 수",pos_delta:"초당 위치 이동 수",welds_10min:"최근 10분 용접 수",weld_duty_10min:"최근 10분 용접 가동률",error_share_10min:"최근 10분 에러 상태 비율",hour_sin:"시각",hour_cos:"시각"};
+const CODE_CLASS = {E012:"E01",E016:"E02",E028:"E03",E029:"E04"};
+const CLASS_KO = {E01:"보정 압력 도달 지연",E02:"전극 파손",E03:"원치 않는 이동",E04:"드리프트"};  // rag_mapping.FAULT_CLASSES
+const SEV_KO = {critical:"위험",warning:"주의",normal:"정상"};
+const SRC_KO = {model:"모델 지속 알람","model+rule":"모델 + 종료 코드 규칙",rule:"종료 코드 규칙",none:"—"};
+const NS="http://www.w3.org/2000/svg";
+const $=s=>document.querySelector(s);
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+const featKo=f=>{const i=f.lastIndexOf("_"),s=f.slice(0,i),st=f.slice(i+1);return `${KO[s]||s}(${s}) ${st==="std"?"변동성":"평균"}`;};
+const parse=s=>new Date(s.endsWith("Z")?s:s+"Z");          // API times are naive UTC
+const kst=d=>{const x=new Date(d.getTime()+9*3600e3);return x.toISOString().slice(11,16);};
+const kstFull=d=>{const x=new Date(d.getTime()+9*3600e3);return x.toISOString().slice(0,16).replace("T"," ");};
+const clsVar=c=>`var(--${c.toLowerCase()})`;
+const dv=(p,f)=>{const v=p.deviation[f];return (v==null||!isFinite(v))?null:v;};  // NaN arrives as null
+const fmtDev=v=>v==null?"—":`${v>=0?"+":""}${v.toFixed(2)}`;
+const codeColor=c=>CODE_CLASS[c]?clsVar(CODE_CLASS[c]):"var(--code)";
+
+let minutes=60, data=null, timer=null, reqId=0;
+const embedded = window.TRACE_DATA || null;
+
+function tip(box){let t=box.querySelector(".tip");if(!t){t=document.createElement("div");t.className="tip";t.hidden=true;box.appendChild(t);}return t;}
+function showTip(box,x,y,html){const t=tip(box);t.innerHTML=html;t.hidden=false;const w=box.clientWidth,tw=t.offsetWidth;t.style.left=Math.min(Math.max(x-tw/2,0),w-tw)+"px";t.style.top=Math.max(y-t.offsetHeight-10,0)+"px";}
+function hideTip(box){const t=box.querySelector(".tip");if(t)t.hidden=true;}
+
+async function load(){
+  if(embedded){ data=embedded; render(); return; }
+  const my=++reqId;  // a later click wins over an older response still in flight
+  try{
+    const r=await fetch(`../trace?minutes=${minutes}`,{cache:"no-store"});
+    if(!r.ok) throw new Error(r.status===404?"이 건의 스트림이 아직 없습니다(POST /predict 먼저).":`HTTP ${r.status}`);
+    const j=await r.json(); if(my!==reqId) return;
+    data=j; render();
+    $("#status").textContent=`갱신 ${new Date().toLocaleTimeString("ko-KR")} · 60초마다`;
+  }catch(e){ $("#status").textContent=`불러오기 실패: ${e.message}`; }
+}
+
+function render(){
+  const D=data, P=D.points.map(p=>({...p,t0:parse(p.window_start),t1:parse(p.window_end)}));
+  $("#title").textContent=`${D.gun_id} 이상 추적`;
+  document.title=`${D.gun_id} 이상 추적`;
+  $("#meta").innerHTML=[`모델 <span class="mono">${D.model.name}</span>`,`창 ${D.window_s}초`,`최근 ${D.minutes}분 · ${D.n_points}개 창`,
+    P.length?`건별 보정 ${({gun:"적용",warming_up:"워밍업 중",global:"전역 기준"})[P[P.length-1].gun_norm]}`:""].filter(Boolean).join(" · ");
+  if(!P.length){ $("#summary").innerHTML='<div class="empty">아직 판정한 창이 없습니다.</div>'; $("#timeline").innerHTML=""; $("#contrib").innerHTML=""; return; }
+  const F=D.focus, last=P[P.length-1];
+  const sev=F?F.severity:"normal";
+  const lastRule=[...D.events].reverse().find(e=>e.kind==="rule");
+  $("#summary").innerHTML=[
+    ["상태",`<span class="pill ${sev}">${SEV_KO[sev]}</span>`],
+    ["판정 근거",F?SRC_KO[F.severity_source]:"—"],
+    ["기준 창(탐지 시점, KST)",F?`<span class="mono" style="font-size:15px">${kstFull(parse(F.window_end))}</span>`:"—"],
+    ["이상 점수 / 임계값",F?`${F.anomaly_score.toFixed(3)} / ${F.threshold.toFixed(3)}`:"—"],
+    ["최근 종료 코드",lastRule?`${lastRule.code} → ${lastRule.class_hint} ${CLASS_KO[lastRule.class_hint]||""}`:"없음"],
+    ["최근 창 점수",`${last.score.toFixed(3)}`],
+  ].map(([k,v],i)=>`<div class="kv"><span class="k">${k}</span><span class="v${[1,4].includes(i)?" t":""}">${v}</span></div>`).join("");
+  drawContrib(F, D);
+  drawTimeline(D,P,F);
+  drawTable(D,P);
+}
+
+function drawContrib(F,D){
+  const box=$("#contrib"); box.innerHTML="";
+  $("#contrib-when").textContent=F?`· ${kstFull(parse(F.window_end))} 창`:"";
+  const rows=(F?F.contributing_features:[]).filter(c=>c.contribution>0).slice(0,6);
+  if(!rows.length){box.innerHTML='<div class="empty">기여 정보가 없습니다(정상 창이거나 규칙만 발화).</div>';return;}
+  const W=1000,rh=30,m={l:300,r:150,t:4,b:24},H=m.t+m.b+rh*rows.length;
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"이상 기여 센서"},box);
+  const x=v=>m.l+v*(W-m.l-m.r);
+  const ax=el("g",{class:"axis"},svg);
+  [0,.25,.5,.75,1].forEach(v=>{el("line",{x1:x(v),x2:x(v),y1:m.t,y2:H-m.b,class:"gridl"},ax);el("text",{x:x(v),y:H-6,"text-anchor":"middle"},ax).textContent=Math.round(v*100)+"%";});
+  rows.forEach((c,i)=>{const y=m.t+i*rh+6,h=rh-12,dev=c.value-c.reference;
+    const dir=c.statistic==="std"?(dev>0?"흔들림 ↑":"평탄 ↓"):(dev>0?"높음 ↑":"낮음 ↓");
+    el("text",{x:m.l-10,y:y+h/2+4,"text-anchor":"end",class:"lbl b"},svg).textContent=featKo(c.feature);
+    el("rect",{x:x(0),y,width:Math.max(x(c.share)-x(0),2),height:h,rx:4,fill:"var(--model)"},svg);
+    el("text",{x:x(c.share)+8,y:y+h/2+4,class:"lbl"},svg).textContent=`${Math.round(c.share*100)}% · ${dir} ${dev>=0?"+":""}${dev.toFixed(1)}σ`;
+  });
+}
+
+function drawTimeline(D,P,F){
+  const box=$("#timeline"); box.innerHTML="";
+  const feats=D.features;
+  const W=1000, m={l:64,r:18}, hScore=170, hFeat=92, hCode=46, gap=14, hAxis=26;
+  const H=hScore+gap+feats.length*(hFeat+gap)+hCode+hAxis+8;
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"점수·센서·상태 시계열"},box);
+  const tA=P[0].t0.getTime(), tB=P[P.length-1].t1.getTime()+1000;
+  const x=t=>m.l+(t-tA)/(tB-tA)*(W-m.l-m.r);
+  const ax=el("g",{class:"axis"},svg);
+  // time ticks (KST)
+  const spanMin=(tB-tA)/60000, step=[5,10,15,30,60,120][[5,10,15,30,60,120].findIndex(s=>spanMin/s<=8)]||60;
+  const first=Math.ceil(tA/(step*60000))*step*60000;
+  for(let t=first;t<=tB;t+=step*60000){ el("line",{x1:x(t),x2:x(t),y1:0,y2:H-hAxis,class:"gridl"},ax); el("text",{x:x(t),y:H-8,"text-anchor":"middle"},ax).textContent=kst(new Date(t)); }
+  // ---- [1] score
+  let y0=0; const [s0,s1]=D.axes.score; const ys=v=>y0+8+(1-(Math.min(Math.max(v,s0),s1)-s0)/(s1-s0))*(hScore-16);
+  el("text",{x:m.l+6,y:y0+20,class:"lbl b"},svg).textContent="이상 점수";
+  [s0,(s0+s1)/2,s1].forEach(v=>{el("line",{x1:m.l,x2:W-m.r,y1:ys(v),y2:ys(v),class:"gridl"},ax);el("text",{x:m.l-8,y:ys(v)+4,"text-anchor":"end"},ax).textContent=v.toFixed(2);});
+  // sustained runs shaded
+  P.forEach(p=>{ if(p.sustained) el("rect",{x:x(p.t0),y:y0,width:Math.max(x(p.t1)-x(p.t0),1),height:hScore,fill:"var(--crit-bg)"},svg); });
+  el("polyline",{points:P.map(p=>`${x(p.t1)},${ys(p.threshold)}`).join(" "),fill:"none",stroke:"var(--ink2)","stroke-width":1.5,"stroke-dasharray":"5 4"},svg);
+  el("polyline",{points:P.map(p=>`${x(p.t1)},${ys(p.score)}`).join(" "),fill:"none",stroke:"var(--model)","stroke-width":2,"stroke-linejoin":"round"},svg);
+  P.forEach(p=>{ if(p.alarm||p.held) el("circle",{cx:x(p.t1),cy:ys(p.score),r:4,fill:p.held?"var(--hold)":p.sustained?"var(--crit)":"var(--warn)",stroke:"var(--card)","stroke-width":1.5},svg); });
+  y0+=hScore+gap;
+  // ---- [3] sensor deviations
+  const featY=[];
+  feats.forEach(f=>{ const top=y0, yd=v=>top+6+(1-(Math.min(Math.max(v,-4),4)+4)/8)*(hFeat-12);
+    featY.push({f,yd});
+    el("rect",{x:m.l,y:yd(2),width:W-m.l-m.r,height:yd(-2)-yd(2),fill:"var(--band2)"},svg);
+    el("rect",{x:m.l,y:yd(1),width:W-m.l-m.r,height:yd(-1)-yd(1),fill:"var(--band1)"},svg);
+    el("line",{x1:m.l,x2:W-m.r,y1:yd(0),y2:yd(0),stroke:"var(--mute)","stroke-width":1},svg);
+    [-4,0,4].forEach(v=>el("text",{x:m.l-8,y:yd(v)+4,"text-anchor":"end"},ax).textContent=(v>0?"+":"")+v+"σ");
+    el("text",{x:m.l+6,y:top+14,class:"lbl b"},svg).textContent=featKo(f.feature)+(f.share!=null?` · 기여 ${Math.round(f.share*100)}%`:"");
+    el("polyline",{points:P.filter(p=>dv(p,f.feature)!=null).map(p=>`${x(p.t1)},${yd(dv(p,f.feature))}`).join(" "),fill:"none",stroke:"var(--model)","stroke-width":1.8,"stroke-linejoin":"round"},svg);
+    P.forEach(p=>{const v=dv(p,f.feature); if(v!=null&&Math.abs(v)>4){ const t=el("text",{x:x(p.t1),y:v>0?yd(4)+10:yd(-4)-3,"text-anchor":"middle",class:"lbl"},svg); t.textContent=v>0?"▲":"▼"; }});
+    y0+=hFeat+gap; });
+  // ---- [4] status strip: codes, non-welding, events
+  const cy=y0;
+  el("text",{x:m.l-8,y:cy+22,"text-anchor":"end",class:"lbl b"},svg).textContent="상태";
+  P.forEach(p=>{ const w=Math.max(x(p.t1)-x(p.t0),1);
+    if(p.non_welding_share>0) el("rect",{x:x(p.t0),y:cy+26,width:w,height:12,fill:"var(--hold)",opacity:Math.max(.25,p.non_welding_share)},svg);
+    p.error_codes.slice(0,2).forEach((c,k)=>el("rect",{x:x(p.t0),y:cy+4+k*10,width:w,height:9,fill:codeColor(c)},svg)); });
+  // code labels at episode starts
+  let prev="";
+  P.forEach(p=>{ const c=p.error_codes[0]||""; if(c&&c!==prev){ el("text",{x:x(p.t0)+3,y:cy+2,class:"lbl"},svg).textContent=c; } prev=c; });
+  // events (full height)
+  D.events.forEach(e=>{ const t=parse(e.time).getTime(); if(t<tA||t>tB) return; const col=e.kind==="critical_start"?"var(--crit)":e.kind==="rule"?"var(--ink)":"var(--mute)";
+    el("line",{x1:x(t),x2:x(t),y1:0,y2:H-hAxis,stroke:col,"stroke-width":e.kind==="rule_repeat"?1:1.5,"stroke-dasharray":e.kind==="rule_repeat"?"2 3":""},svg);
+    const lab=e.kind==="critical_start"?"모델 위험":e.kind==="rule"?`규칙 ${e.code}`:`규칙 반복 ${e.code}`;
+    const right=x(t)>W-m.r-120, yy=e.kind==="critical_start"?hScore-8:24;
+    el("text",{x:right?x(t)-4:x(t)+4,y:yy,"text-anchor":right?"end":"start",class:"lbl b"},svg).textContent=lab; });
+  if(F){ const t=parse(F.window_end).getTime(); if(t>=tA&&t<=tB){ el("line",{x1:x(t),x2:x(t),y1:0,y2:H-hAxis,stroke:"var(--model)","stroke-width":1,"stroke-dasharray":"1 3"},svg); } }
+  // legend
+  const codes=[...new Set(P.flatMap(p=>p.error_codes))];
+  $("#legend").innerHTML=[`<span><i class="sw ln" style="border-color:var(--model)"></i>이상 점수 / 센서 편차</span>`,
+    `<span><i class="sw ln" style="border-color:var(--ink2);border-top-style:dashed"></i>임계값</span>`,
+    `<span><i class="sw" style="background:var(--warn);border-radius:50%"></i>알람</span>`,
+    `<span><i class="sw" style="background:var(--crit);border-radius:50%"></i>지속 알람(위험)</span>`,
+    `<span><i class="sw" style="background:var(--hold)"></i>비용접(판정 보류)</span>`,
+    `<span><i class="sw" style="background:var(--band1)"></i>±1σ · ±2σ</span>`,
+    ...codes.map(c=>`<span><i class="sw" style="background:${codeColor(c)}"></i>${c}${CODE_CLASS[c]?` → ${CODE_CLASS[c]}`:""}</span>`)].join("");
+  // hover
+  const cross=el("line",{y1:0,y2:H-hAxis,stroke:"var(--ink2)","stroke-width":1,opacity:0},svg);
+  const hit=el("rect",{x:m.l,y:0,width:W-m.l-m.r,height:H-hAxis,fill:"transparent"},svg);
+  hit.addEventListener("mousemove",ev=>{ const b=svg.getBoundingClientRect(),sx=b.width/W,vx=(ev.clientX-b.left)/sx;
+    const t=tA+(vx-m.l)/(W-m.l-m.r)*(tB-tA); let p=P[0]; for(const q of P) if(Math.abs(q.t1-t)<Math.abs(p.t1-t)) p=q;
+    cross.setAttribute("x1",x(p.t1)); cross.setAttribute("x2",x(p.t1)); cross.setAttribute("opacity",.5);
+    const rel=F?Math.round((p.t1-parse(F.window_end))/60000):null;
+    showTip(box,x(p.t1)*sx,(ev.clientY-b.top),`<b>${kst(p.t0)}–${kst(p.t1)} KST</b>${rel!=null?` (탐지 ${rel>=0?"+":""}${rel}분)`:""}<br>점수 ${p.score.toFixed(3)} / 임계값 ${p.threshold.toFixed(3)}${p.held?" · 보류":p.sustained?" · 위험":p.alarm?" · 알람":""}<br>`+
+      feats.map(f=>`${featKo(f.feature)} ${fmtDev(dv(p,f.feature))}σ`).join("<br>")+
+      `<br>코드 ${p.error_codes.join(", ")||"없음"} · 비용접 ${Math.round(p.non_welding_share*100)}%`); });
+  hit.addEventListener("mouseleave",()=>{cross.setAttribute("opacity",0);hideTip(box);});
+}
+
+function drawTable(D,P){
+  const f=D.features;
+  $("#table").innerHTML=`<thead><tr><th>창 (KST)</th><th>점수</th><th>임계값</th><th>판정</th>${f.map(x=>`<th>${featKo(x.feature)} (σ)</th>`).join("")}<th>코드</th><th>비용접</th></tr></thead><tbody>`+
+    [...P].reverse().map(p=>`<tr><td class="mono">${kstFull(p.t0)}</td><td class="n">${p.score.toFixed(3)}</td><td class="n">${p.threshold.toFixed(3)}</td><td>${p.held?"보류":p.sustained?"위험":p.alarm?"알람":"—"}</td>${f.map(x=>`<td class="n">${fmtDev(dv(p,x.feature))}</td>`).join("")}<td>${p.error_codes.join(", ")}</td><td class="n">${Math.round(p.non_welding_share*100)}%</td></tr>`).join("")+"</tbody>";
+}
+
+document.querySelectorAll("#span button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#span button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  minutes=+b.dataset.m;
+  if(embedded) showEmbedded(); else load();
+}));
+function showEmbedded(){
+  const pts=embedded.points||[];
+  const cut=pts.length?parse(pts[pts.length-1].window_end).getTime()-minutes*60000:0;
+  data={...embedded,minutes,points:pts.filter(p=>parse(p.window_end).getTime()>cut)}; data.n_points=data.points.length; render();
+}
+if(embedded){ showEmbedded(); $("#status").textContent="저장된 예시 데이터"; }
+else { load(); timer=setInterval(load,60000); }
+})();
+</script>
+</body>
+</html>

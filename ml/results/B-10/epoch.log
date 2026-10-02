@@ -1,0 +1,11 @@
+590,040 eligible windows, 72 guns, 61 features (phys)
+placebo 0/200  37s
+placebo 50/200  359s
+placebo 100/200  685s
+placebo 150/200  873s
+  0-10m: 13 features outside the placebo band  error_share_10min_mean +17.02, weld_duty_10min_std +0.96, welds_10min_mean -0.82, c2_R +0.25, c14_mean -0.23
+ 10-30m:  3 features outside the placebo band  c6_mean +0.48, c6_R +0.48, c3_mean +0.08
+ 30-60m:  3 features outside the placebo band  c6_R +0.18, c6_mean +0.18, c3_mean +0.02
+   1-2h:  4 features outside the placebo band  c6_R +0.16, c6_mean +0.16, c5_P_min +0.00, c3_R -0.17
+   2-6h: 11 features outside the placebo band  weld_duty_10min_mean +0.18, c5_R +0.21, c6_mean +0.04, c6_R +0.04, c2_mean +0.14
+  6-24h: 28 features outside the placebo band  c5_drift_R +0.16, c3_R_sd +0.16, c2_std +0.15, c3_std +0.15, c13_std +0.14

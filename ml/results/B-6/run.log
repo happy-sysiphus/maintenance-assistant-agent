@@ -1,0 +1,65 @@
+loaded window=60s: train 486,365 / val 139,270 / test 80,533 windows, 48 features
+C:\Users\a0106\Desktop\U3\.py\paper_task.py:204: RuntimeWarning: Mean of empty slice
+  return {"mean": {k: float(np.nanmean([np.nan if x[k] is None else x[k] for x in rows])) for k in keys},
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:2015: RuntimeWarning: Degrees of freedom <= 0 for slice.
+  var = nanvar(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
+== h=  1 sensor        cv acc 0.9088 bal 0.217 rec N 0.915 E 0.028 onset AUROC 0.705 | test acc 0.9803 bal 0.200 rec N 1.000 E 0.000 onset AUROC 0.648
+== h=  1 sensor+codes  cv acc 0.9997 bal 0.593 rec N 1.000 E 0.868 onset AUROC 0.726 | test acc 0.9996 bal 0.585 rec N 1.000 E 0.982 onset AUROC 0.611
+== h=  1 hybrid:sensor        cv acc 0.9977 bal 0.786 rec N 0.9978 onset rec 0.024 | test acc 0.9994 bal 0.678 rec N 0.9997 onset rec 0.000
+== h=  1 hybrid:sensor+codes  cv acc 0.9988 bal 0.794 rec N 0.9990 onset rec 0.084 | test acc 0.9965 bal 0.678 rec N 0.9967 onset rec 0.000
+== h=  1 persistence   cv acc 0.9997 bal 0.780 | test acc 0.9994 bal 0.678
+C:\Users\a0106\Desktop\U3\.py\paper_task.py:204: RuntimeWarning: Mean of empty slice
+  return {"mean": {k: float(np.nanmean([np.nan if x[k] is None else x[k] for x in rows])) for k in keys},
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:2015: RuntimeWarning: Degrees of freedom <= 0 for slice.
+  var = nanvar(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
+== h= 10 sensor        cv acc 0.9909 bal 0.216 rec N 0.999 E 0.001 onset AUROC 0.619 | test acc 0.9802 bal 0.200 rec N 1.000 E 0.000 onset AUROC 0.578
+== h= 10 sensor+codes  cv acc 0.9946 bal 0.303 rec N 0.998 E 0.370 onset AUROC 0.693 | test acc 0.9969 bal 0.381 rec N 0.999 E 0.894 onset AUROC 0.658
+== h= 10 hybrid:sensor        cv acc 0.9988 bal 0.358 rec N 0.9996 onset rec 0.001 | test acc 0.9974 bal 0.388 rec N 0.9987 onset rec 0.000
+== h= 10 hybrid:sensor+codes  cv acc 0.9986 bal 0.373 rec N 0.9994 onset rec 0.027 | test acc 0.9967 bal 0.388 rec N 0.9980 onset rec 0.000
+== h= 10 persistence   cv acc 0.9988 bal 0.354 | test acc 0.9975 bal 0.388
+C:\Users\a0106\Desktop\U3\.py\paper_task.py:204: RuntimeWarning: Mean of empty slice
+  return {"mean": {k: float(np.nanmean([np.nan if x[k] is None else x[k] for x in rows])) for k in keys},
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:2015: RuntimeWarning: Degrees of freedom <= 0 for slice.
+  var = nanvar(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
+== h= 60 sensor        cv acc 0.5600 bal 0.250 rec N 0.561 E 0.451 onset AUROC 0.621 | test acc 0.9799 bal 0.200 rec N 1.000 E 0.000 onset AUROC 0.619
+== h= 60 sensor+codes  cv acc 0.9566 bal 0.301 rec N 0.960 E 0.364 onset AUROC 0.621 | test acc 0.9887 bal 0.335 rec N 0.995 E 0.673 onset AUROC 0.614
+== h= 60 hybrid:sensor        cv acc 0.9974 bal 0.309 rec N 0.9990 onset rec 0.000 | test acc 0.9896 bal 0.348 rec N 0.9948 onset rec 0.000
+== h= 60 hybrid:sensor+codes  cv acc 0.9960 bal 0.321 rec N 0.9976 onset rec 0.026 | test acc 0.9893 bal 0.348 rec N 0.9944 onset rec 0.000
+== h= 60 persistence   cv acc 0.9974 bal 0.309 | test acc 0.9897 bal 0.348
+== fail1h_base               46 feats | cv AUROC 0.709+-0.055 per-gun 0.742+-0.047 recall 0.142 alarm 0.010 op 0/64 | test AUROC 0.640+-0.028 per-gun 0.659 recall 0.178
+== fail1h_codes              97 feats | cv AUROC 0.715+-0.067 per-gun 0.742+-0.057 recall 0.158 alarm 0.009 op 0/64 | test AUROC 0.566+-0.023 per-gun 0.581 recall 0.133
+| horizon | model | split | accuracy | recall normal | recall error | E01 | E02 | E03 | E04 | onset AUROC | onset recall @FA1% |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 60 s | paper Table 12 | test | 0.686 | 0.443 | 0.743 | 0.358 | 0.195 | 0.238 | 0.184 | - | - |
+| 60 s | persistence | cv | 1.000 | 1.000 | 0.909 | 0.660 | 0.644 | 0.656 | 0.942 | - | - |
+| 60 s | persistence | test | 0.999 | 1.000 | 0.986 | 0.333 | 0.667 | 0.400 | 0.992 | - | - |
+| 60 s | sensor | cv | 0.909 | 0.915 | 0.028 | 0.062 | 0.021 | 0.072 | 0.015 | 0.705 | 0.062 |
+| 60 s | sensor | test | 0.980 | 1.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.648 | 0.000 |
+| 60 s | sensor+codes | cv | 1.000 | 1.000 | 0.868 | 0.437 | 0.193 | 0.395 | 0.938 | 0.726 | 0.168 |
+| 60 s | sensor+codes | test | 1.000 | 1.000 | 0.982 | 0.333 | 0.500 | 0.100 | 0.991 | 0.611 | 0.000 |
+| 60 s | hybrid:sensor | cv | 0.998 | 0.998 | 0.909 | 0.675 | 0.644 | 0.671 | 0.942 | 0.705 | 0.062 |
+| 60 s | hybrid:sensor | test | 0.999 | 1.000 | 0.986 | 0.333 | 0.667 | 0.400 | 0.992 | 0.648 | 0.000 |
+| 60 s | hybrid:sensor+codes | cv | 0.999 | 0.999 | 0.916 | 0.698 | 0.644 | 0.690 | 0.942 | 0.726 | 0.168 |
+| 60 s | hybrid:sensor+codes | test | 0.996 | 0.997 | 0.986 | 0.333 | 0.667 | 0.400 | 0.992 | 0.611 | 0.000 |
+| 600 s | persistence | cv | 0.999 | 1.000 | 0.649 | 0.035 | 0.000 | 0.025 | 0.709 | - | - |
+| 600 s | persistence | test | 0.997 | 0.999 | 0.932 | 0.000 | 0.000 | 0.000 | 0.943 | - | - |
+| 600 s | sensor | cv | 0.991 | 0.999 | 0.001 | 0.047 | 0.000 | 0.034 | 0.000 | 0.619 | 0.088 |
+| 600 s | sensor | test | 0.980 | 1.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.578 | 0.000 |
+| 600 s | sensor+codes | cv | 0.995 | 0.998 | 0.370 | 0.087 | 0.000 | 0.034 | 0.397 | 0.693 | 0.140 |
+| 600 s | sensor+codes | test | 0.997 | 0.999 | 0.894 | 0.000 | 0.000 | 0.000 | 0.905 | 0.658 | 0.000 |
+| 600 s | hybrid:sensor | cv | 0.999 | 1.000 | 0.649 | 0.035 | 0.000 | 0.044 | 0.709 | 0.619 | 0.088 |
+| 600 s | hybrid:sensor | test | 0.997 | 0.999 | 0.932 | 0.000 | 0.000 | 0.000 | 0.943 | 0.578 | 0.000 |
+| 600 s | hybrid:sensor+codes | cv | 0.999 | 0.999 | 0.665 | 0.092 | 0.000 | 0.044 | 0.728 | 0.693 | 0.140 |
+| 600 s | hybrid:sensor+codes | test | 0.997 | 0.998 | 0.932 | 0.000 | 0.000 | 0.000 | 0.943 | 0.658 | 0.000 |
+| 3600 s | persistence | cv | 0.997 | 0.999 | 0.515 | 0.000 | 0.000 | 0.000 | 0.544 | - | - |
+| 3600 s | persistence | test | 0.990 | 0.995 | 0.736 | 0.000 | 0.000 | 0.000 | 0.745 | - | - |
+| 3600 s | sensor | cv | 0.560 | 0.561 | 0.451 | 0.202 | 0.050 | 0.215 | 0.223 | 0.621 | 0.045 |
+| 3600 s | sensor | test | 0.980 | 1.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.619 | 0.002 |
+| 3600 s | sensor+codes | cv | 0.957 | 0.960 | 0.364 | 0.097 | 0.000 | 0.085 | 0.362 | 0.621 | 0.088 |
+| 3600 s | sensor+codes | test | 0.989 | 0.995 | 0.673 | 0.000 | 0.000 | 0.000 | 0.681 | 0.614 | 0.005 |
+| 3600 s | hybrid:sensor | cv | 0.997 | 0.999 | 0.515 | 0.000 | 0.000 | 0.000 | 0.544 | 0.621 | 0.045 |
+| 3600 s | hybrid:sensor | test | 0.990 | 0.995 | 0.736 | 0.000 | 0.000 | 0.000 | 0.745 | 0.619 | 0.002 |
+| 3600 s | hybrid:sensor+codes | cv | 0.996 | 0.998 | 0.537 | 0.022 | 0.000 | 0.017 | 0.570 | 0.621 | 0.088 |
+| 3600 s | hybrid:sensor+codes | test | 0.989 | 0.994 | 0.736 | 0.000 | 0.000 | 0.000 | 0.745 | 0.614 | 0.005 |
+fail1h_base: cv AUROC 0.709+-0.055 pre-rule 0.658+-0.066 | test AUROC 0.640 pre-rule 0.572
+fail1h_codes: cv AUROC 0.715+-0.067 pre-rule 0.661+-0.081 | test AUROC 0.566 pre-rule 0.484

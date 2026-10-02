@@ -1,0 +1,39 @@
+# 데이터 (원본 / 전처리)
+train/
+test/
+preprocessed/
+
+# 모델 가중치 · 점수 산출물 (재학습으로 재생성: python .py/train.py)
+*.joblib
+*.pkl
+*.pickle
+*.pt
+*.pth
+*.onnx
+*.h5
+models/scores/
+
+# 실험 캐시 · 대용량 중간 산출물
+results/*/cache/
+*.parquet
+*.feather
+*.npy
+*.npz
+
+# 압축 파일
+*.zip
+*.7z
+*.tar
+*.tar.gz
+
+# 서빙 상태
+state/
+
+# Python / 도구 캐시
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.pytest_cache/
+.venv/
+venv/
+.ipynb_checkpoints/

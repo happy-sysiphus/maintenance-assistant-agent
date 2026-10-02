@@ -1,0 +1,433 @@
+{
+ "name": "clean_sup_hist60",
+ "note": "supervised LightGBM + history features (without c19, hour_sin, hour_cos, c7, c8, c9)",
+ "window": 60,
+ "supervised": true,
+ "n_fit": 467424,
+ "n_pos": 3029,
+ "n_features": 180,
+ "threshold": 0.0037204651586497713,
+ "fit_s": 131.0,
+ "top_features_gain_share": [
+  [
+   "error_share_10min_mean",
+   0.217
+  ],
+  [
+   "d24_c10_std",
+   0.093
+  ],
+  [
+   "d24_welds_10min_mean",
+   0.079
+  ],
+  [
+   "d24_c1_std",
+   0.065
+  ],
+  [
+   "d24_c15_mean",
+   0.055
+  ],
+  [
+   "h30_c10_mean",
+   0.043
+  ],
+  [
+   "h5_c6_mean",
+   0.043
+  ],
+  [
+   "h30_c16_mean",
+   0.035
+  ],
+  [
+   "h30_welds_delta_mean",
+   0.03
+  ],
+  [
+   "d24_weld_duty_10min_mean",
+   0.024
+  ],
+  [
+   "h30_weld_duty_10min_mean",
+   0.022
+  ],
+  [
+   "c15_mean",
+   0.02
+  ],
+  [
+   "h5_c1_mean",
+   0.018
+  ],
+  [
+   "c13_mean",
+   0.018
+  ],
+  [
+   "h30_c14_std",
+   0.016
+  ]
+ ],
+ "val": {
+  "n_windows": 139270,
+  "n_pre_failure": 821,
+  "n_normal": 132747,
+  "auroc": 0.7222456205681969,
+  "auprc": 0.021392280401627536,
+  "alarm_rate_normal": 0.0020640767776296262,
+  "recall_pre_failure": 0.14859926918392205,
+  "alarm_rate_error_state": 0.11222410865874363,
+  "alarm_gate_non_welding": 0.5,
+  "held_windows": 2611,
+  "held_share_of_windows": 0.1134199755869893,
+  "auroc_welding_windows": 0.7125700063253542,
+  "warmup_windows": 4583,
+  "files_gun_normalised": 13,
+  "files_gun_threshold": 13,
+  "alarm_rate_normal_after_warmup": 0.0017354355709816496,
+  "alarm_rate_normal_per_file_min_max_std": [
+   0.0,
+   0.011603481044313293,
+   0.0029593435805373445
+  ],
+  "rule_terminal_code": {
+   "alarm_rate_error_state": 0.11867572156196944,
+   "alarm_rate_terminal_state": 1.0,
+   "n_terminal_windows": 60,
+   "files_with_terminal_code": 14,
+   "rule_lead_min_median": 9.308333333333334
+  },
+  "operating_point": {
+   "lead_min_target": 30.0,
+   "false_runs_per_day_target": 1.0,
+   "files": 14,
+   "files_lead_ok": 1,
+   "files_false_runs_ok": 13,
+   "files_both_ok": 1,
+   "files_with_final_run": 9,
+   "files_with_final_run_with_rule": 11,
+   "final_lead_min_median": 9.083333333333332,
+   "final_lead_min_median_with_rule": 9.55
+  },
+  "per_class": {
+   "E01": {
+    "auroc": 0.8635029163873409,
+    "auroc_welding_windows": 0.8552018451189839,
+    "recall_pre_failure": 0.2336065573770492,
+    "alarm_rate_normal": 0.004374291812695987
+   },
+   "E02": {
+    "auroc": 0.6070455152486403,
+    "auroc_welding_windows": 0.6328419448068421,
+    "recall_pre_failure": 0.1574074074074074,
+    "alarm_rate_normal": 0.0010935535021050905
+   },
+   "E03": {
+    "auroc": 0.7619903863857544,
+    "auroc_welding_windows": 0.7972178483342325,
+    "recall_pre_failure": 0.17982456140350878,
+    "alarm_rate_normal": 0.0005609525995053418
+   },
+   "E04": {
+    "auroc": 0.5891926793611776,
+    "auroc_welding_windows": 0.5821306163082456,
+    "recall_pre_failure": 0.029045643153526972,
+    "alarm_rate_normal": 0.0017699115044247787
+   }
+  },
+  "per_file": {
+   "E01_14": {
+    "final_alarm_run_starts_h_before_failure": 0.027777777777777776,
+    "false_alarm_runs_per_day": 0.0,
+    "alarm_rate_normal": 0.0,
+    "held_share_of_windows": 0.15421209117938553,
+    "gun_norm": "gun",
+    "threshold": 0.005447414141430611,
+    "final_alarm_run_with_rule_h_before_failure": 0.16111111111111112,
+    "rule_lead_min": 9.666666666666666
+   },
+   "E01_4": {
+    "final_alarm_run_starts_h_before_failure": 0.18305555555555555,
+    "false_alarm_runs_per_day": 1.498442013415835,
+    "alarm_rate_normal": 0.011603481044313293,
+    "held_share_of_windows": 0.09574468085106383,
+    "gun_norm": "gun",
+    "threshold": 0.0037204651586497713,
+    "final_alarm_run_with_rule_h_before_failure": 0.18305555555555555,
+    "rule_lead_min": 9.983333333333333
+   },
+   "E01_8": {
+    "final_alarm_run_starts_h_before_failure": 0.5825,
+    "false_alarm_runs_per_day": 0.8324709935888172,
+    "alarm_rate_normal": 0.002640554516448454,
+    "held_share_of_windows": 0.1028287841191067,
+    "gun_norm": "gun",
+    "threshold": 0.031992177193128746,
+    "final_alarm_run_with_rule_h_before_failure": 0.5825,
+    "rule_lead_min": 9.95
+   },
+   "E01_9": {
+    "final_alarm_run_starts_h_before_failure": NaN,
+    "false_alarm_runs_per_day": 0.9998052077045174,
+    "alarm_rate_normal": 0.0029431741000679195,
+    "held_share_of_windows": 0.10535216872264226,
+    "gun_norm": "gun",
+    "threshold": 0.9462886829614504,
+    "final_alarm_run_with_rule_h_before_failure": NaN,
+    "rule_lead_min": 1.6833333333333333
+   },
+   "E02_1": {
+    "final_alarm_run_starts_h_before_failure": 0.15138888888888888,
+    "false_alarm_runs_per_day": 0.0,
+    "alarm_rate_normal": 0.0,
+    "held_share_of_windows": 0.1932574618853339,
+    "gun_norm": "gun",
+    "threshold": 0.018042812939477914,
+    "final_alarm_run_with_rule_h_before_failure": 0.15138888888888888,
+    "rule_lead_min": 9.083333333333334
+   },
+   "E02_9": {
+    "final_alarm_run_starts_h_before_failure": 0.12944444444444445,
+    "false_alarm_runs_per_day": 0.49949318399926,
+    "alarm_rate_normal": 0.002213613724405091,
+    "held_share_of_windows": 0.016706968564519673,
+    "gun_norm": "gun",
+    "threshold": 0.031615139311392516,
+    "final_alarm_run_with_rule_h_before_failure": 0.16277777777777777,
+    "rule_lead_min": 9.766666666666667
+   },
+   "E03_10": {
+    "final_alarm_run_starts_h_before_failure": 0.15194444444444444,
+    "false_alarm_runs_per_day": 0.0,
+    "alarm_rate_normal": 0.000502008032128514,
+    "held_share_of_windows": 0.18772455089820358,
+    "gun_norm": "global",
+    "threshold": 0.0037204651586497713,
+    "final_alarm_run_with_rule_h_before_failure": 0.15194444444444444,
+    "rule_lead_min": 9.116666666666667
+   },
+   "E03_14": {
+    "final_alarm_run_starts_h_before_failure": NaN,
+    "false_alarm_runs_per_day": 0.33298518909627667,
+    "alarm_rate_normal": 0.0005408913890090869,
+    "held_share_of_windows": 0.0979187314172448,
+    "gun_norm": "gun",
+    "threshold": 0.44608491773853304,
+    "final_alarm_run_with_rule_h_before_failure": NaN,
+    "rule_lead_min": 9.033333333333333
+   },
+   "E03_2": {
+    "final_alarm_run_starts_h_before_failure": 0.08638888888888889,
+    "false_alarm_runs_per_day": 0.16648970712071082,
+    "alarm_rate_normal": 0.000798881565807869,
+    "held_share_of_windows": 0.05621653777513385,
+    "gun_norm": "gun",
+    "threshold": 0.1932486675474685,
+    "final_alarm_run_with_rule_h_before_failure": 0.15305555555555556,
+    "rule_lead_min": 9.183333333333334
+   },
+   "E03_3": {
+    "final_alarm_run_starts_h_before_failure": 0.19083333333333333,
+    "false_alarm_runs_per_day": 0.0,
+    "alarm_rate_normal": 0.00039996000399960006,
+    "held_share_of_windows": 0.16703143653004376,
+    "gun_norm": "gun",
+    "threshold": 0.0037204651586497713,
+    "final_alarm_run_with_rule_h_before_failure": 0.19083333333333333,
+    "rule_lead_min": 9.45
+   },
+   "E04_12": {
+    "final_alarm_run_starts_h_before_failure": NaN,
+    "false_alarm_runs_per_day": 0.1664848949642173,
+    "alarm_rate_normal": 0.0,
+    "held_share_of_windows": 0.1503617801566062,
+    "gun_norm": "gun",
+    "threshold": 0.9982715213406435,
+    "final_alarm_run_with_rule_h_before_failure": 0.15722222222222224,
+    "rule_lead_min": 9.433333333333334
+   },
+   "E04_15": {
+    "final_alarm_run_starts_h_before_failure": NaN,
+    "false_alarm_runs_per_day": 0.6660075966491493,
+    "alarm_rate_normal": 0.0,
+    "held_share_of_windows": 0.14757185332011893,
+    "gun_norm": "gun",
+    "threshold": 0.7804307790192606,
+    "final_alarm_run_with_rule_h_before_failure": 0.15916666666666668,
+    "rule_lead_min": 9.55
+   },
+   "E04_4": {
+    "final_alarm_run_starts_h_before_failure": NaN,
+    "false_alarm_runs_per_day": 0.8333092213766963,
+    "alarm_rate_normal": 0.0040975414751149315,
+    "held_share_of_windows": 0.05910987482614743,
+    "gun_norm": "gun",
+    "threshold": 0.0037204651586497713,
+    "final_alarm_run_with_rule_h_before_failure": NaN,
+    "rule_lead_min": 1.25
+   },
+   "E04_8": {
+    "final_alarm_run_starts_h_before_failure": 0.085,
+    "false_alarm_runs_per_day": 0.4994739337040848,
+    "alarm_rate_normal": 0.0025145845906256285,
+    "held_share_of_windows": 0.05094152626362736,
+    "gun_norm": "gun",
+    "threshold": 0.22708074773125397,
+    "final_alarm_run_with_rule_h_before_failure": 0.085,
+    "rule_lead_min": 9.1
+   }
+  }
+ },
+ "test": {
+  "n_windows": 80533,
+  "n_pre_failure": 482,
+  "n_normal": 78340,
+  "auroc": 0.601566916028791,
+  "auprc": 0.0166267963068686,
+  "alarm_rate_normal": 0.08424814909369416,
+  "recall_pre_failure": 0.21991701244813278,
+  "alarm_rate_error_state": 0.5166475315729047,
+  "alarm_gate_non_welding": 0.5,
+  "held_windows": 1132,
+  "held_share_of_windows": 0.05315833260899259,
+  "auroc_welding_windows": 0.5889728584256584,
+  "warmup_windows": 2886,
+  "files_gun_normalised": 8,
+  "files_gun_threshold": 8,
+  "alarm_rate_normal_after_warmup": 0.08707291859941156,
+  "alarm_rate_normal_per_file_min_max_std": [
+   0.0001,
+   0.3551713679102214,
+   0.1230468041976958
+  ],
+  "rule_terminal_code": {
+   "alarm_rate_error_state": 0.5177956371986223,
+   "alarm_rate_terminal_state": 1.0,
+   "n_terminal_windows": 13,
+   "files_with_terminal_code": 8,
+   "rule_lead_min_median": 9.125
+  },
+  "operating_point": {
+   "lead_min_target": 30.0,
+   "false_runs_per_day_target": 1.0,
+   "files": 8,
+   "files_lead_ok": 0,
+   "files_false_runs_ok": 3,
+   "files_both_ok": 0,
+   "files_with_final_run": 6,
+   "files_with_final_run_with_rule": 6,
+   "final_lead_min_median": 9.183333333333334,
+   "final_lead_min_median_with_rule": 9.183333333333334
+  },
+  "per_class": {
+   "E01": {
+    "auroc": 0.6462736470134833,
+    "auroc_welding_windows": 0.6730611146881642,
+    "recall_pre_failure": 0.17355371900826447,
+    "alarm_rate_normal": 0.01100762066045724
+   },
+   "E02": {
+    "auroc": 0.4853074111000332,
+    "auroc_welding_windows": 0.48164470772478124,
+    "recall_pre_failure": 0.16666666666666666,
+    "alarm_rate_normal": 0.21625124626121636
+   },
+   "E03": {
+    "auroc": 0.6598592785832539,
+    "auroc_welding_windows": 0.6092500264685217,
+    "recall_pre_failure": 0.475,
+    "alarm_rate_normal": 0.18196848359597004
+   },
+   "E04": {
+    "auroc": 0.57688608352009,
+    "auroc_welding_windows": 0.5658708837801392,
+    "recall_pre_failure": 0.09944751381215469,
+    "alarm_rate_normal": 0.02332080242190359
+   }
+  },
+  "per_file": {
+   "test_0": {
+    "final_alarm_run_starts_h_before_failure": 0.1525,
+    "false_alarm_runs_per_day": 1.4984131388633564,
+    "alarm_rate_normal": 0.00957315012951909,
+    "held_share_of_windows": 0.118389662027833,
+    "gun_norm": "gun",
+    "threshold": 0.01804998827749978,
+    "final_alarm_run_with_rule_h_before_failure": 0.1525,
+    "rule_lead_min": 9.15
+   },
+   "test_1": {
+    "final_alarm_run_starts_h_before_failure": 0.1625,
+    "false_alarm_runs_per_day": 1.1654863419569301,
+    "alarm_rate_normal": 0.012279125486672657,
+    "held_share_of_windows": 0.009712586719524281,
+    "gun_norm": "gun",
+    "threshold": 0.048638517234308676,
+    "final_alarm_run_with_rule_h_before_failure": 0.1625,
+    "rule_lead_min": 9.75
+   },
+   "test_2": {
+    "final_alarm_run_starts_h_before_failure": 0.1511111111111111,
+    "false_alarm_runs_per_day": 1.9979034346673243,
+    "alarm_rate_normal": 0.21625124626121636,
+    "held_share_of_windows": 0.023686818632309217,
+    "gun_norm": "gun",
+    "threshold": 0.009116271243841277,
+    "final_alarm_run_with_rule_h_before_failure": 0.1511111111111111,
+    "rule_lead_min": 9.066666666666666
+   },
+   "test_3": {
+    "final_alarm_run_starts_h_before_failure": 0.16027777777777777,
+    "false_alarm_runs_per_day": 2.3310086198756257,
+    "alarm_rate_normal": 0.053145876956825204,
+    "held_share_of_windows": 0.018929633300297323,
+    "gun_norm": "gun",
+    "threshold": 0.004951542233570675,
+    "final_alarm_run_with_rule_h_before_failure": 0.16027777777777777,
+    "rule_lead_min": 6.616666666666666
+   },
+   "test_4": {
+    "final_alarm_run_starts_h_before_failure": 0.15361111111111111,
+    "false_alarm_runs_per_day": 0.33297813096754425,
+    "alarm_rate_normal": 0.0009509721048182587,
+    "held_share_of_windows": 0.0,
+    "gun_norm": "gun",
+    "threshold": 0.0037204651586497713,
+    "final_alarm_run_with_rule_h_before_failure": 0.15361111111111111,
+    "rule_lead_min": 9.216666666666667
+   },
+   "test_5": {
+    "final_alarm_run_starts_h_before_failure": NaN,
+    "false_alarm_runs_per_day": 0.8324437233357871,
+    "alarm_rate_normal": 0.3551713679102214,
+    "held_share_of_windows": 0.0527953427682425,
+    "gun_norm": "gun",
+    "threshold": 0.0037204651586497713,
+    "final_alarm_run_with_rule_h_before_failure": NaN,
+    "rule_lead_min": 9.233333333333333
+   },
+   "test_6": {
+    "final_alarm_run_starts_h_before_failure": 0.15138888888888888,
+    "false_alarm_runs_per_day": 2.3308828488568154,
+    "alarm_rate_normal": 0.016650049850448653,
+    "held_share_of_windows": 0.10911793855302279,
+    "gun_norm": "gun",
+    "threshold": 0.0037204651586497713,
+    "final_alarm_run_with_rule_h_before_failure": 0.15138888888888888,
+    "rule_lead_min": 9.083333333333334
+   },
+   "test_7": {
+    "final_alarm_run_starts_h_before_failure": NaN,
+    "false_alarm_runs_per_day": 0.0,
+    "alarm_rate_normal": 0.0001,
+    "held_share_of_windows": 0.09294234592445327,
+    "gun_norm": "gun",
+    "threshold": 0.8306978720210588,
+    "final_alarm_run_with_rule_h_before_failure": NaN,
+    "rule_lead_min": 9.1
+   }
+  }
+ }
+}

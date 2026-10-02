@@ -1,0 +1,60 @@
+loaded window=60s: train 486,365 / val 139,270 / test 80,533 windows, 48 features
+fold 1 base: 50s  val pre 0.736  test pre 0.682
+fold 1 drop_sp_std: 63s  val pre 0.730  test pre 0.566
+fold 1 drop_sp: 90s  val pre 0.731  test pre 0.524
+fold 1 hold_switch: 12s  val pre 0.736  test pre 0.682
+fold 2 base: 64s  val pre 0.638  test pre 0.589
+fold 2 drop_sp_std: 63s  val pre 0.620  test pre 0.608
+fold 2 drop_sp: 107s  val pre 0.584  test pre 0.593
+fold 2 hold_switch: 12s  val pre 0.638  test pre 0.589
+fold 3 base: 134s  val pre 0.568  test pre 0.548
+fold 3 drop_sp_std: 117s  val pre 0.689  test pre 0.543
+fold 3 drop_sp: 95s  val pre 0.666  test pre 0.555
+fold 3 hold_switch: 10s  val pre 0.568  test pre 0.548
+fold 4 base: 126s  val pre 0.631  test pre 0.547
+fold 4 drop_sp_std: 114s  val pre 0.625  test pre 0.533
+fold 4 drop_sp: 97s  val pre 0.626  test pre 0.547
+fold 4 hold_switch: 9s  val pre 0.631  test pre 0.547
+== base         cv pre 0.643+-0.060 worst 0.568 alarm 0.0077 gunmax 0.055 >5% 1 | test pre 0.592 alarm 0.0058 | E04 cv 0.683 test 0.502 | top {'E02_13': 0.0546, 'E03_12': 0.038, 'E04_9': 0.0272, 'E01_16': 0.0234}
+== drop_sp_std  cv pre 0.666+-0.046 worst 0.620 alarm 0.0118 gunmax 0.144 >5% 2 | test pre 0.562 alarm 0.0056 | E04 cv 0.738 test 0.498 | top {'E03_5': 0.1439, 'E04_9': 0.0666, 'E01_3': 0.0434, 'E02_12': 0.031}
+== drop_sp      cv pre 0.652+-0.054 worst 0.584 alarm 0.0098 gunmax 0.081 >5% 1 | test pre 0.555 alarm 0.0062 | E04 cv 0.661 test 0.518 | top {'E03_5': 0.0811, 'E01_3': 0.046, 'E02_11': 0.0415, 'E02_12': 0.0366}
+== hold_switch  cv pre 0.643+-0.060 worst 0.568 alarm 0.0021 gunmax 0.016 >5% 0 | test pre 0.592 alarm 0.0015 | E04 cv 0.683 test 0.502 | top {'E01_3': 0.0159, 'E01_1': 0.0119, 'E03_13': 0.0109, 'E02_12': 0.0095}
+diagnosis {
+ "normal_windows_switch_share": 0.4406,
+ "alarm_rate_switch": 0.0135,
+ "alarm_rate_no_switch": 0.0029,
+ "share_of_normal_alarms_in_switch_windows": 0.7883,
+ "top_guns": {
+  "E01_16": {
+   "alarm": 0.0234,
+   "switch_share": 0.604,
+   "alarms_in_switch": 0.983
+  },
+  "E01_3": {
+   "alarm": 0.0205,
+   "switch_share": 0.0356,
+   "alarms_in_switch": 0.2255
+  },
+  "E02_13": {
+   "alarm": 0.0546,
+   "switch_share": 0.6535,
+   "alarms_in_switch": 0.9248
+  },
+  "E03_12": {
+   "alarm": 0.038,
+   "switch_share": 0.6587,
+   "alarms_in_switch": 0.9763
+  },
+  "E03_3": {
+   "alarm": 0.0224,
+   "switch_share": 0.6019,
+   "alarms_in_switch": 1.0
+  },
+  "E04_9": {
+   "alarm": 0.0272,
+   "switch_share": 0.6814,
+   "alarms_in_switch": 0.9012
+  }
+ }
+}
+exit 0

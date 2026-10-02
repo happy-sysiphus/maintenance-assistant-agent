@@ -1,0 +1,591 @@
+{
+  "features": "base",
+  "clf": "lr",
+  "n_placebo": 100,
+  "inject_sd": 0.0,
+  "n_features": 36,
+  "design": {
+    "name": "near",
+    "target_ttf_s": [
+      600,
+      3600
+    ],
+    "control_before_anchor_s": [
+      7200,
+      21600
+    ],
+    "tod_match_h": null,
+    "placebo_anchor_s": [
+      43200,
+      540000
+    ],
+    "folds": 5,
+    "eligible": "no error state, no terminal code, welding only, after warm-up"
+  },
+  "n_guns": 47,
+  "significant_p05": 0,
+  "expected_by_chance": 2.35,
+  "binomial_p": 1.0,
+  "mean_auc_real": 0.8118313453882404,
+  "mean_auc_null_median": 0.8197279101649753,
+  "mean_auc_null_q95": 0.859188693876944,
+  "pooled_p": 0.6296851574212894,
+  "agreement_real": 0.005418547004976949,
+  "agreement_null_median": 0.010624812951739513,
+  "agreement_null_q95": 0.038810296986681425,
+  "top_effect_features": [
+    {
+      "feature": "c5_std",
+      "median_d": 0.029420890648721804,
+      "share_same_sign": 0.5319148936170213
+    },
+    {
+      "feature": "c5_mean",
+      "median_d": 0.021573249019191495,
+      "share_same_sign": 0.5106382978723404
+    },
+    {
+      "feature": "c2_std",
+      "median_d": 0.01059049971509143,
+      "share_same_sign": 0.5106382978723404
+    },
+    {
+      "feature": "weld_duty_10min_std",
+      "median_d": 0.005332904147259463,
+      "share_same_sign": 0.5319148936170213
+    },
+    {
+      "feature": "pos_delta_std",
+      "median_d": 0.0,
+      "share_same_sign": 0.19148936170212766
+    },
+    {
+      "feature": "welds_10min_mean",
+      "median_d": 0.0,
+      "share_same_sign": 0.19148936170212766
+    },
+    {
+      "feature": "pos_delta_mean",
+      "median_d": 0.0,
+      "share_same_sign": 0.19148936170212766
+    },
+    {
+      "feature": "welds_delta_mean",
+      "median_d": 0.0,
+      "share_same_sign": 0.19148936170212766
+    },
+    {
+      "feature": "weld_duty_10min_mean",
+      "median_d": 0.0,
+      "share_same_sign": 0.10638297872340426
+    },
+    {
+      "feature": "error_share_10min_mean",
+      "median_d": 0.0,
+      "share_same_sign": 0.8936170212765957
+    }
+  ],
+  "per_class": {
+    "E01": {
+      "n": 12,
+      "significant": 0,
+      "mean_auc": 0.8281582800113224,
+      "mean_null_median": 0.9088724450764825,
+      "agreement": 0.012392070363344344
+    },
+    "E02": {
+      "n": 9,
+      "significant": 0,
+      "mean_auc": 0.7160163138192729,
+      "mean_null_median": 0.8321719494737203,
+      "agreement": 0.06851251787066161
+    },
+    "E03": {
+      "n": 10,
+      "significant": 0,
+      "mean_auc": 0.7920875992381842,
+      "mean_null_median": 0.8932799630056575,
+      "agreement": 0.01459233219238404
+    },
+    "E04": {
+      "n": 16,
+      "significant": 0,
+      "mean_auc": 0.8658219410222578,
+      "mean_null_median": 0.8333881295603194,
+      "agreement": 0.05013272197279751
+    }
+  },
+  "per_gun": {
+    "E01_1": {
+      "auc": 1.0,
+      "p": 0.2772,
+      "null_q95": 1.0,
+      "null_median": 0.9789,
+      "n_pos": 50,
+      "n_neg": 203,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "E01_11": {
+      "auc": 0.8499,
+      "p": 0.7228,
+      "null_q95": 1.0,
+      "null_median": 0.9717,
+      "n_pos": 50,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "E01_12": {
+      "auc": 0.988,
+      "p": 0.3861,
+      "null_q95": 1.0,
+      "null_median": 0.9595,
+      "n_pos": 48,
+      "n_neg": 231,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "E01_13": {
+      "auc": 1.0,
+      "p": 0.2079,
+      "null_q95": 1.0,
+      "null_median": 0.9282,
+      "n_pos": 32,
+      "n_neg": 203,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "E01_14": {
+      "auc": 0.7992,
+      "p": 0.8119,
+      "null_q95": 1.0,
+      "null_median": 0.9754,
+      "n_pos": 50,
+      "n_neg": 228,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "E01_15": {
+      "auc": 0.7551,
+      "p": 0.5743,
+      "null_q95": 1.0,
+      "null_median": 0.8481,
+      "n_pos": 49,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "E01_17": {
+      "auc": 0.8723,
+      "p": 0.6931,
+      "null_q95": 1.0,
+      "null_median": 0.9643,
+      "n_pos": 41,
+      "n_neg": 215,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "E01_2": {
+      "auc": 0.8044,
+      "p": 0.4653,
+      "null_q95": 1.0,
+      "null_median": 0.7831,
+      "n_pos": 37,
+      "n_neg": 201,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "E01_7": {
+      "auc": 0.9345,
+      "p": 0.8317,
+      "null_q95": 1.0,
+      "null_median": 0.9901,
+      "n_pos": 45,
+      "n_neg": 210,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "E01_9": {
+      "auc": 0.6999,
+      "p": 0.7822,
+      "null_q95": 0.9994,
+      "null_median": 0.8212,
+      "n_pos": 41,
+      "n_neg": 183,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "E02_1": {
+      "auc": 0.8444,
+      "p": 0.4158,
+      "null_q95": 1.0,
+      "null_median": 0.78,
+      "n_pos": 48,
+      "n_neg": 228,
+      "n_placebo": 100,
+      "class": "E02"
+    },
+    "E02_11": {
+      "auc": 1.0,
+      "p": 0.396,
+      "null_q95": 1.0,
+      "null_median": 0.991,
+      "n_pos": 50,
+      "n_neg": 231,
+      "n_placebo": 100,
+      "class": "E02"
+    },
+    "E02_12": {
+      "auc": 0.6565,
+      "p": 0.7129,
+      "null_q95": 0.9727,
+      "null_median": 0.7722,
+      "n_pos": 46,
+      "n_neg": 210,
+      "n_placebo": 100,
+      "class": "E02"
+    },
+    "E02_13": {
+      "auc": 0.9606,
+      "p": 0.1188,
+      "null_q95": 0.9965,
+      "null_median": 0.7373,
+      "n_pos": 47,
+      "n_neg": 102,
+      "n_placebo": 100,
+      "class": "E02"
+    },
+    "E02_14": {
+      "auc": 0.6341,
+      "p": 0.9636,
+      "null_q95": 1.0,
+      "null_median": 0.9963,
+      "n_pos": 47,
+      "n_neg": 219,
+      "n_placebo": 54,
+      "class": "E02"
+    },
+    "E02_15": {
+      "auc": 0.5191,
+      "p": 0.9208,
+      "null_q95": 0.9955,
+      "null_median": 0.7846,
+      "n_pos": 48,
+      "n_neg": 228,
+      "n_placebo": 100,
+      "class": "E02"
+    },
+    "E02_16": {
+      "auc": 0.548,
+      "p": 0.6535,
+      "null_q95": 1.0,
+      "null_median": 0.6636,
+      "n_pos": 43,
+      "n_neg": 213,
+      "n_placebo": 100,
+      "class": "E02"
+    },
+    "E02_9": {
+      "auc": 0.6881,
+      "p": 0.6436,
+      "null_q95": 1.0,
+      "null_median": 0.771,
+      "n_pos": 37,
+      "n_neg": 172,
+      "n_placebo": 100,
+      "class": "E02"
+    },
+    "E03_10": {
+      "auc": 0.7215,
+      "p": 0.8812,
+      "null_q95": 1.0,
+      "null_median": 0.9498,
+      "n_pos": 45,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E03"
+    },
+    "E03_11": {
+      "auc": 0.7278,
+      "p": 0.5248,
+      "null_q95": 0.9986,
+      "null_median": 0.756,
+      "n_pos": 33,
+      "n_neg": 190,
+      "n_placebo": 100,
+      "class": "E03"
+    },
+    "E03_12": {
+      "auc": 0.8864,
+      "p": 0.2376,
+      "null_q95": 1.0,
+      "null_median": 0.7443,
+      "n_pos": 50,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E03"
+    },
+    "E03_13": {
+      "auc": 1.0,
+      "p": 0.3861,
+      "null_q95": 1.0,
+      "null_median": 0.9903,
+      "n_pos": 50,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E03"
+    },
+    "E03_4": {
+      "auc": 0.8692,
+      "p": 0.2574,
+      "null_q95": 0.9986,
+      "null_median": 0.7556,
+      "n_pos": 48,
+      "n_neg": 50,
+      "n_placebo": 100,
+      "class": "E03"
+    },
+    "E03_7": {
+      "auc": 0.843,
+      "p": 0.7723,
+      "null_q95": 1.0,
+      "null_median": 0.9774,
+      "n_pos": 30,
+      "n_neg": 214,
+      "n_placebo": 100,
+      "class": "E03"
+    },
+    "E03_8": {
+      "auc": 0.5648,
+      "p": 0.8812,
+      "null_q95": 0.9932,
+      "null_median": 0.7989,
+      "n_pos": 48,
+      "n_neg": 224,
+      "n_placebo": 100,
+      "class": "E03"
+    },
+    "E03_9": {
+      "auc": 0.6749,
+      "p": 0.9406,
+      "null_q95": 1.0,
+      "null_median": 0.9722,
+      "n_pos": 37,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E03"
+    },
+    "E04_0": {
+      "auc": 1.0,
+      "p": 0.2079,
+      "null_q95": 1.0,
+      "null_median": 0.9234,
+      "n_pos": 50,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_1": {
+      "auc": 1.0,
+      "p": 0.1188,
+      "null_q95": 1.0,
+      "null_median": 0.9175,
+      "n_pos": 50,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_10": {
+      "auc": 0.7478,
+      "p": 0.7624,
+      "null_q95": 1.0,
+      "null_median": 0.87,
+      "n_pos": 48,
+      "n_neg": 223,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_12": {
+      "auc": 0.6997,
+      "p": 0.5743,
+      "null_q95": 1.0,
+      "null_median": 0.7564,
+      "n_pos": 40,
+      "n_neg": 217,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_13": {
+      "auc": 0.7265,
+      "p": 0.8317,
+      "null_q95": 1.0,
+      "null_median": 0.9053,
+      "n_pos": 48,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_14": {
+      "auc": 0.9411,
+      "p": 0.2178,
+      "null_q95": 1.0,
+      "null_median": 0.7725,
+      "n_pos": 44,
+      "n_neg": 226,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_15": {
+      "auc": 0.7386,
+      "p": 0.6634,
+      "null_q95": 1.0,
+      "null_median": 0.8054,
+      "n_pos": 48,
+      "n_neg": 218,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_16": {
+      "auc": 0.9739,
+      "p": 0.1881,
+      "null_q95": 1.0,
+      "null_median": 0.7829,
+      "n_pos": 50,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_17": {
+      "auc": 0.9879,
+      "p": 0.1386,
+      "null_q95": 1.0,
+      "null_median": 0.8921,
+      "n_pos": 50,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_4": {
+      "auc": 0.2969,
+      "p": 0.9901,
+      "null_q95": 1.0,
+      "null_median": 0.7272,
+      "n_pos": 46,
+      "n_neg": 216,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_6": {
+      "auc": 0.9913,
+      "p": 0.2475,
+      "null_q95": 1.0,
+      "null_median": 0.8891,
+      "n_pos": 50,
+      "n_neg": 231,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_7": {
+      "auc": 0.9249,
+      "p": 0.1584,
+      "null_q95": 1.0,
+      "null_median": 0.799,
+      "n_pos": 47,
+      "n_neg": 229,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "E04_8": {
+      "auc": 0.9469,
+      "p": 0.2772,
+      "null_q95": 1.0,
+      "null_median": 0.7932,
+      "n_pos": 47,
+      "n_neg": 226,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "test_0": {
+      "auc": 0.9251,
+      "p": 0.2673,
+      "null_q95": 1.0,
+      "null_median": 0.8066,
+      "n_pos": 50,
+      "n_neg": 170,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "test_1": {
+      "auc": 0.3096,
+      "p": 0.9901,
+      "null_q95": 1.0,
+      "null_median": 0.8793,
+      "n_pos": 46,
+      "n_neg": 222,
+      "n_placebo": 100,
+      "class": "E01"
+    },
+    "test_2": {
+      "auc": 0.5934,
+      "p": 0.9505,
+      "null_q95": 1.0,
+      "null_median": 0.9934,
+      "n_pos": 47,
+      "n_neg": 179,
+      "n_placebo": 100,
+      "class": "E02"
+    },
+    "test_3": {
+      "auc": 0.9665,
+      "p": 0.396,
+      "null_q95": 1.0,
+      "null_median": 0.9347,
+      "n_pos": 48,
+      "n_neg": 209,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "test_4": {
+      "auc": 0.6334,
+      "p": 0.901,
+      "null_q95": 1.0,
+      "null_median": 0.998,
+      "n_pos": 49,
+      "n_neg": 232,
+      "n_placebo": 100,
+      "class": "E03"
+    },
+    "test_5": {
+      "auc": 1.0,
+      "p": 0.297,
+      "null_q95": 1.0,
+      "null_median": 0.9903,
+      "n_pos": 35,
+      "n_neg": 240,
+      "n_placebo": 100,
+      "class": "E03"
+    },
+    "test_6": {
+      "auc": 0.9275,
+      "p": 0.1881,
+      "null_q95": 1.0,
+      "null_median": 0.7396,
+      "n_pos": 46,
+      "n_neg": 95,
+      "n_placebo": 100,
+      "class": "E04"
+    },
+    "test_7": {
+      "auc": 0.9837,
+      "p": 0.1683,
+      "null_q95": 1.0,
+      "null_median": 0.8259,
+      "n_pos": 48,
+      "n_neg": 228,
+      "n_placebo": 100,
+      "class": "E04"
+    }
+  },
+  "seconds": 215
+}

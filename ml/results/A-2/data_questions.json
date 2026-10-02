@@ -1,0 +1,202 @@
+{
+ "q1": {
+  "files": 72,
+  "last_h_nw_over_50pct": 18,
+  "last_h_nw_over_25pct": 29,
+  "median_last_h_nw": 0.08,
+  "median_all_nw": 0.092,
+  "top": [
+   {
+    "file": "E04_3",
+    "class": "E04",
+    "nw_last_h": 1.0,
+    "nw_all": 0.139
+   },
+   {
+    "file": "E03_6",
+    "class": "E03",
+    "nw_last_h": 1.0,
+    "nw_all": 0.273
+   },
+   {
+    "file": "E04_2",
+    "class": "E04",
+    "nw_last_h": 1.0,
+    "nw_all": 0.108
+   },
+   {
+    "file": "E03_16",
+    "class": "E03",
+    "nw_last_h": 0.98,
+    "nw_all": 0.097
+   },
+   {
+    "file": "E04_11",
+    "class": "E04",
+    "nw_last_h": 0.973,
+    "nw_all": 0.084
+   },
+   {
+    "file": "E01_16",
+    "class": "E01",
+    "nw_last_h": 0.945,
+    "nw_all": 0.167
+   }
+  ]
+ },
+ "q2": {
+  "files_by_class_period": {
+   "2019-20": {
+    "E01": 0,
+    "E02": 2,
+    "E03": 0,
+    "E04": 0
+   },
+   "2021+": {
+    "E01": 20,
+    "E02": 9,
+    "E03": 20,
+    "E04": 21
+   }
+  },
+  "e02_period_effect_d": {},
+  "cv_alarm_by_period": {
+   "2019-20": {
+    "count": 1,
+    "mean": 0.0011,
+    "median": 0.0011,
+    "max": 0.0011
+   },
+   "2021+": {
+    "count": 63,
+    "mean": 0.0086,
+    "median": 0.0056,
+    "max": 0.0546
+   }
+  },
+  "e02_cv_alarm_by_period": {
+   "2019-20": {
+    "count": 1,
+    "mean": 0.0011,
+    "max": 0.0011
+   },
+   "2021+": {
+    "count": 9,
+    "mean": 0.0129,
+    "max": 0.0546
+   }
+  }
+ },
+ "q3": {
+  "train_thick_share_max": 0.02,
+  "train_files_thick_over_10pct": 0,
+  "test_thick_share": {
+   "test_0": 0.007,
+   "test_1": 0.007,
+   "test_2": 0.946,
+   "test_3": 0.87,
+   "test_4": 0.001,
+   "test_5": 0.0,
+   "test_6": 0.012,
+   "test_7": 0.007
+  },
+  "test_by_thickness": {
+   "test_0": {
+    "windows": 10060,
+    "normal_alarm": 0.0078,
+    "thick_normal_windows": 28,
+    "thick_normal_alarm": 0.3214,
+    "thick_normal_score_median": 0.9516,
+    "thick_pre_windows": 0,
+    "thin_normal_windows": 8851,
+    "thin_normal_alarm": 0.0068,
+    "thin_normal_score_median": 0.6233,
+    "thin_pre_windows": 60
+   },
+   "test_1": {
+    "windows": 10090,
+    "normal_alarm": 0.0139,
+    "thick_normal_windows": 32,
+    "thick_normal_alarm": 0.4062,
+    "thick_normal_score_median": 0.9311,
+    "thick_pre_windows": 0,
+    "thin_normal_windows": 9985,
+    "thin_normal_alarm": 0.0126,
+    "thin_normal_score_median": 0.6107,
+    "thin_pre_windows": 61
+   },
+   "test_2": {
+    "windows": 10090,
+    "normal_alarm": 0.0014,
+    "thick_normal_windows": 9752,
+    "thick_normal_alarm": 0.0011,
+    "thick_normal_score_median": 0.49,
+    "thick_pre_windows": 52,
+    "thin_normal_windows": 278,
+    "thin_normal_alarm": 0.0108,
+    "thin_normal_score_median": 0.4066,
+    "thin_pre_windows": 8
+   },
+   "test_3": {
+    "windows": 10090,
+    "normal_alarm": 0.0017,
+    "thick_normal_windows": 9723,
+    "thick_normal_alarm": 0.0013,
+    "thick_normal_score_median": 0.6198,
+    "thick_pre_windows": 49,
+    "thin_normal_windows": 306,
+    "thin_normal_alarm": 0.0131,
+    "thin_normal_score_median": 0.7708,
+    "thin_pre_windows": 12
+   },
+   "test_4": {
+    "windows": 10090,
+    "normal_alarm": 0.004,
+    "thick_normal_windows": 3,
+    "thick_normal_alarm": 0.3333,
+    "thick_normal_score_median": 0.8849,
+    "thick_pre_windows": 0,
+    "thin_normal_windows": 9461,
+    "thin_normal_alarm": 0.0039,
+    "thin_normal_score_median": 0.4433,
+    "thin_pre_windows": 60
+   },
+   "test_5": {
+    "windows": 9963,
+    "normal_alarm": 0.002,
+    "thick_normal_windows": 1,
+    "thick_normal_alarm": 1.0,
+    "thick_normal_score_median": 0.9876,
+    "thick_pre_windows": 0,
+    "thin_normal_windows": 9890,
+    "thin_normal_alarm": 0.0019,
+    "thin_normal_score_median": 0.6057,
+    "thin_pre_windows": 60
+   },
+   "test_6": {
+    "windows": 10090,
+    "normal_alarm": 0.0068,
+    "thick_normal_windows": 18,
+    "thick_normal_alarm": 0.1111,
+    "thick_normal_score_median": 0.8002,
+    "thick_pre_windows": 0,
+    "thin_normal_windows": 10012,
+    "thin_normal_alarm": 0.0066,
+    "thin_normal_score_median": 0.6116,
+    "thin_pre_windows": 60
+   },
+   "test_7": {
+    "windows": 10060,
+    "normal_alarm": 0.0074,
+    "thick_normal_windows": 28,
+    "thick_normal_alarm": 0.25,
+    "thick_normal_score_median": 0.8566,
+    "thick_pre_windows": 0,
+    "thin_normal_windows": 9972,
+    "thin_normal_alarm": 0.0067,
+    "thin_normal_score_median": 0.6208,
+    "thin_pre_windows": 60
+   }
+  }
+ }
+}

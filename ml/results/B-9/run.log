@@ -1,0 +1,262 @@
+loaded window=60s: train 486,365 / val 139,270 / test 80,533 windows, 48 features
+fold 1 iforest: 9s
+fold 1 pca: 0s
+fold 1 maha: 1s
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+fold 1 lgbm: 26s
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+fold 1 lgbm6h: 27s
+fold 1 et: 110s
+fold 1 lr: 9s
+fold 1 saved
+fold 2 iforest: 12s
+fold 2 pca: 0s
+fold 2 maha: 1s
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+fold 2 lgbm: 33s
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+fold 2 lgbm6h: 31s
+fold 2 et: 119s
+fold 2 lr: 10s
+fold 2 saved
+fold 3 iforest: 11s
+fold 3 pca: 0s
+fold 3 maha: 1s
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+fold 3 lgbm: 36s
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+fold 3 lgbm6h: 35s
+fold 3 et: 128s
+fold 3 lr: 14s
+fold 3 saved
+fold 4 iforest: 12s
+fold 4 pca: 0s
+fold 4 maha: 1s
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+fold 4 lgbm: 44s
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py:2749: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+fold 4 lgbm6h: 38s
+fold 4 et: 118s
+fold 4 lr: 9s
+fold 4 saved
+loaded window=60s: train 486,365 / val 139,270 / test 80,533 windows, 48 features
+iforest                            cv pre 0.604+-0.046 auroc 0.649 alarm 0.0133 gunmax 0.136 | test pre 0.599 auroc 0.627
+pca                                cv pre 0.616+-0.059 auroc 0.627 alarm 0.0069 gunmax 0.116 | test pre 0.651 auroc 0.661
+maha                               cv pre 0.643+-0.068 auroc 0.679 alarm 0.0075 gunmax 0.104 | test pre 0.609 auroc 0.632
+lgbm                               cv pre 0.684+-0.043 auroc 0.735 alarm 0.0067 gunmax 0.035 | test pre 0.544 auroc 0.620
+lgbm6h                             cv pre 0.645+-0.043 auroc 0.682 alarm 0.0051 gunmax 0.037 | test pre 0.580 auroc 0.636
+et                                 cv pre 0.752+-0.029 auroc 0.792 alarm 0.0068 gunmax 0.057 | test pre 0.585 auroc 0.654
+lr                                 cv pre 0.661+-0.050 auroc 0.707 alarm 0.0031 gunmax 0.038 | test pre 0.420 auroc 0.484
+iforest+lgbm                       cv pre 0.671+-0.045 auroc 0.721 alarm 0.0104 gunmax 0.044 | test pre 0.596 auroc 0.649
+iforest+lgbm6h                     cv pre 0.667+-0.022 auroc 0.714 alarm 0.0104 gunmax 0.068 | test pre 0.622 auroc 0.668
+iforest+et                         cv pre 0.707+-0.051 auroc 0.750 alarm 0.0105 gunmax 0.117 | test pre 0.611 auroc 0.664
+iforest+lr                         cv pre 0.660+-0.055 auroc 0.707 alarm 0.0048 gunmax 0.052 | test pre 0.517 auroc 0.570
+pca+lgbm                           cv pre 0.675+-0.050 auroc 0.706 alarm 0.0136 gunmax 0.056 | test pre 0.628 auroc 0.671
+pca+lgbm6h                         cv pre 0.666+-0.036 auroc 0.695 alarm 0.0120 gunmax 0.088 | test pre 0.649 auroc 0.684
+pca+et                             cv pre 0.715+-0.053 auroc 0.742 alarm 0.0101 gunmax 0.069 | test pre 0.642 auroc 0.688
+pca+lr                             cv pre 0.672+-0.058 auroc 0.706 alarm 0.0041 gunmax 0.052 | test pre 0.563 auroc 0.608
+maha+lgbm                          cv pre 0.682+-0.050 auroc 0.727 alarm 0.0126 gunmax 0.114 | test pre 0.610 auroc 0.660
+maha+lgbm6h                        cv pre 0.678+-0.032 auroc 0.720 alarm 0.0133 gunmax 0.149 | test pre 0.637 auroc 0.679
+maha+et                            cv pre 0.719+-0.054 auroc 0.758 alarm 0.0095 gunmax 0.090 | test pre 0.620 auroc 0.671
+maha+lr                            cv pre 0.679+-0.060 auroc 0.720 alarm 0.0064 gunmax 0.098 | test pre 0.528 auroc 0.578
+lgbm+lgbm6h                        cv pre 0.684+-0.043 auroc 0.728 alarm 0.0078 gunmax 0.042 | test pre 0.567 auroc 0.634
+lgbm+et                            cv pre 0.737+-0.032 auroc 0.780 alarm 0.0086 gunmax 0.048 | test pre 0.570 auroc 0.643
+lgbm+lr                            cv pre 0.695+-0.050 auroc 0.742 alarm 0.0073 gunmax 0.071 | test pre 0.467 auroc 0.541
+lgbm6h+et                          cv pre 0.736+-0.032 auroc 0.775 alarm 0.0068 gunmax 0.039 | test pre 0.603 auroc 0.667
+lgbm6h+lr                          cv pre 0.690+-0.058 auroc 0.734 alarm 0.0059 gunmax 0.059 | test pre 0.496 auroc 0.567
+et+lr                              cv pre 0.728+-0.035 auroc 0.770 alarm 0.0063 gunmax 0.054 | test pre 0.505 auroc 0.579
+iforest+pca+lgbm                   cv pre 0.660+-0.055 auroc 0.699 alarm 0.0133 gunmax 0.052 | test pre 0.631 auroc 0.670
+iforest+pca+lgbm6h                 cv pre 0.657+-0.044 auroc 0.695 alarm 0.0134 gunmax 0.080 | test pre 0.647 auroc 0.682
+iforest+pca+et                     cv pre 0.684+-0.057 auroc 0.719 alarm 0.0130 gunmax 0.143 | test pre 0.638 auroc 0.678
+iforest+pca+lr                     cv pre 0.652+-0.061 auroc 0.692 alarm 0.0058 gunmax 0.051 | test pre 0.597 auroc 0.635
+iforest+maha+lgbm                  cv pre 0.668+-0.058 auroc 0.714 alarm 0.0127 gunmax 0.105 | test pre 0.616 auroc 0.658
+iforest+maha+lgbm6h                cv pre 0.665+-0.047 auroc 0.711 alarm 0.0129 gunmax 0.146 | test pre 0.632 auroc 0.671
+iforest+maha+et                    cv pre 0.690+-0.060 auroc 0.732 alarm 0.0122 gunmax 0.113 | test pre 0.621 auroc 0.665
+iforest+maha+lr                    cv pre 0.659+-0.064 auroc 0.704 alarm 0.0070 gunmax 0.099 | test pre 0.571 auroc 0.612
+iforest+lgbm+lgbm6h                cv pre 0.699+-0.026 auroc 0.745 alarm 0.0103 gunmax 0.053 | test pre 0.610 auroc 0.668
+iforest+lgbm+et                    cv pre 0.721+-0.039 auroc 0.765 alarm 0.0099 gunmax 0.048 | test pre 0.601 auroc 0.662
+iforest+lgbm+lr                    cv pre 0.693+-0.048 auroc 0.741 alarm 0.0115 gunmax 0.101 | test pre 0.522 auroc 0.589
+iforest+lgbm6h+et                  cv pre 0.727+-0.029 auroc 0.768 alarm 0.0088 gunmax 0.053 | test pre 0.623 auroc 0.680
+iforest+lgbm6h+lr                  cv pre 0.688+-0.040 auroc 0.735 alarm 0.0082 gunmax 0.078 | test pre 0.564 auroc 0.625
+iforest+et+lr                      cv pre 0.718+-0.049 auroc 0.761 alarm 0.0083 gunmax 0.079 | test pre 0.554 auroc 0.618
+pca+maha+lgbm                      cv pre 0.666+-0.058 auroc 0.702 alarm 0.0143 gunmax 0.085 | test pre 0.634 auroc 0.670
+pca+maha+lgbm6h                    cv pre 0.661+-0.049 auroc 0.696 alarm 0.0131 gunmax 0.118 | test pre 0.650 auroc 0.682
+pca+maha+et                        cv pre 0.689+-0.059 auroc 0.721 alarm 0.0121 gunmax 0.084 | test pre 0.638 auroc 0.677
+pca+maha+lr                        cv pre 0.662+-0.063 auroc 0.697 alarm 0.0066 gunmax 0.096 | test pre 0.599 auroc 0.634
+pca+lgbm+lgbm6h                    cv pre 0.699+-0.036 auroc 0.735 alarm 0.0138 gunmax 0.076 | test pre 0.631 auroc 0.682
+pca+lgbm+et                        cv pre 0.727+-0.042 auroc 0.762 alarm 0.0123 gunmax 0.068 | test pre 0.625 auroc 0.681
+pca+lgbm+lr                        cv pre 0.699+-0.055 auroc 0.740 alarm 0.0115 gunmax 0.088 | test pre 0.559 auroc 0.620
+pca+lgbm6h+et                      cv pre 0.733+-0.033 auroc 0.766 alarm 0.0105 gunmax 0.084 | test pre 0.645 auroc 0.697
+pca+lgbm6h+lr                      cv pre 0.695+-0.049 auroc 0.735 alarm 0.0077 gunmax 0.087 | test pre 0.594 auroc 0.649
+pca+et+lr                          cv pre 0.726+-0.050 auroc 0.760 alarm 0.0069 gunmax 0.083 | test pre 0.582 auroc 0.642
+maha+lgbm+lgbm6h                   cv pre 0.704+-0.027 auroc 0.748 alarm 0.0141 gunmax 0.108 | test pre 0.625 auroc 0.681
+maha+lgbm+et                       cv pre 0.730+-0.040 auroc 0.771 alarm 0.0116 gunmax 0.103 | test pre 0.612 auroc 0.671
+maha+lgbm+lr                       cv pre 0.703+-0.051 auroc 0.748 alarm 0.0126 gunmax 0.112 | test pre 0.531 auroc 0.596
+maha+lgbm6h+et                     cv pre 0.737+-0.029 auroc 0.776 alarm 0.0104 gunmax 0.108 | test pre 0.633 auroc 0.689
+maha+lgbm6h+lr                     cv pre 0.699+-0.039 auroc 0.743 alarm 0.0094 gunmax 0.132 | test pre 0.574 auroc 0.634
+maha+et+lr                         cv pre 0.727+-0.050 auroc 0.767 alarm 0.0091 gunmax 0.090 | test pre 0.560 auroc 0.623
+lgbm+lgbm6h+et                     cv pre 0.731+-0.036 auroc 0.773 alarm 0.0084 gunmax 0.031 | test pre 0.588 auroc 0.656
+lgbm+lgbm6h+lr                     cv pre 0.704+-0.056 auroc 0.750 alarm 0.0082 gunmax 0.087 | test pre 0.513 auroc 0.588
+lgbm+et+lr                         cv pre 0.731+-0.035 auroc 0.774 alarm 0.0081 gunmax 0.063 | test pre 0.515 auroc 0.591
+lgbm6h+et+lr                       cv pre 0.733+-0.041 auroc 0.775 alarm 0.0062 gunmax 0.052 | test pre 0.547 auroc 0.619
+iforest+pca+maha+lgbm              cv pre 0.658+-0.060 auroc 0.697 alarm 0.0138 gunmax 0.085 | test pre 0.629 auroc 0.664
+iforest+pca+maha+lgbm6h            cv pre 0.655+-0.052 auroc 0.694 alarm 0.0142 gunmax 0.112 | test pre 0.642 auroc 0.674
+iforest+pca+maha+et                cv pre 0.674+-0.062 auroc 0.710 alarm 0.0141 gunmax 0.151 | test pre 0.634 auroc 0.671
+iforest+pca+maha+lr                cv pre 0.653+-0.065 auroc 0.692 alarm 0.0072 gunmax 0.092 | test pre 0.605 auroc 0.638
+iforest+pca+lgbm+lgbm6h            cv pre 0.687+-0.036 auroc 0.728 alarm 0.0126 gunmax 0.073 | test pre 0.638 auroc 0.685
+iforest+pca+lgbm+et                cv pre 0.707+-0.049 auroc 0.745 alarm 0.0123 gunmax 0.063 | test pre 0.630 auroc 0.680
+iforest+pca+lgbm+lr                cv pre 0.685+-0.057 auroc 0.728 alarm 0.0122 gunmax 0.091 | test pre 0.586 auroc 0.638
+iforest+pca+lgbm6h+et              cv pre 0.708+-0.041 auroc 0.746 alarm 0.0116 gunmax 0.079 | test pre 0.644 auroc 0.692
+iforest+pca+lgbm6h+lr              cv pre 0.681+-0.047 auroc 0.725 alarm 0.0099 gunmax 0.085 | test pre 0.612 auroc 0.660
+iforest+pca+et+lr                  cv pre 0.706+-0.059 auroc 0.745 alarm 0.0095 gunmax 0.111 | test pre 0.603 auroc 0.654
+iforest+maha+lgbm+lgbm6h           cv pre 0.692+-0.038 auroc 0.737 alarm 0.0125 gunmax 0.111 | test pre 0.631 auroc 0.680
+iforest+maha+lgbm+et               cv pre 0.709+-0.050 auroc 0.752 alarm 0.0119 gunmax 0.102 | test pre 0.617 auroc 0.670
+iforest+maha+lgbm+lr               cv pre 0.689+-0.058 auroc 0.735 alarm 0.0126 gunmax 0.103 | test pre 0.568 auroc 0.623
+iforest+maha+lgbm6h+et             cv pre 0.711+-0.044 auroc 0.753 alarm 0.0112 gunmax 0.120 | test pre 0.632 auroc 0.683
+iforest+maha+lgbm6h+lr             cv pre 0.685+-0.046 auroc 0.731 alarm 0.0096 gunmax 0.130 | test pre 0.596 auroc 0.647
+iforest+maha+et+lr                 cv pre 0.707+-0.060 auroc 0.749 alarm 0.0096 gunmax 0.088 | test pre 0.583 auroc 0.637
+iforest+lgbm+lgbm6h+et             cv pre 0.731+-0.028 auroc 0.774 alarm 0.0096 gunmax 0.047 | test pre 0.612 auroc 0.674
+iforest+lgbm+lgbm6h+lr             cv pre 0.709+-0.037 auroc 0.755 alarm 0.0093 gunmax 0.069 | test pre 0.559 auroc 0.626
+iforest+lgbm+et+lr                 cv pre 0.727+-0.041 auroc 0.770 alarm 0.0100 gunmax 0.069 | test pre 0.551 auroc 0.620
+iforest+lgbm6h+et+lr               cv pre 0.728+-0.036 auroc 0.771 alarm 0.0078 gunmax 0.063 | test pre 0.582 auroc 0.646
+pca+maha+lgbm+lgbm6h               cv pre 0.688+-0.040 auroc 0.727 alarm 0.0147 gunmax 0.109 | test pre 0.645 auroc 0.689
+pca+maha+lgbm+et                   cv pre 0.709+-0.050 auroc 0.745 alarm 0.0130 gunmax 0.086 | test pre 0.635 auroc 0.683
+pca+maha+lgbm+lr                   cv pre 0.686+-0.058 auroc 0.727 alarm 0.0131 gunmax 0.106 | test pre 0.592 auroc 0.642
+pca+maha+lgbm6h+et                 cv pre 0.710+-0.042 auroc 0.746 alarm 0.0118 gunmax 0.114 | test pre 0.648 auroc 0.694
+pca+maha+lgbm6h+lr                 cv pre 0.687+-0.049 auroc 0.727 alarm 0.0094 gunmax 0.118 | test pre 0.618 auroc 0.664
+pca+maha+et+lr                     cv pre 0.708+-0.059 auroc 0.744 alarm 0.0089 gunmax 0.084 | test pre 0.604 auroc 0.655
+pca+lgbm+lgbm6h+et                 cv pre 0.735+-0.033 auroc 0.772 alarm 0.0120 gunmax 0.080 | test pre 0.629 auroc 0.687
+pca+lgbm+lgbm6h+lr                 cv pre 0.712+-0.047 auroc 0.754 alarm 0.0107 gunmax 0.100 | test pre 0.581 auroc 0.645
+pca+lgbm+et+lr                     cv pre 0.732+-0.045 auroc 0.770 alarm 0.0105 gunmax 0.086 | test pre 0.574 auroc 0.639
+pca+lgbm6h+et+lr                   cv pre 0.734+-0.042 auroc 0.773 alarm 0.0080 gunmax 0.080 | test pre 0.603 auroc 0.664
+maha+lgbm+lgbm6h+et                cv pre 0.739+-0.027 auroc 0.779 alarm 0.0127 gunmax 0.096 | test pre 0.624 auroc 0.684
+maha+lgbm+lgbm6h+lr                cv pre 0.715+-0.038 auroc 0.759 alarm 0.0113 gunmax 0.124 | test pre 0.569 auroc 0.635
+maha+lgbm+et+lr                    cv pre 0.734+-0.043 auroc 0.775 alarm 0.0103 gunmax 0.094 | test pre 0.557 auroc 0.625
+maha+lgbm6h+et+lr                  cv pre 0.738+-0.036 auroc 0.778 alarm 0.0084 gunmax 0.108 | test pre 0.590 auroc 0.654
+lgbm+lgbm6h+et+lr                  cv pre 0.733+-0.042 auroc 0.776 alarm 0.0082 gunmax 0.052 | test pre 0.544 auroc 0.618
+iforest+pca+maha+lgbm+lgbm6h+et+lr cv pre 0.719+-0.045 auroc 0.760 alarm 0.0112 gunmax 0.094 | test pre 0.618 auroc 0.673
+iforest+lgbm [weighted 0.3]        cv pre 0.652+-0.049 auroc 0.701 alarm 0.0114 gunmax 0.042 | test pre 0.607 auroc 0.649
+iforest+lgbm [weighted 0.7]        cv pre 0.686+-0.042 auroc 0.736 alarm 0.0101 gunmax 0.043 | test pre 0.581 auroc 0.644
+iforest+lgbm [max ]                cv pre 0.691+-0.055 auroc 0.741 alarm 0.0098 gunmax 0.061 | test pre 0.541 auroc 0.616
+iforest+lgbm+lgbm6h [max ]         cv pre 0.691+-0.037 auroc 0.740 alarm 0.0075 gunmax 0.040 | test pre 0.538 auroc 0.615
+exit 0

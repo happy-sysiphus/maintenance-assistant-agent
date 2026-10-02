@@ -1,0 +1,64 @@
+[64/80] E04_17: 1 events
+[65/80] E04_2: 1 events
+[66/80] E04_3: 1 events
+[67/80] E04_4: 1 events
+[68/80] E04_5: 1 events
+[69/80] E04_6: 1 events
+[70/80] E04_7: 1 events
+[71/80] E04_8: 1 events
+[72/80] E04_9: 2 events
+[73/80] test_0: 3 events
+[74/80] test_1: 1 events
+[75/80] test_2: 1 events
+[76/80] test_3: 1 events
+[77/80] test_4: 1 events
+[78/80] test_5: 1 events
+[79/80] test_6: 1 events
+[80/80] test_7: 1 events
+132 events from 78 files; MAX_FINDINGS 6
+current {'min_share': 0.05, 'min_dev': 1.0, 'median': 0.0, 'mean': 0.61, 'zero': 0.621, 'at_cap': 0.0, 'ok': False}
+pick    {'min_share': 0.03, 'min_dev': 0.5, 'median': 1.0, 'mean': 1.56, 'zero': 0.25, 'at_cap': 0.0, 'ok': True}
+by source {'model': {'events': 41, 'median': 2.0, 'zero': 0.073}, 'model+rule': {'events': 39, 'median': 1.0, 'zero': 0.385}, 'rule': {'events': 52, 'median': 1.0, 'zero': 0.288}}
+  share 0.02 dev 0.50: median 2.0 mean 1.95 zero 22% cap 3% ok
+  share 0.02 dev 0.75: median 1.0 mean 1.41 zero 37% cap 1% 
+  share 0.02 dev 1.00: median 0.0 mean 0.88 zero 52% cap 0% 
+  share 0.02 dev 1.50: median 0.0 mean 0.33 zero 79% cap 0% 
+  share 0.02 dev 2.00: median 0.0 mean 0.17 zero 89% cap 0% 
+  share 0.02 dev 3.00: median 0.0 mean 0.08 zero 92% cap 0% 
+  share 0.03 dev 0.50: median 1.0 mean 1.56 zero 25% cap 0% ok
+  share 0.03 dev 0.75: median 1.0 mean 1.17 zero 41% cap 0% 
+  share 0.03 dev 1.00: median 0.0 mean 0.77 zero 55% cap 0% 
+  share 0.03 dev 1.50: median 0.0 mean 0.27 zero 81% cap 0% 
+  share 0.03 dev 2.00: median 0.0 mean 0.12 zero 90% cap 0% 
+  share 0.03 dev 3.00: median 0.0 mean 0.08 zero 92% cap 0% 
+  share 0.05 dev 0.50: median 1.0 mean 1.20 zero 33% cap 0% 
+  share 0.05 dev 0.75: median 1.0 mean 0.91 zero 47% cap 0% 
+  share 0.05 dev 1.00: median 0.0 mean 0.61 zero 62% cap 0% 
+  share 0.05 dev 1.50: median 0.0 mean 0.23 zero 84% cap 0% 
+  share 0.05 dev 2.00: median 0.0 mean 0.10 zero 92% cap 0% 
+  share 0.05 dev 3.00: median 0.0 mean 0.06 zero 94% cap 0% 
+  share 0.08 dev 0.50: median 1.0 mean 0.87 zero 40% cap 0% 
+  share 0.08 dev 0.75: median 0.0 mean 0.65 zero 54% cap 0% 
+  share 0.08 dev 1.00: median 0.0 mean 0.41 zero 69% cap 0% 
+  share 0.08 dev 1.50: median 0.0 mean 0.14 zero 87% cap 0% 
+  share 0.08 dev 2.00: median 0.0 mean 0.09 zero 92% cap 0% 
+  share 0.08 dev 3.00: median 0.0 mean 0.05 zero 95% cap 0% 
+  share 0.10 dev 0.50: median 1.0 mean 0.73 zero 46% cap 0% 
+  share 0.10 dev 0.75: median 0.0 mean 0.58 zero 56% cap 0% 
+  share 0.10 dev 1.00: median 0.0 mean 0.35 zero 72% cap 0% 
+  share 0.10 dev 1.50: median 0.0 mean 0.13 zero 88% cap 0% 
+  share 0.10 dev 2.00: median 0.0 mean 0.08 zero 93% cap 0% 
+  share 0.10 dev 3.00: median 0.0 mean 0.05 zero 95% cap 0% 
+  share 0.15 dev 0.50: median 0.0 mean 0.56 zero 54% cap 0% 
+  share 0.15 dev 0.75: median 0.0 mean 0.45 zero 62% cap 0% 
+  share 0.15 dev 1.00: median 0.0 mean 0.28 zero 76% cap 0% 
+  share 0.15 dev 1.50: median 0.0 mean 0.11 zero 90% cap 0% 
+  share 0.15 dev 2.00: median 0.0 mean 0.07 zero 94% cap 0% 
+  share 0.15 dev 3.00: median 0.0 mean 0.05 zero 96% cap 0% 
+  share 0.20 dev 0.50: median 0.0 mean 0.47 zero 58% cap 0% 
+  share 0.20 dev 0.75: median 0.0 mean 0.37 zero 67% cap 0% 
+  share 0.20 dev 1.00: median 0.0 mean 0.22 zero 80% cap 0% 
+  share 0.20 dev 1.50: median 0.0 mean 0.08 zero 92% cap 0% 
+  share 0.20 dev 2.00: median 0.0 mean 0.05 zero 96% cap 0% 
+  share 0.20 dev 3.00: median 0.0 mean 0.03 zero 97% cap 0% 
+exit 0

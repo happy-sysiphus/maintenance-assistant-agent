@@ -1,0 +1,149 @@
+{
+ "name": "p3_maint_maint_3600_iforest",
+ "note": "iforest, 53 features, pre-failure 3600 s, first 6 h of every gun dropped (maintenance lookbacks are incomplete there)",
+ "kind": "iforest",
+ "label_window": 3600,
+ "drop_warmup": true,
+ "k": 4,
+ "n_features": 53,
+ "val_folds": {
+  "mean": {
+   "auroc": 0.6730960068207581,
+   "auroc_gun_mean": 0.719631957827241,
+   "auprc": 0.01590767936825646,
+   "recall_pre_failure": 0.041797446357907234,
+   "alarm_rate_normal": 0.014584279740526129
+  },
+  "sd": {
+   "auroc": 0.05384698353460858,
+   "auroc_gun_mean": 0.0464531133803458,
+   "auprc": 0.0053709121628548705,
+   "recall_pre_failure": 0.012834171897469835,
+   "alarm_rate_normal": 0.008476701545647964
+  },
+  "files_with_final_run": 5,
+  "files_both_ok": 0,
+  "files": 64
+ },
+ "test_over_folds": {
+  "mean": {
+   "auroc": 0.6029711753630269,
+   "auroc_gun_mean": 0.5913758081626003,
+   "auprc": 0.009547878191151648,
+   "recall_pre_failure": 0.021784232365145227,
+   "alarm_rate_normal": 0.0031078537917141567
+  },
+  "sd": {
+   "auroc": 0.019078329138620037,
+   "auroc_gun_mean": 0.017660979037483614,
+   "auprc": 0.0005224977474350811,
+   "recall_pre_failure": 0.0069587177723022505,
+   "alarm_rate_normal": 0.0008721159261948415
+  },
+  "files_with_final_run": 0,
+  "files_both_ok": 0,
+  "files": 32
+ },
+ "folds": [
+  {
+   "val_files": [
+    "E01_0",
+    "E01_10",
+    "E01_2",
+    "E01_5",
+    "E01_8",
+    "E02_1",
+    "E02_15",
+    "E02_16",
+    "E03_1",
+    "E03_11",
+    "E03_15",
+    "E03_2",
+    "E03_9",
+    "E04_0",
+    "E04_17",
+    "E04_2",
+    "E04_6",
+    "E04_8"
+   ],
+   "auroc": 0.7285993340287156,
+   "auroc_gun_mean": 0.7540330222380689,
+   "auprc": 0.024490637679807206,
+   "recall_pre_failure": 0.03391384051329056,
+   "alarm_rate_normal": 0.00531220375968091
+  },
+  {
+   "val_files": [
+    "E01_12",
+    "E01_16",
+    "E01_17",
+    "E01_6",
+    "E01_9",
+    "E02_10",
+    "E02_11",
+    "E02_9",
+    "E03_10",
+    "E03_12",
+    "E03_17",
+    "E03_4",
+    "E03_7",
+    "E04_10",
+    "E04_13",
+    "E04_15",
+    "E04_16",
+    "E04_3"
+   ],
+   "auroc": 0.5917153772156654,
+   "auroc_gun_mean": 0.6488454068624709,
+   "auprc": 0.011382973655256937,
+   "recall_pre_failure": 0.059424326833797586,
+   "alarm_rate_normal": 0.019780940353604042
+  },
+  {
+   "val_files": [
+    "E01_13",
+    "E01_15",
+    "E01_4",
+    "E01_7",
+    "E02_12",
+    "E02_17",
+    "E03_0",
+    "E03_14",
+    "E03_16",
+    "E03_8",
+    "E04_1",
+    "E04_11",
+    "E04_12",
+    "E04_14"
+   ],
+   "auroc": 0.7139608728304522,
+   "auroc_gun_mean": 0.7676193828858621,
+   "auprc": 0.016429234115340544,
+   "recall_pre_failure": 0.026004728132387706,
+   "alarm_rate_normal": 0.007507803515689174
+  },
+  {
+   "val_files": [
+    "E01_1",
+    "E01_11",
+    "E01_14",
+    "E01_3",
+    "E02_13",
+    "E02_14",
+    "E03_13",
+    "E03_3",
+    "E03_5",
+    "E03_6",
+    "E04_4",
+    "E04_5",
+    "E04_7",
+    "E04_9"
+   ],
+   "auroc": 0.6581084432081995,
+   "auroc_gun_mean": 0.7080300193225619,
+   "auprc": 0.011327872022621161,
+   "recall_pre_failure": 0.04784688995215311,
+   "alarm_rate_normal": 0.025736171333130383
+  }
+ ]
+}

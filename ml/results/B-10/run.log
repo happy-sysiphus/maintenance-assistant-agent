@@ -1,0 +1,787 @@
+590,040 eligible windows, 72 guns, 36 features (base)
+placebo-as-real: 2/71 guns p<0.05 (expected 3.6)
+590,040 eligible windows, 72 guns, 36 features (base)
+[1] E01_0: skipped (too few target / control windows)
+[2] E01_1 E01: AUROC 0.769  null median 1.000 q95 1.000  p 0.961  (50/290)  8s
+[3] E01_10: skipped (too few target / control windows)
+[4] E01_11 E01: AUROC 0.994  null median 1.000 q95 1.000  p 0.706  (50/322)  11s
+[5] E01_12 E01: AUROC 0.945  null median 0.996 q95 1.000  p 0.667  (48/351)  13s
+[6] E01_13 E01: AUROC 0.908  null median 0.987 q95 1.000  p 0.804  (32/359)  16s
+[7] E01_14 E01: AUROC 1.000  null median 0.984 q95 1.000  p 0.451  (50/345)  19s
+[8] E01_15 E01: AUROC 0.978  null median 1.000 q95 1.000  p 0.882  (49/353)  22s
+[9] E01_16: skipped (too few target / control windows)
+[10] E01_17 E01: AUROC 0.965  null median 0.997 q95 1.000  p 0.804  (41/350)  26s
+[11] E01_2 E01: AUROC 0.961  null median 0.737 q95 0.952  p 0.039  (37/313)  36s
+[12] E01_3: skipped (too few target / control windows)
+[13] E01_4: skipped (too few target / control windows)
+[14] E01_5: skipped (too few target / control windows)
+[15] E01_6: skipped (too few target / control windows)
+[16] E01_7 E01: AUROC 0.927  null median 0.999 q95 1.000  p 0.882  (45/206)  42s
+[17] E01_8: skipped (too few target / control windows)
+[18] E01_9 E01: AUROC 0.969  null median 0.925 q95 1.000  p 0.373  (41/346)  45s
+[19] E02_1 E02: AUROC 0.992  null median 0.884 q95 1.000  p 0.255  (48/342)  49s
+[20] E02_10: skipped (too few target / control windows)
+[21] E02_11 E02: AUROC 0.991  null median 0.981 q95 1.000  p 0.471  (50/349)  53s
+[22] E02_12: skipped (too few target / control windows)
+[23] E02_13 E02: AUROC 0.995  null median 0.794 q95 0.948  p 0.020  (47/219)  57s
+[24] E02_14: skipped (too few target / control windows)
+[25] E02_15 E02: AUROC 0.994  null median 0.862 q95 1.000  p 0.216  (48/344)  60s
+[26] E02_16 E02: AUROC 0.990  null median 0.930 q95 1.000  p 0.333  (43/297)  62s
+[27] E02_17: skipped (too few target / control windows)
+[28] E02_9 E02: AUROC 0.992  null median 0.871 q95 1.000  p 0.196  (37/259)  66s
+[29] E03_0 E03: AUROC 0.947  null median 0.966 q95 1.000  p 0.627  (50/246)  69s
+[30] E03_1: skipped (too few target / control windows)
+[31] E03_10 E03: AUROC 0.983  null median 1.000 q95 1.000  p 0.804  (45/360)  72s
+[32] E03_11 E03: AUROC 0.972  null median 0.753 q95 0.992  p 0.118  (33/304)  75s
+[33] E03_12 E03: AUROC 0.987  null median 0.650 q95 0.977  p 0.078  (50/92)  80s
+[34] E03_13 E03: AUROC 0.904  null median 1.000 q95 1.000  p 0.725  (50/125)  82s
+[35] E03_14: skipped (too few target / control windows)
+[36] E03_15: skipped (too few target / control windows)
+[37] E03_16: skipped (too few target / control windows)
+[38] E03_17: skipped (too few target / control windows)
+[39] E03_2: skipped (too few target / control windows)
+[40] E03_3 E03: AUROC 0.974  null median 0.690 q95 0.946  p 0.020  (35/332)  85s
+[41] E03_4 E03: AUROC 0.998  null median 0.819 q95 0.999  p 0.078  (48/257)  88s
+[42] E03_5: skipped (too few target / control windows)
+[43] E03_6: skipped (too few target / control windows)
+[44] E03_7 E03: AUROC 0.998  null median 0.936 q95 1.000  p 0.137  (30/141)  90s
+[45] E03_8 E03: AUROC 0.945  null median 0.817 q95 0.995  p 0.157  (48/329)  94s
+[46] E03_9 E03: AUROC 1.000  null median 0.983 q95 1.000  p 0.353  (37/361)  97s
+[47] E04_0 E04: AUROC 1.000  null median 0.783 q95 1.000  p 0.078  (50/353)  99s
+[48] E04_1 E04: AUROC 1.000  null median 0.864 q95 1.000  p 0.098  (50/173)  101s
+[49] E04_10 E04: AUROC 0.978  null median 0.797 q95 1.000  p 0.176  (48/338)  103s
+[50] E04_11: skipped (too few target / control windows)
+[51] E04_12 E04: AUROC 0.970  null median 0.850 q95 1.000  p 0.314  (40/258)  106s
+[52] E04_13 E04: AUROC 0.905  null median 0.992 q95 1.000  p 0.804  (48/343)  107s
+[53] E04_14 E04: AUROC 0.943  null median 0.775 q95 0.948  p 0.078  (44/215)  109s
+[54] E04_15 E04: AUROC 0.921  null median 0.922 q95 1.000  p 0.529  (48/237)  112s
+[55] E04_16 E04: AUROC 0.989  null median 0.725 q95 0.907  p 0.020  (50/342)  114s
+[56] E04_17 E04: AUROC 0.999  null median 0.783 q95 0.976  p 0.039  (50/351)  116s
+[57] E04_2: skipped (too few target / control windows)
+[58] E04_3: skipped (too few target / control windows)
+[59] E04_4 E04: AUROC 0.809  null median 0.815 q95 0.993  p 0.529  (46/313)  118s
+[60] E04_5: skipped (too few target / control windows)
+[61] E04_6 E04: AUROC 0.994  null median 0.837 q95 0.997  p 0.098  (50/351)  121s
+[62] E04_7 E04: AUROC 0.984  null median 0.868 q95 1.000  p 0.294  (47/250)  123s
+[63] E04_8 E04: AUROC 0.970  null median 0.923 q95 1.000  p 0.353  (47/355)  126s
+[64] E04_9: skipped (too few target / control windows)
+[65] test_0 E01: AUROC 0.994  null median 0.835 q95 0.999  p 0.098  (50/336)  129s
+[66] test_1 E01: AUROC 0.997  null median 0.899 q95 1.000  p 0.294  (46/339)  134s
+[67] test_2 E02: AUROC 0.821  null median 1.000 q95 1.000  p 0.980  (47/289)  140s
+[68] test_3 E04: AUROC 1.000  null median 0.850 q95 0.981  p 0.020  (48/326)  149s
+[69] test_4 E03: AUROC 1.000  null median 0.999 q95 1.000  p 0.451  (49/358)  154s
+[70] test_5 E03: AUROC 0.951  null median 0.828 q95 1.000  p 0.431  (35/348)  156s
+[71] test_6 E04: AUROC 0.997  null median 0.835 q95 1.000  p 0.235  (46/324)  162s
+[72] test_7 E04: AUROC 0.985  null median 0.849 q95 1.000  p 0.118  (48/348)  167s
+
+sanity_day_inject05_lr: 6/47 guns p<0.05 (chance 2.4, binomial p 0.029); mean AUROC 0.964 vs null 0.847 (q95 0.882, p 0.0005); direction agreement 0.091 vs null 0.018 (q95 0.060)
+590,040 eligible windows, 72 guns, 36 features (base)
+placebo-as-real: 1/72 guns p<0.05 (expected 3.6)
+590,040 eligible windows, 72 guns, 36 features (base)
+[1] E01_0: skipped (too few target / control windows)
+[2] E01_1 E01: AUROC 0.989  null median 0.977 q95 1.000  p 0.451  (50/203)  4s
+[3] E01_10: skipped (too few target / control windows)
+[4] E01_11 E01: AUROC 0.948  null median 0.968 q95 1.000  p 0.569  (50/240)  6s
+[5] E01_12 E01: AUROC 1.000  null median 0.904 q95 1.000  p 0.255  (48/231)  8s
+[6] E01_13 E01: AUROC 1.000  null median 0.950 q95 1.000  p 0.275  (32/203)  10s
+[7] E01_14 E01: AUROC 0.995  null median 0.970 q95 1.000  p 0.471  (50/228)  12s
+[8] E01_15 E01: AUROC 0.755  null median 0.818 q95 1.000  p 0.627  (49/240)  13s
+[9] E01_16: skipped (too few target / control windows)
+[10] E01_17 E01: AUROC 1.000  null median 0.965 q95 1.000  p 0.235  (41/215)  15s
+[11] E01_2 E01: AUROC 0.954  null median 0.774 q95 0.991  p 0.176  (37/201)  16s
+[12] E01_3: skipped (too few target / control windows)
+[13] E01_4: skipped (too few target / control windows)
+[14] E01_5: skipped (too few target / control windows)
+[15] E01_6: skipped (too few target / control windows)
+[16] E01_7 E01: AUROC 0.985  null median 0.996 q95 1.000  p 0.627  (45/210)  18s
+[17] E01_8: skipped (too few target / control windows)
+[18] E01_9 E01: AUROC 0.951  null median 0.831 q95 1.000  p 0.333  (41/183)  20s
+[19] E02_1 E02: AUROC 0.995  null median 0.772 q95 1.000  p 0.137  (48/228)  23s
+[20] E02_10: skipped (too few target / control windows)
+[21] E02_11 E02: AUROC 1.000  null median 0.998 q95 1.000  p 0.451  (50/231)  24s
+[22] E02_12 E02: AUROC 0.762  null median 0.741 q95 0.992  p 0.431  (46/210)  26s
+[23] E02_13 E02: AUROC 0.870  null median 0.742 q95 0.996  p 0.216  (47/102)  29s
+[24] E02_14: skipped (too few target / control windows)
+[25] E02_15 E02: AUROC 0.963  null median 0.794 q95 1.000  p 0.255  (48/228)  32s
+[26] E02_16 E02: AUROC 0.987  null median 0.633 q95 1.000  p 0.137  (43/213)  36s
+[27] E02_17: skipped (too few target / control windows)
+[28] E02_9 E02: AUROC 0.959  null median 0.770 q95 0.994  p 0.157  (37/172)  39s
+[29] E03_0: skipped (too few target / control windows)
+[30] E03_1: skipped (too few target / control windows)
+[31] E03_10 E03: AUROC 0.821  null median 0.931 q95 1.000  p 0.745  (45/240)  41s
+[32] E03_11 E03: AUROC 0.985  null median 0.777 q95 1.000  p 0.196  (33/190)  44s
+[33] E03_12 E03: AUROC 0.911  null median 0.702 q95 0.920  p 0.098  (50/240)  48s
+[34] E03_13 E03: AUROC 1.000  null median 0.997 q95 1.000  p 0.431  (50/240)  50s
+[35] E03_14: skipped (too few target / control windows)
+[36] E03_15: skipped (too few target / control windows)
+[37] E03_16: skipped (too few target / control windows)
+[38] E03_17: skipped (too few target / control windows)
+[39] E03_2: skipped (too few target / control windows)
+[40] E03_3: skipped (too few target / control windows)
+[41] E03_4 E03: AUROC 0.930  null median 0.781 q95 0.984  p 0.118  (48/50)  54s
+[42] E03_5: skipped (too few target / control windows)
+[43] E03_6: skipped (too few target / control windows)
+[44] E03_7 E03: AUROC 0.974  null median 0.984 q95 1.000  p 0.549  (30/214)  57s
+[45] E03_8 E03: AUROC 0.928  null median 0.782 q95 0.999  p 0.255  (48/224)  59s
+[46] E03_9 E03: AUROC 0.743  null median 0.992 q95 1.000  p 0.961  (37/240)  62s
+[47] E04_0 E04: AUROC 0.988  null median 0.923 q95 1.000  p 0.333  (50/240)  65s
+[48] E04_1 E04: AUROC 0.981  null median 0.919 q95 1.000  p 0.353  (50/240)  68s
+[49] E04_10 E04: AUROC 0.857  null median 0.859 q95 1.000  p 0.510  (48/223)  71s
+[50] E04_11: skipped (too few target / control windows)
+[51] E04_12 E04: AUROC 0.883  null median 0.731 q95 0.994  p 0.314  (40/217)  73s
+[52] E04_13 E04: AUROC 0.662  null median 0.964 q95 1.000  p 0.882  (48/240)  75s
+[53] E04_14 E04: AUROC 0.936  null median 0.773 q95 0.994  p 0.196  (44/226)  79s
+[54] E04_15 E04: AUROC 0.898  null median 0.828 q95 0.994  p 0.353  (48/218)  81s
+[55] E04_16 E04: AUROC 0.996  null median 0.770 q95 1.000  p 0.118  (50/240)  84s
+[56] E04_17 E04: AUROC 0.979  null median 0.890 q95 1.000  p 0.216  (50/240)  86s
+[57] E04_2: skipped (too few target / control windows)
+[58] E04_3: skipped (too few target / control windows)
+[59] E04_4 E04: AUROC 0.858  null median 0.732 q95 0.999  p 0.196  (46/216)  88s
+[60] E04_5: skipped (too few target / control windows)
+[61] E04_6 E04: AUROC 0.996  null median 0.948 q95 1.000  p 0.255  (50/231)  91s
+[62] E04_7 E04: AUROC 0.995  null median 0.772 q95 1.000  p 0.118  (47/229)  94s
+[63] E04_8 E04: AUROC 0.972  null median 0.793 q95 0.998  p 0.157  (47/226)  97s
+[64] E04_9: skipped (too few target / control windows)
+[65] test_0 E01: AUROC 0.927  null median 0.844 q95 0.996  p 0.373  (50/170)  100s
+[66] test_1 E01: AUROC 1.000  null median 0.849 q95 1.000  p 0.157  (46/222)  103s
+[67] test_2 E02: AUROC 0.980  null median 0.948 q95 1.000  p 0.451  (47/179)  105s
+[68] test_3 E04: AUROC 0.996  null median 0.928 q95 1.000  p 0.118  (48/209)  108s
+[69] test_4 E03: AUROC 0.896  null median 1.000 q95 1.000  p 0.804  (49/232)  110s
+[70] test_5 E03: AUROC 1.000  null median 0.995 q95 1.000  p 0.314  (35/240)  112s
+[71] test_6 E04: AUROC 0.989  null median 0.719 q95 1.000  p 0.118  (46/95)  114s
+[72] test_7 E04: AUROC 0.987  null median 0.892 q95 1.000  p 0.157  (48/228)  116s
+
+sanity_near_inject05_lr: 0/46 guns p<0.05 (chance 2.3, binomial p 1); mean AUROC 0.939 vs null 0.819 (q95 0.856, p 0.0005); direction agreement 0.076 vs null 0.013 (q95 0.039)
+590,040 eligible windows, 72 guns, 36 features (base)
+[1] E01_0: skipped (too few target / control windows)
+[2] E01_1 E01: AUROC 1.000  null median 0.979 q95 1.000  p 0.277  (50/203)  9s
+[3] E01_10: skipped (too few target / control windows)
+[4] E01_11 E01: AUROC 0.850  null median 0.972 q95 1.000  p 0.723  (50/240)  14s
+[5] E01_12 E01: AUROC 0.988  null median 0.959 q95 1.000  p 0.386  (48/231)  21s
+[6] E01_13 E01: AUROC 1.000  null median 0.928 q95 1.000  p 0.208  (32/203)  30s
+[7] E01_14 E01: AUROC 0.799  null median 0.975 q95 1.000  p 0.812  (50/228)  39s
+[8] E01_15 E01: AUROC 0.755  null median 0.848 q95 1.000  p 0.574  (49/240)  43s
+[9] E01_16: skipped (too few target / control windows)
+[10] E01_17 E01: AUROC 0.872  null median 0.964 q95 1.000  p 0.693  (41/215)  50s
+[11] E01_2 E01: AUROC 0.804  null median 0.783 q95 1.000  p 0.465  (37/201)  54s
+[12] E01_3: skipped (too few target / control windows)
+[13] E01_4: skipped (too few target / control windows)
+[14] E01_5: skipped (too few target / control windows)
+[15] E01_6: skipped (too few target / control windows)
+[16] E01_7 E01: AUROC 0.934  null median 0.990 q95 1.000  p 0.832  (45/210)  57s
+[17] E01_8: skipped (too few target / control windows)
+[18] E01_9 E01: AUROC 0.700  null median 0.821 q95 0.999  p 0.782  (41/183)  61s
+[19] E02_1 E02: AUROC 0.844  null median 0.780 q95 1.000  p 0.416  (48/228)  64s
+[20] E02_10: skipped (too few target / control windows)
+[21] E02_11 E02: AUROC 1.000  null median 0.991 q95 1.000  p 0.396  (50/231)  67s
+[22] E02_12 E02: AUROC 0.657  null median 0.772 q95 0.973  p 0.713  (46/210)  70s
+[23] E02_13 E02: AUROC 0.961  null median 0.737 q95 0.996  p 0.119  (47/102)  74s
+[24] E02_14 E02: AUROC 0.634  null median 0.996 q95 1.000  p 0.964  (47/219)  76s
+[25] E02_15 E02: AUROC 0.519  null median 0.785 q95 0.996  p 0.921  (48/228)  80s
+[26] E02_16 E02: AUROC 0.548  null median 0.664 q95 1.000  p 0.653  (43/213)  84s
+[27] E02_17: skipped (too few target / control windows)
+[28] E02_9 E02: AUROC 0.688  null median 0.771 q95 1.000  p 0.644  (37/172)  88s
+[29] E03_0: skipped (too few target / control windows)
+[30] E03_1: skipped (too few target / control windows)
+[31] E03_10 E03: AUROC 0.721  null median 0.950 q95 1.000  p 0.881  (45/240)  91s
+[32] E03_11 E03: AUROC 0.728  null median 0.756 q95 0.999  p 0.525  (33/190)  95s
+[33] E03_12 E03: AUROC 0.886  null median 0.744 q95 1.000  p 0.238  (50/240)  98s
+[34] E03_13 E03: AUROC 1.000  null median 0.990 q95 1.000  p 0.386  (50/240)  102s
+[35] E03_14: skipped (too few target / control windows)
+[36] E03_15: skipped (too few target / control windows)
+[37] E03_16: skipped (too few target / control windows)
+[38] E03_17: skipped (too few target / control windows)
+[39] E03_2: skipped (too few target / control windows)
+[40] E03_3: skipped (too few target / control windows)
+[41] E03_4 E03: AUROC 0.869  null median 0.756 q95 0.999  p 0.257  (48/50)  106s
+[42] E03_5: skipped (too few target / control windows)
+[43] E03_6: skipped (too few target / control windows)
+[44] E03_7 E03: AUROC 0.843  null median 0.977 q95 1.000  p 0.772  (30/214)  110s
+[45] E03_8 E03: AUROC 0.565  null median 0.799 q95 0.993  p 0.881  (48/224)  115s
+[46] E03_9 E03: AUROC 0.675  null median 0.972 q95 1.000  p 0.941  (37/240)  120s
+[47] E04_0 E04: AUROC 1.000  null median 0.923 q95 1.000  p 0.208  (50/240)  125s
+[48] E04_1 E04: AUROC 1.000  null median 0.917 q95 1.000  p 0.119  (50/240)  134s
+[49] E04_10 E04: AUROC 0.748  null median 0.870 q95 1.000  p 0.762  (48/223)  141s
+[50] E04_11: skipped (too few target / control windows)
+[51] E04_12 E04: AUROC 0.700  null median 0.756 q95 1.000  p 0.574  (40/217)  150s
+[52] E04_13 E04: AUROC 0.727  null median 0.905 q95 1.000  p 0.832  (48/240)  156s
+[53] E04_14 E04: AUROC 0.941  null median 0.773 q95 1.000  p 0.218  (44/226)  163s
+[54] E04_15 E04: AUROC 0.739  null median 0.805 q95 1.000  p 0.663  (48/218)  170s
+[55] E04_16 E04: AUROC 0.974  null median 0.783 q95 1.000  p 0.188  (50/240)  177s
+[56] E04_17 E04: AUROC 0.988  null median 0.892 q95 1.000  p 0.139  (50/240)  183s
+[57] E04_2: skipped (too few target / control windows)
+[58] E04_3: skipped (too few target / control windows)
+[59] E04_4 E04: AUROC 0.297  null median 0.727 q95 1.000  p 0.990  (46/216)  188s
+[60] E04_5: skipped (too few target / control windows)
+[61] E04_6 E04: AUROC 0.991  null median 0.889 q95 1.000  p 0.248  (50/231)  191s
+[62] E04_7 E04: AUROC 0.925  null median 0.799 q95 1.000  p 0.158  (47/229)  194s
+[63] E04_8 E04: AUROC 0.947  null median 0.793 q95 1.000  p 0.277  (47/226)  197s
+[64] E04_9: skipped (too few target / control windows)
+[65] test_0 E01: AUROC 0.925  null median 0.807 q95 1.000  p 0.267  (50/170)  200s
+[66] test_1 E01: AUROC 0.310  null median 0.879 q95 1.000  p 0.990  (46/222)  202s
+[67] test_2 E02: AUROC 0.593  null median 0.993 q95 1.000  p 0.950  (47/179)  204s
+[68] test_3 E04: AUROC 0.967  null median 0.935 q95 1.000  p 0.396  (48/209)  206s
+[69] test_4 E03: AUROC 0.633  null median 0.998 q95 1.000  p 0.901  (49/232)  208s
+[70] test_5 E03: AUROC 1.000  null median 0.990 q95 1.000  p 0.297  (35/240)  210s
+[71] test_6 E04: AUROC 0.927  null median 0.740 q95 1.000  p 0.188  (46/95)  212s
+[72] test_7 E04: AUROC 0.984  null median 0.826 q95 1.000  p 0.168  (48/228)  214s
+
+c2st_near_base_lr: 0/47 guns p<0.05 (chance 2.4, binomial p 1); mean AUROC 0.812 vs null 0.820 (q95 0.859, p 0.63); direction agreement 0.005 vs null 0.011 (q95 0.039)
+590,040 eligible windows, 72 guns, 36 features (base)
+[1] E01_0: skipped (too few target / control windows)
+[2] E01_1 E01: AUROC 0.984  null median 1.000 q95 1.000  p 0.673  (50/290)  4s
+[3] E01_10: skipped (too few target / control windows)
+[4] E01_11 E01: AUROC 0.997  null median 1.000 q95 1.000  p 0.772  (50/322)  6s
+[5] E01_12 E01: AUROC 0.677  null median 0.993 q95 1.000  p 0.960  (48/351)  9s
+[6] E01_13 E01: AUROC 0.961  null median 0.963 q95 1.000  p 0.515  (32/359)  12s
+[7] E01_14 E01: AUROC 0.515  null median 1.000 q95 1.000  p 0.980  (50/345)  15s
+[8] E01_15 E01: AUROC 0.979  null median 1.000 q95 1.000  p 0.782  (49/353)  17s
+[9] E01_16: skipped (too few target / control windows)
+[10] E01_17 E01: AUROC 0.708  null median 1.000 q95 1.000  p 1.000  (41/350)  20s
+[11] E01_2 E01: AUROC 0.924  null median 0.703 q95 0.962  p 0.089  (37/313)  23s
+[12] E01_3: skipped (too few target / control windows)
+[13] E01_4: skipped (too few target / control windows)
+[14] E01_5: skipped (too few target / control windows)
+[15] E01_6: skipped (too few target / control windows)
+[16] E01_7 E01: AUROC 0.882  null median 1.000 q95 1.000  p 0.901  (45/206)  26s
+[17] E01_8: skipped (too few target / control windows)
+[18] E01_9 E01: AUROC 0.788  null median 0.924 q95 1.000  p 0.743  (41/346)  29s
+[19] E02_1 E02: AUROC 0.816  null median 0.854 q95 1.000  p 0.634  (48/342)  32s
+[20] E02_10: skipped (too few target / control windows)
+[21] E02_11 E02: AUROC 1.000  null median 0.986 q95 1.000  p 0.455  (50/349)  34s
+[22] E02_12: skipped (too few target / control windows)
+[23] E02_13 E02: AUROC 0.957  null median 0.772 q95 0.959  p 0.079  (47/219)  37s
+[24] E02_14: skipped (too few target / control windows)
+[25] E02_15 E02: AUROC 0.824  null median 0.848 q95 1.000  p 0.584  (48/344)  40s
+[26] E02_16 E02: AUROC 0.560  null median 0.935 q95 1.000  p 0.861  (43/297)  43s
+[27] E02_17: skipped (too few target / control windows)
+[28] E02_9 E02: AUROC 0.942  null median 0.898 q95 1.000  p 0.436  (37/259)  47s
+[29] E03_0 E03: AUROC 1.000  null median 0.984 q95 1.000  p 0.366  (50/246)  52s
+[30] E03_1: skipped (too few target / control windows)
+[31] E03_10 E03: AUROC 0.963  null median 1.000 q95 1.000  p 0.802  (45/360)  55s
+[32] E03_11 E03: AUROC 0.907  null median 0.742 q95 0.980  p 0.109  (33/304)  59s
+[33] E03_12 E03: AUROC 0.992  null median 0.659 q95 0.970  p 0.040  (50/92)  64s
+[34] E03_13 E03: AUROC 0.506  null median 1.000 q95 1.000  p 0.921  (50/125)  69s
+[35] E03_14: skipped (too few target / control windows)
+[36] E03_15: skipped (too few target / control windows)
+[37] E03_16: skipped (too few target / control windows)
+[38] E03_17: skipped (too few target / control windows)
+[39] E03_2: skipped (too few target / control windows)
+[40] E03_3 E03: AUROC 0.915  null median 0.740 q95 0.962  p 0.168  (35/332)  78s
+[41] E03_4 E03: AUROC 0.826  null median 0.780 q95 1.000  p 0.436  (48/257)  85s
+[42] E03_5: skipped (too few target / control windows)
+[43] E03_6: skipped (too few target / control windows)
+[44] E03_7 E03: AUROC 1.000  null median 0.867 q95 1.000  p 0.079  (30/141)  89s
+[45] E03_8 E03: AUROC 0.596  null median 0.825 q95 0.999  p 0.842  (48/329)  94s
+[46] E03_9 E03: AUROC 1.000  null median 0.994 q95 1.000  p 0.376  (37/361)  100s
+[47] E04_0 E04: AUROC 1.000  null median 0.791 q95 0.996  p 0.040  (50/353)  108s
+[48] E04_1 E04: AUROC 1.000  null median 0.880 q95 1.000  p 0.059  (50/173)  113s
+[49] E04_10 E04: AUROC 0.930  null median 0.823 q95 1.000  p 0.238  (48/338)  117s
+[50] E04_11: skipped (too few target / control windows)
+[51] E04_12 E04: AUROC 0.485  null median 0.780 q95 1.000  p 0.941  (40/258)  121s
+[52] E04_13 E04: AUROC 1.000  null median 0.991 q95 1.000  p 0.426  (48/343)  124s
+[53] E04_14 E04: AUROC 0.753  null median 0.784 q95 0.979  p 0.584  (44/215)  127s
+[54] E04_15 E04: AUROC 0.836  null median 0.914 q95 1.000  p 0.703  (48/237)  130s
+[55] E04_16 E04: AUROC 0.908  null median 0.703 q95 0.917  p 0.079  (50/342)  133s
+[56] E04_17 E04: AUROC 0.974  null median 0.840 q95 0.985  p 0.129  (50/351)  138s
+[57] E04_2: skipped (too few target / control windows)
+[58] E04_3: skipped (too few target / control windows)
+[59] E04_4 E04: AUROC 0.242  null median 0.788 q95 0.991  p 1.000  (46/313)  140s
+[60] E04_5: skipped (too few target / control windows)
+[61] E04_6 E04: AUROC 0.956  null median 0.837 q95 0.996  p 0.257  (50/351)  143s
+[62] E04_7 E04: AUROC 0.758  null median 0.851 q95 1.000  p 0.733  (47/250)  145s
+[63] E04_8 E04: AUROC 0.921  null median 0.841 q95 1.000  p 0.366  (47/355)  148s
+[64] E04_9: skipped (too few target / control windows)
+[65] test_0 E01: AUROC 0.924  null median 0.825 q95 0.996  p 0.168  (50/336)  151s
+[66] test_1 E01: AUROC 0.688  null median 0.859 q95 1.000  p 0.851  (46/339)  154s
+[67] test_2 E02: AUROC 0.998  null median 1.000 q95 1.000  p 0.634  (47/289)  156s
+[68] test_3 E04: AUROC 0.977  null median 0.848 q95 0.999  p 0.149  (48/326)  159s
+[69] test_4 E03: AUROC 1.000  null median 1.000 q95 1.000  p 0.614  (49/358)  162s
+[70] test_5 E03: AUROC 0.926  null median 0.948 q95 1.000  p 0.525  (35/348)  165s
+[71] test_6 E04: AUROC 0.726  null median 0.869 q95 1.000  p 0.822  (46/324)  172s
+[72] test_7 E04: AUROC 0.990  null median 0.877 q95 1.000  p 0.267  (48/348)  176s
+
+c2st_day_base_lr: 2/47 guns p<0.05 (chance 2.4, binomial p 0.69); mean AUROC 0.856 vs null 0.846 (q95 0.879, p 0.335); direction agreement 0.022 vs null 0.017 (q95 0.057)
+590,040 eligible windows, 72 guns, 61 features (phys)
+[1] E01_0: skipped (too few target / control windows)
+[2] E01_1 E01: AUROC 0.997  null median 1.000 q95 1.000  p 0.624  (50/290)  14s
+[3] E01_10: skipped (too few target / control windows)
+[4] E01_11 E01: AUROC 0.997  null median 1.000 q95 1.000  p 0.772  (50/322)  22s
+[5] E01_12 E01: AUROC 0.711  null median 1.000 q95 1.000  p 0.950  (48/351)  28s
+[6] E01_13 E01: AUROC 0.930  null median 0.973 q95 1.000  p 0.584  (32/359)  34s
+[7] E01_14 E01: AUROC 0.646  null median 1.000 q95 1.000  p 0.990  (50/345)  38s
+[8] E01_15 E01: AUROC 0.972  null median 1.000 q95 1.000  p 0.802  (49/353)  41s
+[9] E01_16: skipped (too few target / control windows)
+[10] E01_17 E01: AUROC 0.730  null median 1.000 q95 1.000  p 1.000  (41/350)  45s
+[11] E01_2 E01: AUROC 0.894  null median 0.746 q95 0.966  p 0.178  (37/313)  48s
+[12] E01_3: skipped (too few target / control windows)
+[13] E01_4: skipped (too few target / control windows)
+[14] E01_5: skipped (too few target / control windows)
+[15] E01_6: skipped (too few target / control windows)
+[16] E01_7 E01: AUROC 0.940  null median 1.000 q95 1.000  p 0.970  (45/206)  51s
+[17] E01_8: skipped (too few target / control windows)
+[18] E01_9 E01: AUROC 0.782  null median 0.917 q95 1.000  p 0.782  (41/346)  55s
+[19] E02_1 E02: AUROC 0.951  null median 0.883 q95 1.000  p 0.347  (48/342)  58s
+[20] E02_10: skipped (too few target / control windows)
+[21] E02_11 E02: AUROC 1.000  null median 0.990 q95 1.000  p 0.396  (50/349)  61s
+[22] E02_12: skipped (too few target / control windows)
+[23] E02_13 E02: AUROC 0.981  null median 0.788 q95 0.966  p 0.050  (47/219)  64s
+[24] E02_14: skipped (too few target / control windows)
+[25] E02_15 E02: AUROC 0.809  null median 0.900 q95 1.000  p 0.663  (48/344)  68s
+[26] E02_16 E02: AUROC 0.518  null median 0.939 q95 1.000  p 0.901  (43/297)  71s
+[27] E02_17: skipped (too few target / control windows)
+[28] E02_9 E02: AUROC 0.978  null median 0.908 q95 1.000  p 0.386  (37/259)  73s
+[29] E03_0 E03: AUROC 1.000  null median 0.990 q95 1.000  p 0.376  (50/246)  76s
+[30] E03_1: skipped (too few target / control windows)
+[31] E03_10 E03: AUROC 1.000  null median 0.997 q95 1.000  p 0.416  (45/360)  79s
+[32] E03_11 E03: AUROC 0.891  null median 0.761 q95 0.997  p 0.178  (33/304)  83s
+[33] E03_12 E03: AUROC 0.994  null median 0.637 q95 0.997  p 0.069  (50/92)  87s
+[34] E03_13 E03: AUROC 1.000  null median 1.000 q95 1.000  p 0.733  (50/125)  89s
+[35] E03_14: skipped (too few target / control windows)
+[36] E03_15: skipped (too few target / control windows)
+[37] E03_16: skipped (too few target / control windows)
+[38] E03_17: skipped (too few target / control windows)
+[39] E03_2: skipped (too few target / control windows)
+[40] E03_3 E03: AUROC 0.949  null median 0.739 q95 0.993  p 0.109  (35/332)  93s
+[41] E03_4 E03: AUROC 0.768  null median 0.797 q95 1.000  p 0.535  (48/257)  96s
+[42] E03_5: skipped (too few target / control windows)
+[43] E03_6: skipped (too few target / control windows)
+[44] E03_7 E03: AUROC 1.000  null median 0.887 q95 1.000  p 0.129  (30/141)  99s
+[45] E03_8 E03: AUROC 0.562  null median 0.840 q95 0.993  p 0.871  (48/329)  103s
+[46] E03_9 E03: AUROC 1.000  null median 0.994 q95 1.000  p 0.396  (37/361)  106s
+[47] E04_0 E04: AUROC 1.000  null median 0.786 q95 1.000  p 0.059  (50/353)  109s
+[48] E04_1 E04: AUROC 1.000  null median 0.913 q95 1.000  p 0.119  (50/173)  115s
+[49] E04_10 E04: AUROC 0.908  null median 0.831 q95 1.000  p 0.317  (48/338)  122s
+[50] E04_11: skipped (too few target / control windows)
+[51] E04_12 E04: AUROC 0.532  null median 0.795 q95 1.000  p 0.941  (40/258)  127s
+[52] E04_13 E04: AUROC 1.000  null median 1.000 q95 1.000  p 0.515  (48/343)  133s
+[53] E04_14 E04: AUROC 0.860  null median 0.791 q95 0.990  p 0.366  (44/215)  137s
+[54] E04_15 E04: AUROC 0.869  null median 0.934 q95 1.000  p 0.683  (48/237)  142s
+[55] E04_16 E04: AUROC 0.976  null median 0.779 q95 0.970  p 0.059  (50/342)  146s
+[56] E04_17 E04: AUROC 1.000  null median 0.864 q95 0.999  p 0.030  (50/351)  152s
+[57] E04_2: skipped (too few target / control windows)
+[58] E04_3: skipped (too few target / control windows)
+[59] E04_4 E04: AUROC 0.298  null median 0.791 q95 0.995  p 1.000  (46/313)  157s
+[60] E04_5: skipped (too few target / control windows)
+[61] E04_6 E04: AUROC 0.991  null median 0.885 q95 1.000  p 0.208  (50/351)  162s
+[62] E04_7 E04: AUROC 0.725  null median 0.855 q95 0.999  p 0.832  (47/250)  167s
+[63] E04_8 E04: AUROC 0.921  null median 0.853 q95 1.000  p 0.376  (47/355)  173s
+[64] E04_9: skipped (too few target / control windows)
+[65] test_0 E01: AUROC 0.914  null median 0.835 q95 1.000  p 0.307  (50/336)  181s
+[66] test_1 E01: AUROC 0.680  null median 0.884 q95 1.000  p 0.901  (46/339)  187s
+[67] test_2 E02: AUROC 0.999  null median 1.000 q95 1.000  p 0.535  (47/289)  191s
+[68] test_3 E04: AUROC 0.982  null median 0.841 q95 1.000  p 0.168  (48/326)  197s
+[69] test_4 E03: AUROC 1.000  null median 1.000 q95 1.000  p 0.584  (49/358)  202s
+[70] test_5 E03: AUROC 0.931  null median 0.922 q95 1.000  p 0.495  (35/348)  207s
+[71] test_6 E04: AUROC 0.756  null median 0.877 q95 1.000  p 0.812  (46/324)  213s
+[72] test_7 E04: AUROC 0.995  null median 0.901 q95 1.000  p 0.228  (48/348)  218s
+
+c2st_day_phys_lr: 2/47 guns p<0.05 (chance 2.4, binomial p 0.69); mean AUROC 0.880 vs null 0.861 (q95 0.893, p 0.178); direction agreement 0.025 vs null 0.017 (q95 0.046)
+590,040 eligible windows, 72 guns, 61 features (phys)
+[1] E01_0: skipped (too few target / control windows)
+[2] E01_1 E01: AUROC 1.000  null median 1.000 q95 1.000  p 0.627  (50/290)  23s
+[3] E01_10: skipped (too few target / control windows)
+[4] E01_11 E01: AUROC 1.000  null median 1.000 q95 1.000  p 0.608  (50/322)  32s
+[5] E01_12 E01: AUROC 0.908  null median 1.000 q95 1.000  p 1.000  (48/351)  39s
+[6] E01_13 E01: AUROC 0.999  null median 1.000 q95 1.000  p 0.627  (32/359)  46s
+[7] E01_14 E01: AUROC 0.959  null median 1.000 q95 1.000  p 0.922  (50/345)  52s
+[8] E01_15 E01: AUROC 0.996  null median 1.000 q95 1.000  p 0.961  (49/353)  57s
+[9] E01_16: skipped (too few target / control windows)
+[10] E01_17 E01: AUROC 1.000  null median 1.000 q95 1.000  p 0.725  (41/350)  62s
+[11] E01_2 E01: AUROC 0.902  null median 0.866 q95 0.994  p 0.392  (37/313)  69s
+[12] E01_3: skipped (too few target / control windows)
+[13] E01_4: skipped (too few target / control windows)
+[14] E01_5: skipped (too few target / control windows)
+[15] E01_6: skipped (too few target / control windows)
+[16] E01_7 E01: AUROC 0.991  null median 1.000 q95 1.000  p 0.882  (45/206)  75s
+[17] E01_8: skipped (too few target / control windows)
+[18] E01_9 E01: AUROC 0.949  null median 0.983 q95 1.000  p 0.667  (41/346)  82s
+[19] E02_1 E02: AUROC 0.952  null median 0.976 q95 1.000  p 0.627  (48/342)  91s
+[20] E02_10: skipped (too few target / control windows)
+[21] E02_11 E02: AUROC 1.000  null median 1.000 q95 1.000  p 0.647  (50/349)  99s
+[22] E02_12: skipped (too few target / control windows)
+[23] E02_13 E02: AUROC 0.989  null median 0.930 q95 1.000  p 0.196  (47/219)  109s
+[24] E02_14: skipped (too few target / control windows)
+[25] E02_15 E02: AUROC 0.922  null median 0.986 q95 1.000  p 0.804  (48/344)  120s
+[26] E02_16 E02: AUROC 0.747  null median 0.980 q95 1.000  p 0.843  (43/297)  132s
+[27] E02_17: skipped (too few target / control windows)
+[28] E02_9 E02: AUROC 0.935  null median 0.941 q95 1.000  p 0.569  (37/259)  144s
+[29] E03_0 E03: AUROC 0.996  null median 0.986 q95 1.000  p 0.451  (50/246)  155s
+[30] E03_1: skipped (too few target / control windows)
+[31] E03_10 E03: AUROC 1.000  null median 1.000 q95 1.000  p 0.745  (45/360)  165s
+[32] E03_11 E03: AUROC 0.942  null median 0.845 q95 1.000  p 0.255  (33/304)  177s
+[33] E03_12 E03: AUROC 1.000  null median 0.765 q95 0.999  p 0.059  (50/92)  187s
+[34] E03_13 E03: AUROC 1.000  null median 1.000 q95 1.000  p 0.922  (50/125)  193s
+[35] E03_14: skipped (too few target / control windows)
+[36] E03_15: skipped (too few target / control windows)
+[37] E03_16: skipped (too few target / control windows)
+[38] E03_17: skipped (too few target / control windows)
+[39] E03_2: skipped (too few target / control windows)
+[40] E03_3 E03: AUROC 0.950  null median 0.933 q95 1.000  p 0.451  (35/332)  200s
+[41] E03_4 E03: AUROC 0.899  null median 0.976 q95 1.000  p 0.843  (48/257)  206s
+[42] E03_5: skipped (too few target / control windows)
+[43] E03_6: skipped (too few target / control windows)
+[44] E03_7 E03: AUROC 1.000  null median 0.998 q95 1.000  p 0.431  (30/141)  212s
+[45] E03_8 E03: AUROC 0.720  null median 0.956 q95 1.000  p 1.000  (48/329)  218s
+[46] E03_9 E03: AUROC 1.000  null median 1.000 q95 1.000  p 0.588  (37/361)  224s
+[47] E04_0 E04: AUROC 1.000  null median 0.976 q95 1.000  p 0.235  (50/353)  230s
+[48] E04_1 E04: AUROC 1.000  null median 0.987 q95 1.000  p 0.353  (50/173)  237s
+[49] E04_10 E04: AUROC 0.966  null median 0.961 q95 1.000  p 0.490  (48/338)  244s
+[50] E04_11: skipped (too few target / control windows)
+[51] E04_12 E04: AUROC 0.936  null median 0.939 q95 1.000  p 0.510  (40/258)  251s
+[52] E04_13 E04: AUROC 1.000  null median 1.000 q95 1.000  p 0.784  (48/343)  258s
+[53] E04_14 E04: AUROC 0.918  null median 0.929 q95 1.000  p 0.549  (44/215)  267s
+[54] E04_15 E04: AUROC 0.912  null median 0.985 q95 1.000  p 0.843  (48/237)  276s
+[55] E04_16 E04: AUROC 1.000  null median 0.934 q95 1.000  p 0.098  (50/342)  288s
+[56] E04_17 E04: AUROC 1.000  null median 0.981 q95 1.000  p 0.216  (50/351)  302s
+[57] E04_2: skipped (too few target / control windows)
+[58] E04_3: skipped (too few target / control windows)
+[59] E04_4 E04: AUROC 0.880  null median 0.924 q95 1.000  p 0.706  (46/313)  316s
+[60] E04_5: skipped (too few target / control windows)
+[61] E04_6 E04: AUROC 0.998  null median 0.987 q95 1.000  p 0.412  (50/351)  328s
+[62] E04_7 E04: AUROC 0.946  null median 0.958 q95 1.000  p 0.608  (47/250)  338s
+[63] E04_8 E04: AUROC 0.972  null median 0.972 q95 1.000  p 0.510  (47/355)  346s
+[64] E04_9: skipped (too few target / control windows)
+[65] test_0 E01: AUROC 0.989  null median 0.930 q95 1.000  p 0.235  (50/336)  353s
+[66] test_1 E01: AUROC 0.974  null median 0.991 q95 1.000  p 0.667  (46/339)  360s
+[67] test_2 E02: AUROC 0.995  null median 1.000 q95 1.000  p 0.784  (47/289)  365s
+[68] test_3 E04: AUROC 1.000  null median 0.962 q95 1.000  p 0.176  (48/326)  371s
+[69] test_4 E03: AUROC 1.000  null median 1.000 q95 1.000  p 0.686  (49/358)  377s
+[70] test_5 E03: AUROC 0.918  null median 0.987 q95 1.000  p 0.627  (35/348)  382s
+[71] test_6 E04: AUROC 0.697  null median 0.948 q95 1.000  p 1.000  (46/324)  389s
+[72] test_7 E04: AUROC 0.992  null median 0.974 q95 1.000  p 0.294  (48/348)  396s
+
+c2st_day_phys_lgbm: 0/47 guns p<0.05 (chance 2.4, binomial p 1); mean AUROC 0.954 vs null 0.947 (q95 0.963, p 0.246); direction agreement 0.025 vs null 0.016 (q95 0.048)
+[train 1/64] E01_0.parquet
+[train 2/64] E01_1.parquet
+[train 3/64] E01_10.parquet
+[train 4/64] E01_11.parquet
+[train 5/64] E01_12.parquet
+[train 6/64] E01_13.parquet
+[train 7/64] E01_14.parquet
+[train 8/64] E01_15.parquet
+[train 9/64] E01_16.parquet
+[train 10/64] E01_17.parquet
+[train 11/64] E01_2.parquet
+[train 12/64] E01_3.parquet
+[train 13/64] E01_4.parquet
+[train 14/64] E01_5.parquet
+[train 15/64] E01_6.parquet
+[train 16/64] E01_7.parquet
+[train 17/64] E01_8.parquet
+[train 18/64] E01_9.parquet
+[train 19/64] E02_1.parquet
+[train 20/64] E02_10.parquet
+[train 21/64] E02_11.parquet
+[train 22/64] E02_12.parquet
+[train 23/64] E02_13.parquet
+[train 24/64] E02_14.parquet
+[train 25/64] E02_15.parquet
+[train 26/64] E02_16.parquet
+[train 27/64] E02_17.parquet
+[train 28/64] E02_9.parquet
+[train 29/64] E03_0.parquet
+[train 30/64] E03_1.parquet
+[train 31/64] E03_10.parquet
+[train 32/64] E03_11.parquet
+[train 33/64] E03_12.parquet
+[train 34/64] E03_13.parquet
+[train 35/64] E03_14.parquet
+[train 36/64] E03_15.parquet
+[train 37/64] E03_16.parquet
+[train 38/64] E03_17.parquet
+[train 39/64] E03_2.parquet
+[train 40/64] E03_3.parquet
+[train 41/64] E03_4.parquet
+[train 42/64] E03_5.parquet
+[train 43/64] E03_6.parquet
+[train 44/64] E03_7.parquet
+[train 45/64] E03_8.parquet
+[train 46/64] E03_9.parquet
+[train 47/64] E04_0.parquet
+[train 48/64] E04_1.parquet
+[train 49/64] E04_10.parquet
+[train 50/64] E04_11.parquet
+[train 51/64] E04_12.parquet
+[train 52/64] E04_13.parquet
+[train 53/64] E04_14.parquet
+[train 54/64] E04_15.parquet
+[train 55/64] E04_16.parquet
+[train 56/64] E04_17.parquet
+[train 57/64] E04_2.parquet
+[train 58/64] E04_3.parquet
+[train 59/64] E04_4.parquet
+[train 60/64] E04_5.parquet
+[train 61/64] E04_6.parquet
+[train 62/64] E04_7.parquet
+[train 63/64] E04_8.parquet
+[train 64/64] E04_9.parquet
+[test 1/8] test_0.parquet
+[test 2/8] test_1.parquet
+[test 3/8] test_2.parquet
+[test 4/8] test_3.parquet
+[test 5/8] test_4.parquet
+[test 6/8] test_5.parquet
+[test 7/8] test_6.parquet
+[test 8/8] test_7.parquet
+cached raw distribution features in C:\Users\a0106\Desktop\U3\results\B-10\cache
+590,040 eligible windows, 72 guns, 40 features (raw)
+[1] E01_0: skipped (too few target / control windows)
+[2] E01_1 E01: AUROC 1.000  null median 0.998 q95 1.000  p 0.475  (50/290)  8s
+[3] E01_10: skipped (too few target / control windows)
+[4] E01_11 E01: AUROC 1.000  null median 1.000 q95 1.000  p 0.703  (50/322)  11s
+[5] E01_12 E01: AUROC 0.663  null median 1.000 q95 1.000  p 0.970  (48/351)  14s
+[6] E01_13 E01: AUROC 0.930  null median 0.961 q95 1.000  p 0.535  (32/359)  17s
+[7] E01_14 E01: AUROC 0.605  null median 1.000 q95 1.000  p 0.990  (50/345)  20s
+[8] E01_15 E01: AUROC 0.966  null median 1.000 q95 1.000  p 0.822  (49/353)  23s
+[9] E01_16: skipped (too few target / control windows)
+[10] E01_17 E01: AUROC 0.848  null median 1.000 q95 1.000  p 0.970  (41/350)  26s
+[11] E01_2 E01: AUROC 0.982  null median 0.801 q95 1.000  p 0.317  (37/313)  29s
+[12] E01_3: skipped (too few target / control windows)
+[13] E01_4: skipped (too few target / control windows)
+[14] E01_5: skipped (too few target / control windows)
+[15] E01_6: skipped (too few target / control windows)
+[16] E01_7 E01: AUROC 0.977  null median 1.000 q95 1.000  p 0.812  (45/206)  32s
+[17] E01_8: skipped (too few target / control windows)
+[18] E01_9 E01: AUROC 0.731  null median 0.910 q95 1.000  p 0.822  (41/346)  35s
+[19] E02_1 E02: AUROC 0.977  null median 0.998 q95 1.000  p 0.733  (48/342)  38s
+[20] E02_10: skipped (too few target / control windows)
+[21] E02_11 E02: AUROC 1.000  null median 0.996 q95 1.000  p 0.446  (50/349)  43s
+[22] E02_12: skipped (too few target / control windows)
+[23] E02_13 E02: AUROC 0.991  null median 0.990 q95 1.000  p 0.495  (47/219)  46s
+[24] E02_14: skipped (too few target / control windows)
+[25] E02_15 E02: AUROC 0.812  null median 0.875 q95 1.000  p 0.653  (48/344)  49s
+[26] E02_16 E02: AUROC 0.567  null median 0.924 q95 1.000  p 0.871  (43/297)  52s
+[27] E02_17: skipped (too few target / control windows)
+[28] E02_9 E02: AUROC 0.995  null median 0.938 q95 1.000  p 0.248  (37/259)  56s
+[29] E03_0 E03: AUROC 1.000  null median 0.998 q95 1.000  p 0.455  (50/246)  58s
+[30] E03_1: skipped (too few target / control windows)
+[31] E03_10 E03: AUROC 1.000  null median 1.000 q95 1.000  p 0.693  (45/360)  61s
+[32] E03_11 E03: AUROC 0.897  null median 0.877 q95 1.000  p 0.495  (33/304)  64s
+[33] E03_12 E03: AUROC 0.990  null median 0.910 q95 1.000  p 0.277  (50/92)  67s
+[34] E03_13 E03: AUROC 0.906  null median 1.000 q95 1.000  p 0.812  (50/125)  69s
+[35] E03_14: skipped (too few target / control windows)
+[36] E03_15: skipped (too few target / control windows)
+[37] E03_16: skipped (too few target / control windows)
+[38] E03_17: skipped (too few target / control windows)
+[39] E03_2: skipped (too few target / control windows)
+[40] E03_3 E03: AUROC 1.000  null median 0.727 q95 0.993  p 0.020  (35/332)  73s
+[41] E03_4 E03: AUROC 0.992  null median 0.871 q95 1.000  p 0.337  (48/257)  77s
+[42] E03_5: skipped (too few target / control windows)
+[43] E03_6: skipped (too few target / control windows)
+[44] E03_7 E03: AUROC 1.000  null median 0.916 q95 1.000  p 0.277  (30/141)  80s
+[45] E03_8 E03: AUROC 0.603  null median 0.849 q95 1.000  p 0.881  (48/329)  83s
+[46] E03_9 E03: AUROC 1.000  null median 0.999 q95 1.000  p 0.416  (37/361)  86s
+[47] E04_0 E04: AUROC 1.000  null median 0.795 q95 0.997  p 0.050  (50/353)  89s
+[48] E04_1 E04: AUROC 1.000  null median 0.900 q95 0.998  p 0.059  (50/173)  92s
+[49] E04_10 E04: AUROC 0.953  null median 0.837 q95 1.000  p 0.188  (48/338)  95s
+[50] E04_11: skipped (too few target / control windows)
+[51] E04_12 E04: AUROC 0.567  null median 0.786 q95 1.000  p 0.871  (40/258)  99s
+[52] E04_13 E04: AUROC 1.000  null median 0.994 q95 1.000  p 0.416  (48/343)  102s
+[53] E04_14 E04: AUROC 0.902  null median 0.761 q95 0.979  p 0.188  (44/215)  107s
+[54] E04_15 E04: AUROC 0.883  null median 0.931 q95 1.000  p 0.614  (48/237)  111s
+[55] E04_16 E04: AUROC 0.919  null median 0.753 q95 0.972  p 0.139  (50/342)  114s
+[56] E04_17 E04: AUROC 0.998  null median 0.833 q95 0.995  p 0.040  (50/351)  117s
+[57] E04_2: skipped (too few target / control windows)
+[58] E04_3: skipped (too few target / control windows)
+[59] E04_4 E04: AUROC 0.238  null median 0.899 q95 1.000  p 1.000  (46/313)  123s
+[60] E04_5: skipped (too few target / control windows)
+[61] E04_6 E04: AUROC 0.988  null median 0.846 q95 1.000  p 0.168  (50/351)  129s
+[62] E04_7 E04: AUROC 0.973  null median 0.863 q95 1.000  p 0.238  (47/250)  133s
+[63] E04_8 E04: AUROC 0.924  null median 0.847 q95 1.000  p 0.366  (47/355)  139s
+[64] E04_9: skipped (too few target / control windows)
+[65] test_0 E01: AUROC 1.000  null median 0.851 q95 1.000  p 0.079  (50/336)  142s
+[66] test_1 E01: AUROC 0.658  null median 0.899 q95 1.000  p 0.941  (46/339)  146s
+[67] test_2 E02: AUROC 0.806  null median 1.000 q95 1.000  p 0.990  (47/289)  149s
+[68] test_3 E04: AUROC 0.959  null median 0.837 q95 1.000  p 0.228  (48/326)  152s
+[69] test_4 E03: AUROC 1.000  null median 1.000 q95 1.000  p 0.624  (49/358)  155s
+[70] test_5 E03: AUROC 0.949  null median 0.979 q95 1.000  p 0.525  (35/348)  157s
+[71] test_6 E04: AUROC 0.716  null median 0.872 q95 1.000  p 0.881  (46/324)  160s
+[72] test_7 E04: AUROC 1.000  null median 0.995 q95 1.000  p 0.337  (48/348)  162s
+
+c2st_day_raw_lr: 3/47 guns p<0.05 (chance 2.4, binomial p 0.42); mean AUROC 0.891 vs null 0.878 (q95 0.909, p 0.249); direction agreement 0.044 vs null 0.021 (q95 0.049)
+590,040 eligible windows, 72 guns, 61 features (phys)
+placebo 0/200  31s
+placebo 50/200  338s
+placebo 100/200  570s
+placebo 150/200  786s
+  0-10m: 13 features outside the placebo band  error_share_10min_mean +17.02, weld_duty_10min_std +0.96, welds_10min_mean -0.82, c2_R +0.25, c14_mean -0.23
+ 10-30m:  3 features outside the placebo band  c6_mean +0.48, c6_R +0.48, c3_mean +0.08
+ 30-60m:  3 features outside the placebo band  c6_R +0.18, c6_mean +0.18, c3_mean +0.02
+   1-2h:  4 features outside the placebo band  c6_R +0.16, c6_mean +0.16, c5_P_min +0.00, c3_R -0.17
+   2-6h: 11 features outside the placebo band  weld_duty_10min_mean +0.18, c5_R +0.21, c6_mean +0.04, c6_R +0.04, c2_mean +0.14
+  6-24h: 28 features outside the placebo band  c5_drift_R +0.16, c3_R_sd +0.16, c2_std +0.15, c3_std +0.15, c13_std +0.14
+Traceback (most recent call last):
+  File "C:\Users\a0106\Desktop\U3\results\B-10\presignal.py", line 444, in <module>
+    main()
+  File "C:\Users\a0106\Desktop\U3\results\B-10\presignal.py", line 436, in main
+    epoch(a.features)
+  File "C:\Users\a0106\Desktop\U3\results\B-10\presignal.py", line 335, in epoch
+    json.dump(out, open(os.path.join(HERE, f"epoch_{features}.json"), "w", encoding="utf-8"), indent=2)
+  File "C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\json\__init__.py", line 179, in dump
+    for chunk in iterable:
+  File "C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\json\encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\json\encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\json\encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\json\encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\json\encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\json\encoder.py", line 439, in _iterencode
+    o = _default(o)
+        ^^^^^^^^^^^
+  File "C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\json\encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type bool is not JSON serializable
+EPOCH_EXIT 1
+590,040 eligible windows, 72 guns, 101 features (all)
+[1] E01_0: skipped (too few target / control windows)
+[2] E01_1 E01: AUROC 1.000  null median 0.993 q95 1.000  p 0.356  (50/203)  34s
+[3] E01_10: skipped (too few target / control windows)
+[4] E01_11 E01: AUROC 0.850  null median 0.982 q95 1.000  p 0.733  (50/240)  48s
+[5] E01_12 E01: AUROC 0.984  null median 0.993 q95 1.000  p 0.584  (48/231)  61s
+[6] E01_13 E01: AUROC 1.000  null median 0.951 q95 1.000  p 0.208  (32/203)  80s
+[7] E01_14 E01: AUROC 0.792  null median 0.977 q95 1.000  p 0.871  (50/228)  96s
+[8] E01_15 E01: AUROC 0.812  null median 0.890 q95 1.000  p 0.554  (49/240)  108s
+[9] E01_16: skipped (too few target / control windows)
+[10] E01_17 E01: AUROC 0.960  null median 0.971 q95 1.000  p 0.554  (41/215)  122s
+[11] E01_2 E01: AUROC 0.834  null median 0.783 q95 1.000  p 0.436  (37/201)  139s
+[12] E01_3: skipped (too few target / control windows)
+[13] E01_4: skipped (too few target / control windows)
+[14] E01_5: skipped (too few target / control windows)
+[15] E01_6: skipped (too few target / control windows)
+[16] E01_7 E01: AUROC 0.916  null median 0.998 q95 1.000  p 0.921  (45/210)  153s
+[17] E01_8: skipped (too few target / control windows)
+[18] E01_9 E01: AUROC 0.732  null median 0.839 q95 1.000  p 0.733  (41/183)  168s
+[19] E02_1 E02: AUROC 0.819  null median 0.845 q95 1.000  p 0.535  (48/228)  184s
+[20] E02_10: skipped (too few target / control windows)
+[21] E02_11 E02: AUROC 1.000  null median 0.995 q95 1.000  p 0.376  (50/231)  198s
+[22] E02_12 E02: AUROC 0.637  null median 0.786 q95 0.993  p 0.802  (46/210)  212s
+[23] E02_13 E02: AUROC 0.977  null median 0.762 q95 1.000  p 0.168  (47/102)  236s
+[24] E02_14 E02: AUROC 0.762  null median 0.993 q95 1.000  p 0.909  (47/219)  243s
+[25] E02_15 E02: AUROC 0.522  null median 0.844 q95 1.000  p 0.970  (48/228)  257s
+[26] E02_16 E02: AUROC 0.516  null median 0.654 q95 1.000  p 0.752  (43/213)  271s
+[27] E02_17: skipped (too few target / control windows)
+[28] E02_9 E02: AUROC 0.801  null median 0.878 q95 1.000  p 0.644  (37/172)  284s
+[29] E03_0: skipped (too few target / control windows)
+[30] E03_1: skipped (too few target / control windows)
+[31] E03_10 E03: AUROC 1.000  null median 0.978 q95 1.000  p 0.347  (45/240)  297s
+[32] E03_11 E03: AUROC 0.657  null median 0.783 q95 1.000  p 0.653  (33/190)  318s
+[33] E03_12 E03: AUROC 0.860  null median 0.764 q95 1.000  p 0.327  (50/240)  334s
+[34] E03_13 E03: AUROC 1.000  null median 0.991 q95 1.000  p 0.416  (50/240)  345s
+[35] E03_14: skipped (too few target / control windows)
+[36] E03_15: skipped (too few target / control windows)
+[37] E03_16: skipped (too few target / control windows)
+[38] E03_17: skipped (too few target / control windows)
+[39] E03_2: skipped (too few target / control windows)
+[40] E03_3: skipped (too few target / control windows)
+[41] E03_4 E03: AUROC 0.854  null median 0.794 q95 1.000  p 0.356  (48/50)  360s
+[42] E03_5: skipped (too few target / control windows)
+[43] E03_6: skipped (too few target / control windows)
+[44] E03_7 E03: AUROC 1.000  null median 0.980 q95 1.000  p 0.337  (30/214)  373s
+[45] E03_8 E03: AUROC 0.587  null median 0.804 q95 0.996  p 0.861  (48/224)  387s
+[46] E03_9 E03: AUROC 0.808  null median 0.982 q95 1.000  p 0.921  (37/240)  406s
+[47] E04_0 E04: AUROC 1.000  null median 0.933 q95 1.000  p 0.327  (50/240)  420s
+[48] E04_1 E04: AUROC 1.000  null median 0.928 q95 1.000  p 0.158  (50/240)  434s
+[49] E04_10 E04: AUROC 0.894  null median 0.894 q95 1.000  p 0.505  (48/223)  449s
+[50] E04_11: skipped (too few target / control windows)
+[51] E04_12 E04: AUROC 0.676  null median 0.791 q95 1.000  p 0.693  (40/217)  465s
+[52] E04_13 E04: AUROC 0.681  null median 0.905 q95 1.000  p 0.891  (48/240)  479s
+[53] E04_14 E04: AUROC 0.951  null median 0.767 q95 1.000  p 0.228  (44/226)  495s
+[54] E04_15 E04: AUROC 0.746  null median 0.837 q95 1.000  p 0.683  (48/218)  513s
+[55] E04_16 E04: AUROC 0.976  null median 0.823 q95 1.000  p 0.238  (50/240)  530s
+[56] E04_17 E04: AUROC 0.990  null median 0.891 q95 1.000  p 0.188  (50/240)  547s
+[57] E04_2: skipped (too few target / control windows)
+[58] E04_3: skipped (too few target / control windows)
+[59] E04_4 E04: AUROC 0.276  null median 0.727 q95 1.000  p 0.990  (46/216)  563s
+[60] E04_5: skipped (too few target / control windows)
+[61] E04_6 E04: AUROC 1.000  null median 0.912 q95 1.000  p 0.188  (50/231)  577s
+[62] E04_7 E04: AUROC 0.874  null median 0.834 q95 1.000  p 0.386  (47/229)  594s
+[63] E04_8 E04: AUROC 0.949  null median 0.777 q95 1.000  p 0.277  (47/226)  607s
+[64] E04_9: skipped (too few target / control windows)
+[65] test_0 E01: AUROC 0.904  null median 0.842 q95 1.000  p 0.356  (50/170)  620s
+[66] test_1 E01: AUROC 0.397  null median 0.894 q95 1.000  p 0.980  (46/222)  634s
+[67] test_2 E02: AUROC 0.559  null median 0.997 q95 1.000  p 0.960  (47/179)  646s
+[68] test_3 E04: AUROC 0.946  null median 0.935 q95 1.000  p 0.485  (48/209)  659s
+[69] test_4 E03: AUROC 0.763  null median 1.000 q95 1.000  p 0.881  (49/232)  670s
+[70] test_5 E03: AUROC 1.000  null median 0.996 q95 1.000  p 0.406  (35/240)  680s
+NEAR_ALL_EXIT 1
+590,040 eligible windows, 72 guns, 101 features (all)
+[1] E01_0: skipped (too few target / control windows)
+[2] E01_1 E01: AUROC 1.000  null median 0.993 q95 1.000  p 0.356  (50/203)  52s
+[3] E01_10: skipped (too few target / control windows)
+[4] E01_11 E01: AUROC 0.850  null median 0.982 q95 1.000  p 0.733  (50/240)  66s
+[5] E01_12 E01: AUROC 0.984  null median 0.993 q95 1.000  p 0.584  (48/231)  79s
+[6] E01_13 E01: AUROC 1.000  null median 0.951 q95 1.000  p 0.208  (32/203)  93s
+[7] E01_14 E01: AUROC 0.792  null median 0.977 q95 1.000  p 0.871  (50/228)  107s
+[8] E01_15 E01: AUROC 0.812  null median 0.890 q95 1.000  p 0.554  (49/240)  118s
+[9] E01_16: skipped (too few target / control windows)
+[10] E01_17 E01: AUROC 0.960  null median 0.971 q95 1.000  p 0.554  (41/215)  131s
+[11] E01_2 E01: AUROC 0.834  null median 0.783 q95 1.000  p 0.436  (37/201)  145s
+[12] E01_3: skipped (too few target / control windows)
+[13] E01_4: skipped (too few target / control windows)
+[14] E01_5: skipped (too few target / control windows)
+[15] E01_6: skipped (too few target / control windows)
+[16] E01_7 E01: AUROC 0.916  null median 0.998 q95 1.000  p 0.921  (45/210)  158s
+[17] E01_8: skipped (too few target / control windows)
+[18] E01_9 E01: AUROC 0.732  null median 0.839 q95 1.000  p 0.733  (41/183)  173s
+[19] E02_1 E02: AUROC 0.819  null median 0.845 q95 1.000  p 0.535  (48/228)  186s
+[20] E02_10: skipped (too few target / control windows)
+[21] E02_11 E02: AUROC 1.000  null median 0.995 q95 1.000  p 0.376  (50/231)  199s
+[22] E02_12 E02: AUROC 0.637  null median 0.786 q95 0.993  p 0.802  (46/210)  214s
+[23] E02_13 E02: AUROC 0.977  null median 0.762 q95 1.000  p 0.168  (47/102)  229s
+[24] E02_14 E02: AUROC 0.762  null median 0.993 q95 1.000  p 0.909  (47/219)  235s
+[25] E02_15 E02: AUROC 0.522  null median 0.844 q95 1.000  p 0.970  (48/228)  250s
+[26] E02_16 E02: AUROC 0.516  null median 0.654 q95 1.000  p 0.752  (43/213)  264s
+[27] E02_17: skipped (too few target / control windows)
+[28] E02_9 E02: AUROC 0.801  null median 0.878 q95 1.000  p 0.644  (37/172)  279s
+[29] E03_0: skipped (too few target / control windows)
+[30] E03_1: skipped (too few target / control windows)
+[31] E03_10 E03: AUROC 1.000  null median 0.978 q95 1.000  p 0.347  (45/240)  290s
+[32] E03_11 E03: AUROC 0.657  null median 0.783 q95 1.000  p 0.653  (33/190)  302s
+[33] E03_12 E03: AUROC 0.860  null median 0.764 q95 1.000  p 0.327  (50/240)  317s
+[34] E03_13 E03: AUROC 1.000  null median 0.991 q95 1.000  p 0.416  (50/240)  329s
+[35] E03_14: skipped (too few target / control windows)
+[36] E03_15: skipped (too few target / control windows)
+[37] E03_16: skipped (too few target / control windows)
+[38] E03_17: skipped (too few target / control windows)
+[39] E03_2: skipped (too few target / control windows)
+[40] E03_3: skipped (too few target / control windows)
+[41] E03_4 E03: AUROC 0.854  null median 0.794 q95 1.000  p 0.356  (48/50)  343s
+[42] E03_5: skipped (too few target / control windows)
+[43] E03_6: skipped (too few target / control windows)
+[44] E03_7 E03: AUROC 1.000  null median 0.980 q95 1.000  p 0.337  (30/214)  360s
+[45] E03_8 E03: AUROC 0.587  null median 0.804 q95 0.996  p 0.861  (48/224)  383s
+[46] E03_9 E03: AUROC 0.808  null median 0.982 q95 1.000  p 0.921  (37/240)  399s
+[47] E04_0 E04: AUROC 1.000  null median 0.933 q95 1.000  p 0.327  (50/240)  413s
+[48] E04_1 E04: AUROC 1.000  null median 0.928 q95 1.000  p 0.158  (50/240)  438s
+[49] E04_10 E04: AUROC 0.894  null median 0.894 q95 1.000  p 0.505  (48/223)  555s
+[50] E04_11: skipped (too few target / control windows)
+[51] E04_12 E04: AUROC 0.676  null median 0.791 q95 1.000  p 0.693  (40/217)  570s
+[52] E04_13 E04: AUROC 0.681  null median 0.905 q95 1.000  p 0.891  (48/240)  577s
+[53] E04_14 E04: AUROC 0.951  null median 0.767 q95 1.000  p 0.228  (44/226)  585s
+[54] E04_15 E04: AUROC 0.746  null median 0.837 q95 1.000  p 0.683  (48/218)  592s
+[55] E04_16 E04: AUROC 0.976  null median 0.823 q95 1.000  p 0.238  (50/240)  598s
+[56] E04_17 E04: AUROC 0.990  null median 0.891 q95 1.000  p 0.188  (50/240)  606s
+[57] E04_2: skipped (too few target / control windows)
+[58] E04_3: skipped (too few target / control windows)
+[59] E04_4 E04: AUROC 0.276  null median 0.727 q95 1.000  p 0.990  (46/216)  625s
+[60] E04_5: skipped (too few target / control windows)
+[61] E04_6 E04: AUROC 1.000  null median 0.912 q95 1.000  p 0.188  (50/231)  637s
+[62] E04_7 E04: AUROC 0.874  null median 0.834 q95 1.000  p 0.386  (47/229)  647s
+[63] E04_8 E04: AUROC 0.949  null median 0.777 q95 1.000  p 0.277  (47/226)  653s
+[64] E04_9: skipped (too few target / control windows)
+[65] test_0 E01: AUROC 0.904  null median 0.842 q95 1.000  p 0.356  (50/170)  661s
+[66] test_1 E01: AUROC 0.397  null median 0.894 q95 1.000  p 0.980  (46/222)  672s
+[67] test_2 E02: AUROC 0.559  null median 0.997 q95 1.000  p 0.960  (47/179)  683s
+[68] test_3 E04: AUROC 0.946  null median 0.935 q95 1.000  p 0.485  (48/209)  696s
+[69] test_4 E03: AUROC 0.763  null median 1.000 q95 1.000  p 0.881  (49/232)  708s
+[70] test_5 E03: AUROC 1.000  null median 0.996 q95 1.000  p 0.406  (35/240)  716s
+[71] test_6 E04: AUROC 0.939  null median 0.729 q95 1.000  p 0.208  (46/95)  730s
+[72] test_7 E04: AUROC 0.997  null median 0.849 q95 1.000  p 0.168  (48/228)  745s
+
+c2st_near_all_lr: 0/47 guns p<0.05 (chance 2.4, binomial p 1); mean AUROC 0.834 vs null 0.841 (q95 0.879, p 0.612); direction agreement 0.005 vs null 0.009 (q95 0.033)
+NEAR_ALL_EXIT 0

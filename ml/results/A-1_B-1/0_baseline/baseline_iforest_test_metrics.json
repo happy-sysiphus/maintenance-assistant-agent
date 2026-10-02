@@ -1,0 +1,103 @@
+{
+  "bundle": "C:\\Users\\a0106\\Desktop\\U3\\models\\baseline_iforest.joblib",
+  "created": "2026-09-23T16:55:50",
+  "threshold": 0.5411336717241128,
+  "window": 60,
+  "sustain": 3,
+  "test": {
+    "n_windows": 80533,
+    "n_pre_failure": 482,
+    "n_normal": 78340,
+    "auroc": 0.6866870036326945,
+    "auprc": 0.013558004648308298,
+    "alarm_rate_normal": 0.0315675261679857,
+    "recall_pre_failure": 0.05394190871369295,
+    "alarm_rate_error_state": 0.010907003444316877,
+    "per_class": {
+      "E01": {
+        "auroc": 0.45184895125208946,
+        "recall_pre_failure": 0.0,
+        "alarm_rate_normal": 0.001640558848433531
+      },
+      "E02": {
+        "auroc": 0.7998753738783649,
+        "recall_pre_failure": 0.16666666666666666,
+        "alarm_rate_normal": 0.11006979062811566
+      },
+      "E03": {
+        "auroc": 0.8866017826385056,
+        "recall_pre_failure": 0.016666666666666666,
+        "alarm_rate_normal": 0.00010333247222939809
+      },
+      "E04": {
+        "auroc": 0.677653101754395,
+        "recall_pre_failure": 0.07734806629834254,
+        "alarm_rate_normal": 0.04444592301806447
+      }
+    },
+    "per_file": {
+      "test_0": {
+        "final_alarm_run_starts_h_before_failure": NaN,
+        "false_alarm_runs_per_day": 0.0,
+        "alarm_rate_normal": 0.0031535082779592296
+      },
+      "test_1": {
+        "final_alarm_run_starts_h_before_failure": NaN,
+        "false_alarm_runs_per_day": 0.0,
+        "alarm_rate_normal": 0.0002994908655286014
+      },
+      "test_2": {
+        "final_alarm_run_starts_h_before_failure": NaN,
+        "false_alarm_runs_per_day": 8.324597644447184,
+        "alarm_rate_normal": 0.11006979062811566
+      },
+      "test_3": {
+        "final_alarm_run_starts_h_before_failure": 0.026944444444444444,
+        "false_alarm_runs_per_day": 7.159526475332279,
+        "alarm_rate_normal": 0.13151859607139296
+      },
+      "test_4": {
+        "final_alarm_run_starts_h_before_failure": NaN,
+        "false_alarm_runs_per_day": 0.0,
+        "alarm_rate_normal": 0.00010566356720202873
+      },
+      "test_5": {
+        "final_alarm_run_starts_h_before_failure": NaN,
+        "false_alarm_runs_per_day": 0.0,
+        "alarm_rate_normal": 0.00010110201193003741
+      },
+      "test_6": {
+        "final_alarm_run_starts_h_before_failure": NaN,
+        "false_alarm_runs_per_day": 0.1664916320612011,
+        "alarm_rate_normal": 0.0013958125623130609
+      },
+      "test_7": {
+        "final_alarm_run_starts_h_before_failure": NaN,
+        "false_alarm_runs_per_day": 0.16649131123469493,
+        "alarm_rate_normal": 0.0003
+      }
+    },
+    "files": [
+      "test_0.parquet",
+      "test_1.parquet",
+      "test_2.parquet",
+      "test_3.parquet",
+      "test_4.parquet",
+      "test_5.parquet",
+      "test_6.parquet",
+      "test_7.parquet"
+    ],
+    "file_class": {
+      "test_0": "E01",
+      "test_1": "E01",
+      "test_2": "E02",
+      "test_3": "E04",
+      "test_4": "E03",
+      "test_5": "E03",
+      "test_6": "E04",
+      "test_7": "E04"
+    },
+    "class_source": "inferred by preprocess.py from the terminal code in the last 10 min"
+  },
+  "evaluated": "2026-09-23T18:11:07"
+}

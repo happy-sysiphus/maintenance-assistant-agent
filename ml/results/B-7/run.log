@@ -1,0 +1,13 @@
+loaded window=60s: train 486,365 / val 139,270 / test 80,533 windows, 48 features
+== p5_base_iforest           46 feats | cv AUROC 0.631+-0.038 per-gun 0.665+-0.040 recall 0.024 alarm 0.014 op 0/64 | test AUROC 0.639+-0.022 per-gun 0.624 recall 0.031
+== p5_phys_iforest           71 feats | cv AUROC 0.625+-0.029 per-gun 0.646+-0.031 recall 0.028 alarm 0.013 op 0/64 | test AUROC 0.655+-0.011 per-gun 0.659 recall 0.019
+== p5_physonly_iforest       25 feats | cv AUROC 0.575+-0.043 per-gun 0.574+-0.041 recall 0.010 alarm 0.008 op 0/64 | test AUROC 0.625+-0.004 per-gun 0.658 recall 0.001
+== p5_base_lgbm              46 feats | cv AUROC 0.709+-0.055 per-gun 0.742+-0.047 recall 0.142 alarm 0.010 op 0/64 | test AUROC 0.640+-0.028 per-gun 0.659 recall 0.178
+== p5_phys_lgbm              71 feats | cv AUROC 0.685+-0.059 per-gun 0.716+-0.054 recall 0.124 alarm 0.011 op 0/64 | test AUROC 0.603+-0.012 per-gun 0.619 recall 0.166
+== p5_physonly_lgbm          25 feats | cv AUROC 0.537+-0.054 per-gun 0.519+-0.034 recall 0.000 alarm 0.004 op 0/64 | test AUROC 0.536+-0.056 per-gun 0.545 recall 0.010
+p5_base_iforest         46 | cv AUROC 0.631+-0.038 pre-rule 0.586+-0.040 per-gun 0.665 alarm 0.014 | test AUROC 0.639 pre-rule 0.611 per-gun 0.624
+p5_base_lgbm            46 | cv AUROC 0.709+-0.055 pre-rule 0.658+-0.066 per-gun 0.742 alarm 0.010 | test AUROC 0.640 pre-rule 0.572 per-gun 0.659
+p5_phys_iforest         71 | cv AUROC 0.625+-0.029 pre-rule 0.592+-0.028 per-gun 0.646 alarm 0.013 | test AUROC 0.655 pre-rule 0.636 per-gun 0.659
+p5_phys_lgbm            71 | cv AUROC 0.685+-0.059 pre-rule 0.630+-0.070 per-gun 0.716 alarm 0.011 | test AUROC 0.603 pre-rule 0.530 per-gun 0.619
+p5_physonly_iforest     25 | cv AUROC 0.575+-0.043 pre-rule 0.571+-0.046 per-gun 0.574 alarm 0.008 | test AUROC 0.625 pre-rule 0.616 per-gun 0.658
+p5_physonly_lgbm        25 | cv AUROC 0.537+-0.054 pre-rule 0.532+-0.060 per-gun 0.519 alarm 0.004 | test AUROC 0.536 pre-rule 0.516 per-gun 0.545

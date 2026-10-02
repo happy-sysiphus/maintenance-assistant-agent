@@ -1,0 +1,2 @@
+file,model,online,offline_evaluate,offline_same_population,windows_online,windows_offline,alarms_online,alarms_offline,rule,repeats,critical_events,sustained,drift,seconds,diff_pp
+test_5,baseline_ensemble,0.0020130850528434826,0.0020220402386007482,0.0020130850528434826,9963,9963,43,43,2,0,3,3,,308,-0.0008955185757265633

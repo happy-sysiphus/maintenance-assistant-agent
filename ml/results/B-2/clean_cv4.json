@@ -1,0 +1,197 @@
+{
+ "name": "clean_cv4",
+ "note": "gun-level 4-fold of base60 over all 64 training guns; test = the 8 test guns scored by each fold model",
+ "k": 4,
+ "val_folds": {
+  "mean": {
+   "auroc": 0.6413142710591442,
+   "auprc": 0.012449615614648312,
+   "recall_pre_failure": 0.03144597105052345,
+   "alarm_rate_normal": 0.01496997190614207
+  },
+  "sd": {
+   "auroc": 0.04029823182719696,
+   "auprc": 0.0023116719264931287,
+   "recall_pre_failure": 0.008070531655643332,
+   "alarm_rate_normal": 0.007377332235446609
+  },
+  "per_class_auroc_mean": {
+   "E01": 0.7155681130613556,
+   "E02": 0.6638622083403753,
+   "E03": 0.6465911816129765,
+   "E04": 0.5863548506948371
+  },
+  "files_with_final_run": 3,
+  "files_both_ok": 0,
+  "files": 64
+ },
+ "test_over_folds": {
+  "mean": {
+   "auroc": 0.626049988697558,
+   "auprc": 0.010972521796800193,
+   "recall_pre_failure": 0.03734439834024897,
+   "alarm_rate_normal": 0.005750574419198366
+  },
+  "sd": {
+   "auroc": 0.023182959140354897,
+   "auprc": 0.0020197187101428276,
+   "recall_pre_failure": 0.005681769268725789,
+   "alarm_rate_normal": 0.0018856721903738767
+  },
+  "per_class_auroc_mean": {
+   "E01": 0.38462003854741206,
+   "E02": 0.8438700564971752,
+   "E03": 0.757412540343484,
+   "E04": 0.576261896722817
+  },
+  "files_with_final_run": 1,
+  "files_both_ok": 0,
+  "files": 32
+ },
+ "folds": [
+  {
+   "val_files": [
+    "E01_0",
+    "E01_10",
+    "E01_2",
+    "E01_5",
+    "E01_8",
+    "E02_1",
+    "E02_15",
+    "E02_16",
+    "E03_1",
+    "E03_11",
+    "E03_15",
+    "E03_2",
+    "E03_9",
+    "E04_0",
+    "E04_17",
+    "E04_2",
+    "E04_6",
+    "E04_8"
+   ],
+   "auroc": 0.6953280371300672,
+   "auprc": 0.016358876077977987,
+   "recall_pre_failure": 0.027497708524289642,
+   "alarm_rate_normal": 0.007832072999747168,
+   "operating_point": {
+    "lead_min_target": 30.0,
+    "false_runs_per_day_target": 1.0,
+    "files": 18,
+    "files_lead_ok": 0,
+    "files_false_runs_ok": 18,
+    "files_both_ok": 0,
+    "files_with_final_run": 1,
+    "files_with_final_run_with_rule": 5,
+    "final_lead_min_median": 7.1,
+    "final_lead_min_median_with_rule": 9.85
+   }
+  },
+  {
+   "val_files": [
+    "E01_12",
+    "E01_16",
+    "E01_17",
+    "E01_6",
+    "E01_9",
+    "E02_10",
+    "E02_11",
+    "E02_9",
+    "E03_10",
+    "E03_12",
+    "E03_17",
+    "E03_4",
+    "E03_7",
+    "E04_10",
+    "E04_13",
+    "E04_15",
+    "E04_16",
+    "E04_3"
+   ],
+   "auroc": 0.5889558211641444,
+   "auprc": 0.010597184567118213,
+   "recall_pre_failure": 0.031569173630454965,
+   "alarm_rate_normal": 0.01585132710148837,
+   "operating_point": {
+    "lead_min_target": 30.0,
+    "false_runs_per_day_target": 1.0,
+    "files": 18,
+    "files_lead_ok": 0,
+    "files_false_runs_ok": 16,
+    "files_both_ok": 0,
+    "files_with_final_run": 1,
+    "files_with_final_run_with_rule": 8,
+    "final_lead_min_median": 8.683333333333334,
+    "final_lead_min_median_with_rule": 9.708333333333332
+   }
+  },
+  {
+   "val_files": [
+    "E01_13",
+    "E01_15",
+    "E01_4",
+    "E01_7",
+    "E02_12",
+    "E02_17",
+    "E03_0",
+    "E03_14",
+    "E03_16",
+    "E03_8",
+    "E04_1",
+    "E04_11",
+    "E04_12",
+    "E04_14"
+   ],
+   "auroc": 0.6609258609661713,
+   "auprc": 0.01194379855508355,
+   "recall_pre_failure": 0.022458628841607566,
+   "alarm_rate_normal": 0.00954249814055799,
+   "operating_point": {
+    "lead_min_target": 30.0,
+    "false_runs_per_day_target": 1.0,
+    "files": 14,
+    "files_lead_ok": 0,
+    "files_false_runs_ok": 12,
+    "files_both_ok": 0,
+    "files_with_final_run": 0,
+    "files_with_final_run_with_rule": 5,
+    "final_lead_min_median": NaN,
+    "final_lead_min_median_with_rule": 9.4
+   }
+  },
+  {
+   "val_files": [
+    "E01_1",
+    "E01_11",
+    "E01_14",
+    "E01_3",
+    "E02_13",
+    "E02_14",
+    "E03_13",
+    "E03_3",
+    "E03_5",
+    "E03_6",
+    "E04_4",
+    "E04_5",
+    "E04_7",
+    "E04_9"
+   ],
+   "auroc": 0.6200473649761938,
+   "auprc": 0.010898603258413499,
+   "recall_pre_failure": 0.04425837320574163,
+   "alarm_rate_normal": 0.026653989382774742,
+   "operating_point": {
+    "lead_min_target": 30.0,
+    "false_runs_per_day_target": 1.0,
+    "files": 14,
+    "files_lead_ok": 0,
+    "files_false_runs_ok": 12,
+    "files_both_ok": 0,
+    "files_with_final_run": 1,
+    "files_with_final_run_with_rule": 4,
+    "final_lead_min_median": 9.75,
+    "final_lead_min_median_with_rule": 9.683333333333334
+   }
+  }
+ ]
+}

@@ -1,0 +1,596 @@
+{
+  "model_type": "iforest",
+  "feature_cols": [
+    "welds_delta",
+    "pos_delta",
+    "welds_10min",
+    "weld_duty_10min",
+    "error_share_10min",
+    "c1",
+    "c2",
+    "c3",
+    "c4",
+    "c5",
+    "c6",
+    "c7",
+    "c8",
+    "c9",
+    "c13",
+    "c14",
+    "c15",
+    "c16",
+    "c17",
+    "c18",
+    "c19",
+    "c10",
+    "hour_sin",
+    "hour_cos"
+  ],
+  "model_cols": [
+    "welds_delta_mean",
+    "pos_delta_mean",
+    "welds_10min_mean",
+    "weld_duty_10min_mean",
+    "error_share_10min_mean",
+    "c1_mean",
+    "c2_mean",
+    "c3_mean",
+    "c4_mean",
+    "c5_mean",
+    "c6_mean",
+    "c7_mean",
+    "c8_mean",
+    "c9_mean",
+    "c13_mean",
+    "c14_mean",
+    "c15_mean",
+    "c16_mean",
+    "c17_mean",
+    "c18_mean",
+    "c19_mean",
+    "c10_mean",
+    "hour_sin_mean",
+    "hour_cos_mean",
+    "welds_delta_std",
+    "pos_delta_std",
+    "welds_10min_std",
+    "weld_duty_10min_std",
+    "error_share_10min_std",
+    "c1_std",
+    "c2_std",
+    "c3_std",
+    "c4_std",
+    "c5_std",
+    "c6_std",
+    "c7_std",
+    "c8_std",
+    "c9_std",
+    "c13_std",
+    "c14_std",
+    "c15_std",
+    "c16_std",
+    "c17_std",
+    "c18_std",
+    "c19_std",
+    "c10_std",
+    "hour_sin_std",
+    "hour_cos_std"
+  ],
+  "window": 60,
+  "threshold": 0.5411336717241128,
+  "threshold_q": 0.99,
+  "sustain": 3,
+  "feature_reference": [
+    -0.005976585671305656,
+    -0.005542093887925148,
+    -0.043662942945957184,
+    0.28155556321144104,
+    0.0,
+    -0.1426534354686737,
+    -0.29205915331840515,
+    -0.040543098002672195,
+    -0.3339295983314514,
+    -0.07588384300470352,
+    0.06615328043699265,
+    -0.4172850549221039,
+    -0.39415785670280457,
+    -0.05926116928458214,
+    0.2886568605899811,
+    -0.18694859743118286,
+    -0.037041399627923965,
+    -0.012422642670571804,
+    0.0,
+    -0.3747037947177887,
+    -0.24510557949543,
+    1.0,
+    0.03925981745123863,
+    -0.03925981745123863,
+    0.0,
+    0.0,
+    0.0,
+    0.0011631132801994681,
+    0.0,
+    0.0,
+    0.0031820954754948616,
+    0.0007639334653504193,
+    0.0,
+    0.0051728589460253716,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.00029092823388054967,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "feature_scale": [
+    0.20144326984882355,
+    0.21285973489284515,
+    1.109897494316101,
+    0.3675072491168976,
+    0.02475690469145775,
+    0.9528324007987976,
+    0.513219952583313,
+    0.8333061337471008,
+    0.45286667346954346,
+    0.7128963470458984,
+    1.1044604778289795,
+    1.0922236442565918,
+    1.02286958694458,
+    1.0849226713180542,
+    0.49727025628089905,
+    0.92180997133255,
+    0.8874402642250061,
+    0.8956847190856934,
+    0.0,
+    0.4931431710720062,
+    0.702407956123352,
+    0.41085419058799744,
+    0.7062970399856567,
+    0.7074182629585266,
+    1.065869688987732,
+    1.120774269104004,
+    0.06888578087091446,
+    0.006447776686400175,
+    0.0013026525266468525,
+    0.029174935072660446,
+    0.6523646116256714,
+    0.472415030002594,
+    0.6767528653144836,
+    0.5241761207580566,
+    0.022188933566212654,
+    0.0011153946397826076,
+    0.0013148377183824778,
+    0.008675369434058666,
+    0.6600752472877502,
+    0.27299773693084717,
+    0.43776705861091614,
+    0.3180401027202606,
+    0.0,
+    0.6555517315864563,
+    9.711630991660058e-05,
+    0.04368118196725845,
+    0.0,
+    0.0
+  ],
+  "scaler": {
+    "scale": "global",
+    "columns": [
+      "c1",
+      "c2",
+      "c3",
+      "c4",
+      "c5",
+      "c6",
+      "c7",
+      "c8",
+      "c9",
+      "c13",
+      "c14",
+      "c15",
+      "c16",
+      "c17",
+      "c18",
+      "c19",
+      "welds_delta",
+      "welds_10min",
+      "pos_delta"
+    ],
+    "params": {
+      "c1": {
+        "mean": 1.9052992916303078,
+        "std": 1.4391469817562654
+      },
+      "c2": {
+        "mean": 383.34050543715006,
+        "std": 998.9659954479914
+      },
+      "c3": {
+        "mean": 102.72165811682494,
+        "std": 64.66349096896026
+      },
+      "c4": {
+        "mean": 0.10032214630119661,
+        "std": 0.3004290486333136
+      },
+      "c5": {
+        "mean": 412.73299685348326,
+        "std": 1446.2851665640565
+      },
+      "c6": {
+        "mean": -48.795792912279126,
+        "std": 117.84437771741717
+      },
+      "c7": {
+        "mean": 177.1185810231014,
+        "std": 47.658227628559565
+      },
+      "c8": {
+        "mean": 5449.619956373778,
+        "std": 947.8946638878149
+      },
+      "c9": {
+        "mean": 233.27196125416015,
+        "std": 156.459231568888
+      },
+      "c13": {
+        "mean": 14.353109693538356,
+        "std": 2.2100468871157317
+      },
+      "c14": {
+        "mean": 2938.5812006564024,
+        "std": 741.2801272786784
+      },
+      "c15": {
+        "mean": 118.03825294232217,
+        "std": 55.02637040060574
+      },
+      "c16": {
+        "mean": 2.5208938634150013,
+        "std": 0.7427663992513958
+      },
+      "c17": {
+        "mean": 1.0,
+        "std": 1.0
+      },
+      "c18": {
+        "mean": 0.12311695338786835,
+        "std": 0.32857140651060585
+      },
+      "c19": {
+        "mean": 1073044166.1702577,
+        "std": 120566558.34872633
+      },
+      "welds_delta": {
+        "mean": 3.0890620094379875,
+        "std": 516.8606684355475
+      },
+      "welds_10min": {
+        "mean": 1786.4702214035237,
+        "std": 40754.70164804799
+      },
+      "pos_delta": {
+        "mean": 498.43568762361537,
+        "std": 89936.35371587244
+      }
+    },
+    "n_fit_rows": 35838996
+  },
+  "preprocess_config": {
+    "split": "train",
+    "input_dir": "C:\\Users\\a0106\\Desktop\\U3\\train",
+    "out_dir": "C:\\Users\\a0106\\Desktop\\U3\\preprocessed",
+    "train_out_dir": "C:\\Users\\a0106\\Desktop\\U3\\preprocessed",
+    "pattern": "*.csv",
+    "max_files": null,
+    "max_missing_rate": 0.4,
+    "gap_fill_limit": 60,
+    "outlier_hi": 5.0,
+    "outlier_lo": 0.0,
+    "pre_failure_window": 3600,
+    "resample": null,
+    "scale": "global",
+    "drop_static": false,
+    "format": "parquet"
+  },
+  "train_files": [
+    "E01_0.parquet",
+    "E01_1.parquet",
+    "E01_10.parquet",
+    "E01_11.parquet",
+    "E01_12.parquet",
+    "E01_13.parquet",
+    "E01_15.parquet",
+    "E01_16.parquet",
+    "E01_17.parquet",
+    "E01_2.parquet",
+    "E01_3.parquet",
+    "E01_5.parquet",
+    "E01_6.parquet",
+    "E01_7.parquet",
+    "E02_10.parquet",
+    "E02_11.parquet",
+    "E02_12.parquet",
+    "E02_13.parquet",
+    "E02_14.parquet",
+    "E02_15.parquet",
+    "E02_16.parquet",
+    "E02_17.parquet",
+    "E03_0.parquet",
+    "E03_1.parquet",
+    "E03_11.parquet",
+    "E03_12.parquet",
+    "E03_13.parquet",
+    "E03_15.parquet",
+    "E03_16.parquet",
+    "E03_17.parquet",
+    "E03_4.parquet",
+    "E03_5.parquet",
+    "E03_6.parquet",
+    "E03_7.parquet",
+    "E03_8.parquet",
+    "E03_9.parquet",
+    "E04_0.parquet",
+    "E04_1.parquet",
+    "E04_10.parquet",
+    "E04_11.parquet",
+    "E04_13.parquet",
+    "E04_14.parquet",
+    "E04_16.parquet",
+    "E04_17.parquet",
+    "E04_2.parquet",
+    "E04_3.parquet",
+    "E04_5.parquet",
+    "E04_6.parquet",
+    "E04_7.parquet",
+    "E04_9.parquet"
+  ],
+  "val_files": [
+    "E01_14.parquet",
+    "E01_4.parquet",
+    "E01_8.parquet",
+    "E01_9.parquet",
+    "E02_1.parquet",
+    "E02_9.parquet",
+    "E03_10.parquet",
+    "E03_14.parquet",
+    "E03_2.parquet",
+    "E03_3.parquet",
+    "E04_12.parquet",
+    "E04_15.parquet",
+    "E04_4.parquet",
+    "E04_8.parquet"
+  ],
+  "metrics": {
+    "train": {
+      "n_fit_windows": 464395,
+      "threshold": 0.5411336717241128,
+      "score_mean": 0.4147819609135517,
+      "score_std": 0.04256824925123682
+    },
+    "val": {
+      "n_windows": 139270,
+      "n_pre_failure": 821,
+      "n_normal": 132747,
+      "auroc": 0.6300412102482604,
+      "auprc": 0.012300649502381024,
+      "alarm_rate_normal": 0.014358139920299518,
+      "recall_pre_failure": 0.0438489646772229,
+      "alarm_rate_error_state": 0.005772495755517827,
+      "per_class": {
+        "E01": {
+          "auroc": 0.6750687274739127,
+          "recall_pre_failure": 0.01639344262295082,
+          "alarm_rate_normal": 0.008142507048934097
+        },
+        "E02": {
+          "auroc": 0.8214385440947941,
+          "recall_pre_failure": 0.2777777777777778,
+          "alarm_rate_normal": 0.042757941932309036
+        },
+        "E03": {
+          "auroc": 0.6299241278483565,
+          "recall_pre_failure": 0.0,
+          "alarm_rate_normal": 0.01754251765725796
+        },
+        "E04": {
+          "auroc": 0.5748527267974203,
+          "recall_pre_failure": 0.008298755186721992,
+          "alarm_rate_normal": 0.0034057388039688925
+        }
+      },
+      "per_file": {
+        "E01_14": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.0
+        },
+        "E01_4": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.49948067113861166,
+          "alarm_rate_normal": 0.02990897269180754
+        },
+        "E01_8": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.0006601386291121135
+        },
+        "E01_9": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.0004527960153950645
+        },
+        "E02_1": {
+          "final_alarm_run_starts_h_before_failure": 0.15138888888888888,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.0008644910309055544
+        },
+        "E02_9": {
+          "final_alarm_run_starts_h_before_failure": 0.16277777777777777,
+          "false_alarm_runs_per_day": 7.825393215988408,
+          "alarm_rate_normal": 0.08566685113447703
+        },
+        "E03_10": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.16649099040942525,
+          "alarm_rate_normal": 0.06616465863453816
+        },
+        "E03_14": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.0011899610558199914
+        },
+        "E03_2": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.0
+        },
+        "E03_3": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.16648457416367515,
+          "alarm_rate_normal": 0.0017998200179982
+        },
+        "E04_12": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.0011411617026132602
+        },
+        "E04_15": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.00023312740412635504
+        },
+        "E04_4": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.009994003597841295
+        },
+        "E04_8": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.0015087507543753772
+        }
+      }
+    },
+    "test": {
+      "n_windows": 80533,
+      "n_pre_failure": 482,
+      "n_normal": 78340,
+      "auroc": 0.6866870036326945,
+      "auprc": 0.013558004648308298,
+      "alarm_rate_normal": 0.0315675261679857,
+      "recall_pre_failure": 0.05394190871369295,
+      "alarm_rate_error_state": 0.010907003444316877,
+      "per_class": {
+        "E01": {
+          "auroc": 0.45184895125208946,
+          "recall_pre_failure": 0.0,
+          "alarm_rate_normal": 0.001640558848433531
+        },
+        "E02": {
+          "auroc": 0.7998753738783649,
+          "recall_pre_failure": 0.16666666666666666,
+          "alarm_rate_normal": 0.11006979062811566
+        },
+        "E03": {
+          "auroc": 0.8866017826385056,
+          "recall_pre_failure": 0.016666666666666666,
+          "alarm_rate_normal": 0.00010333247222939809
+        },
+        "E04": {
+          "auroc": 0.677653101754395,
+          "recall_pre_failure": 0.07734806629834254,
+          "alarm_rate_normal": 0.04444592301806447
+        }
+      },
+      "per_file": {
+        "test_0": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.0031535082779592296
+        },
+        "test_1": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.0002994908655286014
+        },
+        "test_2": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 8.324597644447184,
+          "alarm_rate_normal": 0.11006979062811566
+        },
+        "test_3": {
+          "final_alarm_run_starts_h_before_failure": 0.026944444444444444,
+          "false_alarm_runs_per_day": 7.159526475332279,
+          "alarm_rate_normal": 0.13151859607139296
+        },
+        "test_4": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.00010566356720202873
+        },
+        "test_5": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.0,
+          "alarm_rate_normal": 0.00010110201193003741
+        },
+        "test_6": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.1664916320612011,
+          "alarm_rate_normal": 0.0013958125623130609
+        },
+        "test_7": {
+          "final_alarm_run_starts_h_before_failure": NaN,
+          "false_alarm_runs_per_day": 0.16649131123469493,
+          "alarm_rate_normal": 0.0003
+        }
+      },
+      "files": [
+        "test_0.parquet",
+        "test_1.parquet",
+        "test_2.parquet",
+        "test_3.parquet",
+        "test_4.parquet",
+        "test_5.parquet",
+        "test_6.parquet",
+        "test_7.parquet"
+      ],
+      "file_class": {
+        "test_0": "E01",
+        "test_1": "E01",
+        "test_2": "E02",
+        "test_3": "E04",
+        "test_4": "E03",
+        "test_5": "E03",
+        "test_6": "E04",
+        "test_7": "E04"
+      },
+      "class_source": "inferred by preprocess.py from the terminal code in the last 10 min"
+    }
+  },
+  "args": {
+    "data_dir": "C:\\Users\\a0106\\Desktop\\U3\\preprocessed",
+    "test_dir": null,
+    "no_test": false,
+    "evaluate": false,
+    "model_dir": "C:\\Users\\a0106\\Desktop\\U3\\models",
+    "model": "iforest",
+    "window": 60,
+    "val_frac": 0.25,
+    "threshold_q": 0.99,
+    "sustain": 3,
+    "exclude_non_welding": false,
+    "max_train_windows": null,
+    "max_files": null,
+    "seed": 42,
+    "score": null
+  },
+  "created": "2026-09-23T16:55:50"
+}

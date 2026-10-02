@@ -1,0 +1,38 @@
+{
+  "event_id": "b35a4d6dfb114750ab025d69512eae4f",
+  "status": "ok",
+  "generator": "mock",
+  "report": {
+    "detected_anomaly": "test_3 2021-09-03T09:33:35 - 전극 힘 설정값(c14) 평소보다 낮음, 전극 위치 설정값(c15) 평소보다 낮음; 고장 유형 E02(전극 파손) 의심, 에러 코드 E016. (트리거: rule)",
+    "suspected_device": "[mock] 온톨로지가 situation_ids로 채울 항목",
+    "cause_candidates": [
+      {
+        "situation_id": "S02",
+        "name": "[mock] 온톨로지가 situation_ids로 채울 항목"
+      },
+      {
+        "situation_id": "S08",
+        "name": "[mock] 온톨로지가 situation_ids로 채울 항목"
+      },
+      {
+        "situation_id": "S03",
+        "name": "[mock] 온톨로지가 situation_ids로 채울 항목"
+      }
+    ],
+    "manual_references": [],
+    "additional_checks": [
+      "동작 중 전극 위치·열림 폭 이탈",
+      "설정값 변화"
+    ],
+    "recommended_actions": [
+      "[mock] 온톨로지가 situation_ids로 채울 항목"
+    ],
+    "confidence_and_limits": [
+      "고장 유형 근거: rule_trigger",
+      "증상 규칙은 매뉴얼 기반이며 데이터로 학습된 관계가 아님 - 원인 확정이 아니라 조회 후보",
+      "모델 단독 성능이 약함(테스트 AUROC 0.64, 고장 1시간 전 지속 알람 0/8건) - 고장 유형 근거는 주로 종료 코드 규칙",
+      "종료 코드 규칙은 다른 클래스 건에서도 뜬 적 있음(주로 E029, 테스트 오트리거 0.25회/일/건)",
+      "센서 방향(높음/낮음)은 이 gun의 워밍업 평균 대비 z-score 기준"
+    ]
+  }
+}

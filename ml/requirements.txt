@@ -1,0 +1,17 @@
+# Python 3.11+, CPU only. Versions = the ones the pipeline was developed and verified with.
+numpy>=2.3
+pandas>=2.3
+pyarrow>=20
+scikit-learn>=1.7
+joblib>=1.5
+lightgbm>=4.6            # --model ensemble (P5); experiments.py / paper_task.py
+matplotlib>=3.10          # eda.py only
+fastapi>=0.121
+pydantic>=2.13
+uvicorn[standard]>=0.38
+httpx>=0.28               # RAG handoff push (RSW_RAG_URL); also fastapi TestClient
+# optional, not installed by default: torch (experiments.py lstm_ae60), darts (Benchmark*.py, the paper's code)
+# dev / test
+pytest>=9
+ruff
+black
