@@ -2,3 +2,33 @@
 CLAUDE.md
 docs/02-conversation-history.md
 mock/
+
+# Vite 기본 항목
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# 환경 변수 — 실제 값은 커밋하지 않고 .env.example만 올린다
+.env
+.env.*
+!.env.example
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
