@@ -1,0 +1,40 @@
+{
+  "cases": [
+    {
+      "case_id": "CASE-0001",
+      "status": "new",
+      "severity": "critical",
+      "assignee": null,
+      "event": {
+        "event_id": "example-test_0-E012",
+        "gun_id": "test_0",
+        "detected_at": "2021-09-11T02:46:08",
+        "trigger": {
+          "source": "rule",
+          "rule_code": "E012",
+          "rule_trigger_time": "2021-09-11T02:46:08"
+        },
+        "fault_class": { "code": "E01", "name_ko": "보정 압력 도달 지연" },
+        "summary_ko": null
+      }
+    },
+    {
+      "case_id": "CASE-0002",
+      "status": "in_progress",
+      "severity": "critical",
+      "assignee": null,
+      "event": {
+        "event_id": "0d711c472d8d500337556b05133273c2",
+        "gun_id": "test_3",
+        "detected_at": "2021-09-03T09:30:59",
+        "trigger": {
+          "source": "model+rule",
+          "rule_code": "E016",
+          "rule_trigger_time": "2021-09-03T09:23:36"
+        },
+        "fault_class": { "code": "E02", "name_ko": "전극 파손" },
+        "summary_ko": "US2 작동 허용 신호(c10) 평소보다 흔들림; 고장 유형 E02(전극 파손) 의심, 에러 코드 E016."
+      }
+    }
+  ]
+}
