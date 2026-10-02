@@ -1,0 +1,20 @@
+.env
+.env.*
+!.env.example
+var/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+
+# Required source assets, even when the team repository ignores data/.
+!data/
+data/*
+!data/festo_manual.pdf
+!data/rsw_situations.pdf
+!data/situation_mapping.json
