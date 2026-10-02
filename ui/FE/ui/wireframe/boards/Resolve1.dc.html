@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>원인 찾기·조치 — 1안 단계가 차례로 열림</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.side{width:240px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;gap:4px;padding:24px 16px;box-sizing:border-box;border-right:1px solid #EEF0F4}
+.brand{font-weight:800;font-size:20px;padding:0 12px 20px;color:#202224}
+.brand b{color:#3563E9}
+.nav{display:flex;align-items:center;gap:12px;padding:0 12px;min-height:44px;border-radius:10px;color:#202224;text-decoration:none;font-weight:600;font-size:14px}
+.nav.on{background:#3563E9;color:#fff}
+.top{height:72px;flex-shrink:0;background:#fff;display:flex;align-items:center;gap:16px;padding:0 32px;box-sizing:border-box;border-bottom:1px solid #EEF0F4}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:20px;box-sizing:border-box}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.p-out{background:#fff;border:1px solid #B9C3D6;color:#202224}
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:0 16px;min-height:44px;border:1px solid #D5DAE3;background:#fff;color:#202224;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;box-sizing:border-box}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff}
+.btn-ghost{border-color:transparent;background:transparent;color:#2446B8}
+.muted{color:#5E6A85}
+.lbl{display:block;font-size:12px;font-weight:700;color:#5E6A85;margin-bottom:5px}
+.in{font:inherit;font-size:14px;border:1px solid #D5DAE3;border-radius:10px;padding:9px 12px;background:#F9FAFC;color:#202224;min-height:42px;box-sizing:border-box;width:100%}
+.h2{margin:0;font-size:16px;font-weight:800}
+.st{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#5E6A85;white-space:nowrap}
+.dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#EEF0F4;color:#475069;font-size:13px;font-weight:800}
+.st.on{color:#202224}.st.on .dot{background:#3563E9;color:#fff}
+.sep{flex-grow:1;height:2px;background:#E3E7EE;min-width:20px}
+.ref{display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;background:#E8EEFF;color:#2446B8;font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap}
+.kind{display:inline-flex;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:800;background:#EEF0F4;color:#475069}
+.seg{display:inline-flex;border:1px solid #D5DAE3;border-radius:10px;overflow:hidden;flex-shrink:0}
+.seg label{display:flex;align-items:center;justify-content:center;gap:5px;min-height:38px;padding:0 12px;font-size:13px;font-weight:700;border-left:1px solid #D5DAE3;white-space:nowrap}
+.seg label:first-child{border-left:none}
+.step{display:flex;flex-direction:column;gap:10px;padding:14px 0;border-top:1px solid #EEF0F4}
+.sh{display:flex;align-items:center;gap:8px}
+.sn{width:24px;height:24px;border-radius:50%;background:#202224;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sh b{font-size:15px}
+.chk{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 12px;align-items:center;font-size:13px;padding:6px 0}
+.todo{grid-column:1 / 4;background:#FFF7EC;border:1px solid #F3D3A8;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:4px}
+.cand-row{display:flex;align-items:center;gap:10px;padding:14px 18px;border:1px solid #E3E7EE;border-radius:14px;background:#fff;font-size:14px}
+.tl{display:flex;gap:10px;font-size:13px;line-height:1.45}
+.tl i{width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0;background:#3563E9}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;background:#F5F8FF;color:#16328A;font-size:12px;font-weight:700}
+.done{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #EEF0F4;font-size:13px}
+.done .ok{width:22px;height:22px;border-radius:50%;background:#00897B;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.done b{white-space:nowrap}
+.mini{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #E3E7EE;border-radius:12px;font-size:12px;line-height:1.45}
+.mini b{font-size:13px}
+.mini span{color:#5E6A85}
+.bar{border-radius:6px;padding:6px 8px;font-size:12px;font-weight:700}
+.bar.on{background:#E8EEFF;color:#16328A;min-height:22px}
+.bar.fold{background:#E0F5F1;color:#00684F;padding:3px 8px}
+.bar.lock{border:1px dashed #C9CFDA;color:#9AA3B5}
+.tab{padding:10px 12px;font-size:13px;font-weight:700;color:#5E6A85;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tab.on{color:#16328A;border-bottom-color:#3563E9}
+.opt{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border:1px solid #D5DAE3;border-radius:10px;font-size:13px;font-weight:700}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1140px; display: flex; background: #F5F6FA; overflow: hidden">
+<nav class="side" aria-label="주 메뉴">
+<div class="brand">RSW <b>정비 지원</b></div>
+<a class="nav on" href="Main.dc.html">작업함</a>
+<a class="nav" href="Equipment.dc.html">설비 상태</a>
+<a class="nav" href="History.dc.html">정비 이력</a>
+<a class="nav" href="Replay.dc.html">재생 콘솔</a>
+</nav>
+<div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0">
+<header class="top">
+<span class="pill p-org" style="font-size: 14px">비교안 1안 · 한 화면 · 단계가 차례로 열림</span>
+<div style="flex-grow: 1"></div>
+<span class="pill p-pur">재생 일시정지 · test_0</span>
+<span class="pill p-gry">데이터 시각 2021-09-11 02:56:08 UTC</span>
+</header>
+<main style="padding: 20px 32px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box">
+<div class="card" style="display: flex; flex-direction: column; gap: 12px; padding: 16px 24px">
+<div style="display: flex; align-items: center; gap: 10px">
+<a class="btn btn-ghost" href="Main.dc.html" style="padding: 0 8px">← 작업함</a>
+<h1 style="margin: 0; font-size: 22px; font-weight: 800">test_0 · 컨트롤러 코드 E012</h1>
+<span class="pill p-red">경보 critical</span><span class="pill p-blu">원인 찾는 중</span><span class="pill p-pur" title="LLM 판단 결과가 케이스를 연 트리거">LLM 판단으로 생성</span>
+<div style="flex-grow: 1"></div>
+<span class="muted" style="font-size: 13px">CASE-[id] · 담당 [이름]</span>
+</div>
+<nav aria-label="진행 단계" style="display: flex; align-items: center; gap: 10px">
+<span class="st on"><span class="dot">1</span>원인 찾기 · 조치</span><span class="sep"></span>
+<a class="st" href="Logbook.dc.html" style="text-decoration: none"><span class="dot">2</span>정비일지 · 종료</a>
+</nav>
+</div>
+<section class="card" style="display: grid; grid-template-columns: 260px minmax(0, 1fr) 300px; gap: 20px; align-items: center; padding: 14px 20px" aria-label="무슨 일이 났나">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span class="lbl" style="margin: 0">무슨 일이 났나</span>
+<div style="display: flex; align-items: baseline; gap: 8px"><b style="font-size: 24px; color: #B42318; font-family: ui-monospace, Menlo, monospace">E012</b><span class="muted" style="font-size: 13px">02:46:08 UTC · 16초</span></div>
+<span style="font-size: 13px">추정 유형 E01 보정 압력 시간 초과 <span class="pill p-org">추정 ※</span></span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<svg viewBox="0 0 600 70" style="width: 100%; height: 70px" role="img" aria-label="c5 밸런스 압력이 고장 직전 내려가다 E012 시점에 끊기는 모습 (예시)">
+<rect x="0" y="0" width="600" height="70" rx="8" fill="#FBFCFE"></rect>
+<rect x="150" y="6" width="40" height="58" fill="#D5DAE3" opacity="0.6"></rect>
+<polyline fill="none" stroke="#00897B" stroke-width="2" points="8,30 40,28 80,32 120,29 148,31"></polyline>
+<polyline fill="none" stroke="#00897B" stroke-width="2" points="192,31 240,30 300,33 360,35 420,38 480,42 530,48 548,54"></polyline>
+<line x1="550" y1="4" x2="550" y2="66" stroke="#B42318" stroke-width="2"></line>
+<text x="498" y="14" font-size="10" font-weight="700" fill="#B42318">E012</text>
+<text x="10" y="64" font-size="10" fill="#5E6A85">−2h · c5 밸런스 압력 (선 모양은 예시)</text>
+</svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="lbl" style="margin: 0">평소와 가장 달랐던 신호</span>
+<div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="chip">c5 밸런스 압력 · 평균</span><span class="chip">c2 전극 힘 · 변동</span><span class="chip">c6 마찰 · 변동</span></div>
+
+</div>
+</section>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 12px; background: #E8EEFF; color: #16328A; font-size: 14px; font-weight: 700">
+<span style="flex-grow: 1">가이드 모드 · 구조 참고 문서 3건 · 후보를 위에서부터 하나씩 확인합니다. 아니면 다음 후보로 넘어갑니다.</span>
+<span class="pill p-grn">안내 v2</span>
+</div>
+<div style="display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 16px; align-items: start">
+<div style="display: flex; flex-direction: column; gap: 12px; min-width: 0">
+<section class="card" style="border: 2px solid #3563E9; padding: 18px 22px; display: flex; flex-direction: column" aria-label="1순위 후보">
+<div style="display: flex; align-items: center; gap: 8px; padding-bottom: 12px">
+<span class="pill p-out">1순위</span><h2 class="h2" style="font-size: 18px">보정 압력 계통</h2><div style="flex-grow: 1"></div><span class="pill p-grn">판단: 맞음</span>
+</div>
+<div class="done"><span class="ok">✓</span><b>점검</b><span class="muted" style="flex-grow: 1; min-width: 0">공급 압력 <b style="color: #B42318">이상</b> · MPYD 케이블 정상 · 실린더 공기압 미실시</span><button class="btn btn-ghost" type="button" style="min-height: 30px; padding: 0 6px">펼치기</button></div>
+<div class="done"><span class="ok">✓</span><b>판단</b><span class="muted" style="flex-grow: 1; min-width: 0"><b style="color: #00684F">맞음</b> · 공급 압력이 낮았음</span><button class="btn btn-ghost" type="button" style="min-height: 30px; padding: 0 6px">수정</button></div>
+<div class="step">
+<div class="sh"><span class="sn">3</span><b>실제 수행 조치</b><div style="flex-grow: 1"></div><button class="btn" type="button" style="min-height: 34px">권고 불러오기</button></div>
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 10px">
+<label><span class="lbl">수행한 조치</span><textarea class="in" style="height: 60px">[실제로 한 작업 · 예: 공급 배관 피팅 재체결]</textarea></label>
+<label><span class="lbl">조치 유형</span><select class="in"><option>재체결</option><option>조정</option><option>교체</option><option>청소</option><option>기타</option></select></label>
+</div>
+<div style="display: flex; align-items: center; gap: 12px"><span class="muted" style="font-size: 12px; flex-grow: 1">수행자 · 시각은 자동 기록</span><button class="btn btn-pri" type="button">조치 저장</button></div>
+</div>
+<div style="border: 1px dashed #C9CFDA; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 10px; color: #7A849A; font-size: 14px; font-weight: 700"><span class="sn" style="background: #C9CFDA">4</span>결과 · 조치를 저장하면 열림<span style="font-weight: 600; font-size: 13px">(해결됨 / 다른 조치 / 다음 후보)</span></div>
+</section>
+<div class="cand-row"><span class="pill p-out">2순위</span><b style="white-space: nowrap">주 실린더 · 밸브 계통</b><div style="flex-grow: 1"></div><span class="pill p-gry">대기</span></div>
+<div class="cand-row" style="opacity: .65"><span class="pill p-out">제외</span><b style="text-decoration: line-through">기계 마찰 · 걸림</b><span class="muted" style="font-size: 13px">판단: 아님</span></div>
+</div>
+<aside class="card" style="display: flex; flex-direction: column; gap: 10px; padding: 16px 18px" aria-label="매뉴얼 근거">
+<h2 class="h2">매뉴얼 근거</h2>
+<div style="border: 2px solid #3563E9; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 6px"><span class="ref">EV-01</span><span class="pill p-blu">구조 참고</span></div>
+<b style="font-size: 13px">Festo 오류 12 · p.90</b>
+<div style="background: #FFF4C2; border-radius: 6px; padding: 8px 10px; font-size: 12px; line-height: 1.5">"Check cable to the MPYD. Check supply pressure at least 5 bar."</div>
+</div>
+<div style="background: #FFF7EC; border: 1px solid #F3D3A8; border-radius: 12px; padding: 10px 12px; font-size: 12px; line-height: 1.5"><b style="color: #8F4700">이상일 때 할 일</b><br>Festo 오류 12 칸에는 다음 단계 없음 · 참고: 호스 · 피팅 · 밸브 누설 (MILCO p.11)</div>
+<button class="btn btn-ghost" type="button" style="align-self: flex-start; min-height: 30px; padding: 0 4px">근거 2건 더 · 루프 기록 보기</button>
+</aside>
+</div>
+<div class="card" style="display: flex; align-items: center; gap: 10px; padding: 12px 20px">
+<a class="btn" href="Handover.dc.html">인계</a>
+<a class="btn" href="FieldCheck.dc.html">현장 확인 요청</a>
+<button class="btn" type="button">임시 저장</button>
+<div style="flex-grow: 1"></div>
+<span class="muted" style="font-size: 13px">후보 중 하나가 "해결됨"이어야 다음 단계</span>
+<a class="btn btn-pri" href="Logbook.dc.html">다음: 정비일지 →</a>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1140}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

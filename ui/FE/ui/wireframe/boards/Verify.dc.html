@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>재검증</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.side{width:240px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;gap:4px;padding:24px 16px;box-sizing:border-box;border-right:1px solid #EEF0F4}
+.brand{font-weight:800;font-size:20px;padding:0 12px 20px;color:#202224}
+.brand b{color:#3563E9}
+.nav{display:flex;align-items:center;gap:12px;padding:0 12px;min-height:44px;border-radius:10px;color:#202224;text-decoration:none;font-weight:600;font-size:14px}
+.nav.on{background:#3563E9;color:#fff}
+.nav.later{color:#5E6A85}
+.navsec{font-size:11px;font-weight:800;color:#5E6A85;padding:18px 12px 6px;letter-spacing:.06em}
+.top{height:72px;flex-shrink:0;background:#fff;display:flex;align-items:center;gap:16px;padding:0 32px;box-sizing:border-box;border-bottom:1px solid #EEF0F4}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:20px;box-sizing:border-box}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:0 16px;min-height:44px;border:1px solid #D5DAE3;background:#fff;color:#202224;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;box-sizing:border-box}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff}
+.btn-ghost{border-color:transparent;background:transparent;color:#2446B8}
+.muted{color:#5E6A85}
+.lbl{display:block;font-size:12px;font-weight:700;color:#5E6A85;margin-bottom:6px}
+.in{font:inherit;font-size:14px;border:1px solid #D5DAE3;border-radius:10px;padding:10px 12px;background:#F9FAFC;color:#202224;min-height:44px;box-sizing:border-box;width:100%}
+.h2{margin:0;font-size:16px;font-weight:800}
+.st{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#5E6A85;white-space:nowrap;text-decoration:none}
+.dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#EEF0F4;color:#475069;font-size:13px;font-weight:800}
+.st.on{color:#202224}.st.on .dot{background:#3563E9;color:#fff}
+.st.done .dot{background:#E0F5F1;color:#00684F}
+.sep{flex-grow:1;height:2px;background:#E3E7EE;min-width:20px}
+.vd{border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;font-size:12px;border:1px solid #E3E7EE}
+.rule{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #EEF0F4;font-size:14px}
+.radio{display:flex;align-items:center;gap:8px;font-size:14px;min-height:44px;padding:0 12px;border:1px solid #E3E7EE;border-radius:10px;flex-grow:1}
+.seg{display:inline-flex;border:1px solid #D5DAE3;border-radius:10px;overflow:hidden}
+.seg label{display:flex;align-items:center;gap:6px;padding:0 12px;min-height:38px;font-size:13px;font-weight:700;border-left:1px solid #D5DAE3}
+.seg label:first-child{border-left:none}
+.cmp{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid #EEF0F4;font-size:13px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1080px; display: flex; background: #F5F6FA; overflow: hidden">
+<nav class="side" aria-label="주 메뉴">
+<div class="brand">RSW <b>정비 지원</b></div>
+<a class="nav on" href="Main.dc.html">작업함</a>
+<a class="nav" href="Equipment.dc.html">설비 상태</a>
+<a class="nav" href="History.dc.html">정비 이력</a>
+<a class="nav" href="Replay.dc.html">재생 콘솔</a>
+</nav>
+<div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0">
+<header class="top">
+<div style="flex-grow: 1"></div>
+<span class="pill p-pur">시뮬레이션 재생 중</span>
+<span class="pill p-gry">데이터 시각 [시각] UTC</span>
+</header>
+<main style="padding: 24px 32px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box">
+<div class="card" style="display: flex; flex-direction: column; gap: 12px; padding: 16px 24px">
+<div style="display: flex; align-items: center; gap: 10px">
+<a class="btn btn-ghost" href="Main.dc.html" style="padding: 0 8px">← 작업함</a>
+<h1 style="margin: 0; font-size: 22px; font-weight: 800">test_0 · 컨트롤러 코드 E012</h1>
+<span class="pill p-red" title="모델·규칙이 낸 경보 단계. 현장 우선순위와 별개">경보 critical</span><span class="pill p-blu">재검증 중</span><span class="pill p-gry">Cycle 1</span>
+</div>
+<nav aria-label="진행 단계" style="display: flex; align-items: center; gap: 10px">
+<a class="st done" href="Triage.dc.html"><span class="dot">✓</span>상황 파악</a><span class="sep"></span>
+<a class="st done" href="Guide.dc.html"><span class="dot">✓</span>원인 후보·점검</a><span class="sep"></span>
+<a class="st done" href="Action.dc.html"><span class="dot">✓</span>조치 기록</a><span class="sep"></span>
+<span class="st on"><span class="dot">4</span>재검증</span><span class="sep"></span>
+<span class="st"><span class="dot">5</span>정비일지</span>
+</nav>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; background: #F1EAFE; color: #3F2585; font-size: 14px; font-weight: 700">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+<span style="flex-grow: 1">시뮬레이션 데이터 · 공개 데이터에는 조치 후 구간이 없어, 다른 건의 정상 구간을 재생해 "조치 후"로 씁니다. 실제 수리 효과의 증거가 아닙니다.</span>
+</div>
+<div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 14px; min-width: 0">
+<section class="card" style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"><h2 class="h2">조치 전 / 조치 후</h2>
+<div style="flex-grow: 1"></div><select class="in" style="width: 170px" aria-label="신호 선택"><option>c5 밸런스 압력</option><option>c2 전극 힘</option><option>이상 점수</option></select></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<figure style="margin: 0; display: flex; flex-direction: column; gap: 6px">
+<figcaption class="muted" style="font-size: 12px; font-weight: 700">조치 전 · 고장 2시간 전 ~ 고장 <span class="pill p-gry">재생 데이터</span></figcaption>
+<svg viewBox="0 0 400 180" style="width: 100%; height: 180px; background: #FBFCFE; border-radius: 10px" role="img" aria-label="조치 전 신호">
+<line x1="30" y1="150" x2="390" y2="150" stroke="#D5DAE3"></line>
+<polyline fill="none" stroke="#00897B" stroke-width="2" points="30,104 70,100 110,106 150,102 190,105 230,108 270,112 310,118 350,126 380,136"></polyline>
+<line x1="380" y1="18" x2="380" y2="155" stroke="#B42318" stroke-width="2"></line><text x="340" y="16" font-size="10" fill="#B42318">E012</text>
+<text x="30" y="170" font-size="10" fill="#5E6A85">−2h</text><text x="360" y="170" font-size="10" fill="#5E6A85">고장</text>
+</svg>
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; gap: 6px">
+<figcaption class="muted" style="font-size: 12px; font-weight: 700">조치 후 · 조치 종료부터 <span class="pill p-pur">시뮬레이션</span></figcaption>
+<svg viewBox="0 0 400 180" style="width: 100%; height: 180px; background: #FBFCFE; border-radius: 10px" role="img" aria-label="조치 후 신호, 기준 수집 중">
+<defs><pattern id="hatch2" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#C9B8F2" stroke-width="2"></line></pattern></defs>
+<rect x="30" y="18" width="360" height="132" fill="url(#hatch2)" opacity="0.5"></rect>
+<line x1="30" y1="150" x2="390" y2="150" stroke="#D5DAE3"></line>
+<line x1="30" y1="18" x2="30" y2="155" stroke="#3563E9" stroke-width="2"></line><text x="36" y="30" font-size="10" fill="#2446B8">조치 종료</text>
+<polyline fill="none" stroke="#00897B" stroke-width="2" points="30,106 60,104 90,103 120,105 150,104"></polyline>
+<text x="200" y="90" font-size="12" font-weight="700" fill="#5B3AB5" text-anchor="middle">기준 수집 중 · 2 / 6시간</text>
+<text x="30" y="170" font-size="10" fill="#5E6A85">+0h</text><text x="360" y="170" font-size="10" fill="#5E6A85">+6h</text>
+</svg>
+</figure>
+</div>
+</section>
+<section class="card" style="display: flex; flex-direction: column; gap: 0; padding: 16px 20px">
+<div style="display: flex; align-items: center; gap: 8px; padding-bottom: 6px"><h2 class="h2">판정 규칙</h2><span class="pill p-org">기준값은 팀 결정 필요</span></div>
+<div class="rule"><span class="pill p-grn">충족</span><span style="flex-grow: 1">종료 코드(E012/E016/E028/E029) 재발 없음</span><span class="muted" style="font-size: 12px">조치 후 전체 구간</span></div>
+<div class="rule"><span class="pill p-grn">충족</span><span style="flex-grow: 1">용접 재개 (최근 10분 용접 횟수 &gt; 0)</span><span class="muted" style="font-size: 12px">welds_10min</span></div>
+<div class="rule"><span class="pill p-gry">대기</span><span style="flex-grow: 1">연속 [N]개 윈도우 이상 점수가 건별 임계값 미만</span><span class="muted" style="font-size: 12px">워밍업 후 판단</span></div>
+</section>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px; min-width: 0">
+<section class="card" style="display: flex; flex-direction: column; gap: 12px">
+<span class="lbl" style="margin: 0">시스템 판정 (서버가 결정)</span>
+<div style="display: flex; align-items: center; gap: 10px"><span class="pill p-gry" style="font-size: 16px; padding: 8px 14px">판정 대기</span><span class="muted" style="font-size: 13px">건별 기준 수집 중</span></div>
+<div style="height: 10px; border-radius: 5px; background: #EEF0F4"><div style="width: 33%; height: 10px; border-radius: 5px; background: #5B3AB5"></div></div>
+<div class="muted" style="font-size: 12px">2 / 6시간 · 규칙 v[버전] · 데이터 출처: 시뮬레이션</div>
+</section>
+<section class="card" style="display: flex; flex-direction: column; gap: 10px">
+<span class="lbl" style="margin: 0">사람 판단 (시스템 판정과 따로 저장)</span>
+<div style="display: flex; gap: 8px"><label class="radio"><input type="radio" name="hj">현장 동작 정상</label><label class="radio"><input type="radio" name="hj">이상 있음</label></div>
+<textarea class="in" style="height: 60px" aria-label="사람 판단 메모" placeholder="어떻게 확인했는지와 관찰 내용"></textarea>
+</section>
+</div>
+</div>
+<div class="card" style="display: flex; align-items: center; gap: 10px; padding: 12px 20px">
+<a class="btn" href="Guide.dc.html">새 Cycle로 점검 재개</a>
+<a class="btn" href="Handover.dc.html">인계</a>
+<div style="flex-grow: 1"></div>
+<span class="muted" style="font-size: 13px">판정 대기·불가일 때는 사람 판단 입력 후 진행</span>
+<a class="btn btn-pri" href="Logbook.dc.html">다음: 정비일지 →</a>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

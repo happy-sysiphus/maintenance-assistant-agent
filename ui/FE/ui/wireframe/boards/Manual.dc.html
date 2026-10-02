@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>원인 후보와 점검 — 수동 모드</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.side{width:240px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;gap:4px;padding:24px 16px;box-sizing:border-box;border-right:1px solid #EEF0F4}
+.brand{font-weight:800;font-size:20px;padding:0 12px 20px;color:#202224}
+.brand b{color:#3563E9}
+.nav{display:flex;align-items:center;gap:12px;padding:0 12px;min-height:44px;border-radius:10px;color:#202224;text-decoration:none;font-weight:600;font-size:14px}
+.nav.on{background:#3563E9;color:#fff}
+.nav.later{color:#5E6A85}
+.navsec{font-size:11px;font-weight:800;color:#5E6A85;padding:18px 12px 6px;letter-spacing:.06em}
+.top{height:72px;flex-shrink:0;background:#fff;display:flex;align-items:center;gap:16px;padding:0 32px;box-sizing:border-box;border-bottom:1px solid #EEF0F4}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:20px;box-sizing:border-box}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:0 16px;min-height:44px;border:1px solid #D5DAE3;background:#fff;color:#202224;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;box-sizing:border-box}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff}
+.btn-ghost{border-color:transparent;background:transparent;color:#2446B8}
+.muted{color:#5E6A85}
+.lbl{display:block;font-size:12px;font-weight:700;color:#5E6A85;margin-bottom:6px}
+.in{font:inherit;font-size:14px;border:1px solid #D5DAE3;border-radius:10px;padding:10px 12px;background:#F9FAFC;color:#202224;min-height:44px;box-sizing:border-box;width:100%}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;color:#5E6A85;font-weight:800;padding:10px 12px;background:#F7F8FB}
+.tbl td{padding:8px 12px;border-top:1px solid #EEF0F4;vertical-align:middle}
+.h2{margin:0;font-size:16px;font-weight:800}
+.st{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#5E6A85;white-space:nowrap}
+.dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#EEF0F4;color:#475069;font-size:13px;font-weight:800}
+.st.on{color:#202224}.st.on .dot{background:#3563E9;color:#fff}
+.st.done .dot{background:#E0F5F1;color:#00684F}
+.sep{flex-grow:1;height:2px;background:#E3E7EE;min-width:20px}
+.big{display:flex;flex-direction:column;gap:10px;padding:22px;border-radius:16px;text-decoration:none;color:#202224;background:#fff;border:2px solid #E3E7EE}
+.big:hover{border-color:#3563E9;color:#202224}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1080px; display: flex; background: #F5F6FA; overflow: hidden">
+<nav class="side" aria-label="주 메뉴">
+<div class="brand">RSW <b>정비 지원</b></div>
+<a class="nav on" href="Main.dc.html">작업함</a>
+<a class="nav" href="Equipment.dc.html">설비 상태</a>
+<a class="nav" href="History.dc.html">정비 이력</a>
+<a class="nav" href="Replay.dc.html">재생 콘솔</a>
+</nav>
+<div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0">
+<header class="top">
+<div style="flex-grow: 1"></div>
+<span class="pill p-pur">재생 중 · test_2</span>
+<span class="pill p-gry">데이터 시각 [시각] UTC</span>
+</header>
+<main style="padding: 24px 32px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+<div class="card" style="display: flex; flex-direction: column; gap: 12px; padding: 16px 24px">
+<div style="display: flex; align-items: center; gap: 12px">
+<a class="btn btn-ghost" href="Main.dc.html" style="padding: 0 8px">← 작업함</a>
+<h1 style="margin: 0; font-size: 22px; font-weight: 800">test_2 · 모델 이상 신호</h1>
+<span class="pill p-org" title="모델이 낸 경보 단계. 현장 우선순위와 별개">경보 warning</span><span class="pill p-blu">점검 중</span><span class="pill p-gry">컨트롤러 코드 없음</span>
+</div>
+<nav aria-label="진행 단계" style="display: flex; align-items: center; gap: 10px">
+<span class="st on"><span class="dot">1</span>원인 찾기 · 조치 (수동 모드)</span><span class="sep"></span>
+<span class="st"><span class="dot">2</span>정비일지 · 종료</span>
+</nav>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; background: #FFF1E0; color: #6B3500; font-size: 14px; font-weight: 700">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+<span style="flex-grow: 1">수동 모드 · 이 장비에 적용할 수 있는 매뉴얼 근거가 없습니다. 시스템은 점검 순서를 제시하지 않고, AI 요약도 표시하지 않습니다.</span>
+</div>
+<div style="display: grid; grid-template-columns: 1.45fr 1fr; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+<section class="card" style="display: flex; flex-direction: column; gap: 12px">
+<h2 class="h2">왜 근거가 없나</h2>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="background: #F7F8FB; border-radius: 12px; padding: 12px"><div class="muted" style="font-size: 12px; font-weight: 700">검색한 증상</div><div style="font-size: 14px; font-weight: 700; margin-top: 4px">c6 Friction 변동 ↑</div></div>
+<div style="background: #F7F8FB; border-radius: 12px; padding: 12px"><div class="muted" style="font-size: 12px; font-weight: 700">대상 구동 방식</div><div style="font-size: 14px; font-weight: 700; margin-top: 4px">서보 공압식</div></div>
+<div style="background: #F7F8FB; border-radius: 12px; padding: 12px"><div class="muted" style="font-size: 12px; font-weight: 700">결과</div><div style="font-size: 14px; font-weight: 700; margin-top: 4px">직접 0 · 구조 참고 0 · 비교만 1</div></div>
+</div>
+<details style="border: 1px solid #E3E7EE; border-radius: 12px; padding: 12px 14px">
+<summary style="font-size: 14px; font-weight: 800; cursor: pointer; min-height: 28px">비교 참고 문서 1건 (직접 적용 금지)</summary>
+<div style="display: flex; flex-direction: column; gap: 6px; padding-top: 10px; font-size: 13px">
+<div style="display: flex; gap: 8px; align-items: center"><span class="pill p-gry">비교만</span><b>FANUC R-30iB/R-30iB Plus Servo Gun Function · B-83264EN/05</b></div>
+<div class="muted">§21.23 TROUBLESHOOTING · 인쇄 p.284 · PDF p.300 · 전동 서보식 — 모터·위치 센서 원인은 이 장비에 그대로 적용하지 않음</div>
+</div>
+</details>
+</section>
+<section class="card" style="display: flex; flex-direction: column; gap: 10px">
+<h2 class="h2">문서 검색</h2>
+<div style="display: grid; grid-template-columns: 1fr 160px 160px auto; gap: 8px">
+<input class="in" type="search" placeholder="예: friction, lubricat, 마찰" aria-label="문서 검색어">
+<select class="in" aria-label="제조사"><option>제조사 전체</option><option>Festo</option><option>MILCO</option><option>ABB</option><option>Yaskawa</option><option>FANUC</option></select>
+<select class="in" aria-label="구동 방식"><option>구동 방식 전체</option><option>서보 공압식</option><option>공압식</option><option>전동 서보식</option></select>
+<button class="btn" type="button">검색</button>
+</div>
+</section>
+<section class="card" style="display: flex; flex-direction: column; gap: 10px; padding: 16px 0 12px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 0 20px"><h2 class="h2">자유 점검 기록</h2><div style="flex-grow: 1"></div><button class="btn" type="button">+ 항목 추가</button></div>
+<table class="tbl">
+<thead><tr><th style="width: 40px">#</th><th>점검한 것</th><th style="width: 160px">결과</th><th>메모·측정값</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><input class="in" aria-label="점검 항목 1" placeholder="예: 건 암 움직임 확인"></td><td><select class="in" aria-label="결과 1"><option>선택</option><option>정상</option><option>이상</option><option>해당 없음</option><option>미실시 (사유 필수)</option></select></td><td><input class="in" aria-label="메모 1"></td></tr>
+<tr><td>2</td><td><input class="in" aria-label="점검 항목 2"></td><td><select class="in" aria-label="결과 2"><option>선택</option><option>정상</option><option>이상</option><option>해당 없음</option><option>미실시 (사유 필수)</option></select></td><td><input class="in" aria-label="메모 2"></td></tr>
+</tbody>
+</table>
+</section>
+<section class="card" style="display: flex; align-items: center; gap: 12px; padding: 14px 20px; flex-wrap: wrap"><div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1; min-width: 0"><h2 class="h2">원인을 직접 찾았다면</h2><span class="muted" style="font-size: 13px">통합 화면과 같은 칸: 판단 → 실제 수행 조치 → 결과 (해결됨 / 해결 안 됨)</span></div><input class="in" style="width: 260px" aria-label="직접 찾은 원인" placeholder="원인 (직접 입력)"><a class="btn btn-pri" href="Resolve.dc.html">조치 · 결과 입력 →</a></section>
+</div>
+<div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+<h2 class="h2" style="padding-top: 4px">사람이 이어받는 경로</h2>
+<a class="big" href="FieldCheck.dc.html">
+<div style="display: flex; align-items: center; gap: 12px"><div style="width: 48px; height: 48px; border-radius: 14px; background: #E8EEFF; color: #2446B8; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg></div><b style="font-size: 17px">현장 확인 체크시트 만들기</b></div>
+<span class="muted" style="font-size: 14px; line-height: 1.5">센서로 알 수 없는 것을 현장에서 측정·관찰해 입력합니다. PDF로 뽑아 들고 갈 수 있고, 결과를 넣으면 안내를 다시 요청합니다.</span>
+</a>
+<a class="big" href="Handover.dc.html">
+<div style="display: flex; align-items: center; gap: 12px"><div style="width: 48px; height: 48px; border-radius: 14px; background: #F1EAFE; color: #5B3AB5; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></div><b style="font-size: 17px">전문가에게 인계</b></div>
+<span class="muted" style="font-size: 14px; line-height: 1.5">지금까지의 신호, 점검 기록, 판단하지 못한 이유가 자동으로 채워진 인계서를 만듭니다.</span>
+</a>
+</div>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

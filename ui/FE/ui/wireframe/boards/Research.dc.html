@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>리서치 — 제조 현장 화면 원칙</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:22px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}
+.muted{color:#5E6A85}
+.h2{margin:0;font-size:19px;font-weight:800}
+.ul{margin:0;padding-left:18px;font-size:14px;line-height:1.65;color:#343A48}
+.map{background:#F5F8FF;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6;color:#16328A}
+.map b{color:#16328A}
+.src{font-size:12px;color:#5E6A85}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; padding: 40px 48px; display: flex; flex-direction: column; gap: 22px; background: #F5F6FA; overflow: hidden">
+<div>
+<h1 style="margin: 0; font-size: 30px; font-weight: 800">리서치 · 제조 현장 화면</h1>
+<p class="muted" style="margin: 6px 0 0; font-size: 15px">표준·제품 자료에서 확인한 원칙과, 우리 화면에 어떻게 이어지는지. 표준 원문이 아니라 해설 자료와 회사 공식 자료로 확인했습니다.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 20px; flex-grow: 1; min-height: 0">
+<section class="card">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">① 운전 화면 표준</h2><span class="pill p-gry">ISA-101 · 고성능 HMI</span></div>
+<ul class="ul">
+<li>평소 화면은 회색 위주, 색은 이상이 생겼을 때만 사용</li>
+<li>숫자만 두지 않고 정상 범위를 같이 보여줌</li>
+<li>화면 4단계: 전체 현황 → 하위 설비 → 개별 설비 → 진단</li>
+<li>화면 안에 추세 그래프를 넣어 변화를 먼저 보게 함</li>
+</ul>
+<div class="map"><b>우리 화면</b> · 작업함 → 설비 상태 → 원인 찾기·조치(신호 요약 → 후보 점검)가 같은 계층 구조 · "빨강·주황은 경보에만" 색 규칙도 같은 방향<br><b>보완할 점</b> · 원인 찾기·조치 화면 신호 그래프에 정상 범위 띠 추가 (설비별 기준값 사용 여부는 백엔드 확인)</div>
+<span class="src">출처: RealPars, "What Is High-Performance HMI?"</span>
+</section>
+<section class="card">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">② 알람 관리 표준</h2><span class="pill p-gry">ISA-18.2</span></div>
+<ul class="ul">
+<li>10분에 알람 10건 초과 = "알람 홍수". 운전자가 감당할 목표는 10분에 1건 수준 (해설 자료 기준)</li>
+<li>이미 알거나 대응이 필요 없는 알람 = "성가신 알람(nuisance)"</li>
+<li>보류(shelving): 알람을 통제된 방식으로 잠시 끄고, 꺼둔 목록은 화면에서 계속 보이게 함</li>
+</ul>
+<div class="map"><b>우리 화면</b> · E029 반복 묶음 = 성가신 알람 정리 · 보류(모니터링 전환)는 사람 1차 판단을 빼면서 둘 곳 [팀 논의]<br><b>보완할 점</b> · 보류한 알람 목록과 보류 기한을 보여주기 · 반복 묶기 규칙을 정할 때 근거로 사용</div>
+<span class="src">출처: Nasby (2013) ISA 18.2 소개 자료 · ISA 18 시리즈 안내 페이지</span>
+</section>
+<section class="card">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">③ 정비 기록 (CMMS 작업지시서)</h2><span class="pill p-gry">고장 · 원인 · 조치 코드</span></div>
+<ul class="ul">
+<li>고장(무엇이) · 원인(왜) · 조치(무엇을 했나)를 목록에서 골라 기록</li>
+<li>자유 텍스트만 쓰면 같은 문제를 "과열", "너무 뜨거움"처럼 제각각 적어 분석이 안 됨</li>
+</ul>
+<div class="map"><b>우리 화면</b> · 원인은 후보마다 판단(맞음 / 아님 / 모르겠음), 조치는 유형(조정 / 교체 / 청소 / 재체결 / 기타) 선택 + 메모<br><b>보완할 점</b> · 정비일지도 같은 코드로 저장해 이력에서 모아 보기</div>
+<span class="src">출처: FTMaintenance, Failure / Cause / Remedy Codes</span>
+</section>
+<section class="card">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">④ 최근 AI 정비 도구</h2><span class="pill p-gry">공개 자료 기준</span></div>
+<ul class="ul">
+<li><b>Siemens Industrial Copilot (정비)</b> · AI 문제 해결 안내 + 센서 기반 상태 감시. 시범 적용에서 사후 정비 시간 평균 25% 절감 (회사 발표 수치)</li>
+<li><b>MaintainX Assist</b> · 매뉴얼 PDF와 과거 작업지시서를 검색해 답하고 답변에 출처 표시. 사진·증상으로 점검 단계 안내. AI는 데이터를 만들거나 고치지 못하고 사람이 확인. 공개 문서에 센서 데이터 언급은 없음</li>
+</ul>
+<div class="map"><b>공통 흐름</b> · 매뉴얼 검색 + 출처 표시 + 사람이 최종 확인 → 우리 ② 원인 찾기·조치 화면과 같은 방향</div>
+<span class="src">출처: Siemens 보도자료 · MaintainX Help Center</span>
+</section>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; background: #FFF1E0; color: #6B3500; font-size: 13px; font-weight: 700">ISA 표준은 주로 화학·석유 같은 공정 산업 제어실 기준입니다. 우리는 운전 화면이 아니라 정비 지원 웹이라 원칙만 빌려옵니다. 제품은 공개 자료만 읽었고 직접 써보지 않았습니다.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>리서치 — 왜 이런 화면 구조인가</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:20px 22px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-gry{background:#EEF0F4;color:#475069}.p-blu{background:#E8EEFF;color:#2446B8}
+.muted{color:#5E6A85}
+.no{width:30px;height:30px;border-radius:50%;background:#3563E9;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.t{margin:0;font-size:18px;font-weight:800}
+.ul{margin:0;padding-left:18px;font-size:14px;line-height:1.65;color:#343A48}
+.map{background:#F5F8FF;border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.6;color:#16328A}
+.src{font-size:12px;color:#5E6A85}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:12px;color:#5E6A85;font-weight:800;padding:8px 10px;background:#F7F8FB}
+.tbl td{padding:8px 10px;border-top:1px solid #EEF0F4;vertical-align:top}
+</style>
+</helmet>
+<div style="width: 1440px; height: 920px; box-sizing: border-box; padding: 40px 48px; display: flex; flex-direction: column; gap: 20px; background: #F5F6FA; overflow: hidden">
+<div>
+<h1 style="margin: 0; font-size: 30px; font-weight: 800">화면구조</h1>
+<p class="muted" style="margin: 6px 0 0; font-size: 15px">대시보드 레이아웃(왼쪽 메뉴 + 목록 + 상세)을 빌리되, 첫 화면은 숫자판이 아니라 할 일 목록(작업함)으로 둔 이유.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px">
+<section class="card">
+<div style="display: flex; gap: 10px; align-items: center"><span class="no">1</span><h2 class="t">보는 화면이 아니라 처리하는 화면</h2></div>
+<ul class="ul">
+<li>사용자가 할 일: 알람 확인 → 점검 → 조치 → 기록. "지표 보기"가 목적이 아님</li>
+<li>그래서 첫 화면은 요약 숫자 카드 대신 작업함(할 일 목록)</li>
+<li>케이스를 열면 2단계 진행 표시(원인 찾기·조치 → 정비일지)를 따라 한 건을 끝까지 처리</li>
+</ul>
+</section>
+<section class="card">
+<div style="display: flex; gap: 10px; align-items: center"><span class="no">2</span><h2 class="t">업계에서 쓰는 구조: 목록 → 케이스 상세</h2></div>
+<ul class="ul">
+<li>Siemens Senseye(예지보전): "케이스" 관리, 이상 구간을 표시한 시계열 그래프, 가능한 원인 설명, 비슷한 과거 케이스 연결</li>
+<li>설비 정비 관리 제품(MaintainX 등): 작업지시서 목록이 중심</li>
+</ul>
+<div class="map">우리 ② 원인 찾기·조치(신호 그래프 · 원인 후보 · 근거) · ④ 정비 이력과 같은 짜임</div>
+</section>
+<section class="card">
+<div style="display: flex; gap: 10px; align-items: center"><span class="no">3</span><h2 class="t">기계 옆 조작 화면이 아니라 웹</h2></div>
+<ul class="ul">
+<li>설비 옆 조작 화면(HMI)은 기계를 운전 · 제어하는 용도</li>
+<li>우리는 "무엇이 고장났고 어떻게 고칠지"를 판단하고 기록하는 서비스</li>
+<li>담당자 · 전문가가 같은 케이스를 봐야 함(인계) → 설치 없이 링크로 여는 웹이 맞음</li>
+</ul>
+</section>
+<section class="card">
+<div style="display: flex; gap: 10px; align-items: center"><span class="no">4</span><h2 class="t">익숙한 레이아웃&nbsp;</h2></div>
+<ul class="ul">
+<li>왼쪽 메뉴 + 목록 + 상세는 업무용 웹에서 가장 흔한 배치 (BankDash · DashStack 키트는 느낌만 참고)</li>
+<li>색은 경보(빨강 · 주황)에만 쓰고 나머지는 차분하게 → ① 운전 화면 표준과 같은 방향</li>
+</ul>
+</section>
+</div>
+<section class="card" style="gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="t">화면 계층 대응</h2><span class="pill p-gry">ISA-101의 4단계 계층 ↔ 우리 화면</span></div>
+<table class="tbl">
+<thead><tr><th style="width: 120px">단계</th><th style="width: 260px">표준에서 말하는 화면</th><th>우리 화면</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>전체 현황</td><td>① 작업함 (처리할 케이스) · 설비 상태 (판단 가능 여부)</td></tr>
+<tr><td>2</td><td>하위 설비</td><td>작업함 · 이력의 설비 필터</td></tr>
+<tr><td>3</td><td>개별 설비 상세</td><td>② 원인 찾기·조치 맨 위 "무슨 일이 났나" (신호 그래프 · 무엇이 언제 났나)</td></tr>
+<tr><td>4</td><td>진단</td><td>② 원인 찾기·조치 후보 카드 (점검 · 판단 · 조치 · 매뉴얼 근거)</td></tr>
+</tbody>
+</table>
+</section>
+<span class="src">출처: ARC Advisory Group, "Senseye: Predictive Maintenance with AI-Driven Visibility and Insights" · MaintainX Help Center · RealPars, "What Is High-Performance HMI?"</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":920}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

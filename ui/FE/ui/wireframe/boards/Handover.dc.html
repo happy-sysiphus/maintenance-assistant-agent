@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>인계서</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:0 16px;min-height:44px;border:1px solid #D5DAE3;background:#fff;color:#202224;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;box-sizing:border-box}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff}
+.btn-ghost{border-color:transparent;background:transparent;color:#2446B8}
+.muted{color:#5E6A85}
+.lbl{display:block;font-size:12px;font-weight:700;color:#5E6A85;margin-bottom:6px}
+.in{font:inherit;font-size:14px;border:1px solid #D5DAE3;border-radius:10px;padding:10px 12px;background:#F9FAFC;color:#202224;min-height:44px;box-sizing:border-box;width:100%}
+.h2{margin:0;font-size:15px;font-weight:800}
+.doc h3{margin:0 0 6px;font-size:13px;font-weight:800;color:#202224}
+.doc p,.doc li{font-size:12px;line-height:1.5;margin:0;color:#343A48}
+.docsec{padding:10px 0;border-top:1px solid #EEF0F4}
+.ghost{background:#fff;border-radius:16px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1080px; position: relative; background: #F5F6FA; overflow: hidden">
+<div style="position: absolute; left: 0; top: 0; width: 240px; height: 1080px; background: #fff"></div>
+<div style="position: absolute; left: 272px; top: 96px; width: 1136px; height: 120px" class="ghost"></div>
+<div style="position: absolute; left: 272px; top: 240px; width: 1136px; height: 800px" class="ghost"></div>
+<div style="position: absolute; left: 0; top: 0; width: 1440px; height: 1080px; background: rgba(20, 24, 40, 0.5)"></div>
+<div role="dialog" aria-modal="true" aria-labelledby="ho-title" style="position: absolute; left: 120px; top: 40px; width: 1200px; height: 1000px; background: #fff; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.25); display: flex; flex-direction: column; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 12px; padding: 22px 28px; border-bottom: 1px solid #EEF0F4">
+<h1 id="ho-title" style="margin: 0; font-size: 22px; font-weight: 800">인계서 작성</h1>
+<span class="pill p-pur">test_0 · E012</span>
+<div style="flex-grow: 1"></div>
+<button class="btn btn-ghost" type="button" aria-label="닫기">✕</button>
+</div>
+<div style="display: grid; grid-template-columns: 380px 1fr; flex-grow: 1; min-height: 0">
+<form style="padding: 22px 28px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid #EEF0F4">
+<h2 class="h2">사람이 쓰는 칸</h2>
+<label><span class="lbl">인계 대상 *</span><select class="in"><option>보전 전문가</option><option>장비사 엔지니어</option></select></label>
+<fieldset style="border: none; margin: 0; padding: 0"><legend class="lbl">긴급도 *</legend>
+<div style="display: flex; gap: 8px"><label class="btn" style="flex-grow: 1; justify-content: center"><input type="radio" name="urg" checked="">즉시</label><label class="btn" style="flex-grow: 1; justify-content: center"><input type="radio" name="urg">오늘 중</label><label class="btn" style="flex-grow: 1; justify-content: center"><input type="radio" name="urg">다음 정비</label></div>
+</fieldset>
+<label><span class="lbl">요청 사항 *</span><textarea class="in" style="height: 140px" placeholder="예: 공급 압력은 이상 없음. 보정 실린더 교체 여부 판단 필요"></textarea></label>
+<label><span class="lbl">첨부 (선택)</span><input class="in" type="file"></label>
+</form>
+<div style="background: #EEF0F4; padding: 22px; overflow: hidden; display: flex; justify-content: center">
+<article class="doc" style="width: 620px; background: #fff; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.08); padding: 28px 32px; box-sizing: border-box" aria-label="인계서 미리보기">
+<div style="display: flex; align-items: flex-end; gap: 8px; padding-bottom: 10px">
+<div style="flex-grow: 1"><div style="font-size: 18px; font-weight: 800">정비 인계서</div><div class="muted" style="font-size: 11px">CASE-[id] · 작성 [시각] · 작성자 [이름]</div></div>
+<span class="pill p-red">즉시</span>
+</div>
+<div class="docsec"><h3>1. 케이스 요약 (자동)</h3><p>설비 test_0 · 컨트롤러 코드 E012 (2021-09-11 02:46:08 UTC) · 데이터셋 클래스 힌트 E01 카운터밸런스 시간 초과 (종료 코드 기반 추정)</p></div>
+<div class="docsec"><h3>2. 신호 스냅샷 (자동)</h3>
+<svg viewBox="0 0 540 90" style="width: 100%; height: 90px" role="img" aria-label="고장 전후 신호 요약 그림 자리"><rect x="0" y="0" width="540" height="90" fill="#F7F8FB"></rect><polyline fill="none" stroke="#3563E9" stroke-width="2" points="10,70 60,68 110,72 160,66 210,70 260,67 310,69 360,64 410,60 470,50"></polyline><line x1="470" y1="8" x2="470" y2="84" stroke="#B42318" stroke-width="2"></line><text x="476" y="20" font-size="10" fill="#B42318">E012</text></svg>
+</div>
+<div class="docsec"><h3>3. 수행한 점검과 결과 (자동)</h3>
+<ul style="padding-left: 16px; margin: 0"><li>공급 압력 확인 — 이상, [값] bar · 근거 Festo p.90</li><li>MPYD 케이블 확인 — 정상 · 근거 Festo p.90</li><li>실린더 공기압 측정 — 미실시 (사유: 압력계 없음) · 근거 MILCO p.11</li></ul></div>
+<div class="docsec"><h3>4. 제외된 후보 (자동)</h3><p>기계 마찰·걸림 — 판단: 아님 (안내 v1)</p></div>
+<div class="docsec"><h3>5. 판단하지 못한 이유 (자동)</h3><p>남은 후보 판단 "모르겠음" · 조치 후 해결 안 됨 · 코드 E029 의미 미확인</p></div>
+<div class="docsec"><h3>6. 요청 사항 (작성자)</h3><p class="muted">[왼쪽에서 입력한 내용]</p></div>
+</article>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 16px 28px; border-top: 1px solid #EEF0F4; background: #FBFCFE">
+<span class="muted" style="font-size: 12px; flex-grow: 1">* 필수 항목을 채워야 보낼 수 있습니다.</span>
+<button class="btn" type="button">PDF로 내보내기</button>
+<button class="btn" type="button">인쇄</button>
+<a class="btn btn-pri" href="Main.dc.html">인계 보내기</a>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

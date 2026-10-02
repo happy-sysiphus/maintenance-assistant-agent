@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>API ③ RAG·LLM API 제안과 공통 약속</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:18px 20px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}
+.muted{color:#5E6A85}
+.h2{margin:0;font-size:17px;font-weight:800}
+.m{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.meth{display:inline-block;min-width:44px;font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:800;padding:2px 6px;border-radius:5px;text-align:center}
+.get{background:#E0F5F1;color:#00684F}.post{background:#E8EEFF;color:#2446B8}
+.code{margin:0;background:#1F2330;color:#E6E9F2;border-radius:12px;padding:14px 16px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.5;white-space:pre;overflow:hidden}
+.c{color:#8FA0C0}
+.ul{margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#343A48}
+.row{display:flex;gap:10px;align-items:baseline;font-size:13px;line-height:1.5}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; padding: 36px 48px; display: flex; flex-direction: column; gap: 16px; background: #F5F6FA; overflow: hidden">
+<div>
+<div style="display: flex; align-items: center; gap: 10px"><h1 style="margin: 0; font-size: 30px; font-weight: 800">API ③ RAG · LLM (새로 필요) · 공통 약속</h1><span class="pill p-org">제안 초안 · 백엔드와 합의 필요</span></div>
+
+</div>
+<div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; flex-grow: 1; min-height: 0">
+<section class="card">
+<div style="display: flex; align-items: center; gap: 8px"><span class="meth post">POST</span><h2 class="h2 m" style="font-size: 16px">/cases/{id}/guidance</h2><span class="pill p-blu">② 원인 찾기 · 조치 화면의 핵심</span></div>
+<div class="row"><b style="width: 64px; flex-shrink: 0">보내는 것</b><span>코드 · 클래스 힌트 · 이상 신호 (레포 /predict 값) + 지금까지의 점검 결과 + <b>후보별 판단 (맞음 / 아님 / 모르겠음)</b> → 아님이면 제외하고 다시 정렬</span></div>
+<div class="row"><b style="width: 64px; flex-shrink: 0">받는 것</b><span>아래 모양 (값은 예시)</span></div>
+<pre class="code">{
+  "version": 2,
+  "mode": "guide",            <span class="c">// guide | manual (근거 없으면 manual)</span>
+  "candidates": [
+    { "id": "C1", "name": "보정 압력 계통", "rank": 1,
+      "status": "supported",    <span class="c">// reviewing | supported | excluded</span>
+      "signals": ["c5"], "evidence": ["EV-01"] }
+  ],
+  "checklist": [
+    { "id": "K1", "title": "공급 압력 확인 (최소 5 bar)",
+      "input": "number", "unit": "bar", "evidence": "EV-01" }
+  ],                          <span class="c">// input: number | select | text</span>
+  "evidence": [
+    { "id": "EV-01", "doc": "Festo Servopneumatic V1.5",
+      "section": "§10.1 Table 10.1", "page": 90,
+      "quote": "Check supply pressure at least 5 bar.",
+      "grade": "structural",    <span class="c">// direct | structural | compare</span>
+      "reason": "구동 방식 같음 · 모델 미확인" }
+  ],
+  "summary": { "text": "…", "cites": ["EV-01", "EV-02"],
+               "source": "ai" } <span class="c">// manual 모드면 null</span>
+}</pre>
+</section>
+<div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+<section class="card">
+<h2 class="h2">그 밖의 RAG · LLM API</h2>
+<div class="row"><span class="meth get">GET</span><span class="m">/documents/search?q=&amp;maker=&amp;drive=</span></div>
+<p class="muted" style="margin: 0; font-size: 13px">수동 모드 "문서 직접 검색". 결과마다 적용 등급 포함, 사람이 고른 근거는 source: "human"</p>
+<div class="row"><span class="meth post">POST</span><span class="m">/cases/{id}/logbook/draft</span></div>
+<p class="muted" style="margin: 0; font-size: 13px">일지 초안. 칸 대부분은 템플릿 채우기로 충분하고, LLM은 "문제 내용" 문장 다듬기에만 쓰는 안 추천</p>
+</section>
+<section class="card">
+<h2 class="h2">공통 약속</h2>
+<ul class="ul">
+<li><b>시각</b> · 모두 UTC ISO 8601 (레포와 같음). 한국 시간 변환은 FE</li>
+<li><b>source 필드</b> · 값마다 출처 표시: data / model / manual / human / ai / simulation → 캔버스 메모의 [데이터] [모델] 배지</li>
+<li><b>코드 3종 분리</b> · controller_code (E012) · class_hint (E01) · doc_error_no (Festo 12)를 다른 필드로</li>
+<li><b>새 알람 받기</b> · 몇 초마다 다시 묻기(polling)가 데모엔 가장 쉬움 · 서버가 밀어주기(SSE)는 선택</li>
+<li><b>오류 응답</b> · 조회 실패와 저장 실패를 구분, 동시 수정은 409 (공통 상태 보드)</li>
+</ul>
+</section>
+<section class="card">
+<h2 class="h2">백엔드와 정할 것</h2>
+<ul class="ul">
+<li>원인 후보를 대응표로 만들지, 매번 RAG · LLM으로 만들지</li>
+<li>문서 적용 등급을 문서 등록 때 사람이 붙일지</li>
+<li>LLM 호출 로그 + 사람의 후보 판단을 RAGAS 평가 데이터로 남길지</li>
+<li>점검 항목마다 if_abnormal (이상일 때 할 일) · 후보마다 path (온톨로지 근거 경로) 추가</li>
+</ul>
+</section>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

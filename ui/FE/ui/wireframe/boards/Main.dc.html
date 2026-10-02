@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>작업함</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.side{width:240px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;gap:4px;padding:24px 16px;box-sizing:border-box;border-right:1px solid #EEF0F4}
+.brand{font-weight:800;font-size:20px;padding:0 12px 20px;color:#202224}
+.brand b{color:#3563E9}
+.nav{display:flex;align-items:center;gap:12px;padding:0 12px;min-height:44px;border-radius:10px;color:#202224;text-decoration:none;font-weight:600;font-size:14px}
+.nav.on{background:#3563E9;color:#fff}
+.nav.later{color:#5E6A85}
+.navsec{font-size:11px;font-weight:800;color:#5E6A85;padding:18px 12px 6px;letter-spacing:.06em}
+.top{height:72px;flex-shrink:0;background:#fff;display:flex;align-items:center;gap:16px;padding:0 32px;box-sizing:border-box;border-bottom:1px solid #EEF0F4}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:20px;box-sizing:border-box}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:0 16px;min-height:44px;border:1px solid #D5DAE3;background:#fff;color:#202224;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;box-sizing:border-box}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff}
+.btn-ghost{border-color:transparent;background:transparent;color:#2446B8}
+.muted{color:#5E6A85}
+.lbl{display:block;font-size:12px;font-weight:700;color:#5E6A85;margin-bottom:6px}
+.in{font:inherit;font-size:14px;border:1px solid #D5DAE3;border-radius:10px;padding:10px 12px;background:#F9FAFC;color:#202224;min-height:44px;box-sizing:border-box;width:100%}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;color:#5E6A85;font-weight:800;padding:12px 14px;background:#F7F8FB}
+.tbl td{padding:12px 14px;border-top:1px solid #EEF0F4;vertical-align:middle}
+.h2{margin:0;font-size:16px;font-weight:800}
+.tab{font:inherit;font-size:14px;font-weight:700;padding:0 14px;min-height:40px;border-radius:10px;border:none;background:transparent;color:#5E6A85;cursor:pointer}
+.tab.on{background:#E8EEFF;color:#2446B8}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1080px; display: flex; background: #F5F6FA; overflow: hidden">
+<nav class="side" aria-label="주 메뉴">
+<div class="brand">RSW <b>정비 지원</b></div>
+<a class="nav on" href="Main.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>작업함</a>
+<a class="nav" href="Equipment.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>설비 상태</a>
+<a class="nav" href="History.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>정비 이력</a>
+<a class="nav" href="Replay.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>재생 콘솔</a>
+</nav>
+<div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0">
+<header class="top">
+<div style="position: relative; width: 360px"><input class="in" style="padding-left: 40px; border-radius: 999px" type="search" placeholder="설비·코드·케이스 검색" aria-label="검색"><svg style="position: absolute; left: 14px; top: 13px; color: #5E6A85" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></div>
+<div style="flex-grow: 1"></div>
+<span class="pill p-pur">재생 중 · test_0 · ×60</span>
+<span class="pill p-gry">데이터 시각 2021-09-11 02:46:08 UTC</span>
+</header>
+<main style="padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box">
+<div style="display: flex; align-items: flex-end; gap: 16px">
+<div style="flex-grow: 1">
+<h1 style="margin: 0; font-size: 28px; font-weight: 800">작업함</h1>
+</div>
+</div>
+<section class="card" style="padding: 0; overflow: hidden" aria-label="케이스 목록">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px">
+<button class="tab on" type="button">전체</button>
+<button class="tab" type="button">내 케이스</button>
+<div style="flex-grow: 1"></div>
+<select class="in" style="width: 140px" aria-label="경보 단계"><option>경보 전체</option><option>critical</option><option>warning</option></select>
+<select class="in" style="width: 140px" aria-label="진행 상태"><option>상태 전체</option><option>신규</option><option>원인 찾는 중</option><option>인계됨</option></select>
+</div>
+<table class="tbl">
+<thead><tr><th>경보</th><th>설비</th><th>트리거 (컨트롤러 코드)</th><th>데이터셋 클래스 힌트</th><th>진행 상태</th><th>발생 (데이터 시각)</th><th>담당</th><th></th></tr></thead>
+<tbody>
+<tr><td><span class="pill p-red">critical</span></td><td style="font-weight: 800">test_0</td><td>종료 코드 E012</td><td>E01 카운터밸런스 시간 초과 <span class="pill p-org" title="종료 코드 기반 추정, 오트리거 가능">추정 ※</span></td><td><span class="pill p-gry">신규</span></td><td>2021-09-11 02:46</td><td class="muted">[담당자]</td><td><a class="btn btn-pri" href="Resolve.dc.html">열기</a></td></tr>
+<tr><td><span class="pill p-red">critical</span></td><td style="font-weight: 800">test_3</td><td>종료 코드 E016 → E029</td><td>E02 전극 파손 <span class="pill p-org">추정 ※</span></td><td><span class="pill p-blu">원인 찾는 중</span></td><td>[시각]</td><td class="muted">[담당자]</td><td><a class="btn" href="Resolve.dc.html">열기</a></td></tr>
+<tr><td><span class="pill p-org">warning</span></td><td style="font-weight: 800">test_2</td><td>모델 이상 신호 · 코드 없음</td><td class="muted">없음</td><td><span class="pill p-blu">원인 찾는 중</span></td><td>[시각]</td><td class="muted">[담당자]</td><td><a class="btn" href="Manual.dc.html">열기</a></td></tr>
+<tr><td><span class="pill p-red">critical</span></td><td style="font-weight: 800">[설비]</td><td>종료 코드 E028</td><td>E03 원치 않는 움직임 <span class="pill p-org">추정 ※</span></td><td><span class="pill p-pur">인계됨</span></td><td>[시각]</td><td class="muted">전문가 대기</td><td><a class="btn" href="Handover.dc.html">열기</a></td></tr>
+<tr><td><span class="pill p-red">critical ×4</span></td><td style="font-weight: 800">test_0</td><td>E029 · 매일 19:30 UTC 4회 (+E003 1회 같은 시각)</td><td>E04 미세 이동 <span class="pill p-org">추정 ※</span></td><td><span class="pill p-gry">모니터링</span></td><td>09-06 ~ 09-10</td><td class="muted">—</td><td><button class="btn" type="button">묶음 펼치기</button></td></tr>
+</tbody>
+</table>
+</section>
+<a class="btn btn-ghost" href="Equipment.dc.html" style="align-self: flex-end">케이스로 만들지 않은 신호는 설비 상태에서 →</a>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

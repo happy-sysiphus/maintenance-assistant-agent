@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>공통 상태와 컴포넌트</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:16px;box-sizing:border-box;display:flex;flex-direction:column;gap:9px;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.p-out{background:#fff;border:1px solid #B9C3D6;color:#202224}
+.btn{font:inherit;font-size:13px;font-weight:700;border-radius:10px;padding:0 12px;min-height:40px;border:1px solid #D5DAE3;background:#fff;color:#202224;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff}
+.muted{color:#5E6A85}
+.cap{font-size:11px;font-weight:800;color:#5E6A85;letter-spacing:.06em}
+.t{margin:0;font-size:15px;font-weight:800}
+.sk{height:10px;border-radius:5px;background:#EEF0F4}
+.p{margin:0;font-size:12px;line-height:1.5}
+.row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1080px; box-sizing: border-box; padding: 36px 40px; display: flex; flex-direction: column; gap: 18px; background: #F5F6FA; overflow: hidden">
+<div>
+<h1 style="margin: 0; font-size: 28px; font-weight: 800">공통 상태 · 컴포넌트</h1>
+<p class="muted" style="margin: 4px 0 0; font-size: 14px">모든 화면이 같은 모양으로 쓰는 상태 표시. 컴포넌트를 만들 때 이 보드가 체크리스트입니다.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 14px; flex-grow: 1; min-height: 0">
+<section class="card">
+<span class="cap">로딩</span><h2 class="t">안내 생성 중</h2>
+<div class="row"><span class="pill p-grn">검색 완료</span><span class="pill p-blu">요약 중…</span></div>
+<div class="sk" style="width: 90%"></div><div class="sk" style="width: 70%"></div>
+<p class="p muted">차트와 입력은 먼저 사용할 수 있게.</p>
+</section>
+<section class="card">
+<span class="cap">API 실패</span><h2 class="t">불러오지 못했습니다</h2>
+<p class="p muted">조회 실패인지 저장 실패인지 구분. 입력값은 보존.</p>
+<div class="row"><button class="btn btn-pri" type="button">다시 시도</button></div>
+</section>
+<section class="card">
+<span class="cap">미저장 입력</span><h2 class="t">저장 안 한 결과 2건</h2>
+<p class="p muted">이동 전에 확인. 자동으로 버리지 않음.</p>
+<div class="row"><button class="btn btn-pri" type="button">저장 후 이동</button><button class="btn" type="button">버리기</button></div>
+</section>
+<section class="card">
+<span class="cap">동시 수정 충돌</span><h2 class="t">다른 사람이 먼저 저장함</h2>
+<p class="p muted">서버 revision이 바뀌면 409. 내 입력은 그대로 두고 최신본과 비교.</p>
+<div class="row"><button class="btn btn-pri" type="button">차이 보기</button><button class="btn" type="button">최신본 불러오기</button></div>
+</section>
+<section class="card">
+<span class="cap">케이스 없음</span><h2 class="t">조건에 맞는 케이스 없음</h2>
+<p class="p muted">"모든 설비 정상"이라는 뜻이 아닙니다. 필터나 재생 상태를 확인.</p>
+<div class="row"><button class="btn" type="button">필터 해제</button></div>
+</section>
+<section class="card">
+<span class="cap">문서 열기 실패</span><h2 class="t">원문을 열 수 없음</h2>
+<p class="p muted">Festo V1.5 · PDF p.90. 근거 카드와 나머지 화면은 그대로 유지.</p>
+<div class="row"><button class="btn" type="button">다시 시도</button></div>
+</section>
+<section class="card">
+<span class="cap">결측</span><h2 class="t">데이터 공백</h2>
+<svg viewBox="0 0 240 60" style="width: 100%; height: 60px" role="img" aria-label="결측 구간에서 끊긴 선"><rect x="100" y="4" width="40" height="52" fill="#D5DAE3" opacity="0.7"></rect><polyline fill="none" stroke="#3563E9" stroke-width="2" points="0,34 25,30 50,36 75,32 98,34"></polyline><polyline fill="none" stroke="#3563E9" stroke-width="2" points="142,38 165,32 190,35 215,30 240,33"></polyline></svg>
+<p class="p muted">선 끊기 · 0이나 보간으로 채우지 않기</p>
+</section>
+<section class="card">
+<span class="cap">비용접 · 판단 보류</span><h2 class="t">캡 드레싱 구간</h2>
+<svg viewBox="0 0 240 60" style="width: 100%; height: 60px" role="img" aria-label="빗금으로 표시한 비용접 구간"><defs><pattern id="h3" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#9AA3B5" stroke-width="2"></line></pattern></defs><rect x="80" y="4" width="80" height="52" fill="url(#h3)" opacity="0.5"></rect><polyline fill="none" stroke="#3563E9" stroke-width="2" points="0,34 40,30 80,34 160,34 200,31 240,33"></polyline></svg>
+<div class="row"><span class="pill p-gry">판단 보류</span><span class="p muted">알람으로 세지 않음</span></div>
+</section>
+<section class="card">
+<span class="cap">코드 3종 구분</span><h2 class="t">같은 칸에 넣지 않기</h2>
+<div class="row"><span class="pill p-out">컨트롤러 E012</span><span class="p muted">원본 상태 코드</span></div>
+<div class="row"><span class="pill p-org">클래스 E01 ※</span><span class="p muted">추정 힌트</span></div>
+<div class="row"><span class="pill p-gry">Festo 12</span><span class="p muted">문서 번호 체계</span></div>
+</section>
+<section class="card">
+<span class="cap">AI 요약 실패</span>
+<div style="border: 1px dashed #B9C3D6; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px"><b style="font-size: 14px">요약을 만들지 못했습니다</b><p class="p muted">근거 원문은 그대로 볼 수 있습니다. 모드는 바뀌지 않음.</p><button class="btn" type="button" style="align-self: flex-start">다시 생성</button></div>
+</section>
+<section class="card">
+<span class="cap">근거 없음</span><h2 class="t">검색된 근거 없음</h2>
+<p class="p muted">검색 조건을 함께 보여주기: 증상 · 구동 방식 · 등급별 건수</p>
+<div class="row"><button class="btn" type="button">문서 직접 검색</button><button class="btn" type="button">현장 확인</button></div>
+</section>
+<section class="card">
+<span class="cap">결과 확인 · 판단 보류</span>
+<div class="row"><span class="pill p-gry">결과 대기</span><span class="p muted">조치 후 재발 여부 자동 확인 중</span></div>
+<div class="row"><span class="pill p-out">모르겠음</span><span class="p muted">현장 확인 · 인계로</span></div>
+<p class="p muted">사람이 결과를 골라야 다음으로. 기록에 그대로 남음.</p>
+</section>
+<section class="card">
+<span class="cap">근거 적용 등급 5종</span>
+<div class="row"><span class="pill p-grn">직접 적용</span><span class="p muted">모델 확인됨</span></div>
+<div class="row"><span class="pill p-blu">구조 참고</span><span class="p muted">구동 방식 같음</span></div>
+<div class="row"><span class="pill p-gry">비교만</span><span class="p muted">직접 적용 금지</span></div>
+<div class="row"><span class="pill p-org">미확인</span><span class="p muted">장비 정보 부족</span></div>
+<div class="row"><span class="pill p-gry" style="text-decoration: line-through">제외</span><span class="p muted">권고에 안 씀</span></div>
+</section>
+<section class="card">
+<span class="cap">상태 5축</span>
+<div class="row"><span class="pill p-gry">운전 미확인</span><span class="pill p-grn">센서 정상 범위</span></div>
+<div class="row"><span class="pill p-red">경보 critical</span><span class="pill p-org">경보 warning</span></div>
+<div class="row"><span class="pill p-blu">데이터 수신 중</span></div>
+<div class="row"><span class="pill p-blu">점검 중</span><span class="pill p-pur">인계됨</span><span class="pill p-grn">종료</span></div>
+<p class="p muted">빨강·주황은 경보에만.</p>
+</section>
+<section class="card">
+<span class="cap">데이터 출처</span>
+<div class="row"><span class="pill p-gry">재생 데이터</span><span class="p muted">공개 CSV</span></div>
+<div class="row"><span class="pill p-pur">시뮬레이션</span><span class="p muted">조치 후 대체</span></div>
+<div class="row"><span class="pill p-blu">사람이 선택함</span><span class="p muted">직접 찾은 근거</span></div>
+<div class="row"><span class="pill p-pur">AI 생성</span><span class="p muted">요약·초안</span></div>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

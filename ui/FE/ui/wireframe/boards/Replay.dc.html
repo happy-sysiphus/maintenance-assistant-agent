@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>재생 콘솔</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.side{width:240px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;gap:4px;padding:24px 16px;box-sizing:border-box;border-right:1px solid #EEF0F4}
+.brand{font-weight:800;font-size:20px;padding:0 12px 20px;color:#202224}
+.brand b{color:#3563E9}
+.nav{display:flex;align-items:center;gap:12px;padding:0 12px;min-height:44px;border-radius:10px;color:#202224;text-decoration:none;font-weight:600;font-size:14px}
+.nav.on{background:#3563E9;color:#fff}
+.nav.later{color:#5E6A85}
+.navsec{font-size:11px;font-weight:800;color:#5E6A85;padding:18px 12px 6px;letter-spacing:.06em}
+.top{height:72px;flex-shrink:0;background:#fff;display:flex;align-items:center;gap:16px;padding:0 32px;box-sizing:border-box;border-bottom:1px solid #EEF0F4}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:20px;box-sizing:border-box}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:0 16px;min-height:44px;border:1px solid #D5DAE3;background:#fff;color:#202224;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;box-sizing:border-box}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff}
+.btn-ghost{border-color:transparent;background:transparent;color:#2446B8}
+.muted{color:#5E6A85}
+.lbl{display:block;font-size:12px;font-weight:700;color:#5E6A85;margin-bottom:6px}
+.in{font:inherit;font-size:14px;border:1px solid #D5DAE3;border-radius:10px;padding:10px 12px;background:#F9FAFC;color:#202224;min-height:44px;box-sizing:border-box;width:100%}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;color:#5E6A85;font-weight:800;padding:10px 14px;background:#F7F8FB}
+.tbl td{padding:8px 14px;border-top:1px solid #EEF0F4;vertical-align:middle}
+.h2{margin:0;font-size:16px;font-weight:800}
+.mono{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1080px; display: flex; background: #F5F6FA; overflow: hidden">
+<nav class="side" aria-label="주 메뉴">
+<div class="brand">RSW <b>정비 지원</b></div>
+<a class="nav" href="Main.dc.html">작업함</a>
+<a class="nav" href="Equipment.dc.html">설비 상태</a>
+<a class="nav" href="History.dc.html">정비 이력</a>
+<a class="nav on" href="Replay.dc.html">재생 콘솔</a>
+</nav>
+<div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0">
+<header class="top">
+<div style="flex-grow: 1"></div>
+<span class="pill p-pur">재생 중 · test_0 · ×60</span>
+</header>
+<main style="padding: 28px 32px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box">
+<div>
+<h1 style="margin: 0; font-size: 28px; font-weight: 800">재생 콘솔</h1>
+<p class="muted" style="margin: 4px 0 0; font-size: 14px">공개 데이터 CSV를 실시간 스트림처럼 재생합니다. 발표·개발용이며 실제 설비와 연결되지 않습니다.</p>
+</div>
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 18px">
+<section class="card" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: end">
+<label><span class="lbl">파일</span><select class="in"><option>test_0.csv</option><option>test_1.csv</option><option>test_2.csv</option><option>test_3.csv</option><option>test_4.csv</option><option>test_5.csv</option><option>test_6.csv</option><option>test_7.csv</option></select></label>
+<label><span class="lbl">시작 위치</span><select class="in"><option>마지막 12시간</option><option>처음부터 (7일)</option><option>이벤트에서</option></select></label>
+<label><span class="lbl">배속</span><select class="in"><option>×60</option><option>×1</option><option>최대 속도</option></select></label>
+<label><span class="lbl">청크 크기</span><select class="in"><option>10분</option><option>60초</option><option>20분</option></select></label>
+<div style="grid-column: span 4; display: flex; gap: 10px">
+<button class="btn btn-pri" type="button">재생</button>
+<button class="btn" type="button">일시정지</button>
+<button class="btn" type="button">건 상태 초기화</button>
+<div style="flex-grow: 1"></div>
+<span class="muted" style="font-size: 12px; align-self: center">초기화하면 건별 기준(6시간 워밍업)을 다시 수집합니다.</span>
+</div>
+</section>
+<section class="card" style="display: flex; flex-direction: column; gap: 12px">
+<div><span class="lbl">데이터 시각 (UTC)</span><div class="mono" style="font-size: 24px; font-weight: 800">2021-09-10 19:30:10</div></div>
+<div><span class="lbl">실제 시각 (KST)</span><div class="mono" style="font-size: 16px; font-weight: 700">[현재 시각]</div></div>
+<div style="height: 8px; border-radius: 4px; background: #EEF0F4"><div style="width: 94%; height: 8px; border-radius: 4px; background: #3563E9"></div></div>
+</section>
+</div>
+<section class="card" style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px"><h2 class="h2">test_0 · 7일 이벤트</h2><span class="muted" style="font-size: 12px">원본 error 컬럼과 시각 공백에서 추출</span></div>
+<svg viewBox="0 0 1100 110" style="width: 100%; height: 110px" role="img" aria-label="7일 동안의 E029 반복, 결측 공백 2회, 마지막 E012 고장 코드">
+<line x1="20" y1="50" x2="1080" y2="50" stroke="#E3E7EE" stroke-width="10" stroke-linecap="round"></line>
+<rect x="108" y="40" width="44" height="20" rx="4" fill="#FFB866"></rect>
+<rect x="249" y="34" width="4" height="32" fill="#9AA3B5"></rect>
+<rect x="428" y="40" width="15" height="20" rx="3" fill="#FFB866"></rect>
+<rect x="579" y="40" width="15" height="20" rx="3" fill="#FFB866"></rect>
+<rect x="731" y="40" width="14" height="20" rx="3" fill="#FFB866"></rect>
+<rect x="882" y="40" width="15" height="20" rx="3" fill="#8E9AB3"></rect>
+<rect x="1006" y="34" width="4" height="32" fill="#9AA3B5"></rect>
+<rect x="1033" y="40" width="15" height="20" rx="3" fill="#FFB866"></rect>
+<line x1="1079" y1="22" x2="1079" y2="78" stroke="#B42318" stroke-width="3"></line>
+<line x1="1033" y1="18" x2="1033" y2="82" stroke="#3563E9" stroke-width="2" stroke-dasharray="3 3"></line>
+<text x="1040" y="16" font-size="11" font-weight="700" fill="#B42318">E012</text>
+<text x="990" y="96" font-size="10" fill="#2446B8">현재 위치</text>
+<text x="20" y="96" font-size="11" fill="#5E6A85">09-04 02:46</text><text x="171" y="96" font-size="11" fill="#5E6A85">D-6</text><text x="323" y="96" font-size="11" fill="#5E6A85">D-5</text><text x="474" y="96" font-size="11" fill="#5E6A85">D-4</text><text x="625" y="96" font-size="11" fill="#5E6A85">D-3</text><text x="777" y="96" font-size="11" fill="#5E6A85">D-2</text><text x="928" y="96" font-size="11" fill="#5E6A85">D-1</text>
+</svg>
+<table class="tbl">
+<thead><tr><th>시작 (UTC)</th><th>이벤트</th><th>지속</th><th>메모</th><th></th></tr></thead>
+<tbody>
+<tr><td class="mono">09-04 16:45:10</td><td><span class="pill p-org">E029</span></td><td class="mono">7시간 2분</td><td class="muted">종료 코드 목록에 있음 · 고장 약 6일 전</td><td><button class="btn" type="button">점프</button></td></tr>
+<tr><td class="mono">09-05 15:18:45</td><td><span class="pill p-gry">결측 공백</span></td><td class="mono">905초</td><td class="muted">행 자체가 없음 · 차트 선 끊김</td><td><button class="btn" type="button">점프</button></td></tr>
+<tr><td class="mono">09-06 ~ 09-08 19:30</td><td><span class="pill p-org">E029 × 3</span></td><td class="mono">각 약 2시간 15~19분</td><td class="muted">매일 같은 시각 반복</td><td><button class="btn" type="button">점프</button></td></tr>
+<tr><td class="mono">09-09 19:30:15</td><td><span class="pill p-gry">E003</span></td><td class="mono">2시간 21분</td><td class="muted">같은 시각 · 다른 코드</td><td><button class="btn" type="button">점프</button></td></tr>
+<tr><td class="mono">09-10 15:18:58</td><td><span class="pill p-gry">결측 공백</span></td><td class="mono">903초</td><td class="muted"></td><td><button class="btn" type="button">점프</button></td></tr>
+<tr><td class="mono">09-10 19:30:10</td><td><span class="pill p-org">E029</span></td><td class="mono">2시간 19분</td><td class="muted">현재 위치</td><td><button class="btn" type="button">점프</button></td></tr>
+<tr><td class="mono">09-11 02:46:08</td><td><span class="pill p-red">E012</span></td><td class="mono">16초</td><td class="muted">종료 코드 · 파일은 이후 10분 더 이어짐</td><td><button class="btn btn-pri" type="button">점프</button></td></tr>
+</tbody>
+</table>
+</section>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

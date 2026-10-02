@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>사용 시나리오 — 정비 담당자의 하루</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:18px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card.core{border:2px solid #3563E9}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-org{background:#FFF1E0;color:#8F4700}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.muted{color:#5E6A85}
+.no{width:34px;height:34px;border-radius:50%;background:#202224;color:#fff;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.core .no{background:#3563E9}
+.name{margin:0;font-size:18px;font-weight:800}
+.q{font-size:14px;font-weight:700;color:#2446B8}
+.k{font-size:11px;font-weight:800;color:#5E6A85;letter-spacing:.04em}
+.ul{margin:0;padding-left:16px;font-size:13px;line-height:1.55;color:#343A48}
+.get{background:#F5F8FF;border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.5;color:#16328A;font-weight:600}
+.arrow{position:absolute;top:50%;right:-20px;width:16px;height:16px;transform:translateY(-50%);color:#9AA3B5}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;color:#5E6A85;font-weight:800;padding:10px 14px;background:#F7F8FB}
+.tbl td{padding:10px 14px;border-top:1px solid #EEF0F4;vertical-align:top;line-height:1.5}
+</style>
+</helmet>
+<div style="width: 2960px; height: 860px; box-sizing: border-box; padding: 40px 48px; display: flex; flex-direction: column; gap: 22px; background: #F5F6FA; overflow: hidden">
+<div style="display: flex; align-items: flex-end; gap: 16px">
+<div style="flex-grow: 1">
+<h1 style="margin: 0; font-size: 34px; font-weight: 800">사용 시나리오 · 정비 담당자가 E012 한 건을 처리하는 흐름</h1>
+<p class="muted" style="margin: 6px 0 0; font-size: 16px">작업함에서 케이스를 열고 → 한 화면에서 후보마다 매뉴얼 근거 확인 · 판단 · 조치 · 결과를 반복하고 → 해결되면 일지를 남기고 닫습니다.</p>
+</div>
+<span class="pill p-gry">예시 케이스: test_0 · 컨트롤러 코드 E012 · 2021-09-11 02:46 UTC</span>
+</div>
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.7fr) minmax(0, 1fr) minmax(0, 1fr); gap: 24px">
+<section class="card" style="position: relative">
+<div style="display: flex; align-items: center; gap: 10px"><span class="no">1</span><h2 class="name">작업함</h2></div>
+<span class="q">"지금 처리할 게 뭐지?"</span>
+<span class="k">보는 것</span>
+<ul class="ul"><li>LLM 판단으로 생성된 케이스 목록</li><li>설비 · 코드 · 발생 시각</li><li>경보 등급 · 추정 유형 · 진행 상태</li></ul>
+<span class="k">하는 것</span>
+<ul class="ul"><li>급한 것(critical)부터 "열기"</li></ul>
+<div class="get">무엇부터 볼지 정리됨. 반복 코드는 한 줄로 묶임</div>
+<svg class="arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+</section>
+<section class="card core" style="position: relative">
+<div style="display: flex; align-items: center; gap: 10px"><span class="no">2</span><h2 class="name">원인 찾기 · 조치</h2><span class="pill p-blu">핵심 · 한 화면</span><span class="muted" style="font-size: 13px">이전 안의 상황 파악 · 원인 점검 · 조치 기록 · 재검증을 합침</span></div>
+<span class="q">"이 후보가 맞나? 매뉴얼대로 고쳤더니 해결됐나?"</span>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<div style="background: #F5F8FF; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px"><b style="font-size: 14px">① 후보 펼침</b><ul class="ul"><li>무슨 일이 났나 (코드 · 작은 그래프)</li><li>매뉴얼 원문 · 쪽수 · 등급</li><li>점검 항목 · 이상일 때 할 일</li></ul></div>
+<div style="background: #F5F8FF; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px"><b style="font-size: 14px">② 판단</b><ul class="ul"><li>이 후보 · 매뉴얼 안내가 맞나?</li><li>맞음 / 아님 → 다음 후보 / 모르겠음 → 현장 확인 · 인계</li><li>RAG 평가 데이터로도 저장</li></ul></div>
+<div style="background: #F5F8FF; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px"><b style="font-size: 14px">③ 실제 수행 조치</b><ul class="ul"><li>권고는 초안으로만 불러옴</li><li>조치 · 유형 · 부품 · 수행자 · 시각</li></ul></div>
+<div style="background: #F5F8FF; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px"><b style="font-size: 14px">④ 결과</b><ul class="ul"><li>해결됨 → 정비일지</li><li>해결 안 됨 → 다음 후보 (루프)</li><li>"종료 코드 재발 없음" 자동 표시</li></ul></div>
+</div>
+<div class="get">후보를 위에서부터 하나씩 확인 → 매뉴얼 근거로 바로 조치 → 안 되면 다음 후보. 모든 후보가 아니면 수동 모드 · 인계</div>
+<svg class="arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+</section>
+<section class="card" style="position: relative">
+<div style="display: flex; align-items: center; gap: 10px"><span class="no">3</span><h2 class="name">정비일지 · 종료</h2></div>
+<span class="q">"기록 남기고 끝"</span>
+<span class="k">보는 것</span>
+<ul class="ul"><li>자동 초안 (문제 → 원인 → 조치 → 못 한 점검 → 후보별 판단 · 결과 → 근거)</li></ul>
+<span class="k">하는 것</span>
+<ul class="ul"><li>① 일지 승인</li><li>② 해결 종료</li></ul>
+<div class="get">두 번 적지 않음</div>
+<svg class="arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+</section>
+<section class="card">
+<div style="display: flex; align-items: center; gap: 10px"><span class="no">4</span><h2 class="name">정비 이력</h2></div>
+<span class="q">"지난번엔 어떻게 했더라?"</span>
+<span class="k">보는 것</span>
+<ul class="ul"><li>닫힌 케이스 (읽기 전용)</li><li>후보별 판단 · 조치 타임라인</li></ul>
+<div class="get">반복 고장 확인 · 지난 조치 참고</div>
+</section>
+</div>
+<div style="display: grid; grid-template-columns: 1.7fr 1fr; gap: 24px; flex-grow: 1; min-height: 0">
+<section class="card" style="padding: 0; overflow: hidden; gap: 0">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px"><h2 class="name">막혔을 때 가는 길</h2><span class="muted" style="font-size: 13px">기본 흐름 중간 어디서든 갈라졌다가 다시 합류</span></div>
+<table class="tbl">
+<thead><tr><th style="width: 36%">이런 상황이면</th><th style="width: 22%">이 화면으로</th><th>거기서 하는 것</th></tr></thead>
+<tbody>
+<tr><td>매뉴얼에 맞는 근거가 없음 (코드 없이 모델 경보만 등)</td><td><span class="pill p-org">수동 모드</span> ② 자리에 자동으로 뜸</td><td>근거 없는 이유 확인 · 문서 직접 검색 · 자유 점검 기록</td></tr>
+<tr><td>센서로 알 수 없어 직접 재야 함</td><td><span class="pill p-blu">현장 확인 체크시트</span></td><td>PDF로 들고 가서 측정 → 결과 입력하면 ② 안내 갱신</td></tr>
+<tr><td>혼자 해결 못 함 (권한 · 판단 부족 · 후보를 다 봐도 해결 안 됨)</td><td><span class="pill p-pur">인계서</span></td><td>대상 · 요청 사항만 적으면 점검 결과 · 제외 후보는 자동 → 전문가가 이어서 진행</td></tr>
+</tbody>
+</table>
+</section>
+<section class="card" style="gap: 12px">
+<h2 class="name">팀원에게 전할 핵심 세 줄</h2>
+<div style="display: flex; gap: 12px; align-items: flex-start"><span class="no" style="width: 28px; height: 28px; font-size: 13px">1</span><p style="margin: 0; font-size: 15px; line-height: 1.55">정비 담당자는 "보는" 게 아니라 "처리"한다. 첫 화면은 할 일 목록, 케이스는 한 화면에서 후보마다 판단 · 조치를 반복해 끝낸다.</p></div>
+<div style="display: flex; gap: 12px; align-items: flex-start"><span class="no" style="width: 28px; height: 28px; font-size: 13px; background: #3563E9">2</span><p style="margin: 0; font-size: 15px; line-height: 1.55">②에서 매뉴얼 근거로 점검과 조치를 바로 받고 사람이 맞는지 판단하는 것이 핵심 가치. 근거가 없으면 지어내지 않고 사람에게 넘긴다.</p></div>
+<div style="display: flex; gap: 12px; align-items: flex-start"><span class="no" style="width: 28px; height: 28px; font-size: 13px">3</span><p style="margin: 0; font-size: 15px; line-height: 1.55">모든 값에는 출처가 있다 — 데이터 · 모델 · 매뉴얼 · 사람 · AI를 구분해서 보여준다.</p></div>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2960,"height":860}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

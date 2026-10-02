@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>API ② 케이스·기록 API 제안</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);box-sizing:border-box;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}
+.muted{color:#5E6A85}
+.h2{margin:0;font-size:17px;font-weight:800}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:12px;color:#5E6A85;font-weight:800;padding:9px 12px;background:#F7F8FB}
+.tbl td{padding:8px 12px;border-top:1px solid #EEF0F4;vertical-align:top;line-height:1.45}
+.tbl tr.g td{background:#F5F8FF;font-weight:800;color:#16328A;font-size:12px;padding:6px 12px}
+.m{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.meth{display:inline-block;min-width:44px;font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:800;padding:2px 6px;border-radius:5px;text-align:center}
+.get{background:#E0F5F1;color:#00684F}.post{background:#E8EEFF;color:#2446B8}
+.repo{display:inline-block;margin-left:6px;font-size:11px;font-weight:800;color:#00684F}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; padding: 36px 48px; display: flex; flex-direction: column; gap: 16px; background: #F5F6FA; overflow: hidden">
+<div>
+<div style="display: flex; align-items: center; gap: 10px"><h1 style="margin: 0; font-size: 30px; font-weight: 800">API ② 케이스 · 기록 (새로 필요)</h1><span class="pill p-org">제안 초안 · 백엔드와 합의 필요</span></div>
+<p class="muted" style="margin: 6px 0 0; font-size: 15px">화면 순서대로 FE가 부르는 API. 이름과 필드는 제안이고, "레포 값 사용" 표시는 /predict · /guns 결과를 가공해 쓰는 부분입니다.</p>
+</div>
+<section class="card" style="overflow: hidden">
+<table class="tbl">
+<thead><tr><th style="width: 70px">방식</th><th style="width: 300px">주소</th><th>보내는 것</th><th>받는 것</th></tr></thead>
+<tbody>
+<tr class="g"><td colspan="4">① 작업함</td></tr>
+<tr><td><span class="meth get">GET</span></td><td class="m">/cases?status=&amp;severity=&amp;mine=</td><td>필터</td><td>케이스 목록: id, 설비, 트리거 코드, 클래스 힌트, 경보 등급, 진행 상태, 발생 시각, 담당 <span class="repo">레포 값 사용</span></td></tr>
+<tr><td><span class="meth get">GET</span></td><td class="m">/cases/{id}</td><td>—</td><td>케이스 상세 + 현재 후보 · 단계</td></tr>
+<tr class="g"><td colspan="4">② 원인 찾기 · 조치 (통합 화면 · 안내 자체는 API ③ 보드의 /guidance)</td></tr>
+<tr><td><span class="meth get">GET</span></td><td class="m">/cases/{id}/signals?from=&amp;to=&amp;cols=</td><td>구간 · 센서</td><td>"무슨 일이 났나" 작은 그래프 + 전체 그래프 · 기여 신호 <span class="repo">레포 값 사용</span></td></tr>
+<tr><td><span class="meth post">POST</span></td><td class="m">/cases/{id}/checks</td><td>후보 id, 점검 항목 id, 결과 (정상 / 이상 / 미실시), 측정값 · 단위, 사유</td><td>저장된 결과 → 이어서 /guidance 다시 호출</td></tr>
+<tr><td><span class="meth post">POST</span></td><td class="m">/cases/{id}/candidates/{cid}/judgment</td><td>판단 (맞음 / 아님 / 모르겠음) + 사유</td><td>후보 상태 · 아님이면 다음 후보 (RAG 평가 로그에도 저장)</td></tr>
+<tr><td><span class="meth post">POST</span></td><td class="m">/cases/{id}/candidates/{cid}/actions</td><td>수행한 조치, 조치 유형, 교체 부품, 수행자, 시작 · 종료 시각</td><td>조치 id (필요하면 백엔드가 DELETE /guns 호출 <span class="repo">레포 API</span>)</td></tr>
+<tr><td><span class="meth post">POST</span></td><td class="m">/cases/{id}/candidates/{cid}/result</td><td>해결됨 / 해결 안 됨</td><td>해결 안 됨이면 다음 후보 · 자동 표시용 "종료 코드 재발 여부" <span class="repo">레포 규칙 사용</span></td></tr>
+<tr class="g"><td colspan="4">③ 정비일지 · 종료</td></tr>
+<tr><td><span class="meth get">GET</span></td><td class="m">/cases/{id}/logbook</td><td>—</td><td>일지 초안 (칸마다 출처 태그)</td></tr>
+<tr><td><span class="meth post">POST</span></td><td class="m">/cases/{id}/logbook/approve</td><td>수정한 일지</td><td>승인자 · 시각 (서버 기록)</td></tr>
+<tr><td><span class="meth post">POST</span></td><td class="m">/cases/{id}/close</td><td>종료 결과 (해결 / 미해결 저장 / 이상 없음) + 사유</td><td>닫힌 케이스 → 이력으로 이동</td></tr>
+<tr class="g"><td colspan="4">인계 · 공통 · 이력 · 설비</td></tr>
+<tr><td><span class="meth post">POST</span></td><td class="m">/cases/{id}/handover</td><td>인계 대상, 긴급도, 요청 사항, 첨부</td><td>인계서 (자동 칸 포함) · 상태 "인계됨"</td></tr>
+<tr><td><span class="meth get">GET</span></td><td class="m">/cases/{id}/timeline</td><td>—</td><td>후보별 판단 · 조치 루프 기록 + 시각 (MTTR 계산에 사용)</td></tr>
+<tr><td><span class="meth get">GET</span></td><td class="m">/history?gun=&amp;result=&amp;period=</td><td>필터</td><td>닫힌 케이스 목록</td></tr>
+<tr><td><span class="meth get">GET</span></td><td class="m">/equipment</td><td>—</td><td>설비별 상태 = /guns + 마지막 판정 + 열린 케이스 수 <span class="repo">레포 값 사용</span></td></tr>
+</tbody>
+</table>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

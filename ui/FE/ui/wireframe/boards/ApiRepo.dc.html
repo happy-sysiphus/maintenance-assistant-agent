@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>API ① 전체 구조와 레포에 있는 API</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:18px 20px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}
+.muted{color:#5E6A85}
+.h2{margin:0;font-size:17px;font-weight:800}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:12px;color:#5E6A85;font-weight:800;padding:9px 12px;background:#F7F8FB}
+.tbl td{padding:9px 12px;border-top:1px solid #EEF0F4;vertical-align:top;line-height:1.5}
+.m{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.meth{display:inline-block;min-width:52px;font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:800;padding:2px 6px;border-radius:5px;text-align:center}
+.get{background:#E0F5F1;color:#00684F}.post{background:#E8EEFF;color:#2446B8}.del{background:#FDECEC;color:#B42318}
+.kv{display:grid;grid-template-columns:190px 1fr;gap:4px 12px;font-size:13px;line-height:1.5}
+.kv .k{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#16328A;font-weight:700}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; padding: 36px 48px; display: flex; flex-direction: column; gap: 18px; background: #F5F6FA; overflow: hidden">
+<div>
+<div style="display: flex; align-items: center; gap: 10px"><h1 style="margin: 0; font-size: 30px; font-weight: 800">API ① 전체 구조 · 레포에 이미 있는 API</h1><span class="pill p-grn">레포 참고</span></div>
+<p class="muted" style="margin: 6px 0 0; font-size: 15px">레포 참고: github.com/48harry/U3 · main.py (FastAPI) · commit 80f4fb8 (2026-09-24) 기준. 이후 커밋에서 바뀌었을 수 있습니다.</p>
+</div>
+<section class="card">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">데이터가 흐르는 길</h2><span class="muted" style="font-size: 13px">FE는 모델 API(/predict)를 직접 부르지 않습니다</span></div>
+<svg viewBox="0 0 1340 170" style="width: 100%; height: 170px" role="img" aria-label="CSV 재생에서 predict API, 우리 백엔드, FE로 가는 흐름과 매뉴얼 DB와 LLM에서 우리 백엔드로 가는 흐름">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5E6A85"></path></marker></defs>
+<rect x="10" y="20" width="220" height="60" rx="12" fill="#EEF0F4"></rect><text x="120" y="46" font-size="14" font-weight="700" fill="#202224" text-anchor="middle">CSV 재생</text><text x="120" y="66" font-size="12" fill="#5E6A85" text-anchor="middle">.py/replay.py (레포)</text>
+<rect x="300" y="20" width="250" height="60" rx="12" fill="#E0F5F1"></rect><text x="425" y="46" font-size="14" font-weight="700" fill="#00684F" text-anchor="middle">POST /predict</text><text x="425" y="66" font-size="12" fill="#00684F" text-anchor="middle">이상 판정 모델 (레포)</text>
+<rect x="620" y="20" width="330" height="140" rx="12" fill="#E8EEFF"></rect><text x="785" y="56" font-size="15" font-weight="800" fill="#16328A" text-anchor="middle">우리 백엔드 (새로 필요)</text><text x="785" y="80" font-size="12" fill="#2446B8" text-anchor="middle">케이스 생성 · 센서 원본 저장</text><text x="785" y="100" font-size="12" fill="#2446B8" text-anchor="middle">점검 · 판단 · 조치 · 일지 기록</text><text x="785" y="120" font-size="12" fill="#2446B8" text-anchor="middle">RAG · LLM 호출</text>
+<rect x="1030" y="50" width="300" height="80" rx="12" fill="#202224"></rect><text x="1180" y="86" font-size="15" font-weight="800" fill="#fff" text-anchor="middle">FE (우리 화면)</text><text x="1180" y="108" font-size="12" fill="#D5DAE3" text-anchor="middle">케이스 API만 받음</text>
+<rect x="300" y="100" width="250" height="60" rx="12" fill="#FFF1E0"></rect><text x="425" y="126" font-size="14" font-weight="700" fill="#8F4700" text-anchor="middle">매뉴얼 DB (RAG) + LLM</text><text x="425" y="146" font-size="12" fill="#8F4700" text-anchor="middle">새로 필요</text>
+<line x1="230" y1="50" x2="296" y2="50" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<line x1="550" y1="50" x2="616" y2="50" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<line x1="550" y1="130" x2="616" y2="130" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<line x1="950" y1="90" x2="1026" y2="90" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+</svg>
+</section>
+<section class="card" style="padding: 0; overflow: hidden; gap: 0">
+<div style="display: flex; align-items: center; gap: 8px; padding: 14px 20px"><h2 class="h2">레포에 있는 API 5개</h2><span class="pill p-grn">레포 참고 · main.py</span></div>
+<table class="tbl">
+<thead><tr><th style="width: 90px">방식</th><th style="width: 200px">주소</th><th>하는 일</th><th style="width: 360px">우리 화면에서</th></tr></thead>
+<tbody>
+<tr><td><span class="meth post">POST</span></td><td class="m">/predict</td><td>센서 묶음(최대 20분치)을 받아 이상 판정. 기록이 모자라면 202 "warming_up"</td><td>FE는 직접 안 부름. 결과가 케이스의 재료</td></tr>
+<tr><td><span class="meth get">GET</span></td><td class="m">/guns</td><td>지금까지 본 설비별 상태 (워밍업 진행, 마지막 점수, 연속 알람)</td><td>설비 상태 화면</td></tr>
+<tr><td><span class="meth del">DELETE</span></td><td class="m">/guns/{gun_id}</td><td>설비 기록을 지우고 워밍업을 다시 시작 ("정비 후 호출" 이라고 적혀 있음)</td><td>조치 저장 후 · 재생 콘솔 "건 상태 초기화"</td></tr>
+<tr><td><span class="meth get">GET</span></td><td class="m">/model</td><td>모델 설정값 · 성능 지표 (워밍업 길이, 임계값, 규칙 대기 시간 등)</td><td>워밍업 진행률 계산 (전체 길이)</td></tr>
+<tr><td><span class="meth get">GET</span></td><td class="m">/health</td><td>서버 상태 · 추적 중인 설비 수</td><td>공통 (연결 상태 표시)</td></tr>
+</tbody>
+</table>
+</section>
+<div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; flex-grow: 1; min-height: 0">
+<section class="card">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">/predict 결과 중 FE에 필요한 값</h2><span class="pill p-grn">레포 참고 · AnomalyResult</span></div>
+<div class="kv">
+<span class="k">severity</span><span>normal / warning / critical — 작업함 경보 칸</span>
+<span class="k">severity_source</span><span>critical의 이유: model / rule / model+rule — 원인 찾기·조치 맨 위 "트리거"</span>
+<span class="k">rule_code · rule_class_hint</span><span>규칙을 발동시킨 종료 코드와 클래스 힌트 (E012 → E01)</span>
+<span class="k">contributing_features[]</span><span>이상 점수를 올린 신호 (sensor, sensor_name, mean/std, share) — 막대 카드</span>
+<span class="k">alarm_held · hold_reason</span><span>비용접 구간이라 판단 보류 — 설비 상태 · 그래프 빗금</span>
+<span class="k">gun_norm</span><span>warming_up / gun / global — 기준 수집 중 표시</span>
+<span class="k">context</span><span>latest_error_code, non_welding_share, welds_10min — 데이터 상태 · 결과 자동 표시</span>
+<span class="k">window_start · window_end</span><span>판정한 구간 시각 (UTC)</span>
+</div>
+</section>
+<section class="card">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">레포에 없는 것</h2><span class="pill p-org">다음 보드에서 제안</span></div>
+<ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; color: #343A48">
+<li>케이스 · 점검 · 조치 · 일지 · 인계 저장 (DB)</li>
+<li>그래프용 센서 원본 조회 — /predict는 원본을 돌려주지 않음</li>
+<li>반복 패턴 묶기, 조치 후 재발 확인 규칙</li>
+<li>매뉴얼 검색(RAG) · 원인 후보 · AI 요약(LLM)</li>
+<li>로그인 · 역할 (엔지니어 / 전문가)</li>
+<li>재생 시작·멈춤 API (replay.py는 터미널 명령)</li>
+</ul>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

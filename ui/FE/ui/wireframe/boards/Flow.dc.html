@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>먼저 읽기 — 흐름 지도</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:20px 24px;box-sizing:border-box}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.muted{color:#5E6A85}
+.h2{margin:0;font-size:17px;font-weight:800}
+.mx{width:100%;border-collapse:separate;border-spacing:6px;font-size:13px}
+.mx th{font-size:12px;color:#5E6A85;font-weight:800;text-align:left;padding:4px 6px}
+.mx td{border-radius:10px;padding:10px 12px;vertical-align:top;line-height:1.45}
+.mx a{font-weight:800;text-decoration:none;display:block;margin-bottom:2px}
+.g{background:#E8EEFF}.f{background:#FFF1E0}.m{background:#EEF0F4}.h{background:#F1EAFE}
+.ax{display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #EEF0F4;font-size:13px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; padding: 40px 48px; display: flex; flex-direction: column; gap: 20px; background: #F5F6FA; overflow: hidden">
+<div>
+<h1 style="margin: 0; font-size: 30px; font-weight: 800">먼저 읽기 · 흐름 지도</h1>
+<p class="muted" style="margin: 6px 0 0; font-size: 15px">케이스 한 건이 열려서 닫힐 때까지 어떤 화면을 지나는지, 원인 찾기 루프는 어떻게 도는지, 시스템이 모를 때 어디로 가는지.</p>
+</div>
+<section class="card" style="display: flex; flex-direction: column; gap: 10px">
+<h2 class="h2">케이스 한 건의 흐름</h2>
+<svg viewBox="0 0 1344 380" style="width: 100%; height: 380px" role="img" aria-label="케이스 생성, 작업함, 원인 찾기·조치 통합 화면 안의 후보 루프, 정비일지, 해결 종료와 옆길: 현장 확인, 수동 모드, 인계">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5E6A85"></path></marker><marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8F4700"></path></marker></defs>
+<rect x="10" y="60" width="140" height="56" rx="12" fill="#FDECEC"></rect><text x="80" y="84" font-size="14" font-weight="800" text-anchor="middle" fill="#202224">케이스 생성</text><text x="80" y="102" font-size="11" text-anchor="middle" fill="#5E6A85">LLM 판단이 트리거</text>
+<rect x="180" y="60" width="130" height="56" rx="12" fill="#E8EEFF"></rect><text x="245" y="84" font-size="14" font-weight="800" text-anchor="middle" fill="#202224">작업함</text><text x="245" y="102" font-size="11" text-anchor="middle" fill="#5E6A85">무엇부터 볼지</text>
+<rect x="340" y="14" width="640" height="210" rx="16" fill="#F5F8FF" stroke="#3563E9" stroke-width="2"></rect>
+<text x="360" y="40" font-size="14" font-weight="800" fill="#16328A">원인 찾기 · 조치 (한 화면 · 후보마다 반복)</text>
+<rect x="360" y="60" width="130" height="56" rx="12" fill="#fff"></rect><text x="425" y="84" font-size="13" font-weight="800" text-anchor="middle" fill="#202224">후보 펼침</text><text x="425" y="102" font-size="11" text-anchor="middle" fill="#5E6A85">매뉴얼 · 점검</text>
+<rect x="515" y="60" width="130" height="56" rx="12" fill="#fff"></rect><text x="580" y="84" font-size="13" font-weight="800" text-anchor="middle" fill="#202224">판단</text><text x="580" y="102" font-size="11" text-anchor="middle" fill="#5E6A85">맞음 · 아님 · 모르겠음</text>
+<rect x="670" y="60" width="130" height="56" rx="12" fill="#fff"></rect><text x="735" y="84" font-size="13" font-weight="800" text-anchor="middle" fill="#202224">실제 수행 조치</text><text x="735" y="102" font-size="11" text-anchor="middle" fill="#5E6A85">사람이 한 일만</text>
+<rect x="825" y="60" width="130" height="56" rx="12" fill="#fff"></rect><text x="890" y="84" font-size="13" font-weight="800" text-anchor="middle" fill="#202224">결과</text><text x="890" y="102" font-size="11" text-anchor="middle" fill="#5E6A85">+ 재발 없음 자동 표시</text>
+<line x1="490" y1="88" x2="513" y2="88" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<line x1="645" y1="88" x2="668" y2="88" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<text x="648" y="80" font-size="10" fill="#00684F">맞음</text>
+<line x1="800" y1="88" x2="823" y2="88" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<polyline points="580,116 580,150 425,150 425,118" fill="none" stroke="#8F4700" stroke-width="2" marker-end="url(#ao)"></polyline>
+<text x="440" y="146" font-size="11" fill="#8F4700">아님 → 다음 후보</text>
+<polyline points="890,116 890,190 405,190 405,118" fill="none" stroke="#8F4700" stroke-width="2" marker-end="url(#ao)"></polyline>
+<text x="600" y="186" font-size="11" fill="#8F4700">해결 안 됨 → 다음 후보</text>
+<rect x="1010" y="60" width="140" height="56" rx="12" fill="#E8EEFF"></rect><text x="1080" y="84" font-size="14" font-weight="800" text-anchor="middle" fill="#202224">정비일지</text><text x="1080" y="102" font-size="11" text-anchor="middle" fill="#5E6A85">자동 초안 · 승인</text>
+<rect x="1180" y="60" width="150" height="56" rx="12" fill="#E0F5F1"></rect><text x="1255" y="84" font-size="14" font-weight="800" text-anchor="middle" fill="#202224">해결 종료</text><text x="1255" y="102" font-size="11" text-anchor="middle" fill="#5E6A85">→ 정비 이력</text>
+<line x1="150" y1="88" x2="178" y2="88" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<line x1="310" y1="88" x2="358" y2="88" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<line x1="955" y1="88" x2="1008" y2="88" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<text x="960" y="80" font-size="10" fill="#00684F">해결됨</text>
+<line x1="1150" y1="88" x2="1178" y2="88" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<rect x="515" y="250" width="160" height="56" rx="12" fill="#FFF1E0"></rect><text x="595" y="274" font-size="13" font-weight="800" text-anchor="middle" fill="#202224">현장 확인 체크시트</text><text x="595" y="292" font-size="11" text-anchor="middle" fill="#5E6A85">모르겠음 · 직접 측정</text>
+<line x1="560" y1="226" x2="560" y2="248" stroke="#8F4700" stroke-width="2" marker-end="url(#ao)"></line>
+<line x1="630" y1="248" x2="630" y2="228" stroke="#8F4700" stroke-width="2" marker-end="url(#ao)"></line>
+<text x="640" y="242" font-size="10" fill="#8F4700">측정 후 복귀</text>
+<rect x="340" y="250" width="150" height="56" rx="12" fill="#EEF0F4"></rect><text x="415" y="274" font-size="13" font-weight="800" text-anchor="middle" fill="#202224">수동 모드</text><text x="415" y="292" font-size="11" text-anchor="middle" fill="#5E6A85">근거 없음 · 후보 소진</text>
+<line x1="415" y1="226" x2="415" y2="248" stroke="#5E6A85" stroke-width="2" marker-end="url(#ar)"></line>
+<rect x="10" y="320" width="640" height="48" rx="12" fill="#F1EAFE"></rect>
+<text x="26" y="349" font-size="13" fill="#3F2585"><tspan font-weight="800">인계</tspan> — 판단 · 조치 어디서든 → 인계서 → 전문가가 [인수]하면 그 후보부터 이어서</text>
+<rect x="700" y="250" width="630" height="118" rx="12" fill="#fff"></rect>
+<text x="716" y="276" font-size="13" font-weight="800" fill="#202224">이전 안에서 바뀐 점</text>
+<text x="716" y="300" font-size="12" fill="#5E6A85">· 상황 파악의 "진짜 고장인가?" 판단 제거 — LLM 판단이 케이스 생성 트리거</text>
+<text x="716" y="322" font-size="12" fill="#5E6A85">· 원인 점검 + 판단 + 조치 기록을 한 화면으로, 후보마다 반복</text>
+<text x="716" y="344" font-size="12" fill="#5E6A85">· 재검증 화면 제거 → 결과 칸의 "재발 없음" 자동 표시로 대체</text>
+</svg>
+</section>
+<div style="display: grid; grid-template-columns: 1fr; gap: 20px; flex-grow: 1; min-height: 0">
+<section class="card" style="display: flex; flex-direction: column; gap: 10px">
+<h2 class="h2">원인 찾기·조치 화면의 모드 지도</h2>
+
+<table class="mx">
+<thead><tr><th style="width: 150px">근거 ↓ / 데이터 →</th><th>충분</th><th>일부 부족</th><th>판단 불가</th></tr></thead>
+<tbody>
+<tr><th>직접 적용<br><span class="muted" style="font-weight: 600">모델 확인된 문서</span></th><td class="g"><a href="Resolve.dc.html">가이드 모드</a>체크리스트 + 근거 + AI 요약</td><td class="g"><a href="Resolve.dc.html">가이드 모드</a>+ 데이터 부족 태그</td><td class="f"><a href="FieldCheck.dc.html">현장 확인 먼저</a>AI 요약 숨김</td></tr>
+<tr><th>구조 참고<br><span class="muted" style="font-weight: 600">구동 방식만 같음 (지금 Festo)</span></th><td class="g"><a href="Resolve.dc.html">가이드 모드</a>+ "직접 적용 아님" 배너</td><td class="g"><a href="Resolve.dc.html">가이드 모드</a>+ 배너 + 태그</td><td class="f"><a href="FieldCheck.dc.html">현장 확인 먼저</a>인계 권장</td></tr>
+<tr><th>비교만<br><span class="muted" style="font-weight: 600">전동 서보 문서 등</span></th><td class="m"><a href="Manual.dc.html">수동 모드</a>순서 제시 안 함</td><td class="m"><a href="Manual.dc.html">수동 모드</a></td><td class="h"><a href="Handover.dc.html">인계 우선</a></td></tr>
+<tr><th>없음 · 미확인<br><span class="muted" style="font-weight: 600">장비 정보 부족 포함</span></th><td class="m"><a href="Manual.dc.html">수동 모드</a>문서 직접 검색</td><td class="m"><a href="Manual.dc.html">수동 모드</a></td><td class="h"><a href="Handover.dc.html">인계 우선</a></td></tr>
+</tbody>
+</table>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

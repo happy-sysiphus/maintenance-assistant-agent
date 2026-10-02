@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>현장 확인 체크시트</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:0 16px;min-height:44px;border:1px solid #D5DAE3;background:#fff;color:#202224;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;box-sizing:border-box}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff}
+.btn-ghost{border-color:transparent;background:transparent;color:#2446B8}
+.muted{color:#5E6A85}
+.lbl{display:block;font-size:12px;font-weight:700;color:#5E6A85;margin-bottom:4px}
+.in{font:inherit;font-size:14px;border:1px solid #D5DAE3;border-radius:10px;padding:8px 10px;background:#F9FAFC;color:#202224;min-height:40px;box-sizing:border-box;width:100%}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:12px;color:#5E6A85;font-weight:800;padding:10px 12px;background:#F7F8FB}
+.tbl td{padding:10px 12px;border-top:1px solid #EEF0F4;vertical-align:top}
+.h2{margin:0;font-size:15px;font-weight:800}
+.ghost{background:#fff;border-radius:16px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1080px; position: relative; background: #F5F6FA; overflow: hidden">
+<div style="position: absolute; left: 0; top: 0; width: 240px; height: 1080px; background: #fff"></div>
+<div style="position: absolute; left: 272px; top: 96px; width: 1136px; height: 120px" class="ghost"></div>
+<div style="position: absolute; left: 272px; top: 240px; width: 680px; height: 800px" class="ghost"></div>
+<div style="position: absolute; left: 976px; top: 240px; width: 432px; height: 800px" class="ghost"></div>
+<div style="position: absolute; left: 0; top: 0; width: 1440px; height: 1080px; background: rgba(20, 24, 40, 0.5)"></div>
+<div role="dialog" aria-modal="true" aria-labelledby="fc-title" style="position: absolute; left: 180px; top: 40px; width: 1080px; height: 1000px; background: #fff; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.25); display: flex; flex-direction: column; overflow: hidden">
+<div style="display: flex; align-items: flex-start; gap: 16px; padding: 24px 28px 16px; border-bottom: 1px solid #EEF0F4">
+<div style="flex-grow: 1">
+<div style="display: flex; align-items: center; gap: 10px"><h1 id="fc-title" style="margin: 0; font-size: 22px; font-weight: 800">현장 확인 체크시트</h1><span class="pill p-org">데이터 부족</span></div>
+<p class="muted" style="margin: 6px 0 0; font-size: 14px">센서만으로 판단할 수 없어 사람이 측정·관찰해야 하는 항목입니다. 화면에서 입력하거나 PDF로 뽑아 현장에서 채운 뒤 입력하세요.</p>
+</div>
+<button class="btn btn-ghost" type="button" aria-label="닫기">✕</button>
+</div>
+<div style="padding: 20px 28px; display: flex; flex-direction: column; gap: 18px; flex-grow: 1; overflow: hidden">
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; background: #F7F8FB; border-radius: 12px; padding: 14px">
+<div><span class="lbl">케이스</span><b style="font-size: 14px">CASE-[id]</b></div>
+<div><span class="lbl">설비</span><b style="font-size: 14px">test_0</b></div>
+<div><span class="lbl">발생 코드</span><b style="font-size: 14px">E012</b></div>
+<div><span class="lbl">발생 (UTC)</span><b style="font-size: 14px">2021-09-11 02:46:08</b></div>
+<div><span class="lbl">요청자</span><b style="font-size: 14px">[이름]</b></div>
+</div>
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 class="h2">판단하지 못한 이유 (자동)</h2>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<span class="pill p-org">c5 판단 구간 결측 [x]%</span>
+<span class="pill p-org">비용접 구간과 겹침 [x]분</span>
+<span class="pill p-gry">코드 E029 의미 미확인</span>
+<span class="pill p-gry">건별 기준 수집 중 (정비 후 워밍업)</span>
+</div>
+</section>
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">확인 항목</h2><div style="flex-grow: 1"></div><button class="btn" type="button">+ 항목 추가 (근거 없음)</button></div>
+<table class="tbl">
+<thead><tr><th style="width: 32px">#</th><th>확인할 것</th><th style="width: 200px">근거</th><th style="width: 190px">결과</th><th style="width: 160px">측정값 · 단위 (직접 기입)</th><th style="width: 110px">확인자 · 시각</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><b>실린더에서 게이지로 실제 공기압 측정</b><div class="muted" style="margin-top: 4px">"Air pressure should be verified at the weld cylinder with an air pressure gauge, not the gauge on the tooling."</div></td><td><span class="pill p-blu">구조 참고</span><div class="muted" style="margin-top: 4px">MILCO §4 p.11</div></td><td><select class="in" aria-label="1번 결과"><option>선택</option><option>정상</option><option>이상</option><option>해당 없음</option><option>미실시 (사유 필수)</option></select></td><td><input class="in" aria-label="1번 측정값" placeholder="[값] [단위]"></td><td><input class="in" aria-label="1번 확인자"></td></tr>
+<tr><td>2</td><td><b>공급 압력 최소 5 bar 여부</b><div class="muted" style="margin-top: 4px">"Check supply pressure at least 5 bar."</div></td><td><span class="pill p-blu">구조 참고</span><div class="muted" style="margin-top: 4px">Festo §10.1 p.90</div></td><td><select class="in" aria-label="2번 결과"><option>선택</option><option>정상</option><option>이상</option><option>해당 없음</option><option>미실시 (사유 필수)</option></select></td><td><input class="in" aria-label="2번 측정값" placeholder="[값] bar"></td><td><input class="in" aria-label="2번 확인자"></td></tr>
+<tr><td>3</td><td><b>호스·피팅·밸브 누설 여부</b><div class="muted" style="margin-top: 4px">"Air leaks from hoses, fittings, valves or the weld cylinder can affect tip pressure."</div></td><td><span class="pill p-blu">구조 참고</span><div class="muted" style="margin-top: 4px">MILCO §4 p.11</div></td><td><select class="in" aria-label="3번 결과"><option>선택</option><option>정상</option><option>이상</option><option>해당 없음</option><option>미실시 (사유 필수)</option></select></td><td><input class="in" aria-label="3번 메모"></td><td><input class="in" aria-label="3번 확인자"></td></tr>
+</tbody>
+</table>
+</section>
+<label style="display: block"><span class="lbl">현장 관찰 메모</span><textarea class="in" style="height: 72px" placeholder="소리, 누유, 외관 손상 등 센서에 없는 관찰"></textarea></label>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 16px 28px; border-top: 1px solid #EEF0F4; background: #FBFCFE">
+<span style="flex-grow: 1"></span>
+<button class="btn" type="button">PDF로 내보내기</button>
+<button class="btn" type="button">인쇄</button>
+<a class="btn btn-pri" href="Resolve.dc.html">결과 저장 → 안내 다시 요청</a>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>정비 이력</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.side{width:240px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;gap:4px;padding:24px 16px;box-sizing:border-box;border-right:1px solid #EEF0F4}
+.brand{font-weight:800;font-size:20px;padding:0 12px 20px;color:#202224}
+.brand b{color:#3563E9}
+.nav{display:flex;align-items:center;gap:12px;padding:0 12px;min-height:44px;border-radius:10px;color:#202224;text-decoration:none;font-weight:600;font-size:14px}
+.nav.on{background:#3563E9;color:#fff}
+.nav.later{color:#5E6A85}
+.navsec{font-size:11px;font-weight:800;color:#5E6A85;padding:18px 12px 6px;letter-spacing:.06em}
+.top{height:72px;flex-shrink:0;background:#fff;display:flex;align-items:center;gap:16px;padding:0 32px;box-sizing:border-box;border-bottom:1px solid #EEF0F4}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:20px;box-sizing:border-box}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:0 16px;min-height:44px;border:1px solid #D5DAE3;background:#fff;color:#202224;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;box-sizing:border-box}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff}
+.btn-ghost{border-color:transparent;background:transparent;color:#2446B8}
+.muted{color:#5E6A85}
+.in{font:inherit;font-size:14px;border:1px solid #D5DAE3;border-radius:10px;padding:10px 12px;background:#F9FAFC;color:#202224;min-height:44px;box-sizing:border-box;width:100%}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;color:#5E6A85;font-weight:800;padding:12px 14px;background:#F7F8FB}
+.tbl td{padding:12px 14px;border-top:1px solid #EEF0F4;vertical-align:middle}
+.tbl tr.sel td{background:#F5F8FF}
+.h2{margin:0;font-size:16px;font-weight:800}
+.tl{display:flex;gap:12px;font-size:13px;line-height:1.5}
+.tl i{width:10px;height:10px;border-radius:50%;margin-top:5px;flex-shrink:0;background:#3563E9}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1080px; display: flex; background: #F5F6FA; overflow: hidden">
+<nav class="side" aria-label="주 메뉴">
+<div class="brand">RSW <b>정비 지원</b></div>
+<a class="nav" href="Main.dc.html">작업함</a>
+<a class="nav" href="Equipment.dc.html">설비 상태</a>
+<a class="nav on" href="History.dc.html">정비 이력</a>
+<a class="nav" href="Replay.dc.html">재생 콘솔</a>
+</nav>
+<div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0">
+<header class="top">
+<div style="flex-grow: 1"></div>
+</header>
+<main style="padding: 28px 32px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box">
+<div>
+<h1 style="margin: 0; font-size: 28px; font-weight: 800">정비 이력</h1>
+<p class="muted" style="margin: 4px 0 0; font-size: 14px">닫힌 케이스를 읽기 전용으로 봅니다. 열린 케이스는 작업함에 있습니다.</p>
+</div>
+<section class="card" style="padding: 0; overflow: hidden" aria-label="종료된 케이스 목록">
+<div style="display: grid; grid-template-columns: 1fr 160px 170px 170px; gap: 8px; padding: 16px 20px">
+<input class="in" type="search" placeholder="설비·코드·원인 검색" aria-label="이력 검색">
+<select class="in" aria-label="설비"><option>설비 전체</option><option>test_0</option></select>
+<select class="in" aria-label="종료 결과"><option>결과 전체</option><option>해결 종료</option><option>미해결 저장</option><option>인계 종료</option><option>이상 없음 종결</option><option>모니터링</option></select>
+<select class="in" aria-label="기간"><option>기간 전체</option><option>최근 7일</option><option>최근 30일</option></select>
+</div>
+<table class="tbl">
+<thead><tr><th>닫은 날 (데이터 시각)</th><th>설비</th><th>컨트롤러 코드</th><th>확정 원인</th><th>실제 조치</th><th>결과 확인</th><th>종료</th><th>확인한 후보</th><th></th></tr></thead>
+<tbody>
+<tr class="sel"><td>[시각]</td><td style="font-weight: 800">test_0</td><td>E012</td><td>보정 압력 계통</td><td class="muted">[실제 조치]</td><td>해결됨 · 재발 없음 (자동)</td><td><span class="pill p-grn">해결 종료</span></td><td>2</td><td><a class="btn" href="Logbook.dc.html">일지 보기</a></td></tr>
+<tr><td>[시각]</td><td style="font-weight: 800">test_0</td><td>E029 ×4</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td><span class="pill p-gry">모니터링</span></td><td>0</td><td><button class="btn" type="button">보기</button></td></tr>
+<tr><td>[시각]</td><td style="font-weight: 800">[설비]</td><td>E028</td><td class="muted">미확정</td><td class="muted">[실제 조치]</td><td><span class="pill p-gry" style="background: #fff; border: 1px solid #B9C3D6">모르겠음 → 인계</span></td><td><span class="pill p-pur">인계 종료</span></td><td>2</td><td><button class="btn" type="button">보기</button></td></tr>
+<tr><td>[시각]</td><td style="font-weight: 800">[설비]</td><td class="muted">없음</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td><span class="pill p-gry">이상 없음 종결</span></td><td>0</td><td><button class="btn" type="button">보기</button></td></tr>
+</tbody>
+</table>
+</section>
+<div style="display: grid; grid-template-columns: 1fr; gap: 18px">
+<section class="card" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">test_0 · E012 요약</h2><span class="pill p-gry">읽기 전용</span><div style="flex-grow: 1"></div><a class="btn" href="Resolve.dc.html">케이스 열기</a><button class="btn" type="button">일지 PDF</button></div>
+<div class="tl"><i style="background: #B42318"></i><div><b>02:46:08</b> 컨트롤러 코드 E012 · 케이스 생성</div></div>
+<div class="tl"><i></i><div><b>후보 1</b> 기계 마찰 · 걸림 — 판단 아님 → 제외</div></div>
+<div class="tl"><i style="background: #5B3AB5"></i><div><b>후보 2</b> 보정 압력 계통 — 판단 맞음 (근거: 점검 1 공급 압력 이상)</div></div>
+<div class="tl"><i></i><div><b>조치 #1</b> [실제 수행 조치]</div></div>
+<div class="tl"><i style="background: #9AA3B5"></i><div><b>결과</b> 해결됨 (사람) · 종료 코드 재발 없음 (자동 · 시뮬레이션)</div></div>
+<div class="tl"><i style="background: #00897B"></i><div><b>일지 승인 → 해결 종료</b> [승인자] · [시각]</div></div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

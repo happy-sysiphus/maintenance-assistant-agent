@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>상황 파악</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Nunito Sans',system-ui,sans-serif;background:#F5F6FA;color:#202224}
+a{color:#2446B8}a:hover{color:#16328A}
+.side{width:240px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;gap:4px;padding:24px 16px;box-sizing:border-box;border-right:1px solid #EEF0F4}
+.brand{font-weight:800;font-size:20px;padding:0 12px 20px;color:#202224}
+.brand b{color:#3563E9}
+.nav{display:flex;align-items:center;gap:12px;padding:0 12px;min-height:44px;border-radius:10px;color:#202224;text-decoration:none;font-weight:600;font-size:14px}
+.nav.on{background:#3563E9;color:#fff}
+.nav.later{color:#5E6A85}
+.navsec{font-size:11px;font-weight:800;color:#5E6A85;padding:18px 12px 6px;letter-spacing:.06em}
+.top{height:72px;flex-shrink:0;background:#fff;display:flex;align-items:center;gap:16px;padding:0 32px;box-sizing:border-box;border-bottom:1px solid #EEF0F4}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(32,34,36,.05);padding:20px;box-sizing:border-box}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-red{background:#FDECEC;color:#B42318}.p-org{background:#FFF1E0;color:#8F4700}.p-grn{background:#E0F5F1;color:#00684F}.p-blu{background:#E8EEFF;color:#2446B8}.p-gry{background:#EEF0F4;color:#475069}.p-pur{background:#F1EAFE;color:#5B3AB5}
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:0 16px;min-height:44px;border:1px solid #D5DAE3;background:#fff;color:#202224;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;box-sizing:border-box}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff}
+.btn-ghost{border-color:transparent;background:transparent;color:#2446B8}
+.muted{color:#5E6A85}
+.lbl{display:block;font-size:12px;font-weight:700;color:#5E6A85;margin-bottom:6px}
+.in{font:inherit;font-size:14px;border:1px solid #D5DAE3;border-radius:10px;padding:10px 12px;background:#F9FAFC;color:#202224;min-height:44px;box-sizing:border-box;width:100%}
+.h2{margin:0;font-size:16px;font-weight:800}
+.st{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#5E6A85;white-space:nowrap}
+.dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#EEF0F4;color:#475069;font-size:13px;font-weight:800}
+.st.on{color:#202224}.st.on .dot{background:#3563E9;color:#fff}
+.st.done .dot{background:#E0F5F1;color:#00684F}
+.sep{flex-grow:1;height:2px;background:#E3E7EE;min-width:20px}
+.radio{display:flex;align-items:center;gap:10px;font-size:14px;min-height:44px;padding:0 12px;border:1px solid #E3E7EE;border-radius:10px}
+.leg{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#475069}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; display: flex; background: #F5F6FA; overflow: hidden">
+<nav class="side" aria-label="주 메뉴">
+<div class="brand">RSW <b>정비 지원</b></div>
+<a class="nav on" href="Main.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>작업함</a>
+<a class="nav" href="Equipment.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>설비 상태</a>
+<a class="nav" href="History.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>정비 이력</a>
+<a class="nav" href="Replay.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>재생 콘솔</a>
+</nav>
+<div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0">
+<header class="top">
+<div style="flex-grow: 1"></div>
+<span class="pill p-pur">재생 중 · test_0 · ×60</span>
+<span class="pill p-gry">데이터 시각 2021-09-11 02:56:08 UTC</span>
+</header>
+<main style="padding: 24px 32px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+<div class="card" style="display: flex; flex-direction: column; gap: 14px; padding: 18px 24px">
+<div style="display: flex; align-items: center; gap: 12px">
+<a class="btn btn-ghost" href="Main.dc.html" style="padding: 0 8px">← 작업함</a>
+<h1 style="margin: 0; font-size: 22px; font-weight: 800">test_0 · 컨트롤러 코드 E012</h1>
+<span class="pill p-red" title="모델·규칙이 낸 경보 단계. 현장 우선순위와 별개">경보 critical</span><span class="pill p-gry">신규</span><span class="pill p-gry">Cycle 1</span>
+<div style="flex-grow: 1"></div>
+<span class="muted" style="font-size: 13px">CASE-[id] · 담당 [이름]</span>
+</div>
+<div style="display: flex; gap: 28px; font-size: 13px">
+<span><span class="muted">트리거</span> 컨트롤러 종료 코드 (규칙)</span>
+<span><span class="muted">발생</span> 2021-09-11 02:46:08 UTC</span>
+<span><span class="muted">데이터셋 클래스 힌트</span> E01 카운터밸런스 시간 초과 <span class="pill p-org" title="종료 코드 기반 추정, 오트리거 가능">추정 ※</span></span>
+</div>
+<nav aria-label="진행 단계" style="display: flex; align-items: center; gap: 10px">
+<span class="st on"><span class="dot">1</span>상황 파악</span><span class="sep"></span>
+<span class="st"><span class="dot">2</span>원인 후보·점검</span><span class="sep"></span>
+<span class="st"><span class="dot">3</span>조치 기록</span><span class="sep"></span>
+<span class="st"><span class="dot">4</span>재검증</span><span class="sep"></span>
+<span class="st"><span class="dot">5</span>정비일지</span>
+</nav>
+</div>
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+<section class="card" style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">신호 (고장 2시간 전 ~ 고장 후 10분)</h2><div style="flex-grow: 1"></div><select class="in" style="width: 150px" aria-label="표시 범위"><option>−2시간 ~ +10분</option><option>−24시간</option><option>7일 전체</option></select><span class="pill p-gry">1분 요약 · 확대 시 1Hz</span></div>
+<svg viewBox="0 0 860 300" style="width: 100%; height: 300px" role="img" aria-label="c2 전극 힘과 설정값 c14, 별도 축의 c5 밸런스 압력. 결측·비용접 띠와 고장 시점 표시">
+<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#9AA3B5" stroke-width="2"></line></pattern></defs>
+<rect x="202" y="15" width="91" height="258" fill="url(#hatch)" opacity="0.45"></rect>
+<rect x="415" y="15" width="31" height="258" fill="#D5DAE3" opacity="0.7"></rect>
+<rect x="779" y="15" width="61" height="258" fill="#FDECEC"></rect>
+<line x1="50" y1="130" x2="840" y2="130" stroke="#D5DAE3"></line>
+<line x1="50" y1="270" x2="840" y2="270" stroke="#D5DAE3"></line>
+<text x="54" y="28" font-size="11" fill="#475069">c2 전극 힘 · c14 설정값 (원시값, 단위 미확인)</text>
+<text x="54" y="164" font-size="11" fill="#475069">c5 밸런스 압력 — 별도 축 (c13과 스케일 달라 겹치지 않음)</text>
+<polyline fill="none" stroke="#202224" stroke-width="1.5" stroke-dasharray="6 4" points="50,58 500,58 500,64 840,64"></polyline>
+<polyline fill="none" stroke="#3563E9" stroke-width="2" points="50,125 64,125 66,56 74,56 76,125 98,125 100,58 108,58 110,125 132,125 134,55 142,55 144,125 166,125 168,57 176,57 178,125 200,125"></polyline>
+<polyline fill="none" stroke="#3563E9" stroke-width="2" points="295,125 312,125 314,56 322,56 324,125 346,125 348,58 356,58 358,125 380,125 382,55 390,55 392,125 413,125"></polyline>
+<polyline fill="none" stroke="#3563E9" stroke-width="2" points="448,125 468,125 470,57 478,57 480,125 502,125 504,58 512,58 514,125 536,125 538,55 546,55 548,125 570,125 572,60 580,60 582,125 604,125 606,57 614,57 616,125 638,125 640,58 648,58 650,125 672,125 674,56 682,56 684,125 706,125 708,58 716,58 718,125 740,125 742,57 750,57 752,125 778,125"></polyline>
+<polyline fill="none" stroke="#3563E9" stroke-width="2" points="780,125 790,125 792,62 800,62 802,125 840,125"></polyline>
+<polyline fill="none" stroke="#00897B" stroke-width="2" points="50,230 80,226 110,232 140,228 170,231 200,229"></polyline>
+<polyline fill="none" stroke="#00897B" stroke-width="2" points="295,230 330,227 360,233 390,229 413,231"></polyline>
+<polyline fill="none" stroke="#00897B" stroke-width="2" points="448,230 480,228 520,232 560,229 600,233 640,236 680,240 720,238 760,244 778,250"></polyline>
+<polyline fill="none" stroke="#00897B" stroke-width="2" points="780,250 800,238 820,235 840,236"></polyline>
+<line x1="779" y1="12" x2="779" y2="275" stroke="#B42318" stroke-width="2"></line>
+<text x="744" y="12" font-size="11" font-weight="700" fill="#B42318">E012 02:46:08</text>
+<text x="786" y="146" font-size="10" fill="#B42318">고장 후 10분</text>
+<text x="222" y="146" font-size="10" fill="#475069">비용접</text>
+<text x="417" y="146" font-size="10" fill="#475069">결측</text>
+<text x="44" y="292" font-size="11" fill="#5E6A85">−2h</text><text x="222" y="292" font-size="11" fill="#5E6A85">−1.5h</text><text x="406" y="292" font-size="11" fill="#5E6A85">−1h</text><text x="585" y="292" font-size="11" fill="#5E6A85">−30m</text><text x="826" y="292" font-size="11" fill="#5E6A85">+10m</text>
+</svg>
+<div style="display: flex; gap: 16px; flex-wrap: wrap">
+<span class="leg"><svg width="18" height="4" aria-hidden="true"><rect width="18" height="4" fill="#3563E9"></rect></svg>c2 전극 힘</span>
+<span class="leg"><svg width="18" height="4" aria-hidden="true"><line x1="0" y1="2" x2="18" y2="2" stroke="#202224" stroke-dasharray="4 3" stroke-width="2"></line></svg>c14 설정값 (계단선)</span>
+<span class="leg"><svg width="18" height="4" aria-hidden="true"><rect width="18" height="4" fill="#00897B"></rect></svg>c5 밸런스 압력</span>
+<span class="leg"><svg width="14" height="14" aria-hidden="true"><rect width="14" height="14" fill="#D5DAE3"></rect></svg>결측 (선 끊김, 보간 없음)</span>
+<span class="leg"><svg width="14" height="14" aria-hidden="true"><rect width="14" height="14" fill="url(#hatch)"></rect></svg>비용접 (판단 보류)</span>
+<span class="leg"><svg width="14" height="14" aria-hidden="true"><rect width="14" height="14" fill="#FDECEC" stroke="#B42318"></rect></svg>고장 후 구간</span>
+</div>
+</section>
+<section class="card" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">이상 점수를 올린 신호</h2><span class="pill p-gry">정상 대비 편차(σ) · 물리 단위 아님</span></div>
+<div style="display: grid; grid-template-columns: 200px 1fr; gap: 10px 16px; align-items: center; font-size: 14px">
+<span>c5 Balance pressure · 평균</span><div style="height: 12px; border-radius: 6px; background: #EEF0F4"><div style="width: 72%; height: 12px; border-radius: 6px; background: #3563E9"></div></div>
+<span>c2 Electrode force · 변동</span><div style="height: 12px; border-radius: 6px; background: #EEF0F4"><div style="width: 48%; height: 12px; border-radius: 6px; background: #3563E9"></div></div>
+<span>c6 Friction · 변동</span><div style="height: 12px; border-radius: 6px; background: #EEF0F4"><div style="width: 26%; height: 12px; border-radius: 6px; background: #3563E9"></div></div>
+</div>
+</section>
+</div>
+<div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+<section class="card" style="display: flex; flex-direction: column; gap: 10px">
+<h2 class="h2">무엇이 언제 났나</h2>
+<div style="font-size: 14px; display: flex; flex-direction: column; gap: 8px">
+<div><span class="muted">코드</span> <b>E012</b> · 의미 <span class="pill p-gry">사전 미확인</span></div>
+<div><span class="muted">발생</span> 2021-09-11 02:46:08 UTC (지속 16초)</div>
+<div><span class="muted">같은 설비 최근 7일</span></div>
+<ul style="margin: 0; padding-left: 18px; font-size: 13px; display: flex; flex-direction: column; gap: 4px">
+<li>E029 · 매일 19:30 UTC 약 2시간 · 4회</li>
+<li>E003 · 09-09 19:30 UTC · 1회</li>
+<li>결측 공백 15분 · 2회 (09-05, 09-10)</li>
+</ul>
+</div>
+</section>
+<section class="card" style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px"><h2 class="h2">데이터 상태</h2><span class="pill p-grn">판단 가능</span></div>
+<div style="font-size: 13px; display: grid; grid-template-columns: 1fr auto; gap: 6px">
+<span class="muted">판단 구간 결측</span><b>[x]%</b>
+<span class="muted">판단 구간 비용접</span><b>[x]%</b>
+<span class="muted">건별 기준</span><b>적용 중 (워밍업 완료)</b>
+</div>
+</section>
+<section class="card" style="display: flex; flex-direction: column; gap: 10px">
+<h2 class="h2">판단</h2>
+<fieldset style="border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<legend class="lbl">이 알람을 어떻게 처리할까요?</legend>
+<label class="radio"><input type="radio" name="tri" checked="">실제 이상으로 확인 → 원인 점검</label>
+<label class="radio"><input type="radio" name="tri">오탐으로 종결</label>
+<label class="radio"><input type="radio" name="tri">반복 패턴 · 모니터링 전환</label>
+</fieldset>
+<label class="lbl" for="why">사유 (오탐·모니터링일 때 필수)</label>
+<textarea id="why" class="in" style="height: 64px" placeholder="예: 매일 같은 시각 반복되는 상태"></textarea>
+<div style="display: flex; gap: 8px"><button class="btn" type="button">임시 저장</button><a class="btn btn-pri" href="Guide.dc.html" style="flex-grow: 1; justify-content: center">다음: 원인 후보·점검 →</a></div>
+</section>
+</div>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
