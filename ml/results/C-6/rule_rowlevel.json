@@ -1,0 +1,38 @@
+{
+ "shared": {
+  "guns_hit": 71,
+  "guns": 72,
+  "lead_min_median": 10.0,
+  "critical_hits": 71,
+  "critical_false": 44,
+  "false_per_gun_day": 0.08878077968982717,
+  "out_of_profile": 0
+ },
+ "shared+profile": {
+  "guns_hit": 68,
+  "guns": 72,
+  "lead_min_median": 10.0,
+  "critical_hits": 68,
+  "critical_false": 0,
+  "false_per_gun_day": 0.0,
+  "out_of_profile": 47
+ },
+ "per_code": {
+  "guns_hit": 72,
+  "guns": 72,
+  "lead_min_median": 10.0,
+  "critical_hits": 76,
+  "critical_false": 44,
+  "false_per_gun_day": 0.08878077968982717,
+  "out_of_profile": 0
+ },
+ "per_code+profile": {
+  "guns_hit": 72,
+  "guns": 72,
+  "lead_min_median": 10.0,
+  "critical_hits": 72,
+  "critical_false": 0,
+  "false_per_gun_day": 0.0,
+  "out_of_profile": 48
+ }
+}

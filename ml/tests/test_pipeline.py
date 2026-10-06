@@ -176,7 +176,10 @@ def test_3_train_and_evaluate(workspace):
     assert rule["flag"] == "terminal_any" and rule["n_triggers"] == 2 and rule["files_hit"] == 2
     assert rule["files_with_false_trigger"] == 0 and 4 <= rule["rule_lead_min_median"] <= 5
     assert rule["n_repeats"] == 0 and rule["repeat_s"] == 86400
-    assert metrics["rule"] == {"codes": ["E012", "E016", "E028", "E029"], "cooldown_s": 1800, "repeat_s": 86400}
+    assert metrics["rule"] == {"codes": ["E012", "E016", "E028", "E029"], "cooldown_s": 1800, "repeat_s": 86400,
+                               "per_code": True}
+    prof = metrics["metrics"]["test"]["rule_terminal_code_profile"]
+    assert prof["files_hit"] == 2 and prof["out_of_profile_triggers"] == 0, "own-class codes only in the synthetic files"
     # per-gun AUROC next to the pooled one
     assert all(v["auroc"] == v["auroc"] for v in metrics["metrics"]["test"]["per_file"].values())
     assert metrics["metrics"]["test"]["auroc_gun_mean"] > 0.5
@@ -217,6 +220,18 @@ def test_3b_rule_triggers():
     assert np.flatnonzero(rule_triggers(flags, ttf, cooldown_s=1800)).tolist() == [1]
     assert np.flatnonzero(rule_triggers(flags, ttf, cooldown_s=60)).tolist() == [1, 4, 7]
     assert np.flatnonzero(rule_triggers(flags, ttf, cooldown_s=240)).tolist() == [1, 7]
+
+
+def test_3b2_rule_triggers_per_code():
+    """C-6: per code, a switch of terminal code is a new onset and the cooldown does not cross codes."""
+    from train import rule_triggers
+
+    code = np.array([0, 2, 2, 4, 4, 0, 2, 0, 4])  # E016, switch to E029, E016 again, E029 again
+    ttf = np.arange(len(code))[::-1] * 60.0
+    flags = (code > 0).astype(int)
+    assert np.flatnonzero(rule_triggers(flags, ttf, cooldown_s=1800)).tolist() == [1], "shared cooldown: one trigger"
+    assert np.flatnonzero(rule_triggers(flags, ttf, cooldown_s=1800, code=code)).tolist() == [1, 3]
+    assert np.flatnonzero(rule_triggers(flags, ttf, cooldown_s=60, code=code)).tolist() == [1, 3, 6, 8]
 
 
 def test_3c_rule_repeats():
@@ -503,7 +518,7 @@ def test_5_api_chunks_sustain_rule(workspace):
         assert fired[0]["severity"] == "critical" and fired[0]["handoff"] is not None
         rep = fired[1]
         assert rep["severity_source"] in ("none", "model") and rep["handoff"] is None
-        assert rep["severity"] == "critical" if rep["sustained_in_request"] else rep["severity"] == "warning"
+        assert rep["severity"] == "critical" if rep["critical_in_request"] else rep["severity"] == "warning"
 
         # a cap-dressing block longer than the 30-min buffer: the non-welding rows keep carrying the last welding
         # values (regression: the buffer held no welding row any more -> NaN features -> HTTP 500 on real test_0)
@@ -611,11 +626,20 @@ def test_6_serving_edge_cases(workspace):
         assert r.json()["windows_scored"] == n_off == 20
         assert r.json()["window_end"].endswith("00:39:59"), "the latest complete window is the last minute before the gap"
 
-        # a switch from one terminal code to another is the same episode (train.rule_triggers on terminal_any)
+        # a switch from one terminal code to another: per-code rule (C-6, bundle default) -> a new trigger; the shared
+        # cooldown of older bundles (train.rule_triggers on terminal_any) -> the same episode
         r = post(client, "SW", raw.iloc[:100].assign(error="E016"))
         assert r.json()["rule_code"] == "E016"
         r = post(client, "SW", raw.iloc[100:200].assign(error="E029"))
-        assert r.json()["rule_triggered"] is False, "E016 -> E029 without a 0 in between is not a new episode"
+        assert r.json()["rule_triggered"] is True and r.json()["rule_code"] == "E029", "per-code: the switch fires"
+        d = main.app.state.detector
+        d.rule_per_code = False
+        try:
+            post(client, "SW0", raw.iloc[:100].assign(error="E016"))
+            r = post(client, "SW0", raw.iloc[100:200].assign(error="E029"))
+            assert r.json()["rule_triggered"] is False, "shared cooldown: E016 -> E029 is the same episode"
+        finally:
+            d.rule_per_code = True
 
         # a terminal code before a long gap in the same chunk is still seen by the rule
         chunk = pd.concat([raw.iloc[:120].assign(error=["0"] * 60 + ["E012"] * 60), raw.iloc[300:420]])
@@ -820,3 +844,163 @@ def test_8_outbox_retry_restart_idempotent(workspace, tmp_path, monkeypatch):
         assert r["delivery"] == "failed" and r["delivery_detail"].startswith("rejected") and r["attempts"] == 1
     os.environ.pop("RSW_MODEL_PATH")
 
+
+
+def test_9_restart_hold_and_critical_sustain(workspace, monkeypatch):
+    """C-5: no model alarm for 30 min after an idle block (offline train.restart_flags = online, one state machine),
+    and the model alone is critical only after critical_sustain (10) windows; sustained_alarm keeps sustain (3)."""
+    from train import RESTART_HOLD_DEFAULT, restart_flags
+
+    def frame(duty, t=None):
+        t = pd.date_range("2021-09-01", periods=len(duty), freq="60s") if t is None else t
+        return pd.DataFrame({"weld_duty_10min_mean": duty, "non_welding": 0.0, "file": "g"}, index=t)
+
+    # 5 working, 30 idle, 40 working windows -> the first 30 working windows after the block are held
+    held = restart_flags(frame(np.r_[np.full(5, 0.3), np.zeros(30), np.full(40, 0.3)]), RESTART_HOLD_DEFAULT)
+    assert np.flatnonzero(held).tolist() == list(range(35, 65))
+    # 29 idle windows, then work: not a block
+    assert not restart_flags(frame(np.r_[np.full(5, 0.3), np.zeros(29), np.full(10, 0.3)]), RESTART_HOLD_DEFAULT).any()
+    # a data gap counts as idle: 5 working windows, 40 min without any window, then work -> held
+    t = pd.DatetimeIndex(list(pd.date_range("2021-09-01", periods=5, freq="60s"))
+                         + list(pd.date_range("2021-09-01 00:45", periods=40, freq="60s")))
+    assert np.flatnonzero(restart_flags(frame(np.full(45, 0.3), t), RESTART_HOLD_DEFAULT)).tolist() == list(range(5, 35))
+    # an idle window inside a running hold is held too
+    duty = np.r_[np.full(2, 0.3), np.zeros(30), np.full(5, 0.3), [0.0], np.full(5, 0.3)]
+    assert restart_flags(frame(duty), RESTART_HOLD_DEFAULT)[37]
+
+    monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))
+    sys.path.insert(0, ROOT)
+    main = importlib.reload(importlib.import_module("main"))
+    from fastapi.testclient import TestClient
+
+    raw = pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
+    raw = raw.iloc[:-600].copy()  # no terminal code: the model alone
+    t0 = pd.Timestamp(raw["time"].iloc[0]).tz_localize(None)
+    sec = (pd.to_datetime(raw["time"]).dt.tz_localize(None) - t0).dt.total_seconds().to_numpy()
+    raw.loc[(sec >= 2000) & (sec < 4700), "c2"] = 0  # 45 min without pressing (welding setpoint kept: not cap dressing)
+    with TestClient(main.app) as client:
+        d = main.app.state.detector
+        card = client.get("/model").json()["model"]
+        assert card["critical_sustain"] == 10 and card["sustain"] == 3
+        assert card["restart_hold_s"] == 1800 and card["restart_idle_windows"] == 30
+        thr, wa = d.threshold, d.warmup_alarms
+        d.threshold = -1e9  # every window alarms unless held
+        try:
+            out = []
+            for a in range(0, len(raw), 60):
+                r = client.post("/predict", json={"gun_id": "RH", "readings": raw.iloc[a:a + 60].to_dict("records")})
+                if r.status_code == 200:
+                    out.append(r.json())
+        finally:
+            d.threshold = thr
+        res = pd.DataFrame(out).drop_duplicates("window_start")
+        res["start"] = pd.to_datetime(res["window_start"])
+        rs = res[res["hold_reason"].fillna("").str.startswith("restart")]
+        assert len(rs) >= 25, "a 30 min hold after the idle block"
+        assert rs["start"].min() > t0 + pd.Timedelta(seconds=4700), "the hold starts when welding resumes"
+        assert (rs["start"].max() - rs["start"].min()).total_seconds() < 1800
+        assert (rs["severity"] == "normal").all() and (rs["consecutive_alarms"] == 0).all()
+        # online = offline: the same state machine on the served windows
+        g = main.app.state.guns["RH"]
+        assert g.restart["restart_at"] is not None and g.restart["restart_at"] == rs["start"].min().floor("60s")
+        # an alarm run (no hold): sustained (warning) after 3 windows, critical after 10
+        d.threshold, d.warmup_alarms = -1e9, True
+        try:
+            out = []
+            for a in range(0, 1200, 60):
+                r = client.post("/predict", json={"gun_id": "CS", "readings": raw.iloc[a:a + 60].to_dict("records")})
+                if r.status_code == 200:
+                    out.append(r.json())
+        finally:
+            d.threshold, d.warmup_alarms = thr, wa
+        run = pd.DataFrame(out).drop_duplicates("window_start")
+        sus = run[run["sustained_alarm"] & (run["alarm_duration_s"] < 600)]
+        assert len(sus) >= 5 and (sus["severity"] == "warning").all() and not sus["critical_in_request"].any()
+        assert not sus["model_critical"].any()
+        crit = run[run["severity"] == "critical"]
+        assert len(crit) >= 3 and (crit["alarm_duration_s"] >= 600).all() and crit["critical_in_request"].all()
+        assert crit["model_critical"].all()
+        assert (crit["severity_source"] == "model").all() and crit["handoff"].iloc[0] is not None
+        # the chart marks critical-length runs, not 3-window ones
+        pts = client.get("/guns/CS/trace", params={"minutes": 60}).json()["points"]
+        assert any(p["sustained"] and not p["critical"] for p in pts) and any(p["critical"] for p in pts)
+        # the restart state survives a restart of the server (snapshot / restore)
+        snap = g.snapshot("RH", d.info.created)
+        g2 = main.GunState.restore(snap, gun_norm=True, model_created=d.info.created)
+        assert g2.restart == g.restart and g2.restart_held == g.restart_held
+
+
+def test_10_rule_per_code_and_profile(workspace, monkeypatch):
+    """C-6 per-code rule online (E016 -> E029 in one chunk: two triggers, a handoff each) and the C-3 gun profile: a
+    code outside the profile fires the rule but only warns, no handoff, and is no fault class of a model handoff
+    either; [] = no class expected; the profile survives a restart and DELETE; old state files keep /stats working."""
+    monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))
+    sys.path.insert(0, ROOT)
+    main = importlib.reload(importlib.import_module("main"))
+    from fastapi.testclient import TestClient
+
+    raw = pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
+    part = raw.iloc[:900].copy()
+    part.loc[300:339, "error"] = "E016"
+    part.loc[340:379, "error"] = "E029"  # a switch inside the episode, in the same 60 s chunk: a new code
+
+    def stream(client, gun, data=part):
+        out = []
+        for a in range(0, len(data), 60):
+            r = client.post("/predict", json={"gun_id": gun, "readings": data.iloc[a:a + 60].to_dict("records")})
+            if r.status_code == 200 and r.json()["rule_triggered"]:
+                out.append(r.json())
+        return out
+
+    def handoff_codes(client, gun):
+        return [h["handoff"]["trigger"]["rule_code"] for h in client.get("/handoffs", params={"gun_id": gun}).json()]
+
+    with TestClient(main.app) as client:
+        d = main.app.state.detector
+        assert d.rule_per_code and client.get("/model").json()["model"]["rule_per_code"] is True
+        fired = stream(client, "PC")
+        assert [f["rule_code"] for f in fired] == ["E016"] and fired[0]["severity"] == "critical"
+        assert handoff_codes(client, "PC") == ["E016", "E029"], "the second trigger of the chunk is handed off now"
+        st = client.get("/guns/PC/stats", params={"days": 31}).json()["total"]
+        assert st["rule_triggers"] == 2 and st["critical_events"] == 2
+        assert [e["kind"] for e in client.get("/guns/PC/trace").json()["events"]].count("rule") == 2
+
+        assert client.get("/guns/PF/profile").status_code == 404
+        r = client.put("/guns/PF/profile", json={"expected_fault_classes": ["E02", "E02"]})
+        assert r.status_code == 200 and r.json() == {"expected_fault_classes": ["E02"]}
+        fired = stream(client, "PF")
+        assert [(f["rule_code"], f["rule_out_of_profile"]) for f in fired] == [("E016", False)]
+        assert handoff_codes(client, "PF") == ["E016"], "E029 is outside the profile: no handoff"
+        st = client.get("/guns/PF/stats", params={"days": 31}).json()["total"]
+        assert st["rule_triggers"] == 2 and st["rule_out_of_profile"] == 1
+        kinds = [e["kind"] for e in client.get("/guns/PF/trace").json()["events"]]
+        assert "rule_out_of_profile" in kinds
+        # an out-of-profile code that is still active is no fault class of a (model) handoff either
+        body = {k: v for k, v in fired[0].items() if k != "handoff"}
+        body.update(rule_triggered=False, rule_code=None, rule_class_hint=None,
+                    context={**fired[0]["context"], "latest_error_code": "E029", "known_code_class_hint": "E04",
+                             "known_code_in_profile": False})
+        res = client.post("/handoffs/preview", json=body)
+        assert res.status_code == 200 and res.json()["fault_class"] is None
+        assert {g["gun_id"]: g for g in client.get("/guns").json()}["PF"]["expected_fault_classes"] == ["E02"]
+        g = main.app.state.guns["PF"]
+        g2 = main.GunState.restore(g.snapshot("PF", d.info.created), gun_norm=True, model_created="another model")
+        assert g2.profile == ["E02"], "the profile is configuration: kept across restarts and models"
+        # DELETE (re-warm after maintenance, replay.py) keeps the profile; keep_profile=false drops the gun entirely
+        assert client.delete("/guns/PF").status_code == 204
+        assert client.get("/guns/PF/profile").json() == {"expected_fault_classes": ["E02"]}
+        assert client.delete("/guns/PF", params={"keep_profile": False}).status_code == 204
+        assert client.get("/guns/PF/profile").status_code == 404
+
+        # [] = no class expected: every terminal code only warns
+        assert client.put("/guns/PE/profile", json={"expected_fault_classes": []}).json() == {"expected_fault_classes": []}
+        stream(client, "PE")
+        assert handoff_codes(client, "PE") == []
+        assert client.get("/guns/PE/stats").json()["total"]["rule_out_of_profile"] == 2
+        assert client.put("/guns/PE/profile", json={"expected_fault_classes": None}).json() == {"expected_fault_classes": None}
+
+        # a state file written before the rule_out_of_profile counter existed: /stats still answers
+        snap = main.app.state.guns["PC"].snapshot("OLD", d.info.created)
+        snap["stats"] = {day: {k: v for k, v in c.items() if k != "rule_out_of_profile"} for day, c in snap["stats"].items()}
+        main.app.state.guns["OLD"] = main.GunState.restore(snap, gun_norm=True, model_created=d.info.created)
+        assert client.get("/guns/OLD/stats").status_code == 200 and client.get("/stats").status_code == 200

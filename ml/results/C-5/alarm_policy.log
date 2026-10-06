@@ -1,0 +1,13 @@
+sustain  3 hold  0: CV critical false 0.623/gun/day (model 0.546), model-early guns ['E01_1', 'E01_9'] | test 0.464 (model 0.285), early ['test_5'], hit guns 8/8
+sustain  3 hold 30: CV critical false 0.453/gun/day (model 0.375), model-early guns ['E01_1', 'E01_9'] | test 0.339 (model 0.161), early ['test_5'], hit guns 8/8
+sustain  3 hold 60: CV critical false 0.416/gun/day (model 0.339), model-early guns ['E01_9'] | test 0.339 (model 0.161), early ['test_5'], hit guns 8/8
+sustain  5 hold  0: CV critical false 0.403/gun/day (model 0.325), model-early guns ['E01_1'] | test 0.357 (model 0.178), early ['test_5'], hit guns 8/8
+sustain  5 hold 30: CV critical false 0.291/gun/day (model 0.214), model-early guns ['E01_1'] | test 0.268 (model 0.089), early ['test_5'], hit guns 8/8
+sustain  5 hold 60: CV critical false 0.278/gun/day (model 0.200), model-early guns [] | test 0.268 (model 0.089), early ['test_5'], hit guns 8/8
+sustain 10 hold  0: CV critical false 0.207/gun/day (model 0.130), model-early guns [] | test 0.232 (model 0.054), early [], hit guns 8/8
+sustain 10 hold 30: CV critical false 0.159/gun/day (model 0.082), model-early guns [] | test 0.196 (model 0.018), early [], hit guns 8/8
+sustain 10 hold 60: CV critical false 0.155/gun/day (model 0.077), model-early guns [] | test 0.196 (model 0.018), early [], hit guns 8/8
+sustain 15 hold  0: CV critical false 0.116/gun/day (model 0.039), model-early guns [] | test 0.178 (model 0.000), early [], hit guns 8/8
+sustain 15 hold 30: CV critical false 0.116/gun/day (model 0.039), model-early guns [] | test 0.178 (model 0.000), early [], hit guns 8/8
+sustain 15 hold 60: CV critical false 0.114/gun/day (model 0.036), model-early guns [] | test 0.178 (model 0.000), early [], hit guns 8/8
+selected (CV, keeps >= 2 of ['E01_1', 'E01_9']): sustain 3, restart hold 30 min | CV 0.453 vs today 0.623 | test 0.339 vs 0.464, test early guns ['test_5']

@@ -1,0 +1,45 @@
+loaded train (625635, 46) test (80533, 46) in 2s
+  base_sub fold 1/4: pre-rule 0.737  101s
+  base_sub fold 2/4: pre-rule 0.609  179s
+  base_sub fold 3/4: pre-rule 0.658  243s
+  base_sub fold 4/4: pre-rule 0.671  312s
+
+== base_sub (46 features, 383s) ==
+4-fold AUROC 0.718+-0.041  pre-rule 0.669+-0.046 (folds [0.737, 0.609, 0.658, 0.671])  per gun 0.729  alarm@normal 0.0104  recall 0.088 | test AUROC 0.658 pre-rule 0.606 alarm@normal 0.0070
+  cv   AUROC   0.950 0.956 0.698 0.656 0.579 0.571 0.501 0.528
+  cv   placebo 0.550 0.558 0.557 0.546 0.537 0.538 0.534 0.529
+  cv   plc q95 0.638 0.646 0.621 0.615 0.575 0.573 0.561 0.563
+  test AUROC   0.908 0.914 0.664 0.585 0.658 0.696 0.590 0.520
+  test placebo 0.477 0.499 0.517 0.525 0.543 0.532 0.518 0.535
+  test plc q95 0.566 0.566 0.555 0.653 0.641 0.611 0.607 0.588
+
+ms_mean: 48 new features; elapsed-time |rho| median over guns, top: c6_mean_r6h 0.39 (max 0.92), c6_mean_r1h 0.32 (max 0.91), c6_mean_r10m 0.32 (max 0.92)
+  ms_mean fold 1/4: pre-rule 0.687  125s
+  ms_mean fold 2/4: pre-rule 0.690  264s
+  ms_mean fold 3/4: pre-rule 0.694  383s
+  ms_mean fold 4/4: pre-rule 0.689  509s
+
+== ms_mean (94 features, 624s) ==
+4-fold AUROC 0.723+-0.009  pre-rule 0.690+-0.002 (folds [0.687, 0.69, 0.694, 0.689])  per gun 0.744  alarm@normal 0.0145  recall 0.081 | test AUROC 0.647 pre-rule 0.629 alarm@normal 0.0007
+  cv   AUROC   0.823 0.859 0.696 0.674 0.617 0.573 0.514 0.529
+  cv   placebo 0.546 0.527 0.530 0.532 0.531 0.529 0.528 0.527
+  cv   plc q95 0.642 0.636 0.631 0.622 0.589 0.585 0.575 0.575
+  test AUROC   0.696 0.783 0.628 0.649 0.675 0.715 0.607 0.607
+  test placebo 0.453 0.484 0.498 0.538 0.514 0.495 0.521 0.513
+  test plc q95 0.611 0.598 0.611 0.665 0.617 0.611 0.585 0.551
+
+ms_shift: 32 new features; elapsed-time |rho| median over guns, top: c5_mean_s1h 0.16 (max 0.64), c16_mean_s1h 0.15 (max 0.56), c15_mean_s1h 0.15 (max 0.52)
+  ms_shift fold 1/4: pre-rule 0.726  102s
+  ms_shift fold 2/4: pre-rule 0.586  206s
+  ms_shift fold 3/4: pre-rule 0.692  303s
+  ms_shift fold 4/4: pre-rule 0.699  403s
+
+== ms_shift (78 features, 505s) ==
+4-fold AUROC 0.724+-0.046  pre-rule 0.676+-0.053 (folds [0.726, 0.586, 0.692, 0.699])  per gun 0.734  alarm@normal 0.0121  recall 0.112 | test AUROC 0.680 pre-rule 0.626 alarm@normal 0.0066
+  cv   AUROC   0.944 0.949 0.721 0.645 0.569 0.529 0.475 0.532
+  cv   placebo 0.526 0.539 0.543 0.531 0.520 0.525 0.521 0.517
+  cv   plc q95 0.617 0.612 0.596 0.590 0.556 0.554 0.552 0.549
+  test AUROC   0.938 0.946 0.685 0.593 0.595 0.623 0.543 0.523
+  test placebo 0.410 0.417 0.437 0.476 0.502 0.488 0.483 0.477
+  test plc q95 0.506 0.540 0.571 0.639 0.611 0.569 0.547 0.534
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-13\multiscale.json in 1744s

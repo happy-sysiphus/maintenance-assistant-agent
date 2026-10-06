@@ -1,0 +1,210 @@
+{
+ "counts": {
+  "terminal_all": 130,
+  "terminal_false": 58,
+  "terminal_hit": 72,
+  "other_codes": 139
+ },
+ "bins": [
+  "10-60m",
+  "1-3h",
+  "3-6h"
+ ],
+ "kinds": {
+  "terminal_all": [
+   {
+    "bin": "10-60m",
+    "n_pos": 4797,
+    "score_auc": 0.5152129527154892,
+    "score_pseudo_median": 0.5115895245761432,
+    "score_pseudo_q95": 0.5379851884335995,
+    "lgbm": {
+     "auc": 0.5514079380399741,
+     "auc_gun_mean": 0.6074332368800885,
+     "n_pos": 4797,
+     "n_guns": 60
+    },
+    "lgbm_pseudo": {
+     "auc": 0.4913479483336976,
+     "auc_gun_mean": 0.5177974782870368,
+     "n_pos": 4305,
+     "n_guns": 65
+    }
+   },
+   {
+    "bin": "1-3h",
+    "n_pos": 11646,
+    "score_auc": 0.4825031318845081,
+    "score_pseudo_median": 0.5069534328273457,
+    "score_pseudo_q95": 0.5274303336130759,
+    "lgbm": {
+     "auc": 0.5779378065797918,
+     "auc_gun_mean": 0.6155082718231796,
+     "n_pos": 11646,
+     "n_guns": 63
+    },
+    "lgbm_pseudo": {
+     "auc": 0.4987455576391969,
+     "auc_gun_mean": 0.527626724266383,
+     "n_pos": 10200,
+     "n_guns": 67
+    }
+   },
+   {
+    "bin": "3-6h",
+    "n_pos": 19302,
+    "score_auc": 0.4951889525993302,
+    "score_pseudo_median": 0.5119888721836687,
+    "score_pseudo_q95": 0.5270734827545578,
+    "lgbm": {
+     "auc": 0.6004740606211731,
+     "auc_gun_mean": 0.6709972270539493,
+     "n_pos": 19302,
+     "n_guns": 66
+    },
+    "lgbm_pseudo": {
+     "auc": 0.523503570630091,
+     "auc_gun_mean": 0.5263416479870555,
+     "n_pos": 14516,
+     "n_guns": 67
+    }
+   }
+  ],
+  "terminal_false": [
+   {
+    "bin": "10-60m",
+    "n_pos": 2371,
+    "score_auc": 0.44391054710993744,
+    "score_pseudo_median": 0.468020755805331,
+    "score_pseudo_q95": 0.5237395730288953,
+    "lgbm": {
+     "auc": 0.4630596965648893,
+     "auc_gun_mean": 0.6094068078929102,
+     "n_pos": 2371,
+     "n_guns": 20
+    },
+    "lgbm_pseudo": {
+     "auc": 0.48585395166292644,
+     "auc_gun_mean": 0.5715005183884138,
+     "n_pos": 1620,
+     "n_guns": 21
+    }
+   },
+   {
+    "bin": "1-3h",
+    "n_pos": 5722,
+    "score_auc": 0.4434236528448743,
+    "score_pseudo_median": 0.47182138200848256,
+    "score_pseudo_q95": 0.5120818028324852,
+    "lgbm": {
+     "auc": 0.5041941682756412,
+     "auc_gun_mean": 0.5379536204090345,
+     "n_pos": 5722,
+     "n_guns": 21
+    },
+    "lgbm_pseudo": {
+     "auc": 0.4173607136340923,
+     "auc_gun_mean": 0.5059645493386823,
+     "n_pos": 3523,
+     "n_guns": 21
+    }
+   },
+   {
+    "bin": "3-6h",
+    "n_pos": 8931,
+    "score_auc": 0.4629387259862249,
+    "score_pseudo_median": 0.46914602672252703,
+    "score_pseudo_q95": 0.5025022242208994,
+    "lgbm": {
+     "auc": 0.5217789551011947,
+     "auc_gun_mean": 0.5649533519010358,
+     "n_pos": 8931,
+     "n_guns": 21
+    },
+    "lgbm_pseudo": {
+     "auc": 0.5139257537630798,
+     "auc_gun_mean": 0.5705445756263864,
+     "n_pos": 5239,
+     "n_guns": 20
+    }
+   }
+  ],
+  "other_codes": [
+   {
+    "bin": "10-60m",
+    "n_pos": 3042,
+    "score_auc": 0.43194824206624705,
+    "score_pseudo_median": 0.5306182493873999,
+    "score_pseudo_q95": 0.5525087318872796,
+    "lgbm": {
+     "auc": 0.7628507015557617,
+     "auc_gun_mean": 0.7518641311383194,
+     "n_pos": 3042,
+     "n_guns": 32
+    },
+    "lgbm_pseudo": {
+     "auc": 0.5745218861444676,
+     "auc_gun_mean": 0.5212417126759731,
+     "n_pos": 3748,
+     "n_guns": 39
+    }
+   },
+   {
+    "bin": "1-3h",
+    "n_pos": 12684,
+    "score_auc": 0.5932127936970679,
+    "score_pseudo_median": 0.5302884471942273,
+    "score_pseudo_q95": 0.5595097864043369,
+    "lgbm": {
+     "auc": 0.8686164639048742,
+     "auc_gun_mean": 0.8222200481462268,
+     "n_pos": 12684,
+     "n_guns": 39
+    },
+    "lgbm_pseudo": {
+     "auc": 0.6049167109226123,
+     "auc_gun_mean": 0.5483021186440111,
+     "n_pos": 8610,
+     "n_guns": 39
+    }
+   },
+   {
+    "bin": "3-6h",
+    "n_pos": 20614,
+    "score_auc": 0.5795922954759631,
+    "score_pseudo_median": 0.524081784820565,
+    "score_pseudo_q95": 0.5492050298975155,
+    "lgbm": {
+     "auc": 0.8749719805164897,
+     "auc_gun_mean": 0.8040319614121448,
+     "n_pos": 20614,
+     "n_guns": 39
+    },
+    "lgbm_pseudo": {
+     "auc": 0.675791279834502,
+     "auc_gun_mean": 0.5588588976652,
+     "n_pos": 11533,
+     "n_guns": 39
+    }
+   }
+  ]
+ },
+ "watch_rule": {
+  "guns": 72,
+  "alerts": 139,
+  "alerts_hit": 4,
+  "guns_hit": 4,
+  "days": 495.55317129629634,
+  "alerts_per_gun_day": 0.28049462308231393,
+  "precision": 0.02877697841726619,
+  "recall_guns": 0.05555555555555555,
+  "precision_by_chance": 0.005044867321624351
+ },
+ "hit_vs_false": {
+  "n_hit": 72,
+  "n_false": 58,
+  "auc_features": 0.6398467432950192,
+  "auc_elapsed_time_only": 0.9667145593869731
+ },
+ "seconds": 298
+}

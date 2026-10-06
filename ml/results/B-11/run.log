@@ -1,0 +1,63 @@
+train 625,635 windows / 64 guns, test 80,533 / 8 guns, 46 features
+fold 1/4: 18 guns, threshold 0.9586, 60s
+fold 2/4: 18 guns, threshold 0.9460, 89s
+fold 3/4: 14 guns, threshold 0.9333, 80s
+fold 4/4: 14 guns, threshold 0.9406, 82s
+sanity: auroc_pre_rule per fold [0.737, 0.638, 0.569, 0.631] mean 0.644 (train.py --cv 4: 0.644 +- 0.060)
+
+== cv: horizon table (negatives: error-free > 24 h, alarm rate 0.0083) ==
+bin      n_pos  err  term  held duty | ens   IF    LGBM  gun  | clean ens gun | alarm | placebo72 ens gun | placebo pooled ens median [q05,q95] over 15 anchors
+0-3m       190 0.32 0.28 0.23 0.34 | 0.902 0.853 0.879 0.931 | 0.900 0.929 | 0.326 | 0.586 0.593 | 0.549 [0.496, 0.605]
+3-10m      448 0.57 0.53 0.29 0.30 | 0.898 0.874 0.867 0.929 | 0.892 0.912 | 0.384 | 0.579 0.591 | 0.547 [0.499, 0.611]
+10-30m    1268 0.16 0.01 0.27 0.27 | 0.651 0.630 0.639 0.675 | 0.583 0.630 | 0.032 | 0.549 0.562 | 0.549 [0.499, 0.601]
+30-60m    1909 0.16 0.02 0.33 0.27 | 0.643 0.605 0.644 0.663 | 0.574 0.587 | 0.016 | 0.565 0.579 | 0.547 [0.462, 0.596]
+1-3h      7619 0.09 0.00 0.30 0.36 | 0.561 0.556 0.553 0.566 | 0.506 0.522 | 0.006 | 0.499 0.500 | 0.525 [0.497, 0.582]
+3-6h     11414 0.03 0.00 0.15 0.38 | 0.548 0.530 0.554 0.562 | 0.517 0.529 | 0.011 | 0.497 0.501 | 0.519 [0.502, 0.575]
+6-12h    22570 0.03 0.00 0.16 0.37 | 0.504 0.514 0.497 0.497 | 0.483 0.456 | 0.007 | 0.498 0.494 | 0.526 [0.502, 0.572]
+12-24h   44767 0.03 0.00 0.10 0.35 | 0.526 0.519 0.518 0.521 | 0.514 0.498 | 0.006 | 0.526 0.532 | 0.524 [0.505, 0.563]
+guns beating all 15 placebo anchors (all windows / clean): 0-3m 40/62 (26/36, exp 3.9), 3-10m 40/63 (19/29, exp 3.9), 10-30m 11/63 (8/44, exp 3.9), 30-60m 10/63 (3/43, exp 3.9), 1-3h 6/63 (5/51, exp 3.9), 3-6h 8/63 (8/56, exp 3.9), 6-12h 8/62 (5/55, exp 3.9), 12-24h 7/62 (5/58, exp 3.9)
+
+== test: horizon table (negatives: error-free > 24 h, alarm rate 0.0058) ==
+bin      n_pos  err  term  held duty | ens   IF    LGBM  gun  | clean ens gun | alarm | placebo72 ens gun | placebo pooled ens median [q05,q95] over 15 anchors
+0-3m        24 0.00 0.00 0.21 0.46 | 0.916 0.770 0.982 0.906 | 0.903 0.883 | 0.167 | 0.546 0.512 | 0.479 [0.363, 0.580]
+3-10m       56 0.29 0.29 0.12 0.51 | 0.920 0.794 0.981 0.915 | 0.881 0.873 | 0.304 | 0.554 0.524 | 0.466 [0.389, 0.580]
+10-30m     160 0.09 0.00 0.02 0.52 | 0.692 0.691 0.599 0.676 | 0.672 0.672 | 0.075 | 0.556 0.530 | 0.478 [0.395, 0.567]
+30-60m     240 0.00 0.00 0.00 0.52 | 0.680 0.603 0.644 0.670 | 0.690 0.680 | 0.013 | 0.576 0.565 | 0.525 [0.420, 0.624]
+1-3h       960 0.00 0.00 0.08 0.55 | 0.714 0.668 0.642 0.705 | 0.706 0.701 | 0.007 | 0.639 0.662 | 0.521 [0.407, 0.661]
+3-6h      1440 0.04 0.04 0.08 0.43 | 0.710 0.685 0.622 0.699 | 0.698 0.683 | 0.011 | 0.647 0.666 | 0.526 [0.426, 0.610]
+6-12h     2850 0.03 0.03 0.04 0.43 | 0.541 0.583 0.476 0.547 | 0.535 0.533 | 0.004 | 0.516 0.536 | 0.507 [0.436, 0.621]
+12-24h    5744 0.00 0.00 0.05 0.41 | 0.528 0.538 0.495 0.523 | 0.539 0.538 | 0.006 | 0.514 0.533 | 0.514 [0.448, 0.574]
+guns beating all 15 placebo anchors (all windows / clean): 0-3m 4/8 (3/6, exp 0.5), 3-10m 4/8 (3/6, exp 0.5), 10-30m 1/8 (1/8, exp 0.5), 30-60m 2/8 (2/8, exp 0.5), 1-3h 1/8 (1/8, exp 0.5), 3-6h 2/8 (2/8, exp 0.5), 6-12h 0/8 (0/8, exp 0.5), 12-24h 1/8 (1/8, exp 0.5)
+
+== horizon-specific LightGBM (4-fold, clean windows; real vs placebo anchor 72 h) ==
+  horizon LGBM 0-3m: AUROC 0.619 (per gun 0.603, 116 pos)
+  horizon LGBM 3-10m: AUROC 0.623 (per gun 0.602, 155 pos)
+  horizon LGBM 10-30m: AUROC 0.616 (per gun 0.624, 804 pos)
+  horizon LGBM 30-60m: AUROC 0.503 (per gun 0.515, 1215 pos)
+  horizon LGBM 1-3h: AUROC 0.568 (per gun 0.569, 5175 pos)
+  horizon LGBM 3-6h: AUROC 0.611 (per gun 0.605, 9508 pos)
+  horizon LGBM 6-12h: AUROC 0.561 (per gun 0.545, 18544 pos)
+  horizon LGBM 12-24h: AUROC 0.594 (per gun 0.578, 39600 pos)
+  horizon LGBM placebo 0-3m: AUROC 0.560 (per gun 0.555, 164 pos)
+  horizon LGBM placebo 3-10m: AUROC 0.583 (per gun 0.602, 372 pos)
+  horizon LGBM placebo 10-30m: AUROC 0.540 (per gun 0.516, 1035 pos)
+  horizon LGBM placebo 30-60m: AUROC 0.534 (per gun 0.546, 1545 pos)
+  horizon LGBM placebo 1-3h: AUROC 0.550 (per gun 0.545, 6326 pos)
+  horizon LGBM placebo 3-6h: AUROC 0.588 (per gun 0.567, 10315 pos)
+  horizon LGBM placebo 6-12h: AUROC 0.559 (per gun 0.549, 20859 pos)
+  horizon LGBM placebo 12-24h: AUROC 0.575 (per gun 0.598, 40970 pos)
+
+== within-gun feature effects (clean windows, 64 CV guns + 8 test) ==
+0-3m    (45 guns): error_share_10min_mean +574.84 (100%), weld_duty_10min_std +2.98 (84%), c2_mean +0.34 (67%), c3_mean -0.31 (60%), c6_mean +0.26 (58%), c5_mean +0.23 (69%) | placebo max |d| 0.19
+3-10m   (38 guns): error_share_10min_mean +372.98 (97%), weld_duty_10min_std +1.86 (87%), c14_mean -0.41 (63%), welds_10min_mean -0.37 (66%), c2_mean +0.28 (60%), c13_mean -0.23 (55%) | placebo max |d| 0.19
+10-30m  (55 guns): c6_mean +0.43 (58%), c16_mean +0.37 (60%), weld_duty_10min_std +0.34 (67%), c16_std +0.27 (55%), c14_mean -0.19 (60%), welds_10min_std +0.17 (56%) | placebo max |d| 0.02
+30-60m  (53 guns): c16_mean +0.33 (58%), c6_mean +0.28 (55%), weld_duty_10min_std +0.20 (62%), c14_mean -0.14 (55%), welds_10min_std +0.11 (53%), c16_std +0.06 (51%) | placebo max |d| 0.07
+1-3h    (60 guns): c6_std +0.76 (62%), c16_mean +0.46 (63%), c16_std +0.30 (57%), c1_std +0.29 (57%), c14_mean -0.24 (63%), weld_duty_10min_std +0.22 (65%) | placebo max |d| 0.30
+3-6h    (65 guns): c6_std +1.11 (71%), c1_std +0.70 (65%), c10_std +0.49 (54%), c16_mean +0.45 (68%), weld_duty_10min_std +0.22 (60%), c16_std +0.20 (60%) | placebo max |d| 0.60
+6-12h   (64 guns): c6_std +0.79 (67%), c1_std +0.56 (61%), c16_mean +0.53 (67%), c10_std +0.36 (61%), c16_std +0.35 (70%), c14_mean -0.19 (66%) | placebo max |d| 0.60
+12-24h  (67 guns): c6_std +1.30 (84%), c1_std +1.01 (82%), c10_std +0.79 (82%), c16_mean +0.66 (82%), c16_std +0.51 (82%), c14_mean -0.26 (75%) | placebo max |d| 1.05
+E01: real 0.887 0.912 0.741 0.690 0.612 0.592 0.509 0.526 | clean 0.910 0.940 0.622 0.546 0.484 0.564 0.481 0.515 | placebo72 0.552 0.563 0.533 0.571 0.517 0.551 0.442 0.503
+E02: real 0.856 0.856 0.651 0.652 0.523 0.560 0.576 0.493 | clean 0.813 0.769 0.638 0.647 0.531 0.547 0.616 0.460 | placebo72 0.349 0.324 0.361 0.327 0.293 0.349 0.433 0.401
+E03: real 0.888 0.870 0.598 0.573 0.536 0.533 0.485 0.536 | clean 0.924 0.926 0.505 0.506 0.497 0.513 0.481 0.549 | placebo72 0.656 0.657 0.630 0.659 0.552 0.530 0.568 0.554
+E04: real 0.963 0.937 0.596 0.644 0.544 0.499 0.475 0.527 | clean 0.929 0.833 0.546 0.579 0.501 0.449 0.425 0.495 | placebo72 0.673 0.658 0.591 0.597 0.534 0.479 0.510 0.575
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-11\horizon_cv.json in 735s

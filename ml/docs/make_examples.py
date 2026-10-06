@@ -25,7 +25,7 @@ def tail_replay(client, name, hours=12.2):
     path = os.path.join(ROOT, "test", f"{name}.csv")
     n_h = sum(1 for _ in open(path, encoding="utf-8")) / 3600
     events = []
-    replay_file(client, path, name, chunk_s=600, start_hours=max(n_h - hours, 0),
+    replay_file(client, path, name, chunk_s=60, start_hours=max(n_h - hours, 0),  # a 1-min client, as in operation
                 on_result=lambda res, ev: events.append(res) if res.get("handoff") else None)
     return events
 

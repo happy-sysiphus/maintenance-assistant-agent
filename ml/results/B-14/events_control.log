@@ -1,0 +1,7 @@
+other_codes [all] 10-60m events 139 pos   3042 | elapsed-time AUROC 0.574 (per gun 0.595) | LGBM 0.763 (per gun 0.752, 32 guns)  18s
+other_codes [all] 1-3h   events 139 pos  12684 | elapsed-time AUROC 0.557 (per gun 0.595) | LGBM 0.869 (per gun 0.822, 39 guns)  34s
+other_codes [all] 3-6h   events 139 pos  20614 | elapsed-time AUROC 0.547 (per gun 0.587) | LGBM 0.875 (per gun 0.804, 39 guns)  52s
+other_codes [far_from_failure] 10-60m events 103 pos   2144 | elapsed-time AUROC 0.496 (per gun 0.457) | LGBM 0.865 (per gun 0.905, 23 guns)  66s
+other_codes [far_from_failure] 1-3h   events 103 pos   9146 | elapsed-time AUROC 0.481 (per gun 0.417) | LGBM 0.907 (per gun 0.914, 29 guns)  80s
+other_codes [far_from_failure] 3-6h   events 103 pos  14733 | elapsed-time AUROC 0.465 (per gun 0.420) | LGBM 0.895 (per gun 0.857, 30 guns)  97s
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-14\events_control.json

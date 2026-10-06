@@ -1,0 +1,11 @@
+other_codes far, no error in prior 0 h, 10-60m: pos   2144 neg  401388 | LGBM 0.865 (per gun 0.905, 23 guns)  15s
+other_codes far, no error in prior 0 h, 1-3h  : pos   9146 neg  401388 | LGBM 0.907 (per gun 0.914, 29 guns)  31s
+other_codes far, no error in prior 0 h, 3-6h  : pos  14733 neg  401388 | LGBM 0.895 (per gun 0.857, 30 guns)  46s
+other_codes far, no error in prior 1 h, 10-60m: pos   2144 neg  398765 | LGBM 0.868 (per gun 0.914, 23 guns)  58s
+other_codes far, no error in prior 1 h, 1-3h  : pos   9145 neg  398765 | LGBM 0.908 (per gun 0.914, 29 guns)  72s
+other_codes far, no error in prior 1 h, 3-6h  : pos  14626 neg  398765 | LGBM 0.904 (per gun 0.875, 30 guns)  86s
+other_codes far, no error in prior 6 h, 10-60m: pos   2060 neg  377123 | LGBM 0.873 (per gun 0.905, 22 guns)  99s
+other_codes far, no error in prior 6 h, 1-3h  : pos   8921 neg  377123 | LGBM 0.911 (per gun 0.898, 28 guns)  114s
+other_codes far, no error in prior 6 h, 3-6h  : pos  14298 neg  377123 | LGBM 0.914 (per gun 0.857, 30 guns)  129s
+gain top 10 (1-3 h): hour_sin_mean 0.24, hour_cos_mean 0.22, c14_mean 0.09, c6_mean 0.04, c1_mean 0.03, c13_mean 0.03, c13_std 0.03, c10_mean 0.03, c16_mean 0.02, c14_std 0.02
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-14\events_quiet.json

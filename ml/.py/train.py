@@ -87,9 +87,13 @@ CLASSES = ["E01", "E02", "E03", "E04"]
 # target operating point (test.md §1, history.md B-4): a sustained alarm at least this early, at most this many false runs
 OP_LEAD_MIN = 30.0
 OP_FALSE_RUNS = 1.0
+# term_1..term_4: was terminal code k (TERMINAL_CODES order) present in the window - the per-code rule (C-6) needs every
+# code of a window, not only terminal_idx (the window max hides a lower code that shared the window)
+TERM_FLAGS = ["term_1", "term_2", "term_3", "term_4"]
 META_COLS = {"file", "class", "gun", "error_code", "segment_id", "dow", "ttf_s", "label",
-             "error_active", "terminal_code", "terminal_any", "terminal_idx", "non_welding", "warmup", "gun_norm"}
-FLAG_COLS = ["error_active", "terminal_code", "terminal_any", "terminal_idx", "non_welding", "label", "warmup"]
+             "error_active", "terminal_code", "terminal_any", "terminal_idx", "non_welding", "warmup", "gun_norm",
+             *TERM_FLAGS}
+FLAG_COLS = ["error_active", "terminal_code", "terminal_any", "terminal_idx", "non_welding", "label", "warmup", *TERM_FLAGS]
 # terminal-code rule, as main.py applies it: ANY class's terminal code counts (the serving layer does not know
 # the gun's class), and it fires once when a terminal-code episode starts, then stays quiet for
 # RULE_COOLDOWN_S. E029 in particular also shows up for hours in E01-E03 guns days before their failure, so
@@ -100,6 +104,10 @@ RULE_COOLDOWN_S = 1800
 # critical. In the 80 train + test files, 17 of the 58 false triggers were repeats and 1 of the 72 hits
 # (history.md §11): an episode that did not end in a failure tends to come back.
 RULE_REPEAT_S = 24 * 3600
+# C-6 (history.md §30): the cooldown runs per code, and a switch from one terminal code to another (E016 -> E029) is a
+# new onset. With one shared cooldown an E016 trigger silenced the E029 that followed (test_3); over 72 guns per-code
+# keeps the critical false triggers at 44 and hits 72/72 instead of 71/72. Bundle rule["per_code"]; older bundles: off.
+RULE_PER_CODE = True
 # the terminal code appears ~10 min before the failure in 71/72 train files (history.md §11): the rule's lead
 RULE_LEAD_S = 600
 # the rule baseline counts a trigger as a hit inside this window before the failure (independent of --label-window)
@@ -123,7 +131,8 @@ def window_features(df, window, feat_cols=None, min_rows=None):
     if "error_code" in df.columns:
         # terminal_idx: 1..4 = which terminal code (TERMINAL_CODES order), 0 = none - the rule's repeat check needs the code
         idx = df["error_code"].map({c: i for i, c in enumerate(TERMINAL_CODES, 1)}).fillna(0).astype("float32")
-        df = df.assign(terminal_any=(idx > 0).astype("float32"), terminal_idx=idx)
+        df = df.assign(terminal_any=(idx > 0).astype("float32"), terminal_idx=idx,
+                       **{f: (idx == k).astype("float32") for k, f in enumerate(TERM_FLAGS, 1)})
     agg = {c: ["mean", "std"] for c in feat_cols}
     agg.update({c: "max" for c in FLAG_COLS if c in df.columns})
     agg["non_welding"] = "mean"  # share of the window, not a 0/1 flag like the others
@@ -444,18 +453,66 @@ def anomaly_score(model, X):
 
 
 # ------------------------------------------------------------- evaluation
-def alarm_mask(scores, threshold, non_welding=None, gate=None, warmup=None):
+def alarm_mask(scores, threshold, non_welding=None, gate=None, warmup=None, restart=None):
     """Window-level alarm decision: score above threshold, unless the window is mostly non-welding
     (share > gate) - those windows hold carried-forward constants, not measurements - or (warmup given) it
-    lies in the gun's warm-up. Warm-up windows are scored at the global scale, where a gun's constant offsets
-    (c7-c9 up to 14 sigma) look anomalous: 84-96 % of the warm-up windows of E02_14 / E02_13 / E02_10 alarmed
-    (history.md §17). The terminal-code rule is not affected."""
+    lies in the gun's warm-up, or (restart given) in a restart hold. Warm-up windows are scored at the global scale,
+    where a gun's constant offsets (c7-c9 up to 14 sigma) look anomalous: 84-96 % of the warm-up windows of
+    E02_14 / E02_13 / E02_10 alarmed (history.md §17). The terminal-code rule is not affected."""
     alarm = np.asarray(scores) > threshold
     if gate is not None and non_welding is not None:
         alarm &= np.asarray(non_welding) <= gate
     if warmup is not None:
         alarm &= np.asarray(warmup) == 0
+    if restart is not None:
+        alarm &= ~np.asarray(restart, dtype=bool)
     return alarm
+
+
+# Restart hold (C-5, history.md §27): after an idle block - >= idle_windows consecutive windows with weld duty below
+# idle_duty or mostly non-welding - the model raises no alarm for hold_s. 23 % of the false critical runs started at
+# the morning restart (21 UTC); the hold cuts them by a third without losing a failure. The state machine is shared:
+# restart_step() is called window by window here (offline) and by main.Detector.judge (online).
+RESTART_HOLD_DEFAULT = {"idle_windows": 30, "idle_duty": 0.02, "idle_non_welding": 0.5, "hold_s": 1800}
+# A model-only alarm becomes critical (RAG handoff) after this many windows (C-5); `sustain` (3) stays the
+# "sustained" warning level. The terminal-code rule is critical on its own, as before.
+CRITICAL_SUSTAIN_DEFAULT = 10
+
+
+def restart_step(state, window_start, weld_duty, non_welding_share, cfg, window_s=60):
+    """Advance the restart-hold state by one window (chronological). state = {"idle_run": int, "restart_at":
+    Timestamp | None, "last_t": Timestamp | None}, updated in place. Returns True when the window lies in a hold.
+    Missing windows (a data gap: the stream stopped, the gun was off) count as idle, so a restart after a night
+    without data is held too; an idle window inside a running hold is held as well."""
+    last = state.get("last_t")
+    if last is not None:
+        state["idle_run"] += max(int((window_start - last).total_seconds() // window_s) - 1, 0)
+    state["last_t"] = window_start
+    if weld_duty < cfg["idle_duty"] or non_welding_share > cfg["idle_non_welding"]:
+        state["idle_run"] += 1
+    else:
+        if state["idle_run"] >= cfg["idle_windows"]:
+            state["restart_at"] = window_start
+        state["idle_run"] = 0
+    ra = state["restart_at"]
+    return ra is not None and (window_start - ra).total_seconds() < cfg["hold_s"]
+
+
+def restart_flags(w, cfg):
+    """Per-window restart-hold flags (bool array aligned with w), chronological per file. The window start is the
+    clock label (the index), as main.py floors it."""
+    out = np.zeros(len(w), dtype=bool)
+    if not cfg or len(w) == 0:
+        return out
+    duty = w["weld_duty_10min_mean"].to_numpy()
+    nw = w["non_welding"].to_numpy() if "non_welding" in w.columns else np.zeros(len(w))
+    files = w["file"].to_numpy() if "file" in w.columns else np.zeros(len(w))
+    for _, idx in pd.Series(np.arange(len(w))).groupby(files).indices.items():
+        order = idx[np.argsort(w.index.to_numpy()[idx], kind="stable")]
+        st = {"idle_run": 0, "restart_at": None, "last_t": None}
+        for i in order:
+            out[i] = restart_step(st, w.index[i], duty[i], nw[i], cfg)
+    return out
 
 
 def warmup_flags(w, warmup_alarms):
@@ -486,9 +543,19 @@ def alarm_timing(alarm, ttf_s, sustain, normal_before_h=24):
     return final_start_h, n_false / normal_days
 
 
-def rule_triggers(terminal, ttf_s, cooldown_s=RULE_COOLDOWN_S):
+def rule_triggers(terminal, ttf_s, cooldown_s=RULE_COOLDOWN_S, code=None):
     """Chronological per-window terminal-code flags -> mask of the windows where the rule fires: a
-    terminal-code episode starts (0 -> 1) and the previous trigger is >= cooldown_s earlier (main.py)."""
+    terminal-code episode starts (0 -> 1) and the previous trigger is >= cooldown_s earlier (main.py).
+    With `code` (per-window terminal code id, 0 = none): per-code rule (C-6) - a window whose code differs from the
+    previous window's is an onset, and the cooldown is kept per code."""
+    if code is not None:
+        c = np.asarray(code).astype(int)
+        onset = (c > 0) & (c != np.concatenate([[0], c[:-1]]))
+        out, last = np.zeros(len(c), dtype=bool), {}
+        for i in np.flatnonzero(onset):
+            if c[i] not in last or ttf_s[last[c[i]]] - ttf_s[i] >= cooldown_s:
+                out[i], last[c[i]] = True, i
+        return out
     t = np.asarray(terminal) > 0
     onset = t & ~np.concatenate([[False], t[:-1]])
     out, last = np.zeros(len(t), dtype=bool), None
@@ -496,6 +563,25 @@ def rule_triggers(terminal, ttf_s, cooldown_s=RULE_COOLDOWN_S):
         if last is None or ttf_s[last] - ttf_s[i] >= cooldown_s:
             out[i], last = True, i
     return out
+
+
+def rule_events(flags, ttf_s, cooldown_s=RULE_COOLDOWN_S, repeat_s=RULE_REPEAT_S):
+    """Per-code rule (C-6) on chronological windows with one presence flag per terminal code (n x 4, TERM_FLAGS):
+    code k fires where it is present after a window without it, unless code k fired < cooldown_s earlier; a trigger
+    whose code fired < repeat_s earlier is a repeat. Several codes can fire in one window (main.py sees them row by
+    row). Returns (window index, code 1..4, repeat) arrays, chronological."""
+    f = np.asarray(flags) > 0
+    out = []
+    for k in range(f.shape[1]):
+        onset = f[:, k] & ~np.concatenate([[False], f[:-1, k]])
+        last = None
+        for i in np.flatnonzero(onset):
+            if last is None or ttf_s[last] - ttf_s[i] >= cooldown_s:
+                out.append((i, k + 1, last is not None and ttf_s[last] - ttf_s[i] < repeat_s))
+                last = i
+    out.sort()
+    return (np.array([e[0] for e in out], dtype=int), np.array([e[1] for e in out], dtype=int),
+            np.array([e[2] for e in out], dtype=bool))
 
 
 def rule_repeats(trig, code, ttf_s, repeat_s=RULE_REPEAT_S):
@@ -510,8 +596,10 @@ def rule_repeats(trig, code, ttf_s, repeat_s=RULE_REPEAT_S):
     return out
 
 
-def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_alarms=True):
-    """threshold: the global one; gun_thr: file -> per-gun threshold (applied after the warm-up).
+def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_alarms=True, restart=None,
+             critical_sustain=None, rule_per_code=RULE_PER_CODE, restart_held=None):
+    """threshold: the global one; gun_thr: file -> per-gun threshold (applied after the warm-up); restart: restart-hold
+    config (RESTART_HOLD_DEFAULT) or None; critical_sustain: windows before a model alarm is critical (default sustain).
     Every AUROC / AUPRC here is pre-failure windows vs NORMAL windows: error-state windows outside the pre-failure
     window are neither (until 2026-09-29 they counted as negatives - history.md §14)."""
     normal = (val["label"] == 0) & (val["error_active"] == 0)
@@ -520,7 +608,9 @@ def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_al
     scored = (normal | pre).values
     nw = val["non_welding"].values if "non_welding" in val.columns else None
     thr = window_thresholds(val, threshold, gun_thr)
-    a = alarm_mask(s, thr, nw, gate, warmup_flags(val, warmup_alarms))
+    held_restart = restart_flags(val, restart) if restart_held is None else np.asarray(restart_held, dtype=bool)
+    a = alarm_mask(s, thr, nw, gate, warmup_flags(val, warmup_alarms), held_restart if restart else None)
+    cs = critical_sustain or sustain
     welding = np.ones(len(val), dtype=bool) if nw is None or gate is None else nw <= gate
 
     def auroc(mask):
@@ -540,6 +630,8 @@ def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_al
          # gate diagnostics: how much was held, and how the score separates on welding windows only
          "alarm_gate_non_welding": gate,
          "held_windows": int(((s > thr) & ~welding).sum()),
+         "restart_hold": restart, "restart_held_alarms": int(((s > thr) & welding & held_restart).sum()),
+         "critical_sustain": cs,
          "held_share_of_windows": float((~welding).mean()),
          "auroc_welding_windows": auroc(welding),
          # per-gun normalisation diagnostics
@@ -558,8 +650,12 @@ def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_al
     for f, idx in val.groupby("file").indices.items():
         order = idx[np.argsort(-val["ttf_s"].values[idx])]  # chronological
         final_h, false_per_day = alarm_timing(a[order], val["ttf_s"].values[order], sustain)
+        crit_h, crit_false = alarm_timing(a[order], val["ttf_s"].values[order], cs)
         per_file[f] = {"final_alarm_run_starts_h_before_failure": float(final_h),
                        "false_alarm_runs_per_day": float(false_per_day),
+                       # model-only CRITICAL runs (>= critical_sustain windows): what reaches the RAG handoff
+                       "final_critical_run_starts_h_before_failure": float(crit_h),
+                       "false_critical_runs_per_day": float(crit_false),
                        "alarm_rate_normal": float(a[idx][normal.values[idx]].mean()),
                        "held_share_of_windows": float((~welding[idx]).mean()),
                        "gun_norm": str(val["gun_norm"].values[idx[0]]) if "gun_norm" in val.columns else "global",
@@ -579,20 +675,38 @@ def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_al
     terminal = val[tcol].to_numpy() if tcol in val.columns else np.zeros(len(val))
     code = val["terminal_idx"].to_numpy() if "terminal_idx" in val.columns else None
     ttf, n_trig, n_rep, n_rep_hit, all_false = val["ttf_s"].values, 0, 0, 0, []
+    per_code = bool(rule_per_code) and code is not None
+    flags = val[TERM_FLAGS].to_numpy() if per_code and all(c in val.columns for c in TERM_FLAGS) else None
+    prof = {"files_hit": 0, "leads": [], "false_per_day": [], "out_of_profile": 0}
     for f, idx in val.groupby("file").indices.items():
         order = idx[np.argsort(-ttf[idx])]
-        trig = rule_triggers(terminal[order], ttf[order])
-        rep = rule_repeats(trig, code[order], ttf[order]) if code is not None else np.zeros(len(order), dtype=bool)
-        crit = trig & ~rep
-        pre_o = ttf[order] <= RULE_EVAL_WINDOW_S  # fixed, so that --label-window does not turn hits into false triggers
-        hit = crit & pre_o
-        pre_start = ttf[order][pre_o].max() if pre_o.any() else 0
-        normal_days = max((ttf[order][0] - pre_start) / 86400, 1e-9)
-        n_trig, n_rep, n_rep_hit = n_trig + int(trig.sum()), n_rep + int(rep.sum()), n_rep_hit + int((rep & pre_o).sum())
-        all_false.append(float((trig & ~pre_o).sum() / normal_days))
-        per_file[f]["rule_lead_min"] = float(ttf[order][hit].max() / 60) if hit.any() else np.nan
-        per_file[f]["rule_false_triggers_per_day"] = float((crit & ~pre_o).sum() / normal_days)
-        per_file[f]["rule_repeats"] = int(rep.sum())
+        to = ttf[order]
+        if flags is not None:  # every code of a window (main.py's row-level per-code rule)
+            ev_i, ev_code, ev_rep = rule_events(flags[order], to)
+        else:  # shared cooldown; or per-code on window max codes (caches without TERM_FLAGS)
+            trig = rule_triggers(terminal[order], to, code=code[order] if per_code else None)
+            rep = rule_repeats(trig, code[order], to) if code is not None else np.zeros(len(order), dtype=bool)
+            ev_i = np.flatnonzero(trig)
+            ev_code = code[order][ev_i].astype(int) if code is not None else np.zeros(len(ev_i), dtype=int)
+            ev_rep = rep[ev_i]
+        pre_o = to <= RULE_EVAL_WINDOW_S  # fixed, so that --label-window does not turn hits into false triggers
+        pre_start = to[pre_o].max() if pre_o.any() else 0
+        normal_days = max((to[0] - pre_start) / 86400, 1e-9)
+        ev_pre, crit = pre_o[ev_i], ~ev_rep
+        n_trig, n_rep, n_rep_hit = n_trig + len(ev_i), n_rep + int(ev_rep.sum()), n_rep_hit + int((ev_rep & ev_pre).sum())
+        all_false.append(float((~ev_pre).sum() / normal_days))
+        hit = crit & ev_pre
+        per_file[f]["rule_lead_min"] = float(to[ev_i[hit]].max() / 60) if hit.any() else np.nan
+        per_file[f]["rule_false_triggers_per_day"] = float((crit & ~ev_pre).sum() / normal_days)
+        per_file[f]["rule_repeats"] = int(ev_rep.sum())
+        if code is not None and "class" in val.columns and str(val["class"].values[idx[0]]) in CLASSES:
+            # C-3 gun profile = the file's own class (offline the file class is the profile): other classes' codes warn
+            own = crit & (ev_code == CLASSES.index(str(val["class"].values[idx[0]])) + 1)
+            prof["files_hit"] += int((own & ev_pre).any())
+            if (own & ev_pre).any():
+                prof["leads"].append(float(to[ev_i[own & ev_pre]].max() / 60))
+            prof["false_per_day"].append(float((own & ~ev_pre).sum() / normal_days))
+            prof["out_of_profile"] += int((crit & ~own).sum())
     leads = [v["rule_lead_min"] for v in per_file.values()]
     false_trig = np.array([v["rule_false_triggers_per_day"] for v in per_file.values()])
     m["rule_terminal_code"] = {
@@ -603,7 +717,14 @@ def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_al
         "false_triggers_per_day_mean": float(false_trig.mean()),
         "files_with_false_trigger": int((false_trig > 0).sum()),
         "files_false_triggers_ok": int((false_trig <= OP_FALSE_RUNS).sum()),
-        "all_triggers_false_per_day_mean": float(np.mean(all_false))}
+        "all_triggers_false_per_day_mean": float(np.mean(all_false)), "per_code_cooldown": per_code,
+        "per_code_source": None if not per_code else "window code flags" if flags is not None else "window max code"}
+    if prof["false_per_day"]:
+        m["rule_terminal_code_profile"] = {
+            "profile": "the file's own class", "files_hit": prof["files_hit"], "files": len(prof["false_per_day"]),
+            "rule_lead_min_median": float(np.median(prof["leads"])) if prof["leads"] else np.nan,
+            "false_triggers_per_day_mean": float(np.mean(prof["false_per_day"])),
+            "out_of_profile_triggers": prof["out_of_profile"]}
     # operating point
     lead = np.nan_to_num(np.array([v["final_alarm_run_starts_h_before_failure"] for v in per_file.values()]) * 60, nan=-1)
     false_runs = np.array([v["false_alarm_runs_per_day"] for v in per_file.values()])
@@ -612,6 +733,7 @@ def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_al
         "files_lead_ok": int((lead >= OP_LEAD_MIN).sum()), "files_false_runs_ok": int((false_runs <= OP_FALSE_RUNS).sum()),
         "files_both_ok": int(((lead >= OP_LEAD_MIN) & (false_runs <= OP_FALSE_RUNS)).sum()),
         "files_with_final_run": int((lead >= 0).sum()),
+        "false_critical_runs_per_day_mean": float(np.mean([v["false_critical_runs_per_day"] for v in per_file.values()])),
         # the rule alone: judged by its lead (first trigger inside the pre-failure window), not by a run
         "files_rule_lead_ok": int(sum(1 for v in per_file.values() if v["rule_lead_min"] >= OP_LEAD_MIN)),
         "final_lead_min_median": float(np.median(lead[lead >= 0])) if (lead >= 0).any() else np.nan}
@@ -670,7 +792,8 @@ def test_files_in(test_dir):
 
 
 def evaluate_test(model, feat_cols, model_cols, window, threshold, sustain, files, score_dir=None, tag="", gate=None,
-                  gn=None, label_window=None, warmup_alarms=True):
+                  gn=None, label_window=None, warmup_alarms=True, restart=None, critical_sustain=None,
+                  rule_per_code=RULE_PER_CODE):
     """Window + score the preprocessed test files with the frozen model/threshold (+ the bundle's gun
     normalisation) and run the same evaluation as for validation. Optionally writes per-file score
     CSVs (time, score, alarm, threshold, ...)."""
@@ -689,7 +812,9 @@ def evaluate_test(model, feat_cols, model_cols, window, threshold, sustain, file
     test_w = pd.concat(ws)
     scores = anomaly_score(model, test_w[model_cols].to_numpy(dtype=np.float32))
     gun_thr = gun_thresholds(model, model_cols, pd.concat(cs) if cs else None, threshold, (gn or {}).get("threshold_q"), gate)
-    m = evaluate(test_w, scores, threshold, sustain, gate, gun_thr, warmup_alarms)
+    rh = restart_flags(test_w, restart)
+    m = evaluate(test_w, scores, threshold, sustain, gate, gun_thr, warmup_alarms, restart, critical_sustain,
+                 rule_per_code, restart_held=rh)
     m["files"] = [os.path.basename(f) for f in files]
     m["file_class"] = {f: str(c) for f, c in test_w.groupby("file")["class"].first().items()}
     m["class_source"] = "inferred by preprocess.py from the terminal code in the last 10 min"
@@ -697,10 +822,10 @@ def evaluate_test(model, feat_cols, model_cols, window, threshold, sustain, file
         os.makedirs(score_dir, exist_ok=True)
         thr = window_thresholds(test_w, threshold, gun_thr)
         test_w = test_w.assign(score=scores, alarm=alarm_mask(scores, thr, test_w["non_welding"].values, gate,
-                                                              warmup_flags(test_w, warmup_alarms)),
-                               threshold=thr)
+                                                              warmup_flags(test_w, warmup_alarms), rh if restart else None),
+                               threshold=thr, restart_hold=rh.astype("float32"))
         for f, part in test_w.groupby("file"):
-            out_cols = ["score", "alarm", "threshold"] + [c for c in SCORE_META_COLS if c in part.columns]
+            out_cols = ["score", "alarm", "threshold", "restart_hold"] + [c for c in SCORE_META_COLS if c in part.columns]
             part[out_cols].to_csv(os.path.join(score_dir, f"{f}_{tag}.csv"))
     return m
 
@@ -726,9 +851,11 @@ def score_frame(bundle, df):
     gun_thr = gun_thresholds(bundle["model"], bundle["model_cols"], calib, bundle["threshold"],
                              (gn or {}).get("threshold_q"), gate)
     thr = window_thresholds(w, bundle["threshold"], gun_thr)
+    restart = bundle.get("restart_hold")
+    rh = restart_flags(w, restart)
     alarm = alarm_mask(s, thr, w["non_welding"].values if "non_welding" in w.columns else None, gate,
-                       warmup_flags(w, bundle.get("warmup_alarms", True)))
-    out = pd.DataFrame({"score": s, "alarm": alarm, "threshold": thr}, index=w.index)
+                       warmup_flags(w, bundle.get("warmup_alarms", True)), rh if restart else None)
+    out = pd.DataFrame({"score": s, "alarm": alarm, "threshold": thr, "restart_hold": rh}, index=w.index)
     for c in SCORE_META_COLS:
         if c in w.columns:
             out[c] = w[c].values
@@ -769,6 +896,12 @@ def main():
     ap.add_argument("--val-frac", type=float, default=0.25, help="share of files per class held out")
     ap.add_argument("--threshold-q", type=float, default=0.99, help="quantile of train-normal scores")
     ap.add_argument("--sustain", type=int, default=3, help="consecutive alarm windows for a sustained alarm")
+    ap.add_argument("--critical-sustain", type=int, default=CRITICAL_SUSTAIN_DEFAULT,
+                    help="consecutive alarm windows before a model-only alarm is critical (RAG handoff); C-5")
+    ap.add_argument("--restart-hold-min", type=float, default=RESTART_HOLD_DEFAULT["hold_s"] / 60,
+                    help="no model alarm this long after an idle block (0 = off); C-5")
+    ap.add_argument("--restart-idle-windows", type=int, default=RESTART_HOLD_DEFAULT["idle_windows"],
+                    help="consecutive idle windows (weld duty < 0.02 or mostly non-welding) that make an idle block")
     ap.add_argument("--alarm-max-non-welding", type=lambda v: None if str(v).lower() in ("none", "off") else float(v),
                     default=0.5, help="windows with a larger non-welding share never alarm (none = no gate)")
     ap.add_argument("--exclude-non-welding", action="store_true", help="drop cap-dressing windows from training")
@@ -808,6 +941,10 @@ def main():
         print(f"{len(out)} windows, alarm rate {out['alarm'].mean():.3f}, threshold {b['threshold']:.4f} -> {dst}")
         return
 
+    restart = ({**RESTART_HOLD_DEFAULT, "idle_windows": args.restart_idle_windows,
+                "hold_s": int(round(args.restart_hold_min * 60))} if args.restart_hold_min > 0 else None)
+    if restart and "weld_duty_10min" in (args.drop_features or []):
+        raise SystemExit("the restart hold reads weld_duty_10min: keep the feature or pass --restart-hold-min 0")
     test_dir = args.test_dir or os.path.join(args.data_dir, "test")
     test_files = [] if args.no_test else test_files_in(test_dir)
     if args.evaluate:
@@ -823,7 +960,9 @@ def main():
                           b["sustain"], test_files, os.path.join(args.model_dir, "scores"), args.model,
                           gate=b.get("alarm_max_non_welding"), gn=b.get("gun_norm"),
                           label_window=(b.get("args") or {}).get("label_window"),
-                          warmup_alarms=b.get("warmup_alarms", True))
+                          warmup_alarms=b.get("warmup_alarms", True), restart=b.get("restart_hold"),
+                          critical_sustain=b.get("critical_sustain"),
+                          rule_per_code=bool((b.get("rule") or {}).get("per_code", False)))
         print_metrics("test", m)
         dst = os.path.join(args.model_dir, f"baseline_{args.model}_test_metrics.json")
         with open(dst, "w", encoding="utf-8") as f:
@@ -902,7 +1041,7 @@ def main():
             cal = [calibs[f] for f in va_files if f in calibs]
             gun_thr = gun_thresholds(model, model_cols, pd.concat(cal) if cal else None, thr, q_gun, args.alarm_max_non_welding)
             m_val = evaluate(va, anomaly_score(model, va[model_cols].to_numpy(dtype=np.float32)), thr, args.sustain,
-                             args.alarm_max_non_welding, gun_thr, args.warmup_alarms)
+                             args.alarm_max_non_welding, gun_thr, args.warmup_alarms, restart, args.critical_sustain)
         return model, X, s_tr, thr, m_val
 
     cv = None
@@ -945,7 +1084,8 @@ def main():
     if test_files:
         metrics["test"] = evaluate_test(model, feat_cols, model_cols, args.window, threshold, args.sustain, test_files,
                                         gate=args.alarm_max_non_welding, gn=gn, label_window=args.label_window,
-                                        warmup_alarms=args.warmup_alarms)
+                                        warmup_alarms=args.warmup_alarms, restart=restart,
+                                        critical_sustain=args.critical_sustain)
         print_metrics("test", metrics["test"])
     else:
         print(f"no test files in {test_dir} - skipped test evaluation")
@@ -956,9 +1096,13 @@ def main():
         "window": args.window, "threshold": threshold, "threshold_q": args.threshold_q, "sustain": args.sustain,
         "alarm_max_non_welding": args.alarm_max_non_welding,
         "warmup_alarms": args.warmup_alarms,  # False: the model raises no alarm in a gun's warm-up (main.py holds it)
+        # C-5: a model-only alarm is critical after critical_sustain windows (sustain stays the warning-level
+        # "sustained"); no model alarm for restart_hold["hold_s"] after an idle block (None = off)
+        "critical_sustain": args.critical_sustain, "restart_hold": restart,
         # terminal-code rule (main.py fires it on an episode start, then keeps quiet for cooldown_s; a code that
         # already fired < repeat_s earlier is a repeat: reported, not critical)
-        "rule": {"codes": list(TERMINAL_CODES), "cooldown_s": RULE_COOLDOWN_S, "repeat_s": RULE_REPEAT_S},
+        "rule": {"codes": list(TERMINAL_CODES), "cooldown_s": RULE_COOLDOWN_S, "repeat_s": RULE_REPEAT_S,
+                 "per_code": RULE_PER_CODE},
         # per-gun normalisation recipe (None = global z-score only); main.py reproduces it online
         "gun_norm": gn,
         "dropped_features": list(args.drop_features),

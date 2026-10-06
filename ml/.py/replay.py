@@ -65,7 +65,7 @@ def replay_file(client: Any, path: str, gun_id: str | None = None, chunk_s: int 
     if reset:
         client.delete(f"/guns/{gun_id}")  # 404 for an unknown gun is fine
     summary: dict[str, Any] = {"gun_id": gun_id, "file": os.path.basename(path), "rows": len(df), "requests": 0,
-                               "warming_up": 0, "windows_scored": 0, "critical_events": [], "rule_triggers": 0, "rule_repeats": 0,
+                               "warming_up": 0, "windows_scored": 0, "critical_events": [], "rule_triggers": 0, "rule_repeats": 0, "rule_out_of_profile": 0,
                                "max_score": None, "last": None}
     was_critical = False
     for part in chunks(df, chunk_s):
@@ -79,8 +79,11 @@ def replay_file(client: Any, path: str, gun_id: str | None = None, chunk_s: int 
         res = r.json()
         summary["windows_scored"] += res["windows_scored"]
         summary["rule_triggers"] += int(res["rule_triggered"])
-        rule_critical = res["rule_triggered"] and not res.get("rule_repeat", False)
-        summary["rule_repeats"] += int(res["rule_triggered"] and not rule_critical)
+        rule_critical = (res["rule_triggered"] and not res.get("rule_repeat", False)
+                         and not res.get("rule_out_of_profile", False))
+        summary["rule_repeats"] += int(res["rule_triggered"] and res.get("rule_repeat", False))
+        summary["rule_out_of_profile"] += int(res["rule_triggered"] and not res.get("rule_repeat", False)
+                                              and res.get("rule_out_of_profile", False))
         summary["max_score"] = res["anomaly_score"] if summary["max_score"] is None else max(summary["max_score"], res["anomaly_score"])
         summary["last"] = res
         critical, event = res["critical_in_request"], None

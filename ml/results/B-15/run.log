@@ -1,0 +1,24 @@
+[chronos2s] chronos2s: 4391 forecasts in 88s, MAE 0.2171
+[chronos2s_cov] start, free 2662 MB
+[chronos2s_cov] chronos2s_cov: 4391 forecasts in 826s, MAE 0.2161
+[chronos2s_cov_20] start, free 2968 MB
+[chronos2s_cov_20] chronos2s_cov_20: 4391 forecasts in 180s, MAE 0.2754
+[moirai2s] start, free 2946 MB
+[moirai2s] moirai2s: 4391 forecasts in 37s, MAE 0.2260
+[moirai2s_20] start, free 2956 MB
+[moirai2s_20] moirai2s_20: 4391 forecasts in 14s, MAE 0.2570
+[tirex] start, free 2954 MB
+[tirex] tirex: 4391 forecasts in 817s, MAE 0.2170
+[tirex_20] start, free 2297 MB
+[tirex_20] tirex_20: 4391 forecasts in 782s, MAE 0.2959
+[chronos2] start, free 2480 MB
+[chronos2] chronos2: 4391 forecasts in 283s, MAE 0.2073
+[chronos2_cov] start, free 2605 MB
+[chronos2_cov] chronos2_cov: 4391 forecasts in 3962s, MAE 0.2019
+[chronos2_cov_20] start, free 2396 MB
+[chronos2_cov_20] chronos2_cov_20: 4391 forecasts in 743s, MAE 0.2722
+[timesfm25] start, free 1618 MB
+[timesfm25] timesfm25: 4391 forecasts in 497s, MAE 0.2289
+[timesfm25_20] start, free 1914 MB
+[timesfm25_20] timesfm25_20: 4391 forecasts in 54s, MAE 0.2859
+DONE

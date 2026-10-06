@@ -1,0 +1,17 @@
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\baseline_ensemble.joblib (window 60s, threshold 0.9458, sustain 3) on 8 test files
+[test 1/8] test_0.parquet (class E01): 603,595 rows -> 10,060 windows (gun-normalised)
+[test 2/8] test_1.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 3/8] test_2.parquet (class E02): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 4/8] test_3.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 5/8] test_4.parquet (class E03): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 6/8] test_5.parquet (class E03): 597,837 rows -> 9,963 windows (gun-normalised)
+[test 7/8] test_6.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 8/8] test_7.parquet (class E04): 603,577 rows -> 10,060 windows (gun-normalised)
+test: AUROC 0.713 (per gun mean 0.703, > 10 min before failure 0.671)  AUPRC 0.048  alarm@normal 0.005  recall@pre-failure 0.068  (80,533 windows, 404 alarms held by the non-welding gate; per-file alarm@normal 0.001..0.014 sd 0.004; 8 files gun-normalised, 8 with a gun threshold)
+  E01: AUROC 0.537  recall 0.025  alarm@normal 0.009
+  E02: AUROC 0.913  recall 0.133  alarm@normal 0.001
+  E03: AUROC 0.860  recall 0.092  alarm@normal 0.002
+  E04: AUROC 0.622  recall 0.061  alarm@normal 0.005
+  operating point (lead >= 30 min, false runs <= 1/day): 0/8 files (lead ok 0, false runs ok 8); final run in 2 files (median lead 5.8 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 8/8 files hit, median lead 9.2 min; false triggers 0.18/day/file (4 files with any, 8 files <= 1/day); 4 repeats not critical (0 in the pre-failure window), 0.25/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\baseline_ensemble_test_metrics.json

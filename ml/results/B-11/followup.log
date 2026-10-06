@@ -1,0 +1,32 @@
+train 625,635 windows / 64 guns, test 80,533 / 8 guns, 46 features
+fold 1/4: 18 guns, threshold 0.9489, 58s
+fold 2/4: 18 guns, threshold 0.9460, 72s
+fold 3/4: 14 guns, threshold 0.9301, 66s
+fold 4/4: 14 guns, threshold 0.9406, 81s
+
+== cv: horizon x window state (share of windows | ensemble AUROC vs quiet welding > 24 h) ==
+negatives: 459,124 windows, weld duty 0.35, held by gate 0.06, alarm 0.0079
+bin      terminal      other_err     after_err     quiet         | quiet: duty  held  alarm
+0-3m    0.28 0.971    0.04 0.991    0.68 0.909    0.01   nan | 0.00  0.00  0.000
+3-10m   0.53 0.915    0.04 0.958    0.41 0.915    0.02 0.448 | 0.01  0.00  0.000
+10-30m  0.01 0.761    0.15 0.955    0.03 0.860    0.81 0.573 | 0.30  0.25  0.027
+30-60m  0.02 0.994    0.14 0.958    0.01 0.863    0.83 0.572 | 0.30  0.25  0.018
+1-3h    0.00 0.991    0.08 0.982    0.00 0.951    0.91 0.505 | 0.39  0.26  0.007
+3-6h    0.00   nan    0.03 0.977    0.00 0.966    0.97 0.516 | 0.39  0.14  0.011
+6-12h   0.00   nan    0.03 0.977    0.00 1.000    0.97 0.483 | 0.38  0.15  0.008
+12-24h  0.00   nan    0.03 0.976    0.00 0.901    0.97 0.514 | 0.36  0.09  0.007
+
+== test: horizon x window state (share of windows | ensemble AUROC vs quiet welding > 24 h) ==
+negatives: 61,751 windows, weld duty 0.40, held by gate 0.04, alarm 0.0052
+bin      terminal      other_err     after_err     quiet         | quiet: duty  held  alarm
+0-3m    0.00   nan    0.00   nan    1.00 0.904    0.00   nan | nan  nan  nan
+3-10m   0.29 0.997    0.00   nan    0.71 0.882    0.00   nan | nan  nan  nan
+10-30m  0.00   nan    0.09 0.999    0.00   nan    0.91 0.673 | 0.57  0.00  0.000
+30-60m  0.00   nan    0.00   nan    0.00   nan    1.00 0.691 | 0.52  0.00  0.013
+1-3h    0.00   nan    0.00   nan    0.00   nan    1.00 0.707 | 0.55  0.08  0.008
+3-6h    0.04 0.977    0.00   nan    0.01 0.996    0.96 0.697 | 0.45  0.07  0.005
+6-12h   0.03   nan    0.00   nan    0.00   nan    0.97 0.536 | 0.44  0.01  0.004
+12-24h  0.00   nan    0.00   nan    0.00 0.951    1.00 0.538 | 0.41  0.05  0.005
+
+terminal-code episode start before the failure: 72 guns, median 9.4 min, q10-q90 9.1-9.9 min, > 15 min 0%; guns with another error code in the last 1 h 24%
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-11\horizon_followup.json

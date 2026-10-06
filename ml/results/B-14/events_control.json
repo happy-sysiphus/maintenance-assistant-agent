@@ -1,0 +1,84 @@
+{
+ "all": [
+  {
+   "bin": "10-60m",
+   "n_events": 139,
+   "n_pos": 3042,
+   "elapsed_auc_pooled": 0.5744105447535174,
+   "elapsed_auc_gun_mean": 0.5945511507185675,
+   "lgbm": {
+    "auc": 0.7628507015557617,
+    "auc_gun_mean": 0.7518641311383194,
+    "n_pos": 3042,
+    "n_guns": 32
+   }
+  },
+  {
+   "bin": "1-3h",
+   "n_events": 139,
+   "n_pos": 12684,
+   "elapsed_auc_pooled": 0.5573136346142485,
+   "elapsed_auc_gun_mean": 0.5948836437344678,
+   "lgbm": {
+    "auc": 0.8686164639048742,
+    "auc_gun_mean": 0.8222200481462268,
+    "n_pos": 12684,
+    "n_guns": 39
+   }
+  },
+  {
+   "bin": "3-6h",
+   "n_events": 139,
+   "n_pos": 20614,
+   "elapsed_auc_pooled": 0.5466107307332897,
+   "elapsed_auc_gun_mean": 0.5869686469739749,
+   "lgbm": {
+    "auc": 0.8749719805164897,
+    "auc_gun_mean": 0.8040319614121448,
+    "n_pos": 20614,
+    "n_guns": 39
+   }
+  }
+ ],
+ "far_from_failure": [
+  {
+   "bin": "10-60m",
+   "n_events": 103,
+   "n_pos": 2144,
+   "elapsed_auc_pooled": 0.49565643120889175,
+   "elapsed_auc_gun_mean": 0.457402092708131,
+   "lgbm": {
+    "auc": 0.8648039786084079,
+    "auc_gun_mean": 0.9052242445255793,
+    "n_pos": 2144,
+    "n_guns": 23
+   }
+  },
+  {
+   "bin": "1-3h",
+   "n_events": 103,
+   "n_pos": 9146,
+   "elapsed_auc_pooled": 0.4812017743705964,
+   "elapsed_auc_gun_mean": 0.41689273297146123,
+   "lgbm": {
+    "auc": 0.9073577817762655,
+    "auc_gun_mean": 0.9144810762661075,
+    "n_pos": 9146,
+    "n_guns": 29
+   }
+  },
+  {
+   "bin": "3-6h",
+   "n_events": 103,
+   "n_pos": 14733,
+   "elapsed_auc_pooled": 0.46509798960006116,
+   "elapsed_auc_gun_mean": 0.4201064632214135,
+   "lgbm": {
+    "auc": 0.8945477459184186,
+    "auc_gun_mean": 0.8569584524005872,
+    "n_pos": 14733,
+    "n_guns": 30
+   }
+  }
+ ]
+}

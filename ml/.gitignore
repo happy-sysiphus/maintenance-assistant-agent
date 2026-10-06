@@ -37,3 +37,7 @@ __pycache__/
 .venv/
 venv/
 .ipynb_checkpoints/
+
+# B-15 time-series foundation models (separate env, experiment cache)
+.venv-tsfm/
+results/B-15/cache/

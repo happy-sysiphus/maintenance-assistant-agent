@@ -1,0 +1,4 @@
+fault (n pos 71, neg 3600): past 0.658  forecast 0.643  oracle 0.520  past+forecast 0.665  past+oracle 0.603
+pre   (n pos 720, neg 3600): past 0.502  forecast 0.498  oracle 0.470  past+forecast 0.506  past+oracle 0.482
+forecast MAE by origin kind: {'normal': 0.209, 'pre': 0.171, 'paper': 0.147}
+|future mean - past 60 s mean| by kind: {'normal': 0.084, 'pre': 0.09, 'paper': 0.093}

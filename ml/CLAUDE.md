@@ -9,7 +9,7 @@
 - **Train + evaluate**: `python .py/train.py --exclude-non-welding --cv 4` (~10 min; default `--model ensemble` = IsolationForest + LightGBM, the serving model) → `python .py/train.py --evaluate`; IsolationForest alone: `--model iforest` (~1 min)
 - **Experiments**: `python .py/experiments.py cache --window 60` → `python .py/experiments.py run <name>` (results in `results/`); paper-protocol comparison: `python .py/paper_task.py cache` → `run` → `summary` (~50 min, `results/B-6/`)
 - **Run Server**: `uvicorn main:app --reload` (stream replay: `python .py/replay.py`; state persists in `RSW_STATE_DIR`, default `state/`)
-- **Run Tests**: `pytest` (26 tests, synthetic end-to-end + serving regressions + restart / outbox, ~2 min; never touches the real data folders)
+- **Run Tests**: `pytest` (29 tests, synthetic end-to-end + serving regressions + restart / outbox, ~2 min; never touches the real data folders)
 - **Run Single Test**: `pytest tests/test_pipeline.py -k rule`
 - **Lint**: `ruff check .` (config in `pyproject.toml`, line length 120)
 

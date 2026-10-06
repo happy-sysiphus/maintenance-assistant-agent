@@ -1,0 +1,23 @@
+625,635 windows, 64 guns, negatives 460,291
+1-3h: d=0 AUROC 0.562 (per gun 0.548, 5175 pos) | placebo72 0.546
+  k=1 d=0.25: AUROC 0.646 (+0.084) per gun 0.635  45s
+  k=1 d=0.50: AUROC 0.754 (+0.192) per gun 0.760  60s
+  k=1 d=1.00: AUROC 0.846 (+0.284) per gun 0.865  74s
+  k=5 d=0.25: AUROC 0.797 (+0.235) per gun 0.821  88s
+  k=5 d=0.50: AUROC 0.884 (+0.322) per gun 0.918  102s
+  k=5 d=1.00: AUROC 0.939 (+0.377) per gun 0.951  116s
+3-6h: d=0 AUROC 0.598 (per gun 0.594, 9508 pos) | placebo72 0.592
+  k=1 d=0.25: AUROC 0.659 (+0.061) per gun 0.665  157s
+  k=1 d=0.50: AUROC 0.785 (+0.187) per gun 0.796  189s
+  k=1 d=1.00: AUROC 0.876 (+0.278) per gun 0.889  215s
+  k=5 d=0.25: AUROC 0.840 (+0.242) per gun 0.846  235s
+  k=5 d=0.50: AUROC 0.933 (+0.335) per gun 0.947  252s
+  k=5 d=1.00: AUROC 0.951 (+0.353) per gun 0.969  270s
+6-24h: d=0 AUROC 0.560 (per gun 0.549, 58144 pos) | placebo72 0.531
+  k=1 d=0.25: AUROC 0.672 (+0.112) per gun 0.684  336s
+  k=1 d=0.50: AUROC 0.773 (+0.213) per gun 0.786  356s
+  k=1 d=1.00: AUROC 0.858 (+0.298) per gun 0.865  379s
+  k=5 d=0.25: AUROC 0.832 (+0.272) per gun 0.840  399s
+  k=5 d=0.50: AUROC 0.913 (+0.353) per gun 0.905  417s
+  k=5 d=1.00: AUROC 0.945 (+0.386) per gun 0.929  442s
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-14\power.json

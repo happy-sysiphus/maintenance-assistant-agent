@@ -1,58 +1,57 @@
 {
   "schema_version": "1.0",
-  "event_id": "0d711c472d8d500337556b05133273c2",
+  "event_id": "eb23bb1670076df8b0c2f8a26a90923c",
   "gun_id": "test_3",
-  "detected_at": "2021-09-03T09:30:59",
-  "window_start": "2021-09-03T09:30:00",
+  "detected_at": "2021-09-03T09:25:59",
+  "window_start": "2021-09-03T09:25:00",
   "trigger": {
-    "source": "model+rule",
-    "rule_code": "E016",
-    "rule_trigger_time": "2021-09-03T09:23:36",
-    "anomaly_score": 0.9947533713490655,
+    "source": "rule",
+    "rule_code": "E029",
+    "rule_trigger_time": "2021-09-03T09:26:09",
+    "anomaly_score": 0.9992913863673143,
     "threshold": 0.9457997090865815,
-    "score_z": 2.4242547721391388,
-    "alarm_duration_s": 480,
+    "score_z": 2.446494444671682,
+    "alarm_duration_s": 180,
     "sustained": true
   },
-  "summary_ko": "US2 작동 허용 신호(c10) 평소보다 흔들림; 고장 유형 E02(전극 파손) 의심, 에러 코드 E016.",
-  "sensor_findings": [
-    {
-      "sensor": "c10",
-      "sensor_name": "US2",
-      "sensor_name_ko": "US2 작동 허용 신호",
-      "group": "io",
-      "statistic": "std",
-      "direction": "unstable",
-      "deviation_z": 0.5,
-      "share": 0.148,
-      "text_ko": "US2 작동 허용 신호(c10) 평소보다 흔들림"
-    }
-  ],
+  "summary_ko": "고장 유형 E04(드리프트) 의심, 에러 코드 E029.",
+  "sensor_findings": [],
   "fault_class": {
-    "code": "E02",
-    "name_en": "Electrode broke",
-    "name_ko": "전극 파손",
-    "terminal_code": "E016",
-    "situation_id": "S02",
-    "definition": "electrode position below the zero point of the reference travel",
+    "code": "E04",
+    "name_en": "Drift",
+    "name_ko": "드리프트",
+    "terminal_code": "E029",
+    "situation_id": "S04",
+    "definition": "locked cylinder keeps moving faster than 5 mm/min",
     "basis": "rule_trigger"
   },
-  "symptoms": [],
+  "symptoms": [
+    {
+      "id": "P9",
+      "name_ko": "건 센서 정상 (규칙만 발화)",
+      "match": "no_sensor_signal",
+      "evidence": [],
+      "related_classes": [],
+      "situation_ids": [],
+      "agrees_with_fault_class": false,
+      "confidence": "low"
+    }
+  ],
   "situation_ids": [
-    "S02"
+    "S04"
   ],
   "context": {
     "latest_error_code": "0",
-    "error_active_share": 0.0,
+    "error_active_share": 0.5666666626930237,
     "non_welding_share": 0.0,
-    "welds_in_window": 7.99999306987479,
-    "welds_10min": 35.00013462220272,
+    "welds_in_window": 5.151898960775725e-07,
+    "welds_10min": 54.0000358042023,
     "alarm_held": false,
     "gun_norm": "gun"
   },
   "detector": {
     "name": "baseline_ensemble",
-    "created": "2026-09-29T19:28:26",
+    "created": "2026-10-06T10:17:47",
     "window_s": 60
   },
   "caveats": [

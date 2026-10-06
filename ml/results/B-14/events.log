@@ -1,0 +1,13 @@
+706,168 windows, 72 guns; events {'terminal_all': 130, 'terminal_false': 58, 'terminal_hit': 72, 'other_codes': 139}
+terminal_all    10-60m pos   4797 | score 0.515 (pseudo 0.512, q95 0.538) | LGBM 0.551 (pseudo 0.491)  34s
+terminal_all    1-3h   pos  11646 | score 0.483 (pseudo 0.507, q95 0.527) | LGBM 0.578 (pseudo 0.499)  64s
+terminal_all    3-6h   pos  19302 | score 0.495 (pseudo 0.512, q95 0.527) | LGBM 0.600 (pseudo 0.524)  95s
+terminal_false  10-60m pos   2371 | score 0.444 (pseudo 0.468, q95 0.524) | LGBM 0.463 (pseudo 0.486)  126s
+terminal_false  1-3h   pos   5722 | score 0.443 (pseudo 0.472, q95 0.512) | LGBM 0.504 (pseudo 0.417)  158s
+terminal_false  3-6h   pos   8931 | score 0.463 (pseudo 0.469, q95 0.503) | LGBM 0.522 (pseudo 0.514)  190s
+other_codes     10-60m pos   3042 | score 0.432 (pseudo 0.531, q95 0.553) | LGBM 0.763 (pseudo 0.575)  224s
+other_codes     1-3h   pos  12684 | score 0.593 (pseudo 0.530, q95 0.560) | LGBM 0.869 (pseudo 0.605)  257s
+other_codes     3-6h   pos  20614 | score 0.580 (pseudo 0.524, q95 0.549) | LGBM 0.875 (pseudo 0.676)  296s
+watch rule (other-code onset -> failure in 10-60 min): 139 alerts, 0.28/gun/day, precision 0.029 (chance 0.0050), guns with a hit 4/72
+hit vs false terminal onset (preceding 1 h, LR, 4-fold by gun): 72 hits / 58 false, AUROC features 0.640, elapsed time alone 0.967
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-14\events.json

@@ -209,11 +209,11 @@ function drawTimeline(D,P,F){
   let y0=0; const [s0,s1]=D.axes.score; const ys=v=>y0+8+(1-(Math.min(Math.max(v,s0),s1)-s0)/(s1-s0))*(hScore-16);
   el("text",{x:m.l+6,y:y0+20,class:"lbl b"},svg).textContent="이상 점수";
   [s0,(s0+s1)/2,s1].forEach(v=>{el("line",{x1:m.l,x2:W-m.r,y1:ys(v),y2:ys(v),class:"gridl"},ax);el("text",{x:m.l-8,y:ys(v)+4,"text-anchor":"end"},ax).textContent=v.toFixed(2);});
-  // sustained runs shaded
-  P.forEach(p=>{ if(p.sustained) el("rect",{x:x(p.t0),y:y0,width:Math.max(x(p.t1)-x(p.t0),1),height:hScore,fill:"var(--crit-bg)"},svg); });
+  // critical-length model runs shaded (C-5: critical_sustain windows; older servers: sustained)
+  P.forEach(p=>{ if(p.critical ?? p.sustained) el("rect",{x:x(p.t0),y:y0,width:Math.max(x(p.t1)-x(p.t0),1),height:hScore,fill:"var(--crit-bg)"},svg); });
   el("polyline",{points:P.map(p=>`${x(p.t1)},${ys(p.threshold)}`).join(" "),fill:"none",stroke:"var(--ink2)","stroke-width":1.5,"stroke-dasharray":"5 4"},svg);
   el("polyline",{points:P.map(p=>`${x(p.t1)},${ys(p.score)}`).join(" "),fill:"none",stroke:"var(--model)","stroke-width":2,"stroke-linejoin":"round"},svg);
-  P.forEach(p=>{ if(p.alarm||p.held) el("circle",{cx:x(p.t1),cy:ys(p.score),r:4,fill:p.held?"var(--hold)":p.sustained?"var(--crit)":"var(--warn)",stroke:"var(--card)","stroke-width":1.5},svg); });
+  P.forEach(p=>{ if(p.alarm||p.held) el("circle",{cx:x(p.t1),cy:ys(p.score),r:4,fill:p.held?"var(--hold)":(p.critical ?? p.sustained)?"var(--crit)":"var(--warn)",stroke:"var(--card)","stroke-width":1.5},svg); });
   y0+=hScore+gap;
   // ---- [3] sensor deviations
   const featY=[];
@@ -238,8 +238,8 @@ function drawTimeline(D,P,F){
   P.forEach(p=>{ const c=p.error_codes[0]||""; if(c&&c!==prev){ el("text",{x:x(p.t0)+3,y:cy+2,class:"lbl"},svg).textContent=c; } prev=c; });
   // events (full height)
   D.events.forEach(e=>{ const t=parse(e.time).getTime(); if(t<tA||t>tB) return; const col=e.kind==="critical_start"?"var(--crit)":e.kind==="rule"?"var(--ink)":"var(--mute)";
-    el("line",{x1:x(t),x2:x(t),y1:0,y2:H-hAxis,stroke:col,"stroke-width":e.kind==="rule_repeat"?1:1.5,"stroke-dasharray":e.kind==="rule_repeat"?"2 3":""},svg);
-    const lab=e.kind==="critical_start"?"모델 위험":e.kind==="rule"?`규칙 ${e.code}`:`규칙 반복 ${e.code}`;
+    el("line",{x1:x(t),x2:x(t),y1:0,y2:H-hAxis,stroke:col,"stroke-width":e.kind==="rule"||e.kind==="critical_start"?1.5:1,"stroke-dasharray":e.kind==="rule"||e.kind==="critical_start"?"":"2 3"},svg);
+    const lab=e.kind==="critical_start"?"모델 위험":e.kind==="rule"?`규칙 ${e.code}`:e.kind==="rule_out_of_profile"?`프로파일 밖 ${e.code}`:`규칙 반복 ${e.code}`;
     const right=x(t)>W-m.r-120, yy=e.kind==="critical_start"?hScore-8:24;
     el("text",{x:right?x(t)-4:x(t)+4,y:yy,"text-anchor":right?"end":"start",class:"lbl b"},svg).textContent=lab; });
   if(F){ const t=parse(F.window_end).getTime(); if(t>=tA&&t<=tB){ el("line",{x1:x(t),x2:x(t),y1:0,y2:H-hAxis,stroke:"var(--model)","stroke-width":1,"stroke-dasharray":"1 3"},svg); } }
@@ -248,7 +248,7 @@ function drawTimeline(D,P,F){
   $("#legend").innerHTML=[`<span><i class="sw ln" style="border-color:var(--model)"></i>이상 점수 / 센서 편차</span>`,
     `<span><i class="sw ln" style="border-color:var(--ink2);border-top-style:dashed"></i>임계값</span>`,
     `<span><i class="sw" style="background:var(--warn);border-radius:50%"></i>알람</span>`,
-    `<span><i class="sw" style="background:var(--crit);border-radius:50%"></i>지속 알람(위험)</span>`,
+    `<span><i class="sw" style="background:var(--crit);border-radius:50%"></i>위험(모델 10분 이상 지속)</span>`,
     `<span><i class="sw" style="background:var(--hold)"></i>비용접(판정 보류)</span>`,
     `<span><i class="sw" style="background:var(--band1)"></i>±1σ · ±2σ</span>`,
     ...codes.map(c=>`<span><i class="sw" style="background:${codeColor(c)}"></i>${c}${CODE_CLASS[c]?` → ${CODE_CLASS[c]}`:""}</span>`)].join("");
@@ -259,7 +259,7 @@ function drawTimeline(D,P,F){
     const t=tA+(vx-m.l)/(W-m.l-m.r)*(tB-tA); let p=P[0]; for(const q of P) if(Math.abs(q.t1-t)<Math.abs(p.t1-t)) p=q;
     cross.setAttribute("x1",x(p.t1)); cross.setAttribute("x2",x(p.t1)); cross.setAttribute("opacity",.5);
     const rel=F?Math.round((p.t1-parse(F.window_end))/60000):null;
-    showTip(box,x(p.t1)*sx,(ev.clientY-b.top),`<b>${kst(p.t0)}–${kst(p.t1)} KST</b>${rel!=null?` (탐지 ${rel>=0?"+":""}${rel}분)`:""}<br>점수 ${p.score.toFixed(3)} / 임계값 ${p.threshold.toFixed(3)}${p.held?" · 보류":p.sustained?" · 위험":p.alarm?" · 알람":""}<br>`+
+    showTip(box,x(p.t1)*sx,(ev.clientY-b.top),`<b>${kst(p.t0)}–${kst(p.t1)} KST</b>${rel!=null?` (탐지 ${rel>=0?"+":""}${rel}분)`:""}<br>점수 ${p.score.toFixed(3)} / 임계값 ${p.threshold.toFixed(3)}${p.held?" · 보류":(p.critical ?? p.sustained)?" · 위험":p.sustained?" · 지속 알람":p.alarm?" · 알람":""}<br>`+
       feats.map(f=>`${featKo(f.feature)} ${fmtDev(dv(p,f.feature))}σ`).join("<br>")+
       `<br>코드 ${p.error_codes.join(", ")||"없음"} · 비용접 ${Math.round(p.non_welding_share*100)}%`); });
   hit.addEventListener("mouseleave",()=>{cross.setAttribute("opacity",0);hideTip(box);});
@@ -268,7 +268,7 @@ function drawTimeline(D,P,F){
 function drawTable(D,P){
   const f=D.features;
   $("#table").innerHTML=`<thead><tr><th>창 (KST)</th><th>점수</th><th>임계값</th><th>판정</th>${f.map(x=>`<th>${featKo(x.feature)} (σ)</th>`).join("")}<th>코드</th><th>비용접</th></tr></thead><tbody>`+
-    [...P].reverse().map(p=>`<tr><td class="mono">${kstFull(p.t0)}</td><td class="n">${p.score.toFixed(3)}</td><td class="n">${p.threshold.toFixed(3)}</td><td>${p.held?"보류":p.sustained?"위험":p.alarm?"알람":"—"}</td>${f.map(x=>`<td class="n">${fmtDev(dv(p,x.feature))}</td>`).join("")}<td>${p.error_codes.join(", ")}</td><td class="n">${Math.round(p.non_welding_share*100)}%</td></tr>`).join("")+"</tbody>";
+    [...P].reverse().map(p=>`<tr><td class="mono">${kstFull(p.t0)}</td><td class="n">${p.score.toFixed(3)}</td><td class="n">${p.threshold.toFixed(3)}</td><td>${p.held?"보류":(p.critical ?? p.sustained)?"위험":p.sustained?"지속":p.alarm?"알람":"—"}</td>${f.map(x=>`<td class="n">${fmtDev(dv(p,x.feature))}</td>`).join("")}<td>${p.error_codes.join(", ")}</td><td class="n">${Math.round(p.non_welding_share*100)}%</td></tr>`).join("")+"</tbody>";
 }
 
 document.querySelectorAll("#span button").forEach(b=>b.addEventListener("click",()=>{

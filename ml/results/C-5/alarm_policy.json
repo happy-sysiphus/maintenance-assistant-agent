@@ -1,0 +1,296 @@
+{
+ "policies": [
+  {
+   "sustain": 3,
+   "restart_hold_min": 0,
+   "cv": {
+    "model_false_per_gun_day": 0.5460713319898018,
+    "critical_false_per_gun_day": 0.6234314373550238,
+    "guns_model_hit": 32,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [
+     "E01_1",
+     "E01_9"
+    ],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.2854586449428453,
+    "critical_false_per_gun_day": 0.4638702980321236,
+    "guns_model_hit": 3,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [
+     "test_5"
+    ],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 3,
+   "restart_hold_min": 30,
+   "cv": {
+    "model_false_per_gun_day": 0.3754240407429888,
+    "critical_false_per_gun_day": 0.4527841461082107,
+    "guns_model_hit": 22,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [
+     "E01_1",
+     "E01_9"
+    ],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.1605704877803505,
+    "critical_false_per_gun_day": 0.3389821408696288,
+    "guns_model_hit": 3,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [
+     "test_5"
+    ],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 3,
+   "restart_hold_min": 60,
+   "cv": {
+    "model_false_per_gun_day": 0.339019285277002,
+    "critical_false_per_gun_day": 0.4163793906422239,
+    "guns_model_hit": 22,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [
+     "E01_9"
+    ],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.1605704877803505,
+    "critical_false_per_gun_day": 0.3389821408696288,
+    "guns_model_hit": 3,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [
+     "test_5"
+    ],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 5,
+   "restart_hold_min": 0,
+   "cv": {
+    "model_false_per_gun_day": 0.32536750197725695,
+    "critical_false_per_gun_day": 0.40272760734247887,
+    "guns_model_hit": 24,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [
+     "E01_1"
+    ],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.1784116530892783,
+    "critical_false_per_gun_day": 0.3568233061785566,
+    "guns_model_hit": 2,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [
+     "test_5"
+    ],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 5,
+   "restart_hold_min": 30,
+   "cv": {
+    "model_false_per_gun_day": 0.2138779383626724,
+    "critical_false_per_gun_day": 0.29123804372789436,
+    "guns_model_hit": 18,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [
+     "E01_1"
+    ],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.08920582654463916,
+    "critical_false_per_gun_day": 0.26761747963391747,
+    "guns_model_hit": 2,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [
+     "test_5"
+    ],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 5,
+   "restart_hold_min": 60,
+   "cv": {
+    "model_false_per_gun_day": 0.20022615506292735,
+    "critical_false_per_gun_day": 0.27758626042814927,
+    "guns_model_hit": 18,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.08920582654463916,
+    "critical_false_per_gun_day": 0.26761747963391747,
+    "guns_model_hit": 2,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [
+     "test_5"
+    ],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 10,
+   "restart_hold_min": 0,
+   "cv": {
+    "model_false_per_gun_day": 0.12969194134757794,
+    "critical_false_per_gun_day": 0.20705204671279986,
+    "guns_model_hit": 7,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.053523495926783494,
+    "critical_false_per_gun_day": 0.2319351490160618,
+    "guns_model_hit": 1,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 10,
+   "restart_hold_min": 30,
+   "cv": {
+    "model_false_per_gun_day": 0.08191069979847028,
+    "critical_false_per_gun_day": 0.15927080516369221,
+    "guns_model_hit": 7,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.01784116530892783,
+    "critical_false_per_gun_day": 0.19625281839820616,
+    "guns_model_hit": 0,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 10,
+   "restart_hold_min": 60,
+   "cv": {
+    "model_false_per_gun_day": 0.07736010536522193,
+    "critical_false_per_gun_day": 0.15472021073044387,
+    "guns_model_hit": 7,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.01784116530892783,
+    "critical_false_per_gun_day": 0.19625281839820616,
+    "guns_model_hit": 0,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 15,
+   "restart_hold_min": 0,
+   "cv": {
+    "model_false_per_gun_day": 0.03868005268261097,
+    "critical_false_per_gun_day": 0.1160401580478329,
+    "guns_model_hit": 1,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.0,
+    "critical_false_per_gun_day": 0.1784116530892783,
+    "guns_model_hit": 0,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 15,
+   "restart_hold_min": 30,
+   "cv": {
+    "model_false_per_gun_day": 0.03868005268261097,
+    "critical_false_per_gun_day": 0.1160401580478329,
+    "guns_model_hit": 1,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.0,
+    "critical_false_per_gun_day": 0.1784116530892783,
+    "guns_model_hit": 0,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  },
+  {
+   "sustain": 15,
+   "restart_hold_min": 60,
+   "cv": {
+    "model_false_per_gun_day": 0.036404755465986795,
+    "critical_false_per_gun_day": 0.11376486083120872,
+    "guns_model_hit": 1,
+    "guns_rule_hit": 63,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 63,
+    "guns": 64
+   },
+   "test": {
+    "model_false_per_gun_day": 0.0,
+    "critical_false_per_gun_day": 0.1784116530892783,
+    "guns_model_hit": 0,
+    "guns_rule_hit": 8,
+    "guns_model_10min_before_rule": [],
+    "guns_any_hit": 8,
+    "guns": 8
+   }
+  }
+ ],
+ "selected": {
+  "sustain": 3,
+  "restart_hold_min": 30
+ }
+}

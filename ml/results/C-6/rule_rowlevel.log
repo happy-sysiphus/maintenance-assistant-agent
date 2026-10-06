@@ -1,0 +1,4 @@
+shared             guns hit 71/72, lead median 10.0 min, critical false 44 (0.089/gun/day), out of profile 0
+shared+profile     guns hit 68/72, lead median 10.0 min, critical false 0 (0.000/gun/day), out of profile 47
+per_code           guns hit 72/72, lead median 10.0 min, critical false 44 (0.089/gun/day), out of profile 0
+per_code+profile   guns hit 72/72, lead median 10.0 min, critical false 0 (0.000/gun/day), out of profile 48

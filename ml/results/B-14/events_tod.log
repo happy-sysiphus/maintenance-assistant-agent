@@ -1,0 +1,8 @@
+time_of_day_only     10-60m LGBM 0.884 (per gun 0.885)
+time_of_day_only     1-3h   LGBM 0.901 (per gun 0.895)
+time_of_day_only     3-6h   LGBM 0.873 (per gun 0.863)
+without_time_of_day  10-60m LGBM 0.653 (per gun 0.723)
+without_time_of_day  1-3h   LGBM 0.715 (per gun 0.587)
+without_time_of_day  3-6h   LGBM 0.804 (per gun 0.698)
+other-code onsets by UTC hour: [2, 5, 2, 1, 0, 1, 2, 3, 1, 2, 2, 0, 0, 1, 1, 0, 5, 2, 16, 53, 34, 6, 0, 0]
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-14\events_tod.json

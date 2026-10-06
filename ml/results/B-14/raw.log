@@ -1,0 +1,20 @@
+625,635 windows, 39 raw features, 3s
+real      10-30m  raw 0.512  base 0.646  base+raw 0.622  (804 pos)  78s
+real      30-60m  raw 0.472  base 0.524  base+raw 0.556  (1215 pos)  155s
+real      1-3h    raw 0.536  base 0.562  base+raw 0.630  (5175 pos)  229s
+real      3-6h    raw 0.543  base 0.598  base+raw 0.648  (9508 pos)  297s
+real      6-12h   raw 0.502  base 0.565  base+raw 0.601  (18544 pos)  365s
+real      12-24h  raw 0.537  base 0.593  base+raw 0.599  (39600 pos)  433s
+placebo72 10-30m  raw 0.458  base 0.561  base+raw 0.541  (1035 pos)  484s
+placebo72 30-60m  raw 0.505  base 0.518  base+raw 0.587  (1545 pos)  537s
+placebo72 1-3h    raw 0.525  base 0.546  base+raw 0.588  (6326 pos)  590s
+placebo72 3-6h    raw 0.503  base 0.592  base+raw 0.611  (10315 pos)  641s
+placebo72 6-12h   raw 0.449  base 0.560  base+raw 0.557  (20859 pos)  696s
+placebo72 12-24h  raw 0.497  base 0.573  base+raw 0.560  (40970 pos)  749s
+effects 10-30m : c6_q10 +0.45/plc +0.00 (57%), c6_q50 +0.41/plc +0.00 (57%), c6_q90 +0.34/plc +0.00 (57%), c3_q10 +0.19/plc +0.00 (77%), c3_q50 -0.15/plc -0.11 (57%)
+effects 30-60m : c6_q10 +0.25/plc +0.00 (56%), c6_q50 +0.25/plc +0.00 (56%), c6_q90 +0.21/plc +0.00 (53%), c3_q10 +0.21/plc +0.02 (73%), c5_q50 +0.21/plc +0.00 (60%)
+effects 1-3h   : c6_range +0.52/plc +0.00 (56%), c2_q50 +0.21/plc +0.00 (62%), c5_q50 +0.19/plc +0.02 (60%), c3_q10 +0.16/plc +0.08 (79%), c14_q10 -0.10/plc +0.00 (50%)
+effects 3-6h   : c6_range +0.80/plc +0.70 (67%), c2_q50 +0.59/plc +0.07 (70%), c5_q50 +0.36/plc +0.00 (63%), c1_range +0.35/plc +0.31 (58%), c3_q50 -0.27/plc -0.23 (63%)
+effects 6-12h  : c6_range +0.81/plc +0.69 (62%), c1_range +0.56/plc +0.30 (57%), c2_q50 +0.47/plc +0.11 (70%), c5_q50 +0.39/plc +0.00 (64%), c10_range +0.36/plc +0.07 (55%)
+effects 12-24h : c6_range +1.40/plc +1.07 (85%), c1_range +0.92/plc +0.62 (81%), c2_q50 +0.83/plc +0.36 (81%), c10_range +0.76/plc +0.77 (80%), c18_q50 +0.58/plc +0.12 (61%)
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-14\raw.json

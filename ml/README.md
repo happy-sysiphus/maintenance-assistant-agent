@@ -124,7 +124,7 @@ https://drive.google.com/drive/folders/1EDQcJj-L1btXrTOmXwPp8Jps24oy989d?usp=dri
 | 평균 정확도 | 68.62% |
 | 정상을 고장으로 오인(위양성) | 56% |
 
-같은 프로토콜(다음 60초 상태 분류)로 이 파이프라인을 재면 정확도 0.999, 정상 재현율 1.000, 고장 재현율 0.986으로 논문을 넘는다 — 단 이것은 현재 종료 코드 → 클래스 매핑(상태가 수 분~수일 지속)의 몫이고, 정상→고장 전이는 예측하지 못한다(`test.md` 2.4절).
+같은 프로토콜(다음 60초 상태 분류)로 이 파이프라인을 재면 정확도 0.999, 정상 재현율 1.000, 고장 재현율 0.986으로 논문을 넘는다 — 단 이것은 현재 종료 코드 → 클래스 매핑(상태가 수 분~수일 지속)의 몫이고, 정상→고장 전이는 예측하지 못한다(`test.md` 2.4절). 1단계(Table 11, 다음 60초 센서 예측)에 최신 시계열 기반 모델을 넣으면 Chronos-2가 naive보다 40%, 논문 TFT보다도 정확하지만(같은 조건 재현, MAE 0.147 vs 0.210), 그 예측 오차로는 고장 전조를 가를 수 없다(`history.md` 28절).
 
 #### 2.2 다르게 가는 이유
 
@@ -148,7 +148,7 @@ E01~E04를 정답으로 삼는 분류는 하지 않는다(LightGBM도 "고장 �
 
 이상탐지 신호가 나온 다음 단계다. **ML 쪽(1~2번과 RAG로 넘기는 핸드오프)은 구현되어 있고, 3~4번(매뉴얼 검색·LLM 리포트)은 RAG 담당이 핸드오프 명세(5.10절)를 받아 구현한다.**
 
-1. 필터링된 강한 이상 시그널이 탐지되면 Root Cause Agent로 전달 → **구현됨**: `severity: critical`(임계 초과가 sustain × window = 180초 이상 지속, 또는 종료 코드 에피소드 시작)이 트리거 기준
+1. 필터링된 강한 이상 시그널이 탐지되면 Root Cause Agent로 전달 → **구현됨**: `severity: critical`(종료 코드 에피소드 시작, 또는 모델 알람이 10분 이상 지속 — C-5)이 트리거 기준
 2. Agent가 이상 감지 시점 앞뒤의 센서 수치·로그 스트림을 모아 컨텍스트 구성 → **구현됨**: critical 이벤트마다 **핸드오프 문서**(센서 증상을 말로 번역, 고장 유형, 상황 ID S01~S10)를 만든다(`.py/rag_mapping.py`, 5.10절)
 3. 감지된 에러 코드에 맞는 정비 지침서를 Vector DB에서 RAG로 검색 → **온톨로지·RAG 담당**(입력은 핸드오프의 `situation_ids`)
 4. LLM이 이상 패턴과 검색된 매뉴얼을 융합해 원인·영향도·조치 가이드를 자연어로 요약 → **RAG 담당**(응답 형식은 5.10.6절)
@@ -160,7 +160,7 @@ E01~E04를 정답으로 삼는 분류는 하지 않는다(LightGBM도 "고장 �
 
 설계상 유의점:
 
-- **알람 피로도.** 너무 예민하면 무시당한다. 그래서 임계값을 오탐률 1% 설계로 잡고, **연속 3회 초과일 때만** RAG를 트리거하도록 했다(5.6~5.7절).
+- **알람 피로도.** 너무 예민하면 무시당한다. 그래서 임계값을 오탐률 1% 설계로 잡고, 모델 단독으로는 **10분 연속 초과일 때만** RAG를 트리거하며(3분 연속은 warning의 "지속 알람"), 30분 이상 쉬었다가 재가동한 직후 30분은 모델 알람을 보류한다(C-5, 5.6~5.7절). 종료 코드 규칙은 그대로 즉시 critical.
 - **매뉴얼 RAG 구성.** E01~E04는 발생 조건이 명확하므로(1.5절) 클래스별 조치 매뉴얼을 넣어두면 원인 분석 리포트가 성립한다. **〔메모〕** 다만 매뉴얼이 어떤 형태로 주어지는지, 특정 에러에 대한 명확한 해결책이 있는지는 아직 확인 못 했다.
 
 ---
@@ -639,6 +639,7 @@ g.columns = [f"{a}_{b}" if a in feat_cols and b in ("mean", "std") else a for a,
 | GET | `/health`, `/guns` | 상태(`max_chunk`, `state_dir`, `rag_url`, outbox 전달 상태별 건수) / 건별 버퍼·연속 알람·워밍업 상태(`gun_norm`, `gun_threshold`, `warmup_rows`) |
 | GET | `/guns/{gun_id}/stats`, `/stats` | 건별 일 단위 카운터·드리프트 경고 / 전체 건 합계 |
 | GET | `/guns/{gun_id}/trace`, `/guns/{gun_id}/trace/view` | 이상 추적 데이터(최근 최대 6시간의 60초 창) / 그 차트 페이지 |
+| PUT / GET | `/guns/{gun_id}/profile` | 건 프로파일(C-3): `{"expected_fault_classes": ["E04"]}` — 목록 밖 클래스의 종료 코드는 `rule_out_of_profile`(warning, 핸드오프 없음). null = 프로파일 없음 |
 | DELETE | `/guns/{gun_id}` | 건 상태·버퍼·상태 파일 삭제(정비 후) |
 
 입력 검증: NaN·inf는 422, 초 미만 시각은 초로 내림, 한 요청의 시각 폭이 30분(버퍼)을 넘으면 422, 이 건의 최신 시각보다 30분 넘게 과거인 요청은 409(시계가 초기화됐으면 `DELETE /guns/{id}` 후 다시). `/predict`는 스레드풀에서 돌고 건마다 한 번에 한 요청만 처리한다.
@@ -668,8 +669,8 @@ RAG 핸드오프 엔드포인트(`/handoffs`, `/handoffs/{event_id}`, `/handoffs
 ```
 
 - `threshold`: **이 윈도우를 판정한 임계값** — 워밍업이 끝난 건은 `gun_threshold`, 그 전·글로벌 건은 `model.threshold`(글로벌). `gun_norm`은 `warming_up` / `gun` / `global`.
-- `rule_triggered` / `severity_source`: 이 요청의 행에서 종료 코드(E012/E016/E028/E029) **에피소드가 시작**되고 건의 쿨다운(30분, `model.rule_cooldown_s`)이 지났으면 모델과 무관하게 `severity=critical`. 코드가 떠 있는 동안 계속 critical이 아니다 — E029는 E01~E03 건에서도 고장 며칠 전부터 수 시간씩 떠 있다(테스트 test_0 16시간). `rule_code`·`rule_class_hint`는 발화시킨 코드와 그 클래스(윈도우 끝에서는 코드가 이미 사라졌을 수 있으므로 온톨로지는 `context.known_code_class_hint`가 아니라 이것을 쓴다). `rule_code_active`는 최신 코드가 종료 코드인지(상태). `severity_source`는 `model`(지속 알람) / `rule` / `model+rule` / `none`. 보장되는 선행은 마지막 ~10분. **`rule_repeat`**: 같은 코드가 이 건에서 24h(`model.rule_repeat_s`) 안에 이미 발화했으면 `rule_triggered=true`이지만 critical이 아니라 `warning`이고 핸드오프도 없다(`critical_in_request=false`) — 학습·테스트 80건에서 반복 발화는 18회 중 17회가 오트리거였다. critical 오트리거는 테스트 평균 0.18회/일/건(강등 전 0.25)
-- `severity`: `normal`(임계 미만) / `warning`(초과) / `critical`(임계 초과가 `sustain × window` = 180초 이상 연속, `alarm_duration_s`) — 3절의 "연속 N회일 때만 RAG 트리거" 기준. **시간 기준**이라 클라이언트 호출 주기와 무관하다(1초마다 호출해도 3초 만에 critical이 되지 않는다). `critical_in_request`는 청크 중간 윈도우가 critical이었던 경우까지 포함하므로 하류 트리거는 이 필드를 본다. 그 근거는 `critical_source`(요청 단위; `severity_source`는 최신 윈도우 기준이라 청크 안에서 끝난 지속 알람이면 `none`)
+- `rule_triggered` / `severity_source`: 이 요청의 행에서 종료 코드(E012/E016/E028/E029) **에피소드가 시작**되고(`model.rule_per_code`면 코드가 바뀌어도 새 발화, 쿨다운은 코드별 — C-6) 건의 쿨다운(30분, `model.rule_cooldown_s`)이 지났으면 모델과 무관하게 `severity=critical`. 코드가 떠 있는 동안 계속 critical이 아니다 — E029는 E01~E03 건에서도 고장 며칠 전부터 수 시간씩 떠 있다(테스트 test_0 16시간). `rule_code`·`rule_class_hint`는 발화시킨 코드와 그 클래스(윈도우 끝에서는 코드가 이미 사라졌을 수 있으므로 온톨로지는 `context.known_code_class_hint`가 아니라 이것을 쓴다). `rule_code_active`는 최신 코드가 종료 코드인지(상태). `severity_source`는 `model`(지속 알람) / `rule` / `model+rule` / `none`. 보장되는 선행은 마지막 ~10분. **`rule_repeat`**: 같은 코드가 이 건에서 24h(`model.rule_repeat_s`) 안에 이미 발화했으면 `rule_triggered=true`이지만 critical이 아니라 `warning`이고 핸드오프도 없다(`critical_in_request=false`) — 학습·테스트 80건에서 반복 발화는 18회 중 17회가 오트리거였다. critical 오트리거는 테스트 평균 0.18회/일/건(강등 전 0.25)
+- `severity`: `normal`(임계 미만 또는 보류) / `warning`(초과; `sustain × window` = 180초 이상 이어지면 `sustained_alarm`) / `critical`(임계 초과가 `critical_sustain × window` = 600초 이상 연속, `alarm_duration_s` — C-5, 2026-10-06; 이 필드가 없는 구 번들은 180초) — 3절의 "연속 N회일 때만 RAG 트리거" 기준. **시간 기준**이라 클라이언트 호출 주기와 무관하다(1초마다 호출해도 3초 만에 critical이 되지 않는다). `critical_in_request`는 청크 중간 윈도우가 critical이었던 경우까지 포함하므로 하류 트리거는 이 필드를 본다. 그 근거는 `critical_source`(요청 단위; `severity_source`는 최신 윈도우 기준이라 청크 안에서 끝난 지속 알람이면 `none`)
 - `alarm_held`: 윈도우의 `non_welding_share`가 번들의 `alarm_max_non_welding`(0.5)을 넘으면 `true`. 이때 `is_anomaly`·점수는 그대로 주되 `severity`는 `normal`, `consecutive_alarms`는 0으로 리셋된다(비용접 중 점수는 신뢰하지 않는다). `hold_reason`에 이유가 들어간다.
 - `contributing_features`: 피처 하나를 정상 기준값(`feature_reference`)으로 치환했을 때의 점수 감소량, 상위 8개. 모델 무관 방식
 - `known_code_class_hint`: 최신 error 코드가 종료 코드면 그 클래스. 모델과 무관한 안전장치
@@ -698,7 +699,7 @@ python .py/replay.py test/test_0.csv --speed 60               # 60배속
 - 핸드오프 테스트(`tests/test_rag_mapping.py`와 수동 확인 절차)는 5.10.7절.
 - `pytest` → `tests/test_pipeline.py`: 합성 CSV(클래스별 2파일 + 테스트 2파일, 2시간, gap·캡 드레싱·종료 코드 포함)를 임시 폴더에서 2→3→4→4'→`--score`→5단계(`/predict`)까지 돌리고, API 점수가 오프라인 점수와 같은지 확인한다. 학습은 `--warmup-hours 0.5`로 돌려 2시간 파일에서도 건별 워밍업이 끝나게 하고, API가 워밍업 전(`warming_up`, 글로벌 임계값)과 후(`gun`, 건별 임계값·재정규화 점수가 오프라인 `window_file`/`gun_thresholds`와 일치)를 모두 재현하는지 본다. 실데이터 폴더는 건드리지 않는다. 파이프라인 코드를 고치면 이것부터 돌린다.
 - 검증 항목: 번들의 `gun_norm`·`dropped_features`(c19 제외, 46피처)·`alarm_max_non_welding`·`rule`, 점수 CSV의 `threshold`/`warmup` 열, API의 `alarm_held`(캡 드레싱 구간), `rule_triggered`(에피소드 시작 1회, 쿨다운)·`rule_repeat`(24h 안 같은 코드 → warning, 핸드오프 없음)·`rule_repeats` 단위 테스트, 번들 `rule.repeat_s`, 건별 AUROC, `gun_norm` 전·후 점수 일치, 요청 크기 한도(422), 시간 기준 지속 알람(10초 청크로 보내도 180초에 critical), 버퍼보다 긴 비용접 구간, `replay.py`로 2시간 파일 재생.
-- 서빙 회귀(`test_6_serving_edge_cases`): 202 중 규칙 발화 보존, 종료 코드 전환은 같은 에피소드, gap 앞 코드, 시각 이상(422·409), NaN 거부, 초 미만 시각, 1행 요청에서 trace 주기, 워밍업 후 원 단위 `welds_in_window`, 버퍼 시작의 carry. `test_3d_ensemble_model`: 앙상블 번들의 학습→평가→서빙(온라인=오프라인 점수). `test_7_state_survives_restart`: 워밍업 뒤 재시작해도 건별 임계값·쿨다운·24h 반복 판정이 재시작 없는 실행과 같고, 다른 모델로 기동하면 워밍업으로 돌아감. `test_8_outbox_retry_restart_idempotent`: RAG가 꺼진 동안 백오프 재시도 → 재시작 → RAG 복구 시 이벤트마다 정확히 한 번 도착, 4xx는 재시도 안 함, 재시작 뒤 같은 데이터를 다시 보내도 새 이벤트 없음. 테스트마다 별도 상태 폴더. `test_3e_ensemble_components`: 앙상블 구성 요소 조합·구 번들 호환. `test_6`의 구간 단언: 공백을 걸친 요청이 공백 앞 완결 분까지 채점. 모두 26개(파이프라인 13 + 매핑 13), 약 1~2분.
+- 서빙 회귀(`test_6_serving_edge_cases`): 202 중 규칙 발화 보존, 종료 코드 전환(공통 쿨다운 = 같은 에피소드, 코드별 = 새 발화), gap 앞 코드, 시각 이상(422·409), NaN 거부, 초 미만 시각, 1행 요청에서 trace 주기, 워밍업 후 원 단위 `welds_in_window`, 버퍼 시작의 carry. `test_3d_ensemble_model`: 앙상블 번들의 학습→평가→서빙(온라인=오프라인 점수). `test_7_state_survives_restart`: 워밍업 뒤 재시작해도 건별 임계값·쿨다운·24h 반복 판정이 재시작 없는 실행과 같고, 다른 모델로 기동하면 워밍업으로 돌아감. `test_8_outbox_retry_restart_idempotent`: RAG가 꺼진 동안 백오프 재시도 → 재시작 → RAG 복구 시 이벤트마다 정확히 한 번 도착, 4xx는 재시도 안 함, 재시작 뒤 같은 데이터를 다시 보내도 새 이벤트 없음. 테스트마다 별도 상태 폴더. `test_3e_ensemble_components`: 앙상블 구성 요소 조합·구 번들 호환. `test_6`의 구간 단언: 공백을 걸친 요청이 공백 앞 완결 분까지 채점. `test_9_restart_hold_and_critical_sustain`: 재가동 보류(오프라인 `restart_flags` = 온라인, 같은 상태 기계 `train.restart_step`)와 10분 critical(3분은 warning). `test_10_rule_per_code_and_profile`: 한 청크의 E016→E029(발화 둘·핸드오프 둘), 건 프로파일(밖 코드 warning·핸드오프 없음·모델 핸드오프의 고장 유형에서도 제외), `[]` 프로파일, DELETE 뒤 프로파일 유지, 예전 상태 파일의 `/stats`. 모두 29개(파이프라인 16 + 매핑 13), 약 1~2분.
 - 회귀 고정: `test_2b_window_columns`는 윈도우 집계가 연속 피처(24개, 모델 입력은 그중 23개)에만 `_mean`/`_std`를 붙이고 메타데이터 이름은 그대로 두는지 확인한다. 합성 데이터의 캡 드레싱 구간을 **분 경계에서 30초 어긋나게** 만들어, `non_welding`이 `max`(=1)가 아니라 `mean`(=0.5)으로 집계되는지도 함께 검증한다.
 - `ruff check .` 통과 상태. `black .`은 `pyproject.toml` 설정(120자)을 따른다.
 - 실데이터 파이프라인을 다시 돌려야 하는 변경: 전처리 규칙(2단계 코드) → 2·3·4단계 전부. 모델·윈도우만 → 4단계. 서빙만 → 재실행 불필요(`pytest`로 확인).

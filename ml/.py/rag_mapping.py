@@ -151,11 +151,13 @@ def match_symptoms(findings: list[dict[str, Any]], context: dict[str, Any]) -> l
 
 def resolve_class(result: dict[str, Any]) -> dict[str, Any] | None:
     """The fault class the terminal-code rule points to (rule_class_hint first, then the latest code). A repeat
-    trigger (rule_repeat: the code already fired in this gun within a day) is not critical and not a rule basis."""
+    trigger (rule_repeat: the code already fired in this gun within a day) or a code outside the gun's profile
+    (rule_out_of_profile, C-3) is not critical and not a rule basis."""
     ctx = result.get("context") or {}
-    if result.get("rule_triggered") and not result.get("rule_repeat") and result.get("rule_class_hint"):
+    if (result.get("rule_triggered") and not result.get("rule_repeat") and not result.get("rule_out_of_profile")
+            and result.get("rule_class_hint")):
         code, basis = result["rule_class_hint"], "rule_trigger"
-    elif ctx.get("known_code_class_hint"):
+    elif ctx.get("known_code_class_hint") and ctx.get("known_code_in_profile") is not False:  # C-3: not outside the profile
         code, basis = ctx["known_code_class_hint"], "latest_error_code"
     else:
         return None
@@ -211,7 +213,8 @@ def build_handoff(result: dict[str, Any], event_id: str | None = None) -> dict[s
     """Full handoff document (schema v1.0) for one critical event. `result` = AnomalyResult.model_dump(mode='json')."""
     ctx = result.get("context") or {}
     model = result.get("model") or {}
-    rule = bool(result.get("rule_triggered")) and not result.get("rule_repeat")  # a repeat did not trigger this event
+    # a repeat or an out-of-profile code (C-3) did not trigger this event
+    rule = bool(result.get("rule_triggered")) and not result.get("rule_repeat") and not result.get("rule_out_of_profile")
     return {
         "schema_version": SCHEMA_VERSION,
         "event_id": event_id or uuid.uuid4().hex,
