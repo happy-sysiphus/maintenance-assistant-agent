@@ -148,3 +148,52 @@ def test_trigger_source_is_request_level():
     assert ho["trigger"]["source"] == "model" and ho["trigger"]["sustained"] is True
     del r["critical_source"]  # an older AnomalyResult without the field falls back to severity_source
     assert rm.build_handoff(r)["trigger"]["source"] == "none"
+
+
+def _ids(r):
+    return [s["id"] for s in rm.build_handoff(r)["symptoms"]]
+
+
+def test_setpoint_guard_from_context():
+    """Guide §8: 'c5 low while the c13 setpoint is unchanged'. A moved setpoint is a recipe change, not P1."""
+    r = copy.deepcopy(BASE)
+    r["contributing_features"] = [feat("c5", "mean", -2.0), feat("c4", "mean", 1.5)]
+    r["context"]["mean_dev"] = {"c5": -2.0, "c4": 1.5, "c13": 0.1}
+    assert _ids(r)[0] == "P1"
+    r["context"]["mean_dev"]["c13"] = 1.4
+    assert "P1" not in _ids(r)
+
+
+def test_setpoint_guard_falls_back_to_findings():
+    r = copy.deepcopy(BASE)  # no mean_dev (older caller): a c13 finding still blocks P1 and shows as P7
+    r["contributing_features"] = [feat("c5", "mean", -2.0), feat("c13", "mean", 1.2)]
+    ids = _ids(r)
+    assert "P1" not in ids and "P7" in ids
+    r["contributing_features"] = [feat("c5", "mean", -2.0)]
+    assert _ids(r)[0] == "P1"
+
+
+def test_friction_needs_normal_c5():
+    """Guide §8: c2 low + c6 high is friction (P3) only with c5 normal; with c5 low too it is pneumatic (P2)."""
+    r = copy.deepcopy(BASE)
+    r.update(rule_code="E028", rule_class_hint="E03")
+    r["contributing_features"] = [feat("c6", "mean", 2.0), feat("c2", "mean", -1.5)]
+    assert "P3" in _ids(r)
+    r["contributing_features"].append(feat("c5", "mean", -1.0))
+    ids = _ids(r)
+    assert "P3" not in ids and "P2" in ids
+
+
+def test_position_needs_steady_c15():
+    r = copy.deepcopy(BASE)
+    r["contributing_features"] = [feat("c3", "mean", 2.0)]
+    r["context"]["mean_dev"] = {"c3": 2.0, "c15": 0.0}
+    assert "P5" in _ids(r)
+    r["context"]["mean_dev"]["c15"] = 2.1  # position setpoint moved with it: a program change
+    assert "P5" not in _ids(r)
+
+
+def test_s02_listed_for_p5_p6():
+    """Situation doc summary table: S02 (electrode broke) <- P5, P6."""
+    sit = {p["id"]: p["situations"] for p in rm.SYMPTOMS}
+    assert "S02" in sit["P5"] and "S02" in sit["P6"]

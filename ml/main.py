@@ -217,6 +217,9 @@ class WindowContext(BaseModel):
     known_code_in_profile: bool | None = Field(
         None, description="known_code_class_hint is in the gun's profile (C-3); None = no profile or no hint. False: the "
                           "handoff does not use the hint as the fault class")
+    mean_dev: dict[str, float] | None = Field(
+        None, description="window mean - normal reference per c-sensor (gun-centred z-score) - lets the handoff check "
+                          "that a setpoint stayed at its usual level (rag_mapping steady / normal, guide §8)")
 
 
 class ModelInfo(BaseModel):
@@ -840,6 +843,15 @@ class Detector:
                                              contribution=float(contrib[j]), share=float(max(contrib[j], 0) / pos)))
         return float(s[0]), feats
 
+    def mean_dev(self, vec: np.ndarray) -> dict[str, float]:
+        """Window mean - normal reference for every c-sensor (rag_mapping: setpoint / sensor at its usual level)."""
+        out: dict[str, float] = {}
+        for j, col in enumerate(self.model_cols):
+            sensor, stat = split_feature(col)
+            if stat == "mean" and sensor[:1] == "c" and sensor[1:].isdigit():
+                out[sensor] = round(float(vec[j] - self.reference[j]), 3)
+        return out
+
     # ---- one /predict request, stage by stage
     def ingest(self, g: "GunState", readings: list[SensorReading]) -> None:
         """Append readings to the gun's buffer. A welding row pushed out of the buffer becomes the carry."""
@@ -1400,7 +1412,7 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
     verdicts = d.judge(g, f, wins, trainlib.anomaly_score(d.model, vecs), vecs, fresh)
     score, contribs = d.score(vecs[-1])  # the latest window, with feature attributions
     g.last_score = score
-    result = build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, rule)
+    result = build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, rule, vecs[-1])
     record_focus(g, result, rule)
     critical = result.critical_in_request
     for h in hits:
@@ -1413,7 +1425,7 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
             continue
         record_focus(g, None, h)
         if h.critical:
-            attach_handoff(request, build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, h))
+            attach_handoff(request, build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, h, vecs[-1]))
             count(g, result.window_end, critical_events=1)
     g.was_critical = critical
     drift = drift_reasons(g)
@@ -1427,7 +1439,8 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
 
 
 def build_result(d: Detector, g: GunState, gun_id: str, raw_f: pd.DataFrame, f: pd.DataFrame, verdicts: list[Verdict],
-                 score: float, contribs: list[FeatureContribution], rule: RuleHit | None) -> AnomalyResult:
+                 score: float, contribs: list[FeatureContribution], rule: RuleHit | None,
+                 vec: np.ndarray | None = None) -> AnomalyResult:
     """The response for the latest window. Severity: the model is critical after a sustained alarm, the
     terminal-code rule on an episode start (history.md B-3) - a repeat of the rule only warns."""
     v = verdicts[-1]
@@ -1449,7 +1462,8 @@ def build_result(d: Detector, g: GunState, gun_id: str, raw_f: pd.DataFrame, f: 
                         weld_duty_10min=float(w["weld_duty_10min"].iloc[-1]),
                         known_code_class_hint=CODE_TO_CLASS.get(latest_code),
                         known_code_in_profile=None if g.profile is None or latest_code not in CODE_TO_CLASS
-                        else CODE_TO_CLASS[latest_code] in g.profile)
+                        else CODE_TO_CLASS[latest_code] in g.profile,
+                        mean_dev=d.mean_dev(vec) if vec is not None else None)
     return AnomalyResult(
         gun_id=gun_id, window_start=w.index[0].to_pydatetime(), window_end=w.index[-1].to_pydatetime(),
         n_samples=int(len(w)), history_s=int(((f["segment"] == w["segment"].iloc[-1]) & (f.index <= w.index[-1])).sum()), is_anomaly=v.is_anomaly, anomaly_score=score,
