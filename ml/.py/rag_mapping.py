@@ -13,6 +13,14 @@ Symptom rules come from the manual guide (RSW용접건_매뉴얼_RAG_활용정�
 history.md 10 found the pre-failure sensor shifts inconsistent within a class, so a symptom is a *candidate* and
 confidence is at most "medium" (only when the terminal-code rule fired and agrees).
 
+2026-10-08 (guide §8 re-check): the guide reads every pattern against the setpoints - "c5 low while the c13 setpoint
+is unchanged" - and the first port dropped those conditions. Restored as `steady` (P1 c13, P2 c14, P5 c15: the
+setpoint must be at its usual level, otherwise it is a recipe change, P7) and `normal` (P3: c5 must be at its usual
+level, otherwise it is P2's pneumatic pattern). The level comes from context["mean_dev"] (window mean - reference for
+every c-sensor, main.py) and falls back to the findings; unknown counts as steady. Not ported yet (need features the
+1-min window does not have): P4 "c3 drifts slowly one way" (still the 1-min spread) and the guide's
+"c6 rising over a long period + c11 accumulating" (wear, situation S06).
+
 Pure Python (no pandas / pydantic / fastapi) so the ontology side can import it as-is. main.py validates the
 output with pydantic (RagHandoff); tests/test_rag_mapping.py keeps the keys of both in sync.
 """
@@ -64,21 +72,23 @@ FAULT_CLASSES: dict[str, dict[str, str]] = {
 CODE_TO_CLASS = {v["terminal_code"]: k for k, v in FAULT_CLASSES.items()}
 
 # symptom rules (guide §8). when: (sensor, direction) pairs; `primary` (or one of `also`) must match for a partial
-# match. context "stationary" = no weld in the window. situations: keys of the situation definition doc.
+# match. context "stationary" = no weld in the window. steady: setpoints that must be at their usual level (else the
+# shift is a recipe change); normal: actual values that must be at their usual level. situations: keys of the
+# situation definition doc (S02 for P5 / P6 as the doc's summary table lists).
 SYMPTOMS: list[dict[str, Any]] = [
     {"id": "P1", "name_ko": "보정 압력 저하 + 힘 형성 지연", "primary": ("c5", "low"),
-     "when": [("c5", "low"), ("c4", "high")], "classes": ["E01"], "situations": ["S01"]},
+     "when": [("c5", "low"), ("c4", "high")], "steady": ["c13"], "classes": ["E01"], "situations": ["S01"]},
     {"id": "P2", "name_ko": "전극 힘 저하 + 보정 압력 저하", "primary": ("c2", "low"),
-     "when": [("c2", "low"), ("c5", "low")], "classes": ["E01"], "situations": ["S05"]},
+     "when": [("c2", "low"), ("c5", "low")], "steady": ["c14"], "classes": ["E01"], "situations": ["S05"]},
     {"id": "P3", "name_ko": "마찰 증가 + 전극 힘 저하", "primary": ("c6", "high"),
-     "when": [("c6", "high"), ("c2", "low")], "classes": ["E03"], "situations": ["S06"]},
+     "when": [("c6", "high"), ("c2", "low")], "normal": ["c5"], "classes": ["E03"], "situations": ["S06"]},
     {"id": "P4", "name_ko": "정지 중 전극 위치 흔들림", "primary": ("c3", "unstable"),
      "when": [("c3", "unstable")], "context": "stationary", "classes": ["E04"], "situations": ["S04"]},
     {"id": "P5", "name_ko": "동작 중 전극 위치·열림 폭 이탈", "primary": ("c3", "high"),
      "when": [("c3", "high")], "also": [("c3", "low"), ("c7", "low"), ("c7", "high")],
-     "classes": ["E03", "E02"], "situations": ["S08", "S03"]},
+     "steady": ["c15"], "classes": ["E03", "E02"], "situations": ["S08", "S03", "S02"]},
     {"id": "P6", "name_ko": "캡 오프셋 변화 (+ 마찰 증가)", "primary": ("c1", "high"),
-     "when": [("c1", "high"), ("c6", "high")], "also": [("c1", "low")], "classes": ["E02"], "situations": ["S07"]},
+     "when": [("c1", "high"), ("c6", "high")], "also": [("c1", "low")], "classes": ["E02"], "situations": ["S07", "S02"]},
     {"id": "P7", "name_ko": "설정값 변화", "group": "setpoint", "classes": [], "situations": ["S10"]},
     {"id": "P8", "name_ko": "에러 상태 비율 증가", "primary": ("error_share_10min", "high"),
      "when": [("error_share_10min", "high")], "classes": [], "situations": ["S10"]},
@@ -91,6 +101,7 @@ CAVEATS = [
     "모델 단독 성능이 약함(테스트 AUROC 0.64, 고장 1시간 전 지속 알람 0/8건) - 고장 유형 근거는 주로 종료 코드 규칙",
     "종료 코드 규칙은 다른 클래스 건에서도 뜬 적 있음(주로 E029, 테스트 오트리거 0.25회/일/건)",
     "센서 방향(높음/낮음)은 이 gun의 워밍업 평균 대비 z-score 기준",
+    "P1·P2·P5는 해당 설정값(c13·c14·c15)이 평소와 같을 때만, P3은 c5가 평소와 같을 때만 (활용정리 8절)",
 ]
 
 
@@ -127,6 +138,15 @@ def _has(findings: list[dict[str, Any]], sensor: str, direction: str) -> bool:
     return any(f["sensor"] == sensor and f["direction"] == direction for f in findings)
 
 
+def _shifted(sensor: str, findings: list[dict[str, Any]], context: dict[str, Any], min_dev: float = MIN_DEV) -> bool:
+    """The sensor's window mean is away from its usual level: context["mean_dev"] (all c-sensors, main.py) first,
+    else any finding on it. Unknown -> not shifted, so an older caller keeps the previous behaviour."""
+    dev = (context.get("mean_dev") or {}).get(sensor)
+    if dev is not None:
+        return abs(float(dev)) >= min_dev
+    return any(f["sensor"] == sensor and f["statistic"] == "mean" for f in findings)
+
+
 def match_symptoms(findings: list[dict[str, Any]], context: dict[str, Any]) -> list[dict[str, Any]]:
     """Symptom rules -> matched symptoms with the findings that support them (full match first)."""
     welds = context.get("welds_in_window")
@@ -140,6 +160,8 @@ def match_symptoms(findings: list[dict[str, Any]], context: dict[str, Any]) -> l
             continue
         if p.get("context") == "stationary" and not stationary:
             continue
+        if any(_shifted(s, findings, context) for s in p.get("steady", []) + p.get("normal", [])):
+            continue  # guide §8: the setpoint moved too (recipe change) / the excluded sensor is not normal
         if not (_has(findings, *p["primary"]) or any(_has(findings, *a) for a in p.get("also", []))):
             continue
         n_when = sum(_has(findings, *c) for c in p["when"])
