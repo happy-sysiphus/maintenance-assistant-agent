@@ -718,7 +718,9 @@ python .py/replay.py test/test_0.csv --speed 60               # 60배속
 8. 재시작하면 버퍼·trace와 진행 중인 워밍업은 사라진다(판정 상태는 `RSW_STATE_DIR`에 남는다, 5.7절). 재시작 직후 몇 분의 창은 롤링 이력이 짧다.
 9. 규칙 반복 강등의 대가: 학습 72건 중 1건은 전날 같은 코드가 한 번 떴던 탓에 고장 직전 발화가 warning으로만 나간다. critical 오트리거의 대부분(테스트 10/14)은 여전히 첫 발화이고, 전부 다른 클래스 코드다 — 건의 고장 유형을 알면 거를 수 있다.
 
-#### 5.10 ML → RAG 핸드오프 (개발 스펙 v1.0)
+#### 5.10 ML → RAG 핸드오프 (개발 스펙 v1.1)
+
+**v1.1 (2026-10-08, FE 요청 `ui/docs/05-fe-api-requests.md` 반영, 1.0과 호환 — 필드 추가만)**: 핸드오프의 모든 시각은 UTC이고 끝에 `Z`가 붙는다(`detected_at`, `window_start`, `trigger.rule_trigger_time`). 새 필드 `error_timeline[]`(이 건 버퍼 약 30분의 컨트롤러 코드 구간: `code`, `start`, `end`, `duration_s`, `class_hint`)와 `sensor_trend[]`(이번 이벤트의 기여 상위 피처 최대 4개의 최근 30분 1분 편차: `feature`, `sensor`, `sensor_name_ko`, `statistic`, `points[{t, z}]` — `/guns/{id}/trace`의 `deviation`과 같은 값). `contributing_features[]`와 trace `features[]`에 `sensor_name_ko`(이름표 `rag_mapping.SENSOR_KO`). `/predict`·`/guns`·trace 응답의 시각은 여전히 오프셋 없는 UTC다. FE 질문 답변은 `docs/fe-requests-reply.md`.
 
 ML(이상탐지)과 온톨로지·RAG(원인·점검·매뉴얼·리포트)를 **따로 개발하기 위한 인터페이스 명세**다. 코드: `.py/rag_mapping.py`(매핑, 순수 Python), `main.py`(스키마 `RagHandoff`·엔드포인트), `.py/mock_rag.py`(가짜 RAG). 예시(실데이터 test_3 이벤트): `docs/anomaly_result.example.json` → `docs/rag_handoff.example.json` → `docs/rag_response.example.json`. 상황 ID의 정의는 팀 문서 「RSW 용접건 MVP 오류 상황 정의서」(S01~S10).
 

@@ -197,3 +197,22 @@ def test_s02_listed_for_p5_p6():
     """Situation doc summary table: S02 (electrode broke) <- P5, P6."""
     sit = {p["id"]: p["situations"] for p in rm.SYMPTOMS}
     assert "S02" in sit["P5"] and "S02" in sit["P6"]
+
+
+def test_handoff_times_are_utc_with_z():
+    """FE request 4: every handoff time carries Z (main.py works in naive UTC)."""
+    r = copy.deepcopy(BASE)
+    r["contributing_features"] = [feat("c5", "mean", -3.1)]
+    h = rm.build_handoff(r)
+    assert h["schema_version"] == "1.1"
+    assert h["detected_at"] == "2021-09-05T02:23:20Z" and h["window_start"] == "2021-09-05T02:22:21Z"
+    assert h["trigger"]["rule_trigger_time"] == "2021-09-05T02:23:00Z"
+    assert rm.utc_iso("2021-09-05T02:23:20Z") == "2021-09-05T02:23:20Z"
+    assert rm.utc_iso("2021-09-05T02:23:20+00:00") == "2021-09-05T02:23:20+00:00"
+    assert rm.utc_iso(None) is None
+
+
+def test_caveats_carry_current_test_numbers():
+    """FE note: the caveats are shown on screen - they must match models/baseline_ensemble_test_metrics.json."""
+    text = " ".join(rm.CAVEATS)
+    assert "0.64" not in text and "0/8" not in text and "0.71" in text and "2/8" in text

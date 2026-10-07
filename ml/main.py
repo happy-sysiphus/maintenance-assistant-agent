@@ -95,6 +95,7 @@ BUFFER_S = MAX_CHUNK + ROLL_S + MAX_WINDOW_S  # per-gun history kept in memory
 TOP_K_FEATURES = 8
 TRACE_WINDOWS = 360  # per-gun history of scored windows for GET /guns/{id}/trace (6 h at 60 s windows)
 TRACE_TOP_FEATURES = 4  # sensors a trace charts by default: the focus window's top contributors
+HANDOFF_TREND_MIN = 30  # minutes of sensor trend a handoff carries (techspec D-3)
 # not charted by default: time of day is not a sensor, and the error share is the code strip of the chart itself
 TRACE_SKIP = {"hour_sin", "hour_cos", "error_share_10min"}
 # push target for handoffs (e.g. http://127.0.0.1:8001/diagnose); unset = pull only (GET /handoffs)
@@ -198,6 +199,7 @@ class FeatureContribution(BaseModel):
     feature: str = Field(description="window feature name, e.g. 'c5_mean'")
     sensor: str = Field(description="underlying signal, e.g. 'c5'")
     sensor_name: str
+    sensor_name_ko: str | None = Field(None, description="Korean sensor name (rag_mapping.SENSOR_KO), e.g. '보정(밸런스) 압력'")
     statistic: Literal["mean", "std"] = Field(description="window statistic of the signal")
     value: float = Field(description="feature value in the model's (z-scored) input space")
     reference: float = Field(description="typical value on normal windows")
@@ -316,8 +318,32 @@ class HandoffDetector(BaseModel):
     window_s: int | None
 
 
+class ErrorRun(BaseModel):
+    """One run of a non-zero controller code in the gun's buffer (about the last 30 min)."""
+    code: str
+    start: str = Field(description="ISO 8601 UTC with Z")
+    end: str = Field(description="ISO 8601 UTC with Z, last second the code was seen")
+    duration_s: int = Field(description="end - start + 1 s")
+    class_hint: FaultClass | None = Field(None, description="fault class when the code is a terminal code")
+
+
+class TrendPoint(BaseModel):
+    t: str = Field(description="window end, ISO 8601 UTC with Z")
+    z: float = Field(description="window value minus the normal reference (the trace's `deviation`)")
+
+
+class SensorTrend(BaseModel):
+    """One contributing feature over the last HANDOFF_TREND_MIN minutes of scored windows (= GET /guns/{id}/trace)."""
+    feature: str
+    sensor: str
+    sensor_name_ko: str
+    statistic: Literal["mean", "std"]
+    points: list[TrendPoint]
+
+
 class RagHandoff(BaseModel):
-    """What the ontology / RAG stage receives for one critical event (schema_version 1.0)."""
+    """What the ontology / RAG stage receives for one critical event (schema_version 1.1 = 1.0 + error_timeline,
+    sensor_trend; every time is UTC with "Z")."""
     schema_version: str
     event_id: str
     gun_id: str
@@ -332,6 +358,10 @@ class RagHandoff(BaseModel):
     context: HandoffContext
     detector: HandoffDetector
     caveats: list[str]
+    error_timeline: list[ErrorRun] = Field(
+        default_factory=list, description="controller code runs in the gun's buffer (about the last 30 min), oldest first")
+    sensor_trend: list[SensorTrend] = Field(
+        default_factory=list, description="the top contributing features over the last 30 min of scored windows")
 
 
 class HandoffRecord(BaseModel):
@@ -446,6 +476,7 @@ class TraceFeature(BaseModel):
     feature: str = Field(description="window feature, e.g. 'c5_mean'")
     sensor: str
     sensor_name: str
+    sensor_name_ko: str | None = Field(None, description="Korean sensor name (rag_mapping.SENSOR_KO)")
     statistic: Literal["mean", "std"]
     share: float | None = Field(None, description="its share of the focus window's anomaly contribution (None if asked for)")
 
@@ -839,7 +870,7 @@ class Detector:
         for j in order:
             sensor, stat = split_feature(self.model_cols[j])
             feats.append(FeatureContribution(feature=self.model_cols[j], sensor=sensor, sensor_name=SENSOR_NAME.get(sensor, sensor),
-                                             statistic=stat, value=float(vec[j]), reference=float(self.reference[j]),
+                                             sensor_name_ko=rag_mapping.SENSOR_KO.get(sensor, sensor), statistic=stat, value=float(vec[j]), reference=float(self.reference[j]),
                                              contribution=float(contrib[j]), share=float(max(contrib[j], 0) / pos)))
         return float(s[0]), feats
 
@@ -1418,14 +1449,14 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
     for h in hits:
         count(g, h.time, rule_triggers=1, rule_repeats=h.repeat, rule_out_of_profile=h.out_of_profile and not h.repeat)
     if (critical and not g.was_critical) or (rule is not None and rule.critical):
-        attach_handoff(request, result)
+        attach_handoff(request, result, g)
         count(g, result.window_end, critical_events=1)
     for h in hits:  # the other triggers of this request (e.g. E016 then E029): a handoff each now, not later
         if h is rule:
             continue
         record_focus(g, None, h)
         if h.critical:
-            attach_handoff(request, build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, h, vecs[-1]))
+            attach_handoff(request, build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, h, vecs[-1]), g)
             count(g, result.window_end, critical_events=1)
     g.was_critical = critical
     drift = drift_reasons(g)
@@ -1503,12 +1534,56 @@ def handoff_event_id(result: AnomalyResult) -> str:
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:32]
 
 
-def attach_handoff(request: Request, result: AnomalyResult) -> None:
+def handoff_error_timeline(d: Detector, g: "GunState", until: datetime) -> list[dict[str, Any]]:
+    """Runs of non-zero controller codes in the gun's buffer (about the last 30 min) up to `until`. A run ends where the
+    code changes or the stream has a gap longer than the gap-fill limit."""
+    runs: list[dict[str, Any]] = []
+    cur: dict[str, Any] | None = None
+    for r in sorted((r for r in g.rows if r["time"] <= until), key=lambda r: r["time"]):
+        code, t = str(r.get("error") or "0"), r["time"]
+        if cur and code == cur["code"] and (t - cur["end"]).total_seconds() <= d.gap_fill_limit + 1:
+            cur["end"] = t
+            continue
+        if cur:
+            runs.append(cur)
+        cur = {"code": code, "start": t, "end": t} if code != "0" else None
+    if cur:
+        runs.append(cur)
+    return [{"code": x["code"], "start": rag_mapping.utc_iso(x["start"].isoformat()),
+             "end": rag_mapping.utc_iso(x["end"].isoformat()),
+             "duration_s": int((x["end"] - x["start"]).total_seconds()) + 1, "class_hint": CODE_TO_CLASS.get(x["code"])}
+            for x in runs]
+
+
+def handoff_sensor_trend(d: Detector, g: "GunState", result: AnomalyResult) -> list[dict[str, Any]]:
+    """The trace's default features (top positive contributors of this result) over the last HANDOFF_TREND_MIN minutes
+    of scored windows - what GET /guns/{id}/trace would chart, copied so a case keeps it after the trace moves on."""
+    col = {c: j for j, c in enumerate(d.model_cols)}
+    chosen = [c for c in result.contributing_features
+              if c.contribution > 0 and c.sensor not in TRACE_SKIP and c.feature in col][:TRACE_TOP_FEATURES]
+    t_end = pd.Timestamp(result.window_end)
+    pts = [p for p in g.trace if t_end - pd.Timedelta(minutes=HANDOFF_TREND_MIN) < p["window_end"] <= t_end]
+    return [{"feature": c.feature, "sensor": c.sensor, "sensor_name_ko": rag_mapping.SENSOR_KO.get(c.sensor, c.sensor),
+             "statistic": c.statistic,
+             "points": [{"t": rag_mapping.utc_iso(p["window_end"].isoformat()),
+                         "z": round(float(p["vec"][col[c.feature]] - d.reference[col[c.feature]]), 3)} for p in pts]}
+            for c in chosen]
+
+
+def attach_handoff(request: Request, result: AnomalyResult, g: "GunState | None" = None) -> None:
     """ML -> RAG handoff (same events replay.py prints) into the outbox; the push worker delivers it when
     RSW_RAG_URL is set. A mapping error is logged and leaves the response without a handoff: the scored state is
     already committed, so a 500 here would turn the client's retry into a resend that never produces the handoff."""
     try:
-        result.handoff = RagHandoff(**rag_mapping.build_handoff(result.model_dump(mode="json"), handoff_event_id(result)))
+        doc = rag_mapping.build_handoff(result.model_dump(mode="json"), handoff_event_id(result))
+        if g is not None:  # v1.1 context (techspec D-3); a failure here must not cost the event
+            d = request.app.state.detector
+            try:
+                doc["error_timeline"] = handoff_error_timeline(d, g, result.window_end)
+                doc["sensor_trend"] = handoff_sensor_trend(d, g, result)
+            except Exception:
+                log.exception("handoff context failed for %s at %s", result.gun_id, result.window_end)
+        result.handoff = RagHandoff(**doc)
     except Exception:
         log.exception("handoff mapping failed for %s at %s", result.gun_id, result.window_end)
         return
@@ -1664,10 +1739,12 @@ def build_trace(d: Detector, gun_id: str, g: GunState, minutes: int, features: l
         if bad:
             raise HTTPException(status_code=422, detail=f"unknown features {bad}; see GET /model")
         chosen = [TraceFeature(feature=f, sensor=split_feature(f)[0], sensor_name=SENSOR_NAME.get(split_feature(f)[0], f),
+                               sensor_name_ko=rag_mapping.SENSOR_KO.get(split_feature(f)[0], f),
                                statistic=split_feature(f)[1]) for f in features]
     else:
         contribs = focus["contributing_features"] if focus else []
-        chosen = [TraceFeature(feature=c.feature, sensor=c.sensor, sensor_name=c.sensor_name, statistic=c.statistic,
+        chosen = [TraceFeature(feature=c.feature, sensor=c.sensor, sensor_name=c.sensor_name,
+                               sensor_name_ko=rag_mapping.SENSOR_KO.get(c.sensor, c.sensor), statistic=c.statistic,
                                share=c.share) for c in contribs
                   if c.contribution > 0 and c.sensor not in TRACE_SKIP][:TRACE_TOP_FEATURES]
     idx = [col[f.feature] for f in chosen]

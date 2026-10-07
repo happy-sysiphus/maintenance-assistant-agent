@@ -393,7 +393,16 @@ def test_4_api_matches_offline(workspace):
         assert r.json()["rule_code"] == "E029" and r.json()["rule_class_hint"] == "E04"
         # ML -> RAG handoff rides on the rule trigger and lands in the outbox (pull; no RSW_RAG_URL in tests)
         ho = r.json()["handoff"]
-        assert ho is not None and ho["schema_version"] == "1.0" and ho["gun_id"] == "G2"
+        assert ho is not None and ho["schema_version"] == "1.1" and ho["gun_id"] == "G2"
+        # v1.1 (FE requests 3-5): UTC times with Z, controller code runs, sensor trend, Korean names
+        assert ho["detected_at"].endswith("Z") and ho["window_start"].endswith("Z")
+        assert ho["trigger"]["rule_trigger_time"].endswith("Z")
+        runs = ho["error_timeline"]
+        assert any(x["code"] == "E029" and x["class_hint"] == "E04" and x["duration_s"] >= 1 for x in runs)
+        assert all(x["start"].endswith("Z") and x["end"] >= x["start"] for x in runs)
+        assert all(len(s["points"]) <= 30 and s["sensor_name_ko"] and all(p["t"].endswith("Z") for p in s["points"])
+                   for s in ho["sensor_trend"])
+        assert all(c["sensor_name_ko"] for c in r.json()["contributing_features"])
         assert ho["fault_class"]["code"] == "E04" and ho["fault_class"]["basis"] == "rule_trigger"
         assert ho["trigger"]["source"] in ("rule", "model+rule") and ho["trigger"]["rule_code"] == "E029"
         assert ho["situation_ids"][0] == "S04" and "E04" in ho["summary_ko"]
@@ -574,6 +583,7 @@ def test_5_api_chunks_sustain_rule(workspace):
         assert tr["focus"]["severity"] == "critical", "the rule trigger is the latest non-normal window"
         feats = [f["feature"] for f in tr["features"]]
         assert 1 <= len(feats) <= 4 and not any(f.startswith("hour_") for f in feats)
+        assert all(f["sensor_name_ko"] for f in tr["features"]), "FE request 5: Korean names on the trace too"
         assert all(set(p["deviation"]) == set(feats) for p in pts)
         lo, hi = tr["axes"]["score"]
         assert lo < min(p["threshold"] for p in pts) < hi and tr["axes"]["deviation"] == [-4.0, 4.0]
