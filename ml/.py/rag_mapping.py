@@ -29,7 +29,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"  # 1.1 (2026-10-08): + error_timeline, sensor_trend (main.py), times with "Z"
 
 # a contributing feature counts as a finding when it explains at least MIN_SHARE of the positive contributions
 # AND its (gun-centred, z-scored) value is at least MIN_DEV away from the normal reference. Calibrated on the 132
@@ -98,14 +98,23 @@ NO_SIGNAL = {"id": "P9", "name_ko": "건 센서 정상 (규칙만 발화)", "cla
 
 CAVEATS = [
     "증상 규칙은 매뉴얼 기반이며 데이터로 학습된 관계가 아님 - 원인 확정이 아니라 조회 후보",
-    "모델 단독 성능이 약함(테스트 AUROC 0.64, 고장 1시간 전 지속 알람 0/8건) - 고장 유형 근거는 주로 종료 코드 규칙",
-    "종료 코드 규칙은 다른 클래스 건에서도 뜬 적 있음(주로 E029, 테스트 오트리거 0.25회/일/건)",
+    "모델 단독 성능이 약함(테스트 AUROC 0.71, 종료 코드 이전 구간 0.67; 고장으로 이어진 지속 알람 2/8건, 둘 다 종료 코드가 "
+    "뜬 마지막 10분 안) - 고장 유형 근거는 주로 종료 코드 규칙",
+    "종료 코드 규칙은 다른 클래스 건에서도 뜬 적 있음(주로 E029, 테스트 critical 오트리거 0.18회/일/건)",
     "센서 방향(높음/낮음)은 이 gun의 워밍업 평균 대비 z-score 기준",
     "P1·P2·P5는 해당 설정값(c13·c14·c15)이 평소와 같을 때만, P3은 c5가 평소와 같을 때만 (활용정리 8절)",
 ]
 
 
 # ------------------------------------------------------------------ steps
+def utc_iso(v: Any) -> str | None:
+    """A time as ISO 8601 with "Z": every time in the handoff is UTC (main.py works in naive UTC)."""
+    if v is None:
+        return None
+    s = str(v).replace(" ", "T")
+    return s if (s.endswith("Z") or "+" in s[10:] or s[10:].count("-") > 0) else s + "Z"
+
+
 def sensor_findings(contributing_features: list[dict[str, Any]], min_share: float = MIN_SHARE,
                     min_dev: float = MIN_DEV) -> list[dict[str, Any]]:
     """(1)->(2): contributing window features -> directional findings ('c5 mean low'), strongest first."""
@@ -241,11 +250,11 @@ def build_handoff(result: dict[str, Any], event_id: str | None = None) -> dict[s
         "schema_version": SCHEMA_VERSION,
         "event_id": event_id or uuid.uuid4().hex,
         "gun_id": result["gun_id"],
-        "detected_at": str(result["window_end"]),
-        "window_start": str(result["window_start"]),
+        "detected_at": utc_iso(result["window_end"]),
+        "window_start": utc_iso(result["window_start"]),
         "trigger": {"source": trigger_source(result),
                     "rule_code": result.get("rule_code") if rule else None,
-                    "rule_trigger_time": str(result["rule_trigger_time"]) if rule and result.get("rule_trigger_time")
+                    "rule_trigger_time": utc_iso(result["rule_trigger_time"]) if rule and result.get("rule_trigger_time")
                     else None,
                     "anomaly_score": result.get("anomaly_score"), "threshold": result.get("threshold"),
                     "score_z": result.get("score_z"), "alarm_duration_s": result.get("alarm_duration_s", 0),
