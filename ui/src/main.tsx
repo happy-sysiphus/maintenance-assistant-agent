@@ -5,12 +5,14 @@ import { createBrowserRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import './index.css'
 import App from './App.tsx'
+import HistoryPage from './pages/HistoryPage.tsx'
 import InboxPage from './pages/InboxPage.tsx'
 import ActionPage from './pages/case/ActionPage.tsx'
 import CaseLayout from './pages/case/CaseLayout.tsx'
 import CheckPage from './pages/case/CheckPage.tsx'
 import JudgePage from './pages/case/JudgePage.tsx'
 import LaterPage from './pages/case/LaterPage.tsx'
+import LogPage from './pages/case/LogPage.tsx'
 import NoCausePage from './pages/case/NoCausePage.tsx'
 import OverviewPage from './pages/case/OverviewPage.tsx'
 import ResultPage from './pages/case/ResultPage.tsx'
@@ -21,6 +23,7 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       { index: true, element: <InboxPage /> },
+      { path: 'history', element: <HistoryPage /> },
       {
         path: 'cases/:caseId',
         element: <CaseLayout />,
@@ -31,8 +34,8 @@ const router = createBrowserRouter([
           { path: 'action', element: <ActionPage /> },
           { path: 'result', element: <ResultPage /> },
           { path: 'no-cause', element: <NoCausePage /> },
+          { path: 'log', element: <LogPage /> },
           // 다음 묶음에서 만들 화면
-          { path: 'log', element: <LaterPage title="정비일지" board="V2Log.dc.html" /> },
           { path: 'manual', element: <LaterPage title="직접 점검 (수동 모드)" board="V2NoGuide.dc.html" /> },
           { path: 'field', element: <LaterPage title="현장 확인 입력" board="V2Field.dc.html" /> },
           { path: 'handover', element: <LaterPage title="도움 요청" board="V2Handover.dc.html" /> },

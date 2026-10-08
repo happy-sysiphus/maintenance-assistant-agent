@@ -3,7 +3,7 @@ import { NavLink, Outlet, useMatch } from 'react-router'
 import { ClockIcon, InboxIcon, PulseIcon } from './components/Icons'
 
 // 화면 공통 틀 (와이어프레임 v2): 왼쪽 어두운 아이콘 메뉴 + 본문.
-// 설비 · 이력 화면은 아직 없어서 비활성으로 둔다.
+// 설비 화면은 아직 없어서 비활성으로 둔다.
 export default function App() {
   // 케이스 화면(/cases/:id)은 작업함에서 열리므로 "작업함" 메뉴를 같이 켠다
   const inCase = useMatch('/cases/*') !== null
@@ -23,7 +23,10 @@ export default function App() {
           작업함
         </NavLink>
         <PlannedNav icon={<PulseIcon />} label="설비" />
-        <PlannedNav icon={<ClockIcon />} label="이력" />
+        <NavLink to="/history" className={({ isActive }) => navClass(isActive)}>
+          <ClockIcon />
+          이력
+        </NavLink>
       </nav>
       <div className="flex min-w-0 grow flex-col">
         <Outlet />

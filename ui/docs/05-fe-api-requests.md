@@ -283,6 +283,10 @@ api 서버가 아직 없어서 FE가 주소와 모양을 정하고 MSW(mock)로 
 | `POST /api/cases/{id}/judgments` | 원인 판단 추가 | `{ "situation_id": "S01", "verdict": "yes" }` |
 | `POST /api/cases/{id}/actions` | 조치 기록 추가 | 아래 예시 |
 | `POST /api/cases/{id}/results` | 결과 추가 | `{ "situation_id": "S01", "outcome": "resolved" }` |
+| `PUT /api/cases/{id}/log` | 정비일지 저장. `approved: true`면 승인, `false`면 승인 취소 | 아래 예시 |
+| `POST /api/cases/{id}/close` | 해결 종료(`resolved`, 일지 승인 뒤에만) 또는 미해결로 저장(`unresolved`) | `{ "outcome": "resolved" }` |
+| `GET /api/history` | 정비 이력: 해결 종료했거나 미해결로 저장한 케이스 | — (응답: `{ "items": [...] }`, 종료 최근순) |
+| `GET /api/manuals/festo.pdf` | Festo 매뉴얼 원본 PDF (`Content-Type: application/pdf`). FE는 `#page=90`처럼 쪽을 붙여 연다 | — |
 
 ```json
 {
@@ -297,10 +301,29 @@ api 서버가 아직 없어서 FE가 주소와 모양을 정하고 MSW(mock)로 
 }
 ```
 
+정비일지 (`PUT /log`). 칸은 FE가 앞 단계 기록으로 미리 채우고 사람이 고친 값이다 (AI 생성 아님).
+
+```json
+{
+  "date": "2026-10-08",
+  "work_time": "14:10 ~ 14:25",
+  "worker_gun": "… · test_0",
+  "problem": "E012 발생 (데이터 시각 2021-09-11 11:46). ML 요약: …",
+  "cause": "보정 압력 도달 지연 — …",
+  "action": "재체결 — …",
+  "missed_checks": "…",
+  "recurrence": "처음",
+  "approved": true
+}
+```
+
 - 값의 종류: 점검 `result` = `normal` / `abnormal` / `skipped`, 판단 `verdict` = `yes` / `no` / `unsure`, 결과 `outcome` = `resolved` / `retry` / `next`, 조치 `kind` = 조정 / 교체 / 청소 / 재체결 / 기타.
 - 판단 · 조치 · 결과는 덮어쓰지 않고 쌓습니다(다시 판단하면 마지막 것이 유효). 서버가 각 기록에 `at`(저장 시각)을 붙입니다.
 - 저장 요청의 응답은 바뀐 케이스 전체(`GET /api/cases/{id}`와 같은 모양)입니다. FE는 이 응답으로 화면을 바로 갱신합니다.
 - 처음 무언가를 저장하면 케이스 `status`를 `new` → `in_progress`로 바꾸고 `records.started_at`을 남깁니다.
+- 케이스 `status`: `new` 새 고장 → `in_progress` 점검 중 → (결과 "해결됐어요") `logging` 일지 작성 → (일지 승인) `log_approved` 일지 승인됨 → (해결 종료) `resolved`. 미해결로 저장하면 `unresolved`. `resolved`는 작업함에서 빠지고 이력에만 보이며, 일지는 더 고칠 수 없습니다(409). 일지 반복 여부 `recurrence` = 처음 / 반복 / 모름.
+- 승인한 일지는 칸이 잠깁니다. 고치려면 승인을 취소하고 다시 승인합니다.
 - 시각: 조치의 `started_at` · `ended_at`과 `at`은 작업 시각(사람이 일한 시각, UTC ISO)입니다. `event`의 시각(데이터 시각)과 섞지 않습니다.
 - 점검 항목 id(`S01-K1` 등)는 RAG에 아직 없어 FE가 임시로 붙였습니다 (위 RAG 요청 3).
-- 아직 안 만든 것: 정비일지 승인, 케이스 종료, 도움 요청, 현장 확인 입력. 다음 화면을 만들 때 이 표에 추가합니다.
+- 매뉴얼 쪽수는 RAG의 `page_number`(PDF 파일의 쪽 순서, 1부터)를 그대로 씁니다. 원본은 `rag/data/festo_manual.pdf`이고, api가 생기기 전에는 개발 서버가 mock 모드에서만 이 파일을 내려줍니다(`ui/vite.config.ts`). 빌드 결과물에는 들어가지 않습니다.
+- 아직 안 만든 것: 도움 요청, 현장 확인 입력, 수동 모드 기록. 다음 화면을 만들 때 이 표에 추가합니다.

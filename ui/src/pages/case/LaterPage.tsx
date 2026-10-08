@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { btn, card } from '../../components/ui'
 
-// 다음 묶음에서 만들 화면의 자리 (정비일지 · 수동 모드 · 현장 확인 입력 · 도움 요청)
+// 다음 묶음에서 만들 화면의 자리 (수동 모드 · 현장 확인 입력 · 도움 요청)
 export default function LaterPage({ title, board }: { title: string; board: string }) {
   return (
     <section className={`${card} flex flex-col items-start gap-3 p-[30px]`}>

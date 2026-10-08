@@ -36,10 +36,10 @@ export function Steps({ current }: { current: Step }) {
   )
 }
 
-/** 본문 + 오른쪽 380px 패널 */
-export function TwoColumns({ children, side }: { children: ReactNode; side: ReactNode }) {
+/** 본문 + 오른쪽 380px 패널 (wide: 매뉴얼이 열렸을 때 540px) */
+export function TwoColumns({ children, side, wide = false }: { children: ReactNode; side: ReactNode; wide?: boolean }) {
   return (
-    <div className="grid grow grid-cols-[minmax(0,1fr)_380px] items-start gap-4">
+    <div className={`grid grow items-start gap-4 ${wide ? 'grid-cols-[minmax(0,1fr)_540px]' : 'grid-cols-[minmax(0,1fr)_380px]'}`}>
       <div className="flex min-w-0 flex-col gap-4">{children}</div>
       {side}
     </div>
@@ -153,6 +153,8 @@ export function RecordTab({ d }: { d: CaseDetail }) {
   for (const j of d.records.judgments) items.push({ at: j.at, text: `${name(j.situation_id)} · ${VERDICT[j.verdict]}` })
   for (const a of d.records.actions) items.push({ at: a.at, text: `조치 기록 · ${a.kind}` })
   for (const r of d.records.results) items.push({ at: r.at, text: `결과 · ${OUTCOME[r.outcome]}` })
+  if (d.records.log?.approved_at) items.push({ at: d.records.log.approved_at, text: '정비일지 승인' })
+  if (d.records.closure) items.push({ at: d.records.closure.at, text: d.records.closure.outcome === 'resolved' ? '해결 종료' : '미해결로 저장' })
   items.sort((a, b) => a.at.localeCompare(b.at))
   const code = d.event.trigger.rule_code
   return (

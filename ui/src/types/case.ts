@@ -7,8 +7,12 @@
 /** 경보 수준. ML의 severity 값 중 케이스가 되는 것 */
 export type Severity = 'critical' | 'warning'
 
-/** 케이스 진행 상태 (api가 관리). 작업함의 새 고장 / 점검 중 / 도움 요청 */
-export type CaseStatus = 'new' | 'in_progress' | 'handed_over'
+/**
+ * 케이스 진행 상태 (api가 관리).
+ * 작업함: 새 고장 / 점검 중 / 일지 작성 / 일지 승인됨 / 미해결 / 도움 요청.
+ * resolved(해결 종료)는 작업함에서 빠지고 정비 이력에만 보인다.
+ */
+export type CaseStatus = 'new' | 'in_progress' | 'logging' | 'log_approved' | 'unresolved' | 'handed_over' | 'resolved'
 
 /** ML 핸드오프 trigger 중 작업함이 쓰는 부분 */
 export interface CaseTrigger {
@@ -181,6 +185,32 @@ export interface ResultRecord {
   at: string
 }
 
+export const RECURRENCE = ['처음', '반복', '모름'] as const
+export type Recurrence = (typeof RECURRENCE)[number]
+
+/** 정비일지 칸. 앞 단계 기록으로 미리 채우고 사람이 고친다 (AI 생성 아님) */
+export interface LogInput {
+  /** 작업한 날짜 (작업 시각 기준) */
+  date: string
+  work_time: string
+  worker_gun: string
+  problem: string
+  cause: string
+  action: string
+  missed_checks: string
+  recurrence: Recurrence
+}
+
+export interface MaintenanceLog extends LogInput {
+  /** 마지막 저장 시각 (작업 시각, 서버가 넣음) */
+  saved_at: string
+  /** 일지 승인 시각. 승인 전이면 null */
+  approved_at: string | null
+}
+
+/** 케이스를 닫은 방식. resolved = 해결 종료, unresolved = 미해결로 저장 (작업함에 남음) */
+export type Closure = 'resolved' | 'unresolved'
+
 export interface CaseRecords {
   /** 점검 항목 id → 결과 */
   checks: Record<string, CheckRecord>
@@ -189,6 +219,9 @@ export interface CaseRecords {
   judgments: Judgment[]
   actions: ActionRecord[]
   results: ResultRecord[]
+  log?: MaintenanceLog
+  /** 해결 종료 또는 미해결로 저장한 기록 (작업 시각) */
+  closure?: { outcome: Closure; at: string }
 }
 
 /** GET /api/cases/:id 응답 */
@@ -197,4 +230,20 @@ export interface CaseDetail extends Omit<CaseSummary, 'event'> {
   score_trace: ScorePoint[]
   guidance: Guidance
   records: CaseRecords
+}
+
+/** GET /api/history 의 한 줄: 해결 종료했거나 미해결로 저장한 케이스 */
+export interface HistoryItem extends CaseSummary {
+  closure: { outcome: Closure; at: string }
+  /** 점검을 처음 시작한 시각 (걸린 시간 계산용, 작업 시각) */
+  started_at: string | null
+  /** 맞다고 판단한 원인 이름. 없으면 null */
+  cause: string | null
+  /** 마지막 조치 종류 */
+  action_kind: string | null
+  worker: string | null
+}
+
+export interface HistoryResponse {
+  items: HistoryItem[]
 }

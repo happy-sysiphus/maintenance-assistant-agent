@@ -6,6 +6,8 @@ const DOT = {
   gray: 'bg-dot-gray',
   blue: 'bg-dot-blue',
   purple: 'bg-dot-purple',
+  green: 'bg-dot-green',
+  amber: 'bg-warn-dot',
 } as const
 
 export function DotTag({ color, children }: { color: keyof typeof DOT; children: ReactNode }) {
@@ -20,7 +22,11 @@ export function DotTag({ color, children }: { color: keyof typeof DOT; children:
 const STATUS: Record<CaseStatus, { label: string; color: keyof typeof DOT }> = {
   new: { label: '새 고장', color: 'gray' },
   in_progress: { label: '점검 중', color: 'blue' },
+  logging: { label: '일지 작성', color: 'green' },
+  log_approved: { label: '일지 승인됨', color: 'green' },
+  unresolved: { label: '미해결', color: 'amber' },
   handed_over: { label: '도움 요청', color: 'purple' },
+  resolved: { label: '해결', color: 'green' },
 }
 
 export function StatusTag({ status }: { status: CaseStatus }) {

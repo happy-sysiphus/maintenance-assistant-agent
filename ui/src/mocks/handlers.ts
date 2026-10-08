@@ -1,10 +1,14 @@
 import { delay, http, HttpResponse } from 'msw'
+import { resolvedCandidate } from '../lib/caseFlow'
 import type {
   ActionInput,
   CaseDetail,
   CaseListResponse,
   CaseSummary,
   CheckRecord,
+  Closure,
+  HistoryResponse,
+  LogInput,
   Outcome,
   Verdict,
 } from '../types/case'
@@ -63,7 +67,9 @@ export const handlers = [
     if (mode === 'slow') await delay(3000)
     if (mode === 'error') return HttpResponse.json({ error: 'mock error' }, { status: 500 })
     if (mode === 'empty') return HttpResponse.json<CaseListResponse>({ cases: [] })
+    // 해결 종료한 케이스는 작업함에서 빠지고 정비 이력에만 보인다
     const cases = Object.values(store)
+      .filter((d) => d.status !== 'resolved')
       .map(summary)
       .sort((a, b) => b.event.detected_at.localeCompare(a.event.detected_at))
     return HttpResponse.json<CaseListResponse>({ cases })
@@ -105,6 +111,53 @@ export const handlers = [
     return withCase(params.id as string, (d) => {
       touch(d)
       d.records.results.push({ ...body, at: new Date().toISOString() })
+      if (body.outcome === 'resolved') d.status = d.records.log?.approved_at ? 'log_approved' : 'logging'
     })
+  }),
+
+  // 정비일지 저장. approved: true면 승인까지 (승인 뒤에는 칸을 잠근다), false면 승인 취소
+  http.put('*/api/cases/:id/log', async ({ params, request }) => {
+    const { approved, ...fields } = (await request.json()) as LogInput & { approved: boolean }
+    const d = store[params.id as string]
+    if (d?.status === 'resolved') return HttpResponse.json({ error: 'closed' }, { status: 409 })
+    return withCase(params.id as string, (d) => {
+      const now = new Date().toISOString()
+      d.records.log = { ...fields, saved_at: now, approved_at: approved ? (d.records.log?.approved_at ?? now) : null }
+      d.status = approved ? 'log_approved' : 'logging'
+    })
+  }),
+
+  // 해결 종료(일지 승인 뒤에만) 또는 미해결로 저장
+  http.post('*/api/cases/:id/close', async ({ params, request }) => {
+    const { outcome } = (await request.json()) as { outcome: Closure }
+    const d = store[params.id as string]
+    if (outcome === 'resolved' && !d?.records.log?.approved_at) {
+      return HttpResponse.json({ error: 'log not approved' }, { status: 409 })
+    }
+    return withCase(params.id as string, (d) => {
+      d.records.closure = { outcome, at: new Date().toISOString() }
+      d.status = outcome
+    })
+  }),
+
+  // 정비 이력: 해결 종료했거나 미해결로 저장한 케이스, 최근 것부터
+  http.get('*/api/history', async () => {
+    if (mockMode() === 'slow') await delay(3000)
+    if (mockMode() === 'error') return HttpResponse.json({ error: 'mock error' }, { status: 500 })
+    const items = Object.values(store)
+      .filter((d) => d.records.closure)
+      .map((d) => {
+        const action = d.records.actions.at(-1)
+        return {
+          ...summary(d),
+          closure: d.records.closure!,
+          started_at: d.records.started_at ?? null,
+          cause: resolvedCandidate(d)?.name ?? null,
+          action_kind: action?.kind ?? null,
+          worker: action?.worker ?? null,
+        }
+      })
+      .sort((a, b) => b.closure.at.localeCompare(a.closure.at))
+    return HttpResponse.json<HistoryResponse>({ items })
   }),
 ]

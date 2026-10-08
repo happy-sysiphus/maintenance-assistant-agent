@@ -120,7 +120,9 @@ function CaseRow({ item }: { item: CaseSummary }) {
   // 발생 시각: 종료 코드가 뜬 시각이 있으면 그것, 없으면 ML 판정 시각
   const occurredAt = event.trigger.rule_trigger_time ?? event.detected_at
   const td = 'border-t border-line-soft px-5 py-3.5 align-middle text-[15px]'
-  const resume = item.status === 'in_progress'
+  const resume = item.status !== 'new'
+  // 일지를 쓰던 케이스는 정비일지로 바로 연다
+  const to = item.status === 'logging' || item.status === 'log_approved' ? `/cases/${item.case_id}/log` : `/cases/${item.case_id}`
 
   return (
     <tr>
@@ -147,7 +149,7 @@ function CaseRow({ item }: { item: CaseSummary }) {
       <td className={`${td} text-[13.5px] text-sub`}>{item.assignee ?? EMPTY}</td>
       <td className={`${td} text-right`}>
         <Link
-          to={`/cases/${item.case_id}`}
+          to={to}
           className={`inline-flex min-h-11 w-[88px] items-center justify-center rounded-lg border text-[14.5px] whitespace-nowrap ${
             resume
               ? 'border-field bg-white font-medium hover:bg-canvas'

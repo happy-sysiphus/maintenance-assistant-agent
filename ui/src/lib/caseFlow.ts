@@ -61,3 +61,11 @@ export function signalLabel(t: { sensor_name_ko: string; statistic: string; sens
   // 용접 가동률처럼 센서가 아닌 파생 값의 평균은 이름만 쓴다
   return t.sensor.startsWith('c') ? `${t.sensor_name_ko} 평균` : t.sensor_name_ko
 }
+
+/** 해결에 이른 원인: 결과에서 "해결됐어요"를 고른 원인, 없으면 마지막으로 "맞아요"라고 한 원인 */
+export function resolvedCandidate(d: CaseDetail): Candidate | null {
+  const sid =
+    d.records.results.filter((r) => r.outcome === 'resolved').at(-1)?.situation_id ??
+    d.records.judgments.filter((j) => j.verdict === 'yes').at(-1)?.situation_id
+  return d.guidance.candidates.find((c) => c.situation_id === sid) ?? null
+}

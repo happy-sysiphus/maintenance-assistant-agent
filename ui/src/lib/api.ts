@@ -21,6 +21,11 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return (await res.json()) as T
 }
 
+/** 매뉴얼 PDF 주소. page는 PDF 파일의 쪽 순서(1부터)이고 RAG의 page_number와 같다 */
+export function manualUrl(page: number) {
+  return `${BASE_URL}/manuals/festo.pdf#page=${page}`
+}
+
 export function apiGet<T>(path: string): Promise<T> {
   return request<T>('GET', path)
 }
