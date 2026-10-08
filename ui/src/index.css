@@ -1,1 +1,45 @@
 @import "tailwindcss";
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+
+/* 색 · 글꼴은 와이어프레임 v2(wireframe/boards/V2*.dc.html) 기준.
+   빨강 · 주황은 경보에만 쓴다. */
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+
+  --color-canvas: #f7f8fa;
+  --color-ink: #191f28;
+  --color-ink-2: #333d4b;
+  --color-sub: #6b7684;
+  --color-faint: #8b95a1;
+  --color-line: #e5e8eb;
+  --color-line-soft: #f0f2f4;
+  --color-head: #fafbfc;
+  --color-field: #d1d6db;
+
+  --color-primary: #3563e9;
+  --color-primary-ink: #2f55c8;
+
+  --color-side: #1b2029;
+  --color-side-on: #2a313e;
+  --color-side-ink: #9ba4b5;
+
+  --color-alarm: #c22d20;
+  --color-alarm-dot: #d92d20;
+  --color-warn: #8a4b00;
+  --color-warn-dot: #e08a00;
+
+  --color-dot-gray: #9aa3b2;
+  --color-dot-blue: #3563e9;
+  --color-dot-purple: #7a5af8;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}

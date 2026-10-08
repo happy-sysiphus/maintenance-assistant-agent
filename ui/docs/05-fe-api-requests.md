@@ -270,3 +270,37 @@ FE는 ML과 RAG를 직접 부르지 않고 api 서버 하나만 부릅니다. �
 | `records` | 사람이 입력한 판단 · 조치 · 결과 | api 저장 |
 
 FE가 보내는 것은 네 가지입니다: 점검 결과(정상 / 이상 / 미실시), 후보 판단(맞음 / 아님 / 모르겠음), 실제 수행 조치, 결과(해결됨 / 다른 조치 / 다음 후보). 모두 api가 저장하고 ML · RAG에는 보내지 않습니다. 값은 전부 예시입니다.
+
+## 저장 API — FE가 정한 안 (2026-10-08, api 담당이 정해지기 전까지)
+
+api 서버가 아직 없어서 FE가 주소와 모양을 정하고 MSW(mock)로 먼저 만들었습니다. 코드는 `ui/src/mocks/handlers.ts`, 타입은 `ui/src/types/case.ts`에 있습니다. api를 만드는 사람이 이대로 쓰면 FE는 고칠 것이 없고, 바꾸면 위 두 파일만 맞추면 됩니다.
+
+| 주소 | 하는 일 | 보내는 것 |
+| --- | --- | --- |
+| `GET /api/cases` | 작업함 목록 | — (응답: `{ "cases": [...] }`, 발생 시각 최근순) |
+| `GET /api/cases/{id}` | 케이스 한 건 (`event`, `score_trace`, `guidance`, `records`) | — |
+| `PUT /api/cases/{id}/checks` | 점검 결과 저장. 보낸 항목만 덮어씀 | `{ "checks": { "S01-K1": { "result": "abnormal", "memo": "4.2 bar" } } }` |
+| `POST /api/cases/{id}/judgments` | 원인 판단 추가 | `{ "situation_id": "S01", "verdict": "yes" }` |
+| `POST /api/cases/{id}/actions` | 조치 기록 추가 | 아래 예시 |
+| `POST /api/cases/{id}/results` | 결과 추가 | `{ "situation_id": "S01", "outcome": "resolved" }` |
+
+```json
+{
+  "situation_id": "S01",
+  "kind": "재체결",
+  "reason": "…",
+  "did": "…",
+  "parts": [{ "name": "…", "qty": 1 }],
+  "worker": "…",
+  "started_at": "2026-10-08T05:10:00.000Z",
+  "ended_at": "2026-10-08T05:25:00.000Z"
+}
+```
+
+- 값의 종류: 점검 `result` = `normal` / `abnormal` / `skipped`, 판단 `verdict` = `yes` / `no` / `unsure`, 결과 `outcome` = `resolved` / `retry` / `next`, 조치 `kind` = 조정 / 교체 / 청소 / 재체결 / 기타.
+- 판단 · 조치 · 결과는 덮어쓰지 않고 쌓습니다(다시 판단하면 마지막 것이 유효). 서버가 각 기록에 `at`(저장 시각)을 붙입니다.
+- 저장 요청의 응답은 바뀐 케이스 전체(`GET /api/cases/{id}`와 같은 모양)입니다. FE는 이 응답으로 화면을 바로 갱신합니다.
+- 처음 무언가를 저장하면 케이스 `status`를 `new` → `in_progress`로 바꾸고 `records.started_at`을 남깁니다.
+- 시각: 조치의 `started_at` · `ended_at`과 `at`은 작업 시각(사람이 일한 시각, UTC ISO)입니다. `event`의 시각(데이터 시각)과 섞지 않습니다.
+- 점검 항목 id(`S01-K1` 등)는 RAG에 아직 없어 FE가 임시로 붙였습니다 (위 RAG 요청 3).
+- 아직 안 만든 것: 정비일지 승인, 케이스 종료, 도움 요청, 현장 확인 입력. 다음 화면을 만들 때 이 표에 추가합니다.

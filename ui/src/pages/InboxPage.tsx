@@ -1,125 +1,160 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Link } from 'react-router'
-import { EmptyState, ErrorState, LoadingState } from '../components/StateViews'
+import { SearchIcon } from '../components/Icons'
+import { EmptyState, ErrorState, LoadingRows } from '../components/StateViews'
+import { SeverityTag, StatusTag } from '../components/Tag'
+import { TopBar } from '../components/TopBar'
 import { apiGet } from '../lib/api'
 import { formatKst, formatUtc } from '../lib/time'
-import type { CaseListResponse, CaseStatus, CaseSummary, Severity } from '../types/case'
+import type { CaseListResponse, CaseSummary } from '../types/case'
 
-// ① 작업함 (wireframe/boards/Main.dc.html 기준)
-// 없는 값은 지어내지 않고 "—"로 둔다.
+// 작업함 (wireframe/boards/V2Main.dc.html 기준)
+// 없는 값은 지어내지 않고 "—"로 둔다. 상태별 필터 칩은 지금은 만들지 않는다.
 
 const EMPTY = '—'
 
-const SEVERITY_STYLE: Record<Severity, string> = {
-  critical: 'bg-red-50 text-red-700',
-  warning: 'bg-orange-50 text-orange-700',
-}
-
-const STATUS_LABEL: Record<CaseStatus, { label: string; style: string }> = {
-  new: { label: '신규', style: 'bg-slate-100 text-slate-700' },
-  in_progress: { label: '원인 찾는 중', style: 'bg-blue-50 text-blue-700' },
-  handed_over: { label: '인계됨', style: 'bg-violet-50 text-violet-700' },
-}
-
-const COLUMNS = ['경보', '설비', '트리거 (컨트롤러 코드)', '추정 고장 유형', '진행 상태', '발생 (데이터 시각 · KST)', '담당', '']
+// 칸 폭은 비율로 나눈다. 한 칸만 늘어나면 화면이 넓을 때 그 칸만 휑하게 벌어진다.
+const COLUMNS: { label: string; width: string }[] = [
+  { label: '경보', width: 'w-[9%]' },
+  { label: '설비', width: 'w-[11%]' },
+  { label: '고장 코드', width: 'w-[11%]' },
+  { label: '예상 유형', width: 'w-[20%]' },
+  { label: '발생 (데이터 시각)', width: 'w-[17%]' },
+  { label: '상태', width: 'w-[12%]' },
+  { label: '담당', width: 'w-[8%]' },
+  { label: '', width: 'w-[12%]' },
+]
 
 export default function InboxPage() {
+  const [keyword, setKeyword] = useState('')
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['cases'],
     queryFn: () => apiGet<CaseListResponse>('/cases'),
   })
 
-  return (
-    <div className="mx-auto max-w-6xl">
-      <h1 className="text-3xl font-bold">작업함</h1>
+  const all = data?.cases ?? []
+  const shown = keyword.trim() ? all.filter((c) => matches(c, keyword.trim())) : all
 
-      <section className="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-        {isPending ? (
-          <LoadingState label="케이스 목록을 불러오는 중" />
-        ) : isError ? (
-          <ErrorState what="케이스 목록" onRetry={() => refetch()} />
-        ) : data.cases.length === 0 ? (
-          <EmptyState
-            title="처리할 케이스 없음"
-            note={'"모든 설비 정상"이라는 뜻이 아닙니다. 재생 상태나 설비 상태를 확인하세요.'}
+  return (
+    <>
+      <TopBar>
+        <h1 className="text-[19px] font-bold tracking-[-0.02em]">작업함</h1>
+        {data && <span className="text-[13.5px] text-sub">처리할 고장 {all.length}건</span>}
+        <div className="grow" />
+        <label className="relative w-[300px]">
+          <span className="sr-only">검색</span>
+          <span className="pointer-events-none absolute top-[13px] left-3.5 text-sub">
+            <SearchIcon size={18} />
+          </span>
+          <input
+            type="search"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="설비 · 코드 검색"
+            className="min-h-11 w-full rounded-lg border border-field bg-white py-2.5 pr-3 pl-[42px] text-[15px] outline-none focus:border-primary"
           />
-        ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold text-slate-500">
-              <tr>
-                {COLUMNS.map((c) => (
-                  <th key={c} scope="col" className="px-4 py-3">
-                    {c}
-                  </th>
+        </label>
+      </TopBar>
+
+      <div className="px-8 pt-6 pb-7">
+        <section className="overflow-hidden rounded-[10px] border border-line bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          {isPending ? (
+            <LoadingRows label="고장 목록을 불러오는 중" />
+          ) : isError ? (
+            <ErrorState onRetry={() => refetch()} />
+          ) : shown.length === 0 ? (
+            keyword.trim() ? (
+              <EmptyState
+                title="조건에 맞는 고장이 없습니다"
+                note="설비가 모두 정상이라는 뜻은 아닙니다. 검색어를 확인해 주세요."
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setKeyword('')}
+                    className="mt-2 min-h-11 rounded-lg border border-field bg-white px-4 text-[14.5px] font-medium hover:bg-canvas"
+                  >
+                    검색 지우기
+                  </button>
+                }
+              />
+            ) : (
+              <EmptyState title="처리할 고장이 없습니다" note="설비가 모두 정상이라는 뜻은 아닙니다." />
+            )
+          ) : (
+            <table className="w-full table-fixed border-collapse text-left">
+              <thead>
+                <tr>
+                  {COLUMNS.map((c, i) => (
+                    <th
+                      key={i}
+                      scope="col"
+                      className={`border-b border-line bg-head px-5 py-[11px] text-[12.5px] font-medium whitespace-nowrap text-faint ${c.width}`}
+                    >
+                      {c.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((c) => (
+                  <CaseRow key={c.case_id} item={c} />
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {data.cases.map((c) => (
-                <CaseRow key={c.case_id} item={c} />
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-    </div>
+              </tbody>
+            </table>
+          )}
+        </section>
+      </div>
+    </>
   )
+}
+
+/** 설비 이름이나 고장 코드에 검색어가 들어 있는지 (대소문자 무시) */
+function matches(c: CaseSummary, keyword: string) {
+  const k = keyword.toLowerCase()
+  return [c.event.gun_id, c.event.trigger.rule_code].some((v) => v?.toLowerCase().includes(k))
 }
 
 function CaseRow({ item }: { item: CaseSummary }) {
   const { event } = item
-  const status = STATUS_LABEL[item.status]
   // 발생 시각: 종료 코드가 뜬 시각이 있으면 그것, 없으면 ML 판정 시각
   const occurredAt = event.trigger.rule_trigger_time ?? event.detected_at
+  const td = 'border-t border-line-soft px-5 py-3.5 align-middle text-[15px]'
+  const resume = item.status === 'in_progress'
 
   return (
-    <tr className="align-middle">
-      <td className="px-4 py-4">
-        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${SEVERITY_STYLE[item.severity]}`}>
-          {item.severity}
-        </span>
+    <tr>
+      <td className={td}>
+        <SeverityTag severity={item.severity} />
       </td>
-      <td className="px-4 py-4 font-semibold">{event.gun_id}</td>
-      <td className="px-4 py-4">
+      <td className={`${td} font-semibold`}>{event.gun_id}</td>
+      <td className={td}>
         {event.trigger.rule_code ? (
-          `종료 코드 ${event.trigger.rule_code}`
+          <span className="font-semibold">{event.trigger.rule_code}</span>
         ) : (
-          <>
-            <span className="text-slate-400">{EMPTY}</span>
-            {event.trigger.source === 'model' && (
-              <span className="ml-2 text-xs text-slate-500">모델 이상 신호만</span>
-            )}
-          </>
+          <span className="text-[13px] font-medium text-sub">코드 없음</span>
         )}
       </td>
-      <td className="px-4 py-4">
-        {event.fault_class ? (
-          <span className="flex flex-wrap items-center gap-2">
-            {event.fault_class.code} {event.fault_class.name_ko}
-            <span
-              title="데이터셋 클래스 기준 추정. 원인 확정이 아님"
-              className="rounded-full border border-dashed border-slate-400 px-2 py-0.5 text-xs text-slate-600"
-            >
-              추정
-            </span>
-          </span>
-        ) : (
-          <span className="text-slate-400">{EMPTY}</span>
-        )}
+      <td className={td} title={event.fault_class ? `데이터셋 클래스 ${event.fault_class.code} 기준 추정` : undefined}>
+        {event.fault_class?.name_ko ?? <span className="text-sub">{EMPTY}</span>}
       </td>
-      <td className="px-4 py-4">
-        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status.style}`}>{status.label}</span>
+      <td className={td} title={formatUtc(occurredAt) ?? undefined}>
+        {formatKst(occurredAt) ?? <span className="text-sub">{EMPTY}</span>}
       </td>
-      <td className="px-4 py-4 tabular-nums" title={formatUtc(occurredAt) ?? undefined}>
-        {formatKst(occurredAt) ?? <span className="text-slate-400">{EMPTY}</span>}
+      <td className={td}>
+        <StatusTag status={item.status} />
       </td>
-      <td className="px-4 py-4">{item.assignee ?? <span className="text-slate-400">{EMPTY}</span>}</td>
-      <td className="px-4 py-4 text-right">
+      <td className={`${td} text-[13.5px] text-sub`}>{item.assignee ?? EMPTY}</td>
+      <td className={`${td} text-right`}>
         <Link
           to={`/cases/${item.case_id}`}
-          className="inline-block rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+          className={`inline-flex min-h-11 w-[88px] items-center justify-center rounded-lg border text-[14.5px] whitespace-nowrap ${
+            resume
+              ? 'border-field bg-white font-medium hover:bg-canvas'
+              : 'border-primary bg-primary font-semibold text-white hover:bg-primary-ink'
+          }`}
         >
-          열기
+          {resume ? '이어서' : '열기'}
         </Link>
       </td>
     </tr>

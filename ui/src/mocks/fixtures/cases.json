@@ -1,39 +1,102 @@
 {
   "cases": [
     {
+      "case_id": "CASE-0005",
+      "status": "new",
+      "severity": "critical",
+      "assignee": null,
+      "event": {
+        "event_id": "35bf5481302e862761f1b07aa2e855ad",
+        "gun_id": "test_0",
+        "detected_at": "2021-09-11T02:55:59Z",
+        "trigger": {
+          "source": "rule",
+          "rule_code": "E012",
+          "rule_trigger_time": "2021-09-11T02:46:08Z"
+        },
+        "fault_class": {
+          "code": "E01",
+          "name_ko": "보정 압력 도달 지연"
+        },
+        "summary_ko": "최근 10분 용접 가동률(weld_duty_10min) 평소보다 높음; 고장 유형 E01(보정 압력 도달 지연) 의심, 에러 코드 E012."
+      }
+    },
+    {
+      "case_id": "CASE-0004",
+      "status": "new",
+      "severity": "critical",
+      "assignee": null,
+      "event": {
+        "event_id": "1a1daf46c52b34bddbdf25c247ab5a40",
+        "gun_id": "test_0",
+        "detected_at": "2021-09-11T00:35:59Z",
+        "trigger": {
+          "source": "model",
+          "rule_code": null,
+          "rule_trigger_time": null
+        },
+        "fault_class": null,
+        "summary_ko": "전극 캡 오프셋(c1) 평소보다 낮음, 최근 10분 용접 가동률(weld_duty_10min) 평소보다 높음."
+      }
+    },
+    {
+      "case_id": "CASE-0003",
+      "status": "new",
+      "severity": "critical",
+      "assignee": null,
+      "event": {
+        "event_id": "88f302c629a73b5f0b1d493de00233d9",
+        "gun_id": "test_0",
+        "detected_at": "2021-09-10T21:55:59Z",
+        "trigger": {
+          "source": "model",
+          "rule_code": null,
+          "rule_trigger_time": null
+        },
+        "fault_class": null,
+        "summary_ko": "두드러진 센서 편차 없음."
+      }
+    },
+    {
+      "case_id": "CASE-0002",
+      "status": "new",
+      "severity": "critical",
+      "assignee": null,
+      "event": {
+        "event_id": "abc5a17688013df567aea2199d2c0efb",
+        "gun_id": "test_0",
+        "detected_at": "2021-09-10T19:35:59Z",
+        "trigger": {
+          "source": "rule",
+          "rule_code": "E029",
+          "rule_trigger_time": "2021-09-10T19:30:10Z"
+        },
+        "fault_class": {
+          "code": "E04",
+          "name_ko": "드리프트"
+        },
+        "summary_ko": "최근 10분 에러 상태 비율(error_share_10min) 평소보다 높음; 고장 유형 E04(드리프트) 의심, 에러 코드 E029."
+      }
+    },
+    {
       "case_id": "CASE-0001",
       "status": "new",
       "severity": "critical",
       "assignee": null,
       "event": {
-        "event_id": "example-test_0-E012",
-        "gun_id": "test_0",
-        "detected_at": "2021-09-11T02:46:08",
-        "trigger": {
-          "source": "rule",
-          "rule_code": "E012",
-          "rule_trigger_time": "2021-09-11T02:46:08"
-        },
-        "fault_class": { "code": "E01", "name_ko": "보정 압력 도달 지연" },
-        "summary_ko": null
-      }
-    },
-    {
-      "case_id": "CASE-0002",
-      "status": "in_progress",
-      "severity": "critical",
-      "assignee": null,
-      "event": {
-        "event_id": "0d711c472d8d500337556b05133273c2",
+        "event_id": "38982b2814e83cef537b5961ddd8c2d6",
         "gun_id": "test_3",
-        "detected_at": "2021-09-03T09:30:59",
+        "detected_at": "2021-09-03T09:32:59Z",
         "trigger": {
           "source": "model+rule",
           "rule_code": "E016",
-          "rule_trigger_time": "2021-09-03T09:23:36"
+          "rule_trigger_time": "2021-09-03T09:23:36Z"
         },
-        "fault_class": { "code": "E02", "name_ko": "전극 파손" },
-        "summary_ko": "US2 작동 허용 신호(c10) 평소보다 흔들림; 고장 유형 E02(전극 파손) 의심, 에러 코드 E016."
+        "fault_class": {
+          "code": "E02",
+          "name_ko": "전극 파손"
+        },
+        "summary_ko": "전극 힘 설정값(c14) 평소보다 낮음, 전극 위치 설정값(c15) 평소보다 낮음; 고장 유형 E02(전극 파손) 의심, 에러 코드 E016."
       }
     }
   ]
