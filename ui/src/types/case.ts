@@ -163,8 +163,6 @@ export type ActionKind = (typeof ACTION_KINDS)[number]
 export interface ActionInput {
   situation_id: string
   kind: ActionKind
-  /** 판단 이유 (선택) */
-  reason?: string
   did: string
   parts: { name: string; qty: number }[]
   worker: string
@@ -208,8 +206,46 @@ export interface MaintenanceLog extends LogInput {
   approved_at: string | null
 }
 
-/** 케이스를 닫은 방식. resolved = 해결 종료, unresolved = 미해결로 저장 (작업함에 남음) */
-export type Closure = 'resolved' | 'unresolved'
+/** 케이스를 닫은 방식. resolved = 해결 종료, unresolved = 미해결로 저장, handed_over = 도움 요청 (뒤의 둘은 작업함에 남음) */
+export type Closure = 'resolved' | 'unresolved' | 'handed_over'
+
+/** 수동 모드에서 원인을 직접 찾았을 때 조치 · 결과에 쓰는 situation_id */
+export const MANUAL_CAUSE = 'MANUAL'
+
+/** 수동 모드 점검: 매뉴얼 안내 없이 사람이 확인한 것 */
+export interface ManualCheck {
+  title: string
+  result: 'normal' | 'abnormal'
+  memo?: string
+}
+
+export interface ManualRecord {
+  checks: ManualCheck[]
+  /** 직접 찾은 원인. 못 찾았으면 빈 문자열 */
+  cause: string
+  saved_at: string
+}
+
+/** 현장 확인 입력: 누가 언제 직접 확인했나 (결과는 records.checks에 같이 저장) */
+export interface FieldRecord {
+  by: string
+  check_ids: string[]
+  at: string
+}
+
+export const URGENCY = ['보통', '급함', '매우 급함'] as const
+export const HANDOVER_REASONS = ['원인을 못 찾음', '권한이 필요함', '부품이 필요함', '기타'] as const
+
+export interface HandoverInput {
+  to: string
+  urgency: (typeof URGENCY)[number]
+  reasons: (typeof HANDOVER_REASONS)[number][]
+  note: string
+}
+
+export interface HandoverRecord extends HandoverInput {
+  at: string
+}
 
 export interface CaseRecords {
   /** 점검 항목 id → 결과 */
@@ -220,6 +256,9 @@ export interface CaseRecords {
   actions: ActionRecord[]
   results: ResultRecord[]
   log?: MaintenanceLog
+  manual?: ManualRecord
+  field: FieldRecord[]
+  handovers: HandoverRecord[]
   /** 해결 종료 또는 미해결로 저장한 기록 (작업 시각) */
   closure?: { outcome: Closure; at: string }
 }
@@ -246,4 +285,32 @@ export interface HistoryItem extends CaseSummary {
 
 export interface HistoryResponse {
   items: HistoryItem[]
+}
+
+// ---- 설비 (GET /api/guns) ----
+
+/** ML GET /guns 한 줄 (그대로) + api가 붙인 열린 고장 */
+export interface GunStatus {
+  gun_id: string
+  /** warming_up = 이 설비 기준 수집 중, gun = 이 설비 기준, global = 공통 기준 */
+  gun_norm: 'warming_up' | 'gun' | 'global'
+  gun_threshold: number | null
+  warmup_rows: number
+  last_score: number | null
+  consecutive_alarms: number
+  drift_warning: string[]
+  open_cases: CaseSummary[]
+}
+
+export interface GunsResponse {
+  guns: GunStatus[]
+}
+
+/** 매뉴얼 근거 쪽 검색 결과 (RAG 매핑의 근거 쪽에서 찾음, 매뉴얼 전문 검색 아님) */
+export interface ManualHit {
+  page: number
+  title: string
+  quote: string | null
+  situation_id: string
+  situation_name: string | null
 }

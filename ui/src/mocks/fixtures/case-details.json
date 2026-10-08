@@ -999,7 +999,9 @@
    "checks": {},
    "judgments": [],
    "actions": [],
-   "results": []
+   "results": [],
+   "field": [],
+   "handovers": []
   }
  },
  "CASE-0002": {
@@ -1735,7 +1737,9 @@
    "checks": {},
    "judgments": [],
    "actions": [],
-   "results": []
+   "results": [],
+   "field": [],
+   "handovers": []
   }
  },
  "CASE-0003": {
@@ -2577,7 +2581,9 @@
    "checks": {},
    "judgments": [],
    "actions": [],
-   "results": []
+   "results": [],
+   "field": [],
+   "handovers": []
   }
  },
  "CASE-0004": {
@@ -3562,7 +3568,9 @@
    "checks": {},
    "judgments": [],
    "actions": [],
-   "results": []
+   "results": [],
+   "field": [],
+   "handovers": []
   }
  },
  "CASE-0005": {
@@ -4449,7 +4457,9 @@
    "checks": {},
    "judgments": [],
    "actions": [],
-   "results": []
+   "results": [],
+   "field": [],
+   "handovers": []
   }
  }
 }

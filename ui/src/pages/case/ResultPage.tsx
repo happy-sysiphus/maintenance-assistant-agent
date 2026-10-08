@@ -1,6 +1,6 @@
 import { Link, Navigate, useNavigate } from 'react-router'
 import { bigChoice, btnQuiet, card } from '../../components/ui'
-import { checkCounts, currentCandidate, latestJudgment, nextCandidate } from '../../lib/caseFlow'
+import { activeCause, checkCounts, latestJudgment, nextCandidate } from '../../lib/caseFlow'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
 import type { Outcome } from '../../types/case'
@@ -9,23 +9,32 @@ import { SidePanel, Steps, TwoColumns } from './parts'
 
 // 결과 (wireframe/boards/V2Result.dc.html): 지금까지 한 일을 보고 해결됐는지 고른다.
 // "조치 후 재발 없음" 자동 표시는 지금은 뺐다 (10/8 결정).
+// 수동 모드에서 직접 찾은 원인이면 점검 줄에 수동 점검을 보여준다.
 export default function ResultPage() {
   const d = useCaseDetail()
   const navigate = useNavigate()
   const save = useCaseMutation<{ situation_id: string; outcome: Outcome }>('POST', '/results')
-  const cand = currentCandidate(d)
-  if (!cand) return <Navigate to="../no-cause" replace />
+  const cause = activeCause(d)
+  if (!cause) return <Navigate to="../no-cause" replace />
+  const cand = cause.candidate
 
-  const action = d.records.actions.filter((a) => a.situation_id === cand.situation_id).at(-1)
+  const action = d.records.actions.filter((a) => a.situation_id === cause.situation_id).at(-1)
   if (!action) return <Navigate to="../action" replace />
-  const judgment = latestJudgment(d, cand.situation_id)
-  const counts = checkCounts(cand, d.records.checks)
-  const abnormal = cand.checks.filter((c) => d.records.checks[c.id]?.result === 'abnormal')
-  const next = nextCandidate(d, cand.situation_id)
+  const judgment = cand ? latestJudgment(d, cand.situation_id) : undefined
+  // 점검 줄: 매뉴얼 후보면 그 후보의 점검, 수동 모드면 사람이 적은 점검
+  const manualChecks = d.records.manual?.checks ?? []
+  const counts = cand
+    ? checkCounts(cand, d.records.checks)
+    : { normal: manualChecks.filter((c) => c.result === 'normal').length, abnormal: 0, total: manualChecks.length }
+  const abnormal = cand
+    ? cand.checks.filter((c) => d.records.checks[c.id]?.result === 'abnormal').map((c) => ({ key: c.id, title: c.title, memo: d.records.checks[c.id]?.memo }))
+    : manualChecks.filter((c) => c.result === 'abnormal').map((c, i) => ({ key: String(i), title: c.title, memo: c.memo }))
+  if (!cand) counts.abnormal = abnormal.length
+  const next = cand ? nextCandidate(d, cand.situation_id) : null
 
   const choose = (outcome: Outcome) =>
     save.mutate(
-      { situation_id: cand.situation_id, outcome },
+      { situation_id: cause.situation_id, outcome },
       {
         onSuccess: () => {
           if (outcome === 'resolved') navigate('../log')
@@ -43,7 +52,7 @@ export default function ResultPage() {
         <section className={`${card} flex flex-col gap-[22px] p-[30px]`}>
           <div>
             <span className="text-[13px] font-medium text-sub">
-              원인 {d.guidance.candidates.indexOf(cand) + 1} / {d.guidance.candidates.length}
+              {cand ? `원인 ${d.guidance.candidates.indexOf(cand) + 1} / ${d.guidance.candidates.length}` : `직접 찾은 원인 · ${cause.name}`}
             </span>
             <h2 className="mt-3 text-[22px] font-semibold tracking-[-0.015em]">해결됐나요?</h2>
           </div>
@@ -59,9 +68,9 @@ export default function ResultPage() {
               <span className="grow">
                 {abnormal.length ? (
                   abnormal.map((c) => (
-                    <span key={c.id} className="mr-2">
+                    <span key={c.key} className="mr-2">
                       {c.title} <b className="font-semibold text-alarm">이상</b>
-                      {d.records.checks[c.id]?.memo && ` · ${d.records.checks[c.id]?.memo}`}
+                      {c.memo && ` · ${c.memo}`}
                     </span>
                   ))
                 ) : (
@@ -74,7 +83,7 @@ export default function ResultPage() {
             </div>
             <div className={row}>
               <span className="w-14 shrink-0 text-[13.5px] text-faint">판단</span>
-              <span className="grow">{cand.name}이(가) {judgment?.verdict === 'yes' ? '맞아요' : '판단 전'}</span>
+              <span className="grow">{cand ? `${cand.name}이(가) ${judgment?.verdict === 'yes' ? '맞아요' : '판단 전'}` : `직접 찾음 · ${cause.name}`}</span>
               <span className="text-[13.5px] text-sub">{judgment && formatKst(judgment.at)?.slice(11)}</span>
             </div>
             <div className={row}>

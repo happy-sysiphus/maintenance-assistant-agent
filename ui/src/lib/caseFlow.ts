@@ -1,7 +1,7 @@
 // 케이스 기록으로 "지금 어느 원인을 보고 있나"를 계산한다.
 // 원인 후보는 ML이 준 순서(rank)대로 하나씩 본다. 마지막 판단이 "아니에요"이거나,
 // 마지막 판단 뒤에 결과에서 "다음 원인"을 고른 후보는 제외된다. 다시 판단하면 되살아난다.
-import type { Candidate, CaseDetail, CheckRecord, Judgment } from '../types/case'
+import { MANUAL_CAUSE, type Candidate, type CaseDetail, type CheckRecord, type Judgment } from '../types/case'
 
 export type CandidateState = 'current' | 'excluded' | 'waiting'
 
@@ -68,4 +68,19 @@ export function resolvedCandidate(d: CaseDetail): Candidate | null {
     d.records.results.filter((r) => r.outcome === 'resolved').at(-1)?.situation_id ??
     d.records.judgments.filter((j) => j.verdict === 'yes').at(-1)?.situation_id
   return d.guidance.candidates.find((c) => c.situation_id === sid) ?? null
+}
+
+/** 조치 · 결과가 다루는 원인: 지금 원인 후보, 없으면 수동 모드에서 직접 찾은 원인 */
+export function activeCause(d: CaseDetail): { situation_id: string; name: string; candidate: Candidate | null } | null {
+  const c = currentCandidate(d)
+  if (c) return { situation_id: c.situation_id, name: c.name, candidate: c }
+  const manual = d.records.manual?.cause.trim()
+  return manual ? { situation_id: MANUAL_CAUSE, name: manual, candidate: null } : null
+}
+
+/** 해결에 이른 원인 이름 (매뉴얼 후보 또는 직접 찾은 원인). 없으면 null */
+export function resolvedCauseName(d: CaseDetail): string | null {
+  const last = d.records.results.filter((r) => r.outcome === 'resolved').at(-1)
+  if (last?.situation_id === MANUAL_CAUSE) return d.records.manual?.cause || null
+  return resolvedCandidate(d)?.name ?? (d.records.manual?.cause || null)
 }

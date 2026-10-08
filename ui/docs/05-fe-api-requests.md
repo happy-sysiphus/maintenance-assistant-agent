@@ -286,13 +286,17 @@ api 서버가 아직 없어서 FE가 주소와 모양을 정하고 MSW(mock)로 
 | `PUT /api/cases/{id}/log` | 정비일지 저장. `approved: true`면 승인, `false`면 승인 취소 | 아래 예시 |
 | `POST /api/cases/{id}/close` | 해결 종료(`resolved`, 일지 승인 뒤에만) 또는 미해결로 저장(`unresolved`) | `{ "outcome": "resolved" }` |
 | `GET /api/history` | 정비 이력: 해결 종료했거나 미해결로 저장한 케이스 | — (응답: `{ "items": [...] }`, 종료 최근순) |
+| `PUT /api/cases/{id}/manual` | 수동 모드 기록 (통째로 덮어씀) | `{ "checks": [{ "title": "…", "result": "abnormal", "memo": "…" }], "cause": "…" }` |
+| `POST /api/cases/{id}/field` | 현장 확인 입력. 결과는 점검 결과에 합치고 확인한 사람을 남김 | `{ "by": "…", "checks": { "S01-K1": { "result": "normal" } } }` |
+| `POST /api/cases/{id}/handover` | 도움 요청. 케이스 기록은 이미 api에 있으므로 요청 내용만 보냄 | `{ "to": "공정 담당", "urgency": "급함", "reasons": ["원인을 못 찾음"], "note": "…" }` |
+| `GET /api/guns` | 설비 목록. ML `GET /guns` 그대로 + `open_cases`(해결 종료 전 케이스) | — (응답: `{ "guns": [...] }`) |
+| `GET /api/manuals/festo/search?q=` | 수동 모드 "매뉴얼에서 직접 찾기". 지금은 RAG 매핑의 근거 쪽(설명 · 인용 · 원인 이름)에서 찾음 | — (응답: `{ "items": [{ "page", "title", "quote", "situation_id", "situation_name" }] }`) |
 | `GET /api/manuals/festo.pdf` | Festo 매뉴얼 원본 PDF (`Content-Type: application/pdf`). FE는 `#page=90`처럼 쪽을 붙여 연다 | — |
 
 ```json
 {
   "situation_id": "S01",
   "kind": "재체결",
-  "reason": "…",
   "did": "…",
   "parts": [{ "name": "…", "qty": 1 }],
   "worker": "…",
@@ -326,4 +330,6 @@ api 서버가 아직 없어서 FE가 주소와 모양을 정하고 MSW(mock)로 
 - 시각: 조치의 `started_at` · `ended_at`과 `at`은 작업 시각(사람이 일한 시각, UTC ISO)입니다. `event`의 시각(데이터 시각)과 섞지 않습니다.
 - 점검 항목 id(`S01-K1` 등)는 RAG에 아직 없어 FE가 임시로 붙였습니다 (위 RAG 요청 3).
 - 매뉴얼 쪽수는 RAG의 `page_number`(PDF 파일의 쪽 순서, 1부터)를 그대로 씁니다. 원본은 `rag/data/festo_manual.pdf`이고, api가 생기기 전에는 개발 서버가 mock 모드에서만 이 파일을 내려줍니다(`ui/vite.config.ts`). 빌드 결과물에는 들어가지 않습니다.
-- 아직 안 만든 것: 도움 요청, 현장 확인 입력, 수동 모드 기록. 다음 화면을 만들 때 이 표에 추가합니다.
+- 수동 모드에서 직접 찾은 원인으로 조치 · 결과를 저장할 때 `situation_id`는 `"MANUAL"`입니다.
+- 도움 요청을 보내면 `status`가 `handed_over`가 되고 `records.closure`에 `handed_over`가 남습니다. 작업함에 남고 이력의 "도움 요청"에도 보입니다.
+- RAG에 요청할 것: 매뉴얼 전문 키워드 검색 (위 RAG 요청 표의 "수동 모드 문서 검색"). 생기면 `/manuals/festo/search`가 그 결과를 돌려주면 됩니다. 다음 화면을 만들 때 이 표에 추가합니다.

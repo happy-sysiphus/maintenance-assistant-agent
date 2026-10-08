@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { DocButton, ManualPanel } from '../../components/ManualPanel'
+import { ResultSeg } from '../../components/ResultSeg'
 import { btn, btnLarge, btnPrimary, btnQuiet, card, input } from '../../components/ui'
 import { checkCounts, manualAction, pickCandidate } from '../../lib/caseFlow'
 import { useCaseMutation } from '../../lib/useCase'
-import type { CheckRecord, CheckResult } from '../../types/case'
+import type { CheckRecord } from '../../types/case'
 import { useCaseDetail } from './context'
 import { SidePanel, Steps, TwoColumns } from './parts'
 
@@ -12,12 +13,6 @@ import { SidePanel, Steps, TwoColumns } from './parts'
 // 항목마다 정상 / 이상 / 건너뜀. "이상"이면 메모 칸이 열린다 (측정값 · 단위 · 기준값 칸은 두지 않음, 10/8 결정)
 // 매뉴얼 쪽 버튼을 누르면 오른쪽에 원본 PDF가 열린다 (V2Manual, 주소 ?manual=쪽).
 // RAG가 점검 항목별 쪽수를 아직 주지 않아서, 쪽 버튼은 원인 단위 근거 쪽과 오류 조치 쪽에만 단다 (docs/06 요청 3).
-
-const RESULTS: { value: CheckResult; label: string; on: string; dot: string }[] = [
-  { value: 'normal', label: '정상', on: 'text-[#0f7b5f]', dot: 'bg-[#16a37a]' },
-  { value: 'abnormal', label: '이상', on: 'text-[#c4362b]', dot: 'bg-[#e5484d]' },
-  { value: 'skipped', label: '건너뜀', on: 'text-[#4e5968]', dot: 'bg-dot-gray' },
-]
 
 export default function CheckPage() {
   const d = useCaseDetail()
@@ -94,26 +89,7 @@ export default function CheckPage() {
                       {i + 1}
                     </span>
                     <span className="min-w-0 grow text-base font-semibold tracking-[-0.015em]">{item.title}</span>
-                    <div role="radiogroup" aria-label={item.title} className="inline-flex shrink-0 gap-0.5 rounded-[9px] bg-[#f2f4f6] p-[3px]">
-                      {RESULTS.map((r) => {
-                        const on = rec?.result === r.value
-                        return (
-                          <button
-                            key={r.value}
-                            type="button"
-                            role="radio"
-                            aria-checked={on}
-                            onClick={() => set(item.id, { result: r.value })}
-                            className={`flex min-h-[38px] min-w-[68px] items-center justify-center gap-1.5 rounded-[7px] px-1 text-sm ${
-                              on ? `bg-white font-semibold shadow-[0_1px_2px_rgba(16,24,40,0.1),0_0_0_1px_rgba(16,24,40,0.04)] ${r.on}` : 'font-medium text-sub'
-                            }`}
-                          >
-                            {on && <span className={`size-1.5 rounded-full ${r.dot}`} />}
-                            {r.label}
-                          </button>
-                        )
-                      })}
-                    </div>
+                    <ResultSeg label={item.title} value={rec?.result} onChange={(v) => set(item.id, { result: v })} />
                   </div>
                   {rec?.result === 'abnormal' && (
                     <>

@@ -1,7 +1,7 @@
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../components/ui'
-import { currentCandidate, latestJudgment, manualAction } from '../../lib/caseFlow'
+import { activeCause, latestJudgment, manualAction } from '../../lib/caseFlow'
 import { useCaseMutation } from '../../lib/useCase'
 import { ACTION_KINDS, type ActionInput, type ActionKind } from '../../types/case'
 import { useCaseDetail } from './context'
@@ -9,10 +9,10 @@ import { SidePanel, Steps, TwoColumns } from './parts'
 
 // 조치 (wireframe/boards/V2Action.dc.html): 사람이 실제로 한 일만 적는다. 정비일지에는 여기 적은 내용만 들어간다.
 // 시작 · 종료는 작업 시각(지금 시계)이고, 고장 시각(데이터 시각)과 다르다.
+// 원인은 지금 원인 후보, 없으면 수동 모드에서 직접 찾은 원인이다.
 
 interface FormValues {
   kind: ActionKind | ''
-  reason: string
   did: string
   parts: { name: string; qty: number }[]
   worker: string
@@ -31,24 +31,24 @@ export default function ActionPage() {
   const d = useCaseDetail()
   const navigate = useNavigate()
   const save = useCaseMutation<ActionInput>('POST', '/actions')
-  const cand = currentCandidate(d)
+  const cause = activeCause(d)
+  const cand = cause?.candidate ?? null
   const { register, control, handleSubmit, setValue, formState } = useForm<FormValues>({
-    defaultValues: { kind: '', reason: '', did: '', parts: [], worker: '', started_at: localNow(), ended_at: localNow() },
+    defaultValues: { kind: '', did: '', parts: [], worker: '', started_at: localNow(), ended_at: localNow() },
   })
   const parts = useFieldArray({ control, name: 'parts' })
   const kind = useWatch({ control, name: 'kind' })
-  if (!cand) return <Navigate to="../no-cause" replace />
+  if (!cause) return <Navigate to="../no-cause" replace />
 
-  const judgment = latestJudgment(d, cand.situation_id)
-  const manual = manualAction(cand)
+  const judgment = cand ? latestJudgment(d, cand.situation_id) : undefined
+  const manual = cand ? manualAction(cand) : null
   const { errors } = formState
 
   const onSubmit = handleSubmit((v) =>
     save.mutate(
       {
-        situation_id: cand.situation_id,
+        situation_id: cause.situation_id,
         kind: v.kind as ActionKind,
-        reason: v.reason || undefined,
         did: v.did,
         parts: v.parts.filter((p) => p.name.trim()),
         worker: v.worker,
@@ -75,10 +75,11 @@ export default function ActionPage() {
 
           <div className="flex items-center gap-3 rounded-lg bg-[#f7f8fa] px-3.5 py-2.5 text-sm">
             <span className="text-[13px] font-medium text-sub">판단</span>
-            <b className="font-semibold">{cand.name} · {judgment?.verdict === 'yes' ? '맞아요' : '판단 전'}</b>
-            <input className={`${input} max-w-[320px] min-h-9 py-1.5 text-sm`} placeholder="이유 (선택)" {...register('reason')} />
+            <b className="font-semibold">
+              {cand ? `${cand.name} · ${judgment?.verdict === 'yes' ? '맞아요' : '판단 전'}` : `직접 찾은 원인 · ${cause.name}`}
+            </b>
             <div className="grow" />
-            <Link to="../judge" className={btnQuiet}>
+            <Link to={cand ? '../judge' : '../manual'} className={btnQuiet}>
               바꾸기
             </Link>
           </div>

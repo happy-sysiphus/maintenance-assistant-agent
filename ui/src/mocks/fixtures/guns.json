@@ -1,0 +1,31 @@
+{
+ "source": "ML GET /guns (재생 후, 2026-10-08)",
+ "guns": [
+  {
+   "gun_id": "test_0",
+   "n_samples": 0,
+   "first_time": null,
+   "last_time": null,
+   "consecutive_alarms": 0,
+   "last_score": 0.860483255484149,
+   "gun_norm": "gun",
+   "gun_threshold": 0.9457997090865815,
+   "warmup_rows": 20698,
+   "expected_fault_classes": null,
+   "drift_warning": []
+  },
+  {
+   "gun_id": "test_3",
+   "n_samples": 0,
+   "first_time": null,
+   "last_time": null,
+   "consecutive_alarms": 0,
+   "last_score": 0.9803878876833125,
+   "gun_norm": "gun",
+   "gun_threshold": 0.9457997090865815,
+   "warmup_rows": 21600,
+   "expected_fault_classes": null,
+   "drift_warning": []
+  }
+ ]
+}

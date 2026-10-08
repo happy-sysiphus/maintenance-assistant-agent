@@ -2,10 +2,10 @@ import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 import { DotTag } from '../../components/Tag'
 import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../components/ui'
-import { latestJudgment, resolvedCandidate } from '../../lib/caseFlow'
+import { latestJudgment, resolvedCandidate, resolvedCauseName } from '../../lib/caseFlow'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
-import { RECURRENCE, type CaseDetail, type Closure, type LogInput } from '../../types/case'
+import { MANUAL_CAUSE, RECURRENCE, type CaseDetail, type Closure, type LogInput } from '../../types/case'
 import { useCaseDetail } from './context'
 import { SidePanel, TwoColumns } from './parts'
 
@@ -22,12 +22,17 @@ const hhmm = (v: string | undefined) => formatKst(v)?.slice(11) ?? ''
 /** 저장된 기록으로 일지 초안 만들기. 기록에 없는 값은 비워 둔다 */
 function draft(d: CaseDetail): FormValues {
   const e = d.event
-  const cand = resolvedCandidate(d)
-  const action = d.records.actions.filter((a) => !cand || a.situation_id === cand.situation_id).at(-1)
+  // 수동 모드로 해결했으면 직접 찾은 원인과 사람이 적은 점검을 쓴다
+  const manual = d.records.results.filter((r) => r.outcome === 'resolved').at(-1)?.situation_id === MANUAL_CAUSE
+  const cand = manual ? null : resolvedCandidate(d)
+  const sid = manual ? MANUAL_CAUSE : cand?.situation_id
+  const action = d.records.actions.filter((a) => !sid || a.situation_id === sid).at(-1)
   const occurred = formatKst(e.trigger.rule_trigger_time ?? e.detected_at)
-  const abnormal = (cand?.checks ?? [])
-    .filter((c) => d.records.checks[c.id]?.result === 'abnormal')
-    .map((c) => `${c.title} 이상${d.records.checks[c.id]?.memo ? ` (${d.records.checks[c.id]?.memo})` : ''}`)
+  const withMemo = (title: string, memo?: string) => `${title} 이상${memo ? ` (${memo})` : ''}`
+  const abnormal = manual
+    ? (d.records.manual?.checks ?? []).filter((c) => c.result === 'abnormal').map((c) => withMemo(c.title, c.memo))
+    : (cand?.checks ?? []).filter((c) => d.records.checks[c.id]?.result === 'abnormal').map((c) => withMemo(c.title, d.records.checks[c.id]?.memo))
+  const causeName = resolvedCauseName(d)
   const missed = (cand?.checks ?? []).filter((c) => {
     const r = d.records.checks[c.id]?.result
     return !r || r === 'skipped'
@@ -41,7 +46,7 @@ function draft(d: CaseDetail): FormValues {
     problem: [`${e.trigger.rule_code ?? '모델 이상 신호'} 발생 (데이터 시각 ${occurred ?? '—'}).`, e.summary_ko && `ML 요약: ${e.summary_ko}`]
       .filter(Boolean)
       .join(' '),
-    cause: cand ? [cand.name, abnormal.join(', ')].filter(Boolean).join(' — ') : '',
+    cause: causeName ? [causeName, abnormal.join(', ')].filter(Boolean).join(' — ') : '',
     action: action ? [`${action.kind} — ${action.did}`, parts && `교체 부품: ${parts}`].filter(Boolean).join('\n') : '',
     missed_checks: missed.map((c) => c.title).join(' · '),
     recurrence: '',
@@ -65,7 +70,8 @@ export default function LogPage() {
   const cand = resolvedCandidate(d)
   const checklist = [
     {
-      ok: Boolean(cand && latestJudgment(d, cand.situation_id)?.verdict === 'yes'),
+      // 매뉴얼 후보를 "맞아요"로 판단했거나, 수동 모드에서 원인을 직접 적었으면 확인됨
+      ok: Boolean((cand && latestJudgment(d, cand.situation_id)?.verdict === 'yes') || d.records.manual?.cause.trim()),
       text: '원인 확인됨',
     },
     { ok: d.records.actions.length > 0, text: '조치 기록됨' },

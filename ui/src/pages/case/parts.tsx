@@ -145,6 +145,7 @@ export function CauseTab({ d }: { d: CaseDetail }) {
 
 const VERDICT = { yes: '맞아요', no: '아니에요', unsure: '잘 모르겠어요' }
 const OUTCOME = { resolved: '해결됐어요', retry: '다른 조치를 해볼게요', next: '다음 원인 확인' }
+const CLOSURE = { resolved: '해결 종료', unresolved: '미해결로 저장', handed_over: '도움 요청' }
 
 export function RecordTab({ d }: { d: CaseDetail }) {
   const name = (sid: string) => d.guidance.candidates.find((c) => c.situation_id === sid)?.name ?? sid
@@ -153,8 +154,12 @@ export function RecordTab({ d }: { d: CaseDetail }) {
   for (const j of d.records.judgments) items.push({ at: j.at, text: `${name(j.situation_id)} · ${VERDICT[j.verdict]}` })
   for (const a of d.records.actions) items.push({ at: a.at, text: `조치 기록 · ${a.kind}` })
   for (const r of d.records.results) items.push({ at: r.at, text: `결과 · ${OUTCOME[r.outcome]}` })
+  if (d.records.manual) items.push({ at: d.records.manual.saved_at, text: `수동 점검 기록${d.records.manual.cause ? ` · 원인 ${d.records.manual.cause}` : ''}` })
+  for (const f of d.records.field) items.push({ at: f.at, text: `현장 확인 · ${f.by} · ${f.check_ids.length}개` })
+  for (const h of d.records.handovers) items.push({ at: h.at, text: `도움 요청 · ${h.to} · ${h.urgency}` })
   if (d.records.log?.approved_at) items.push({ at: d.records.log.approved_at, text: '정비일지 승인' })
-  if (d.records.closure) items.push({ at: d.records.closure.at, text: d.records.closure.outcome === 'resolved' ? '해결 종료' : '미해결로 저장' })
+  // 도움 요청은 위에서 이미 한 줄로 보여준다
+  if (d.records.closure && d.records.closure.outcome !== 'handed_over') items.push({ at: d.records.closure.at, text: CLOSURE[d.records.closure.outcome] })
   items.sort((a, b) => a.at.localeCompare(b.at))
   const code = d.event.trigger.rule_code
   return (

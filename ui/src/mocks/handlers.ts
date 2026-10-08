@@ -1,5 +1,5 @@
 import { delay, http, HttpResponse } from 'msw'
-import { resolvedCandidate } from '../lib/caseFlow'
+import { resolvedCauseName } from '../lib/caseFlow'
 import type {
   ActionInput,
   CaseDetail,
@@ -7,13 +7,20 @@ import type {
   CaseSummary,
   CheckRecord,
   Closure,
+  GunsResponse,
+  GunStatus,
+  HandoverInput,
   HistoryResponse,
   LogInput,
+  ManualCheck,
+  ManualHit,
   Outcome,
   Verdict,
 } from '../types/case'
 import caseDetails from './fixtures/case-details.json'
+import guns from './fixtures/guns.json'
 import health from './fixtures/health.json'
+import manualIndex from './fixtures/manual-index.json'
 
 // 고정 JSON은 src/mocks/fixtures/에 둔다.
 // ui/mock/은 깃에 안 올라가는 개인 폴더이고, data/라는 폴더 이름은 레포 루트 .gitignore에 걸린다.
@@ -152,12 +159,66 @@ export const handlers = [
           ...summary(d),
           closure: d.records.closure!,
           started_at: d.records.started_at ?? null,
-          cause: resolvedCandidate(d)?.name ?? null,
+          cause: resolvedCauseName(d),
           action_kind: action?.kind ?? null,
           worker: action?.worker ?? null,
         }
       })
       .sort((a, b) => b.closure.at.localeCompare(a.closure.at))
     return HttpResponse.json<HistoryResponse>({ items })
+  }),
+
+  // 수동 모드: 사람이 확인한 것과 직접 찾은 원인 (통째로 덮어씀)
+  http.put('*/api/cases/:id/manual', async ({ params, request }) => {
+    const body = (await request.json()) as { checks: ManualCheck[]; cause: string }
+    return withCase(params.id as string, (d) => {
+      touch(d)
+      d.records.manual = { ...body, saved_at: new Date().toISOString() }
+    })
+  }),
+
+  // 현장 확인 입력: 결과는 점검 결과에 합치고, 누가 확인했는지 남긴다
+  http.post('*/api/cases/:id/field', async ({ params, request }) => {
+    const body = (await request.json()) as { by: string; checks: Record<string, CheckRecord> }
+    return withCase(params.id as string, (d) => {
+      touch(d)
+      d.records.checks = { ...d.records.checks, ...body.checks }
+      d.records.field.push({ by: body.by, check_ids: Object.keys(body.checks), at: new Date().toISOString() })
+    })
+  }),
+
+  // 도움 요청: 지금까지 기록은 케이스에 이미 있으므로 요청 내용만 받는다
+  http.post('*/api/cases/:id/handover', async ({ params, request }) => {
+    const body = (await request.json()) as HandoverInput
+    // 점검을 시작하지 않고 바로 넘길 수도 있어서 touch()로 "점검 시작"을 남기지 않는다
+    return withCase(params.id as string, (d) => {
+      const at = new Date().toISOString()
+      d.records.handovers.push({ ...body, at })
+      d.records.closure = { outcome: 'handed_over', at }
+      d.status = 'handed_over'
+    })
+  }),
+
+  // 설비: ML GET /guns를 그대로 쓰고, 설비별 열린 고장(해결 종료 전)을 붙인다
+  http.get('*/api/guns', async () => {
+    if (mockMode() === 'slow') await delay(3000)
+    if (mockMode() === 'error') return HttpResponse.json({ error: 'mock error' }, { status: 500 })
+    const list = (guns.guns as Omit<GunStatus, 'open_cases'>[]).map((g) => ({
+      ...g,
+      open_cases: Object.values(store)
+        .filter((d) => d.event.gun_id === g.gun_id && d.status !== 'resolved')
+        .map(summary)
+        .sort((a, b) => b.event.detected_at.localeCompare(a.event.detected_at)),
+    }))
+    return HttpResponse.json<GunsResponse>({ guns: list })
+  }),
+
+  // 매뉴얼 근거 쪽 검색: RAG 매핑의 근거 설명 · 인용 · 상황 이름에서 찾는다 (매뉴얼 전문 검색은 RAG에 요청 중)
+  http.get('*/api/manuals/festo/search', ({ request }) => {
+    const q = (new URL(request.url).searchParams.get('q') ?? '').trim().toLowerCase()
+    const items = (manualIndex.items as ManualHit[]).filter(
+      (i) => q && [i.title, i.quote, i.situation_name].some((v) => v?.toLowerCase().includes(q)),
+    )
+    return HttpResponse.json({ items })
   }),
 ]

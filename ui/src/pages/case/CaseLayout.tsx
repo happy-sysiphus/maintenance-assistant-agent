@@ -13,7 +13,7 @@ export default function CaseLayout() {
   return (
     <>
       <TopBar>
-        <Link to="/" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-[#4e5968]">
+        <Link to="/" className="inline-flex min-h-11 print:hidden items-center gap-1 text-sm font-medium text-[#4e5968]">
           <BackIcon size={18} />
           작업함
         </Link>
@@ -22,10 +22,10 @@ export default function CaseLayout() {
             <h1 className="text-[19px] font-bold tracking-[-0.02em]">{data.event.gun_id}</h1>
             <StatusTag status={data.status} />
             <div className="grow" />
-            <Link to="field" className={btn}>
+            <Link to="field" className={`${btn} print:hidden`}>
               현장 확인 입력
             </Link>
-            <Link to="handover" className={btn}>
+            <Link to="handover" className={`${btn} print:hidden`}>
               도움 요청
             </Link>
           </>

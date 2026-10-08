@@ -1,0 +1,397 @@
+{
+ "source": "rag/data/situation_mapping.json + rag/pipeline/build.py",
+ "items": [
+  {
+   "page": 16,
+   "title": "MPYD와 보정 실린더의 매뉴얼 명칭",
+   "quote": "Proportional pressure regulator valve MPYD",
+   "situation_id": "S01",
+   "situation_name": "보정 압력 도달 지연"
+  },
+  {
+   "page": 16,
+   "title": "메인 실린더 차단 밸브 구성",
+   "quote": "shut off the main connections through the valves",
+   "situation_id": "S04",
+   "situation_name": "드리프트"
+  },
+  {
+   "page": 17,
+   "title": "주 공기 공급과 필터",
+   "quote": "A 5 µm inline filter must be installed",
+   "situation_id": "S05",
+   "situation_name": "공기 공급 부족·누설로 전극 힘 저하"
+  },
+  {
+   "page": 17,
+   "title": "5 µm inline filter",
+   "quote": "5 µm inline filter",
+   "situation_id": "S05",
+   "situation_name": "공기 공급 부족·누설로 전극 힘 저하"
+  },
+  {
+   "page": 18,
+   "title": "보정 실린더 배관과 압력 방향",
+   "quote": "When connecting the compensating cylinder",
+   "situation_id": "S01",
+   "situation_name": "보정 압력 도달 지연"
+  },
+  {
+   "page": 18,
+   "title": "compensating cylinder",
+   "quote": "When connecting the compensating cylinder",
+   "situation_id": "S01",
+   "situation_name": "보정 압력 도달 지연"
+  },
+  {
+   "page": 18,
+   "title": "메인 실린더 호스 연결",
+   "quote": "Make sure that the hoses are seated tight",
+   "situation_id": "S05",
+   "situation_name": "공기 공급 부족·누설로 전극 힘 저하"
+  },
+  {
+   "page": 18,
+   "title": "main cylinder",
+   "quote": "main cylinder",
+   "situation_id": "S05",
+   "situation_name": "공기 공급 부족·누설로 전극 힘 저하"
+  },
+  {
+   "page": 19,
+   "title": "필터 교체 권장 간격",
+   "quote": "Replacement of the 5 µm filter",
+   "situation_id": "S05",
+   "situation_name": "공기 공급 부족·누설로 전극 힘 저하"
+  },
+  {
+   "page": 19,
+   "title": "메인 실린더 윤활 간격과 그리스",
+   "quote": "The lubrication intervals should not be more than 3 million welding points",
+   "situation_id": "S06",
+   "situation_name": "기계 마찰·걸림·윤활 부족"
+  },
+  {
+   "page": 19,
+   "title": "piston rod",
+   "quote": "piston rod",
+   "situation_id": "S06",
+   "situation_name": "기계 마찰·걸림·윤활 부족"
+  },
+  {
+   "page": 19,
+   "title": "main cylinder",
+   "quote": "main cylinder",
+   "situation_id": "S06",
+   "situation_name": "기계 마찰·걸림·윤활 부족"
+  },
+  {
+   "page": 28,
+   "title": "축 보정 표의 1번 행에 새 전극 캡 장착이 명시되어 있다. 표의 그림 내용은 미해석 상태이므로 원본 PDF 확인이 필요하다.",
+   "quote": "Mount new electrode caps",
+   "situation_id": "S02",
+   "situation_name": "전극 파손"
+  },
+  {
+   "page": 41,
+   "title": "마찰을 넘기 위한 압력 상승 설정의 설명",
+   "quote": "With the rise of pressure, a pressure pulse is generated to overcome friction",
+   "situation_id": "S06",
+   "situation_name": "기계 마찰·걸림·윤활 부족"
+  },
+  {
+   "page": 42,
+   "title": "Equalizer back 신호와 압력 설정",
+   "quote": "Adjust pressure reduction",
+   "situation_id": "S01",
+   "situation_name": "보정 압력 도달 지연"
+  },
+  {
+   "page": 62,
+   "title": "축 보정과 영점의 의미",
+   "quote": "Axis calibration is used to determine the zero position",
+   "situation_id": "S02",
+   "situation_name": "전극 파손"
+  },
+  {
+   "page": 62,
+   "title": "영점과 전극 스트로크 보정",
+   "quote": "Axis calibration is used to determine the zero position",
+   "situation_id": "S03",
+   "situation_name": "원치 않는 이동"
+  },
+  {
+   "page": 62,
+   "title": "축 보정의 목적",
+   "quote": "Axis calibration is used to determine the zero position",
+   "situation_id": "S08",
+   "situation_name": "축 보정 틀어짐·간섭에 의한 위치 이탈"
+  },
+  {
+   "page": 63,
+   "title": "전극 거리와 환산비 입력",
+   "quote": "Input field for the electrode distance measured at the gun",
+   "situation_id": "S08",
+   "situation_name": "축 보정 틀어짐·간섭에 의한 위치 이탈"
+  },
+  {
+   "page": 64,
+   "title": "축 보정의 영점 결정 절차",
+   "quote": "The zero point is determined",
+   "situation_id": "S02",
+   "situation_name": "전극 파손"
+  },
+  {
+   "page": 64,
+   "title": "축 보정 절차",
+   "quote": "The zero point is determined",
+   "situation_id": "S03",
+   "situation_name": "원치 않는 이동"
+  },
+  {
+   "page": 64,
+   "title": "영점·최대 열림 확인 절차",
+   "quote": "The zero point is determined",
+   "situation_id": "S08",
+   "situation_name": "축 보정 틀어짐·간섭에 의한 위치 이탈"
+  },
+  {
+   "page": 64,
+   "title": "새 전극 캡 사용 조건",
+   "quote": "Carry out axis calibration with new electrode caps only",
+   "situation_id": "S08",
+   "situation_name": "축 보정 틀어짐·간섭에 의한 위치 이탈"
+  },
+  {
+   "page": 64,
+   "title": "electrode caps",
+   "quote": "new electrode caps",
+   "situation_id": "S08",
+   "situation_name": "축 보정 틀어짐·간섭에 의한 위치 이탈"
+  },
+  {
+   "page": 72,
+   "title": "로봇의 프로그램 번호와 선택 조건",
+   "quote": "Program number currently selected by the robot",
+   "situation_id": "S10",
+   "situation_name": "설정값 변경·잔고장 반복"
+  },
+  {
+   "page": 76,
+   "title": "프로그램 번호에 따른 동작 설정",
+   "quote": "The switching points are selected by the robot",
+   "situation_id": "S10",
+   "situation_name": "설정값 변경·잔고장 반복"
+  },
+  {
+   "page": 81,
+   "title": "캡 장착과 영점 비교",
+   "quote": "The function “Set caps”",
+   "situation_id": "S02",
+   "situation_name": "전극 파손"
+  },
+  {
+   "page": 81,
+   "title": "electrode caps",
+   "quote": "electrode caps",
+   "situation_id": "S02",
+   "situation_name": "전극 파손"
+  },
+  {
+   "page": 81,
+   "title": "캡 장착 절차와 영점 비교",
+   "quote": "The function “Set caps”",
+   "situation_id": "S07",
+   "situation_name": "전극 캡 마모·드레싱 불량"
+  },
+  {
+   "page": 82,
+   "title": "캡 교체 후 형상 확인과 리셋값",
+   "quote": "The geometry check is performed",
+   "situation_id": "S02",
+   "situation_name": "전극 파손"
+  },
+  {
+   "page": 82,
+   "title": "드레싱 전 캡 형상 확인",
+   "quote": "The geometry check is performed",
+   "situation_id": "S07",
+   "situation_name": "전극 캡 마모·드레싱 불량"
+  },
+  {
+   "page": 83,
+   "title": "밀링 후 캡 측정과 허용오차",
+   "quote": "When measuring after start milling",
+   "situation_id": "S02",
+   "situation_name": "전극 파손"
+  },
+  {
+   "page": 83,
+   "title": "드레싱·밀링 후 측정",
+   "quote": "When measuring after start milling",
+   "situation_id": "S07",
+   "situation_name": "전극 캡 마모·드레싱 불량"
+  },
+  {
+   "page": 84,
+   "title": "잠금 기능 진단의 원리",
+   "quote": "The gun controller performs a functional test of the blocking valves",
+   "situation_id": "S04",
+   "situation_name": "드리프트"
+  },
+  {
+   "page": 84,
+   "title": "진단 중 압력·위치 변화 확인",
+   "quote": "2 Blocking valves 1V2, 1V3, 1V4 are switched",
+   "situation_id": "S04",
+   "situation_name": "드리프트"
+  },
+  {
+   "page": 84,
+   "title": "main cylinder 1A1",
+   "quote": "main cylinder 1A1",
+   "situation_id": "S04",
+   "situation_name": "드리프트"
+  },
+  {
+   "page": 84,
+   "title": "blocking valves 1V2, 1V3, 1V4",
+   "quote": "blocking valves 1V2, 1V3, 1V4",
+   "situation_id": "S04",
+   "situation_name": "드리프트"
+  },
+  {
+   "page": 85,
+   "title": "WinSPZ 보정 압력 실제값",
+   "quote": "Current differential pressure in the equalizer cylinder",
+   "situation_id": "S01",
+   "situation_name": "보정 압력 도달 지연"
+  },
+  {
+   "page": 85,
+   "title": "WinSPZ 실제 마찰력 값",
+   "quote": "Column 1: 13 | Column 2: Friction force",
+   "situation_id": "S06",
+   "situation_name": "기계 마찰·걸림·윤활 부족"
+  },
+  {
+   "page": 85,
+   "title": "캡 총마모량 실제값",
+   "quote": "Column 1: 15 | Column 2: Cap abrasion",
+   "situation_id": "S07",
+   "situation_name": "전극 캡 마모·드레싱 불량"
+  },
+  {
+   "page": 85,
+   "title": "현재 오류 메시지 실제값",
+   "quote": "Column 1: 6 | Column 2: Failure",
+   "situation_id": "S09",
+   "situation_name": "냉각수·변압기·용접 제어기 등 주변 설비 이상"
+  },
+  {
+   "page": 85,
+   "title": "WinSPZ 현재 오류 메시지",
+   "quote": "Column 1: 6 | Column 2: Failure",
+   "situation_id": "S10",
+   "situation_name": "설정값 변경·잔고장 반복"
+  },
+  {
+   "page": 86,
+   "title": "로봇 설정값과 실제값 대조",
+   "quote": "Setpoint position of the robot",
+   "situation_id": "S10",
+   "situation_name": "설정값 변경·잔고장 반복"
+  },
+  {
+   "page": 89,
+   "title": "valve cable",
+   "quote": "Check valve cable",
+   "situation_id": "S03",
+   "situation_name": "원치 않는 이동"
+  },
+  {
+   "page": 89,
+   "title": "MPYE valve",
+   "quote": "MPYE valve",
+   "situation_id": "S05",
+   "situation_name": "공기 공급 부족·누설로 전극 힘 저하"
+  },
+  {
+   "page": 89,
+   "title": "컨트롤러 오류 메시지 조회 방법",
+   "quote": "All messages are displayed in clear text on the WinSPZ",
+   "situation_id": "S09",
+   "situation_name": "냉각수·변압기·용접 제어기 등 주변 설비 이상"
+  },
+  {
+   "page": 89,
+   "title": "controller",
+   "quote": "recorded In the controller",
+   "situation_id": "S10",
+   "situation_name": "설정값 변경·잔고장 반복"
+  },
+  {
+   "page": 90,
+   "title": "MPYD",
+   "quote": "Check cable to the MPYD",
+   "situation_id": "S01",
+   "situation_name": "보정 압력 도달 지연"
+  },
+  {
+   "page": 90,
+   "title": "transformer",
+   "quote": "Over-temperature transformer",
+   "situation_id": "S09",
+   "situation_name": "냉각수·변압기·용접 제어기 등 주변 설비 이상"
+  },
+  {
+   "page": 94,
+   "title": "보정 압력·리미트 스위치의 Cause/Remedy",
+   "quote": "“Equalizer is back” signal missing",
+   "situation_id": "S01",
+   "situation_name": "보정 압력 도달 지연"
+  },
+  {
+   "page": 94,
+   "title": "예상 위치 미도달의 Cause/Remedy",
+   "quote": "Main cylinder does not reach the expected position",
+   "situation_id": "S03",
+   "situation_name": "원치 않는 이동"
+  },
+  {
+   "page": 94,
+   "title": "main cylinder",
+   "quote": "Main cylinder does not reach the expected position",
+   "situation_id": "S03",
+   "situation_name": "원치 않는 이동"
+  },
+  {
+   "page": 94,
+   "title": "전극 힘 미도달의 Cause/Remedy",
+   "quote": "Gun reports no force reached",
+   "situation_id": "S05",
+   "situation_name": "공기 공급 부족·누설로 전극 힘 저하"
+  },
+  {
+   "page": 94,
+   "title": "기대 위치 미도달 Cause/Remedy",
+   "quote": "Main cylinder does not reach the expected position",
+   "situation_id": "S08",
+   "situation_name": "축 보정 틀어짐·간섭에 의한 위치 이탈"
+  },
+  {
+   "page": 98,
+   "title": "차단 밸브 진단 조건과 오류 해제",
+   "quote": "The diagnostic function serves to check the blocking function",
+   "situation_id": "S04",
+   "situation_name": "드리프트"
+  },
+  {
+   "page": 99,
+   "title": "공칭 압력 기술 데이터",
+   "quote": "Nominal pressure",
+   "situation_id": "S05",
+   "situation_name": "공기 공급 부족·누설로 전극 힘 저하"
+  }
+ ]
+}

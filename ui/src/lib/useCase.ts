@@ -27,6 +27,7 @@ export function useCaseMutation<T>(method: 'POST' | 'PUT', path: string) {
       qc.setQueryData(['case', id], d)
       qc.invalidateQueries({ queryKey: ['cases'] })
       qc.invalidateQueries({ queryKey: ['history'] })
+      qc.invalidateQueries({ queryKey: ['guns'] })
     },
   })
 }

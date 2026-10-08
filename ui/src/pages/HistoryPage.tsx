@@ -17,14 +17,16 @@ import type { Closure, HistoryItem, HistoryResponse } from '../types/case'
 // 종료 · 걸린 시간은 작업 시각 기준이다. 데이터 시각(고장 발생)과 섞지 않는다.
 
 const EMPTY = '—'
-const RESULT: Record<Closure, { label: string; color: 'green' | 'amber' }> = {
+const RESULT: Record<Closure, { label: string; color: 'green' | 'amber' | 'purple' }> = {
   resolved: { label: '해결', color: 'green' },
   unresolved: { label: '미해결', color: 'amber' },
+  handed_over: { label: '도움 요청', color: 'purple' },
 }
 const FILTERS: { key: Closure | 'all'; label: string }[] = [
   { key: 'all', label: '전체' },
   { key: 'resolved', label: '해결' },
   { key: 'unresolved', label: '미해결' },
+  { key: 'handed_over', label: '도움 요청' },
 ]
 const PERIODS = [
   { days: 30, label: '최근 30일' },
@@ -42,7 +44,8 @@ export default function HistoryPage() {
   const [params, setParams] = useSearchParams()
   const [keyword, setKeyword] = useState('')
   const [result, setResult] = useState<Closure | 'all'>('all')
-  const [gun, setGun] = useState('')
+  // 설비 화면의 "이 설비 정비 이력"에서 오면 ?gun=으로 설비를 골라 둔다
+  const [gun, setGun] = useState(params.get('gun') ?? '')
   const [days, setDays] = useState(30)
   // 기간 기준 시각: 화면을 연 시각으로 고정 (그릴 때마다 바뀌지 않게)
   const [openedAt] = useState(() => Date.now())

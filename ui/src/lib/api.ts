@@ -11,12 +11,26 @@ export class ApiError extends Error {
   }
 }
 
+// mock 모드에서 MSW를 다시 연결하는 함수 (main.tsx가 넣는다). 진짜 api 모드에서는 null.
+let reconnectMock: (() => Promise<unknown>) | null = null
+export function setMockReconnect(fn: () => Promise<unknown>) {
+  reconnectMock = fn
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
+  const send = () =>
+    fetch(`${BASE_URL}${path}`, {
+      method,
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  let res = await send()
+  // mock 모드인데 JSON이 아닌 응답(개발 서버의 프록시 오류 · 404 페이지)이면 요청이 MSW를 거치지 않은 것이다.
+  // 브라우저가 쉬는 서비스 워커를 끄면 MSW가 이 탭을 잊어서 생긴다 → 다시 연결하고 한 번만 다시 보낸다.
+  if (reconnectMock && !res.headers.get('Content-Type')?.includes('application/json')) {
+    await reconnectMock()
+    res = await send()
+  }
   if (!res.ok) throw new ApiError(res.status, `${method} ${path} 실패 (${res.status})`)
   return (await res.json()) as T
 }
