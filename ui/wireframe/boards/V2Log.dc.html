@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>정비일지</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'Pretendard Variable';font-weight:45 920;font-style:normal;font-display:swap;src:url('./PretendardVariable.woff2') format('woff2-variations')}
+body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI','Malgun Gothic',sans-serif;background:#F7F8FA;color:#191F28;font-size:15px;line-height:1.45;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+b{font-weight:600}
+.app{display:flex;background:#F7F8FA;overflow:hidden}
+.side{width:80px;flex-shrink:0;background:#1B2029;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 0;box-sizing:border-box}
+.logo{width:40px;height:40px;border-radius:8px;background:#3563E9;color:#fff;font-weight:700;font-size:13px;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.nav{width:64px;min-height:60px;border-radius:8px;color:#9BA4B5;text-decoration:none;font-size:12px;font-weight:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.nav.on{background:#2A313E;color:#fff}
+.main{flex-grow:1;display:flex;flex-direction:column;min-width:0}
+.top{height:64px;flex-shrink:0;background:#fff;border-bottom:1px solid #E5E8EB;display:flex;align-items:center;gap:12px;padding:0 32px;box-sizing:border-box}
+.back{font-size:14px;font-weight:500;color:#4E5968;text-decoration:none;display:inline-flex;align-items:center;gap:4px;min-height:44px}
+.ttl{margin:0;font-size:19px;font-weight:700;letter-spacing:-0.02em}
+.sub{font-size:13.5px;color:#6B7684}
+.grow{flex-grow:1}
+.body{flex-grow:1;padding:24px 32px 28px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;min-height:0}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;flex-grow:1;min-height:0}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0;min-height:0}
+.card{background:#fff;border-radius:10px;border:1px solid #E5E8EB;box-sizing:border-box;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.btn{font:inherit;font-size:14.5px;font-weight:500;border-radius:8px;padding:0 16px;min-height:44px;border:1px solid #D1D6DB;background:#fff;color:#191F28;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap;box-sizing:border-box}
+.btn-pri{background:#3563E9;border-color:#3563E9;color:#fff;font-weight:600}
+.btn-lg{min-height:48px;font-size:15.5px;padding:0 26px}
+.btn-quiet{border-color:transparent;background:transparent;color:#2F55C8;padding:0 8px}
+.btn-sm{min-height:36px;font-size:13.5px;padding:0 12px}
+.doc{font:inherit;font-size:13.5px;font-weight:500;border-radius:8px;min-height:40px;padding:0 12px;border:1px solid #D1D6DB;background:#fff;color:#2F55C8;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;flex-shrink:0}
+.doc.on{background:#EEF3FF;border-color:#3563E9}
+.ico{width:44px;height:44px;border-radius:8px;border:1px solid #D1D6DB;background:#fff;color:#6B7684;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.alarm{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:#C22D20;white-space:nowrap}
+.alarm i{width:8px;height:8px;border-radius:50%;background:#D92D20}
+.tag{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:500;color:#333D4B;white-space:nowrap}
+.tag::before{content:"";width:7px;height:7px;border-radius:50%;background:#9AA3B2;flex:none}
+.tag.blue::before{background:#3563E9}.tag.green::before{background:#12805C}.tag.amber::before{background:#E08A00}.tag.purple::before{background:#7A5AF8}.tag.red::before{background:#D92D20}
+.tag.nodot{color:#6B7684;font-weight:500;font-size:13px}.tag.nodot::before{display:none}
+.ck{display:inline-flex;width:18px;justify-content:center;font-weight:600;color:#12805C}.ck.off{color:#9AA3B2}
+.steps{display:flex;align-items:center;gap:12px}
+.stp{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:#8B95A1;white-space:nowrap}
+.stp b{width:24px;height:24px;border-radius:50%;background:#E5E8EB;color:#6B7684;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600}
+.stp.on{color:#191F28;font-weight:600}.stp.on b{background:#3563E9;color:#fff}
+.stp.done{color:#4E5968}.stp.done b{background:#12805C;color:#fff}
+.bar{flex-grow:1;height:1px;background:#D1D6DB;min-width:24px}
+.seg3{display:inline-flex;gap:2px;padding:3px;border-radius:9px;background:#F2F4F6;flex-shrink:0}
+.seg3 span{min-width:68px;min-height:38px;padding:0 4px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:7px;font-size:14px;font-weight:500;color:#6B7684;box-sizing:border-box}
+.seg3 .ok,.seg3 .ng,.seg3 .sk{background:#fff;font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.10),0 0 0 1px rgba(16,24,40,.04)}
+.seg3 .ok::before,.seg3 .ng::before,.seg3 .sk::before{content:"";width:6px;height:6px;border-radius:50%}
+.seg3 .ok{color:#0F7B5F}.seg3 .ok::before{background:#16A37A}
+.seg3 .ng{color:#C4362B}.seg3 .ng::before{background:#E5484D}
+.seg3 .sk{color:#4E5968}.seg3 .sk::before{background:#9AA3B2}
+.row{padding:14px 20px;border-top:1px solid #F0F2F4;display:flex;flex-direction:column;gap:10px}
+.row:first-child{border-top:none}
+.line{display:flex;align-items:center;gap:12px}
+.n{width:24px;height:24px;border-radius:50%;background:#F2F4F6;color:#6B7684;font-weight:600;font-size:12.5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.q{font-size:16px;font-weight:600;letter-spacing:-0.015em}
+.hint{display:flex;align-items:center;gap:10px;margin-left:36px;padding:8px 12px;border-radius:4px;background:#FFFAEB;border-left:3px solid #F79009;font-size:14px;color:#4E5968}
+.hint b{color:#93570A}
+.big{display:flex;flex-direction:column;gap:4px;align-items:flex-start;justify-content:center;min-height:92px;padding:0 20px;border-radius:10px;border:1px solid #D1D6DB;background:#fff;box-sizing:border-box}
+.big b{font-size:17px;font-weight:600}.big span{font-size:13.5px;color:#6B7684}
+a.big,a.doc{text-decoration:none}a.big{color:inherit}
+.btn.dis{opacity:.4;pointer-events:none}
+.big.sel{border-color:#3563E9;box-shadow:0 0 0 1px #3563E9}
+.chip{min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #D1D6DB;background:#fff;font-size:14px;font-weight:500;display:inline-flex;align-items:center;color:#4E5968;white-space:nowrap}
+.chip.sel{border-color:#191F28;background:#191F28;color:#fff;font-weight:600}
+.in{font:inherit;font-size:15px;border:1px solid #D1D6DB;border-radius:8px;padding:10px 12px;background:#fff;color:#191F28;box-sizing:border-box;width:100%;min-height:44px}
+.ro{background:#F7F8FA;color:#4E5968}
+.lbl{font-size:13px;font-weight:500;color:#6B7684}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:12.5px;color:#8B95A1;font-weight:500;padding:11px 20px;border-bottom:1px solid #E5E8EB;white-space:nowrap;background:#FAFBFC}
+.tbl td{padding:14px 20px;border-top:1px solid #F0F2F4;font-size:15px;vertical-align:middle}
+.tbl .sub{white-space:nowrap}
+.code{font-weight:600;font-size:15px;letter-spacing:0}
+.tabs{display:flex;gap:4px;padding:0 16px;border-bottom:1px solid #E5E8EB}
+.tab{padding:13px 10px 11px;font-size:14px;font-weight:500;color:#8B95A1;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:#191F28;font-weight:600;border-bottom-color:#191F28}
+.kv{display:grid;grid-template-columns:88px minmax(0,1fr);gap:9px 12px;font-size:14.5px;align-items:baseline}
+.kv .k{color:#8B95A1;font-size:13.5px}
+.cause{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #E5E8EB;border-radius:8px}
+.cause.cur{border-color:#3563E9;box-shadow:0 0 0 1px #3563E9}
+.tl{display:flex;gap:12px;font-size:14px;line-height:1.45}
+.tl i{width:7px;height:7px;border-radius:50%;background:#3563E9;margin-top:7px;flex-shrink:0}
+.tl .t{color:#8B95A1;width:44px;flex-shrink:0}
+.foot{display:flex;align-items:center;gap:12px}
+.box{border:1px solid #E5E8EB;border-radius:8px;overflow:hidden}
+.rr{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid #F0F2F4;font-size:14.5px}
+.rr:first-child{border-top:none}
+.rr.hd{background:#FAFBFC;padding:6px 6px 6px 14px}
+.rr .k{width:56px;color:#8B95A1;font-size:13.5px;flex-shrink:0}
+.sk{background:#EEF0F3;border-radius:4px;height:12px}
+.st{background:#fff;border:1px solid #E5E8EB;border-radius:10px;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.st .cap{padding:10px 16px;border-bottom:1px solid #F0F2F4;font-size:12.5px;font-weight:500;color:#8B95A1;background:#FAFBFC}
+.st .in2{flex-grow:1;padding:20px;display:flex;flex-direction:column;gap:12px;justify-content:center}
+.ctr{align-items:center;text-align:center}
+.prog{height:6px;border-radius:3px;background:#EEF0F3;overflow:hidden;width:120px}.prog i{display:block;height:100%;background:#3563E9}
+</style>
+</helmet>
+<div class="app" style="width: 1440px; height: 960px">
+<nav class="side" aria-label="주 메뉴"><div class="logo">RSW</div><a class="nav on" href="V2Main.dc.html"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>작업함</a><a class="nav" href="V2Equip.dc.html"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>설비</a><a class="nav" href="V2History.dc.html"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>이력</a></nav>
+<div class="main">
+<header class="top">
+<a class="back" href="V2Result.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>뒤로</a>
+<h1 class="ttl">test_0</h1><span class="tag green">일지 작성</span>
+
+<div class="grow"></div>
+<a class="btn" href="V2Field.dc.html">현장 확인 입력</a><a class="btn" href="V2Handover.dc.html">도움 요청</a>
+</header>
+<div class="body">
+<div class="cols">
+<section class="card" style="padding: 26px; display: flex; flex-direction: column; gap: 14px">
+<div class="line"><div class="q" style="font-size: 19px">정비일지</div></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<label class="fld"><span class="lbl">날짜</span><input class="in" value="2021-09-11"></label>
+<label class="fld"><span class="lbl">작업 시간</span><input class="in" value="12:08 ~ 12:21"></label>
+<label class="fld"><span class="lbl">작업자 · 설비</span><input class="in" value="[이름] · test_0"></label>
+</div>
+<label class="fld"><span class="lbl">문제</span><input class="in" value="E012 발생 (11:46). 보정 압력이 평소보다 낮음."></label>
+<label class="fld"><span class="lbl">원인</span><input class="in" value="보정 압력 도달 지연 — 공급 압력 이상 (4.2 bar)"></label>
+<label class="fld"><span class="lbl">조치</span><textarea class="in" style="height: 72px">재체결 — [한 일에 적은 내용]</textarea></label>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<label class="fld"><span class="lbl">못 한 점검</span><input class="in" value="배관 누설 확인 · 이퀄라이저 설정 재확인"></label>
+<label class="fld"><span class="lbl">같은 고장 반복</span><select class="in"><option>처음</option><option>반복</option><option>모름</option></select></label>
+</div>
+<div class="grow"></div>
+<div class="foot"><a href="V2Main.dc.html" class="btn">미해결로 저장</a><div class="grow"></div><a class="btn btn-pri btn-lg" href="V2LogDone.dc.html">일지 승인</a><span class="btn btn-lg dis" aria-disabled="true">해결 종료</span></div>
+</section>
+<div class="col">
+<section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<span class="lbl">종료 전 확인</span>
+<div class="line"><span class="ck">✓</span><span>원인 확인됨</span></div>
+<div class="line"><span class="ck">✓</span><span>조치 기록됨</span></div>
+<div class="line"><span class="ck">✓</span><span>결과 · 해결됐어요</span></div>
+<div class="line"><span class="ck off">–</span><span>일지 승인 전</span></div>
+
+</section>
+<aside class="card" style="display: flex; flex-direction: column; overflow: hidden" aria-label="고장 정보"><div class="tabs"><span class="tab">상황</span><span class="tab">원인</span><span class="tab on">기록</span></div><div style="padding: 18px; display: flex; flex-direction: column; gap: 14px"><div class="tl"><span class="t"></span><i style="background: #D92D20"></i><div><b>E012 발생</b> · 데이터 시각 2021-09-11 11:46 · 고장 접수</div></div>
+<div class="tl"><span class="t">11:52</span><i></i><div>점검 시작 · 보정 압력 도달 지연</div></div>
+<div class="tl"><span class="t">12:03</span><i></i><div>공급 압력 <b style="color: #B42318">이상</b> · 4.2 bar</div></div>
+<div class="tl"><span class="t">12:05</span><i></i><div>판단 · 맞아요</div></div>
+<div class="tl"><span class="t">12:21</span><i style="background: #12805C"></i><div>조치 기록 · 재체결</div></div></div></aside>
+</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
