@@ -10,13 +10,14 @@ import { CaseFacts, CauseTab } from './parts'
 export default function OverviewPage() {
   const d = useCaseDetail()
   const trends = d.event.sensor_trend
-  const [selected, setSelected] = useState(trends.find((t) => t.sensor.startsWith('c'))?.feature ?? trends[0]?.feature ?? '')
+  // ML은 sensor_trend를 이번 고장에 기여가 큰 신호부터 준다 → 첫 번째를 먼저 보여준다
+  const [selected, setSelected] = useState(trends[0]?.feature ?? '')
   const current = currentCandidate(d)
   const started = Object.keys(d.records.checks).length > 0 || d.records.judgments.length > 0
   const noGuide = d.guidance.candidates.length === 0
 
   return (
-    <div className="grid grow grid-cols-[minmax(0,1fr)_380px] gap-4">
+    <div className="grid grow grid-cols-[minmax(0,1fr)_380px] items-start gap-4">
       <section className={`${card} flex flex-col gap-3.5 p-6`}>
         <div className="flex items-baseline gap-3">
           <h2 className="text-lg font-semibold tracking-[-0.015em]">
@@ -57,7 +58,6 @@ export default function OverviewPage() {
         ) : (
           <CauseTab d={d} />
         )}
-        <div className="grow" />
         {noGuide ? (
           <Link to="manual" className={`${btnPrimary} ${btnLarge}`}>
             직접 점검해서 기록

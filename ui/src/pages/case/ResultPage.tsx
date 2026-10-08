@@ -1,6 +1,7 @@
 import { Link, Navigate, useNavigate } from 'react-router'
 import { bigChoice, btnQuiet, card } from '../../components/ui'
 import { activeCause, checkCounts, latestJudgment, nextCandidate } from '../../lib/caseFlow'
+import { josa } from '../../lib/josa'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
 import type { Outcome } from '../../types/case'
@@ -25,7 +26,7 @@ export default function ResultPage() {
   const manualChecks = d.records.manual?.checks ?? []
   const counts = cand
     ? checkCounts(cand, d.records.checks)
-    : { normal: manualChecks.filter((c) => c.result === 'normal').length, abnormal: 0, total: manualChecks.length }
+    : { normal: manualChecks.filter((c) => c.result === 'normal').length, abnormal: 0, skipped: 0, total: manualChecks.length }
   const abnormal = cand
     ? cand.checks.filter((c) => d.records.checks[c.id]?.result === 'abnormal').map((c) => ({ key: c.id, title: c.title, memo: d.records.checks[c.id]?.memo }))
     : manualChecks.filter((c) => c.result === 'abnormal').map((c, i) => ({ key: String(i), title: c.title, memo: c.memo }))
@@ -78,12 +79,12 @@ export default function ResultPage() {
                 )}
               </span>
               <span className="text-[13.5px] text-sub">
-                정상 {counts.normal} · 건너뜀 · 미확인 {counts.total - counts.normal - counts.abnormal}
+                정상 {counts.normal} · 건너뜀 {counts.skipped} · 미확인 {counts.total - counts.normal - counts.abnormal - counts.skipped}
               </span>
             </div>
             <div className={row}>
               <span className="w-14 shrink-0 text-[13.5px] text-faint">판단</span>
-              <span className="grow">{cand ? `${cand.name}이(가) ${judgment?.verdict === 'yes' ? '맞아요' : '판단 전'}` : `직접 찾음 · ${cause.name}`}</span>
+              <span className="grow">{cand ? `${josa(cand.name, '이', '가')} ${judgment?.verdict === 'yes' ? '맞아요' : '판단 전'}` : `직접 찾음 · ${cause.name}`}</span>
               <span className="text-[13.5px] text-sub">{judgment && formatKst(judgment.at)?.slice(11)}</span>
             </div>
             <div className={row}>

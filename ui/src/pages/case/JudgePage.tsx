@@ -2,6 +2,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { DotTag } from '../../components/Tag'
 import { bigChoice, btnQuiet, card } from '../../components/ui'
 import { checkCounts, nextCandidate, pickCandidate } from '../../lib/caseFlow'
+import { josa } from '../../lib/josa'
 import { useCaseMutation } from '../../lib/useCase'
 import type { CheckResult, Verdict } from '../../types/case'
 import { useCaseDetail } from './context'
@@ -48,7 +49,7 @@ export default function JudgePage() {
             <span className="text-[13px] font-medium text-sub">
               원인 {index} / {d.guidance.candidates.length}
             </span>
-            <h2 className="mt-3 text-[22px] font-semibold tracking-[-0.015em]">{cand.name}이(가) 맞나요?</h2>
+            <h2 className="mt-3 text-[22px] font-semibold tracking-[-0.015em]">{josa(cand.name, '이', '가')} 맞나요?</h2>
           </div>
           <div className="overflow-hidden rounded-lg border border-line">
             <div className="flex items-center gap-3 bg-head py-1.5 pr-1.5 pl-3.5">
@@ -56,7 +57,7 @@ export default function JudgePage() {
               {counts.abnormal > 0 && <span className="text-[13.5px] font-medium text-[#c4362b]">이상 {counts.abnormal}</span>}
               {counts.normal > 0 && <span className="text-[13.5px] font-medium text-[#0f7b5f]">정상 {counts.normal}</span>}
               {counts.total - counts.normal - counts.abnormal > 0 && (
-                <span className="text-[13.5px] font-medium text-sub">건너뜀 · 미확인 {counts.total - counts.normal - counts.abnormal}</span>
+                <span className="text-[13.5px] font-medium text-sub">건너뜀 {counts.skipped} · 미확인 {counts.total - counts.normal - counts.abnormal - counts.skipped}</span>
               )}
               <div className="grow" />
               <Link to={`../check?cause=${cand.situation_id}`} className={btnQuiet}>

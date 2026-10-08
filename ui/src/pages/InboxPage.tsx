@@ -97,8 +97,8 @@ export default function InboxPage() {
                 </tr>
               </thead>
               <tbody>
-                {shown.map((c) => (
-                  <CaseRow key={c.case_id} item={c} />
+                {shown.map((c, i) => (
+                  <CaseRow key={c.case_id} item={c} first={i === 0} />
                 ))}
               </tbody>
             </table>
@@ -115,7 +115,8 @@ function matches(c: CaseSummary, keyword: string) {
   return [c.event.gun_id, c.event.trigger.rule_code].some((v) => v?.toLowerCase().includes(k))
 }
 
-function CaseRow({ item }: { item: CaseSummary }) {
+/** first: 목록 맨 위(가장 최근) 줄. 그 줄의 "열기"만 파랗게 강조한다 (와이어프레임 V2Main) */
+function CaseRow({ item, first }: { item: CaseSummary; first: boolean }) {
   const { event } = item
   // 발생 시각: 종료 코드가 뜬 시각이 있으면 그것, 없으면 ML 판정 시각
   const occurredAt = event.trigger.rule_trigger_time ?? event.detected_at
@@ -151,9 +152,9 @@ function CaseRow({ item }: { item: CaseSummary }) {
         <Link
           to={to}
           className={`inline-flex min-h-11 w-[88px] items-center justify-center rounded-lg border text-[14.5px] whitespace-nowrap ${
-            resume
-              ? 'border-field bg-white font-medium hover:bg-canvas'
-              : 'border-primary bg-primary font-semibold text-white hover:bg-primary-ink'
+            first && !resume
+              ? 'border-primary bg-primary font-semibold text-white hover:bg-primary-ink'
+              : 'border-field bg-white font-medium hover:bg-canvas'
           }`}
         >
           {resume ? '이어서' : '열기'}

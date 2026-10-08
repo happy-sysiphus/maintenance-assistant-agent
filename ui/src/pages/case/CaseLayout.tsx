@@ -20,6 +20,12 @@ export default function CaseLayout() {
         {data && (
           <>
             <h1 className="text-[19px] font-bold tracking-[-0.02em]">{data.event.gun_id}</h1>
+            {/* 어떤 고장을 처리 중인지 모든 단계에서 보이게 (와이어프레임 V2Action 상단) */}
+            {data.event.trigger.rule_code ? (
+              <span className="text-[15px] font-semibold text-[#b42318]">{data.event.trigger.rule_code}</span>
+            ) : (
+              <span className="text-[13.5px] font-medium text-sub">코드 없음</span>
+            )}
             <StatusTag status={data.status} />
             <div className="grow" />
             <Link to="field" className={`${btn} print:hidden`}>
