@@ -718,7 +718,9 @@ python .py/replay.py test/test_0.csv --speed 60               # 60배속
 8. 재시작하면 버퍼·trace와 진행 중인 워밍업은 사라진다(판정 상태는 `RSW_STATE_DIR`에 남는다, 5.7절). 재시작 직후 몇 분의 창은 롤링 이력이 짧다.
 9. 규칙 반복 강등의 대가: 학습 72건 중 1건은 전날 같은 코드가 한 번 떴던 탓에 고장 직전 발화가 warning으로만 나간다. critical 오트리거의 대부분(테스트 10/14)은 여전히 첫 발화이고, 전부 다른 클래스 코드다 — 건의 고장 유형을 알면 거를 수 있다.
 
-#### 5.10 ML → RAG 핸드오프 (개발 스펙 v1.1)
+#### 5.10 ML → RAG 핸드오프 (개발 스펙 v1.2)
+
+**v1.2 (2026-10-21, D-003·D-6 결정 — 필드 삭제라 호환 깨짐)**: `symptoms[]`(P1~P9), `situation_ids`(S01~S10), `fault_class.situation_id`를 뺐다. ML은 정의서의 상황·증상 매핑을 하지 않고, 컨트롤러 코드(`fault_class.terminal_code`, `trigger.rule_code` — 예: E012)와 고장 유형(`fault_class.code` — 예: E01, 종료 코드를 데이터로 연결한 것)만 그대로 보낸다. 센서 편차는 매분 따로 보내는 sensor-features 문서(5.11, 현재 v4)가 맡는다. RAG 쪽(`rag/service.py`, 지금 S ID 입력)은 E 코드로 조회하도록 바꿔야 한다. 아래 5.10.4~5.10.5의 symptoms·situation_ids 설명은 v1.1 기록으로 남겨 둔다.
 
 **v1.1 (2026-10-08, FE 요청 `ui/docs/05-fe-api-requests.md` 반영, 1.0과 호환 — 필드 추가만)**: 핸드오프의 모든 시각은 UTC이고 끝에 `Z`가 붙는다(`detected_at`, `window_start`, `trigger.rule_trigger_time`). 새 필드 `error_timeline[]`(이 건 버퍼 약 30분의 컨트롤러 코드 구간: `code`, `start`, `end`, `duration_s`, `class_hint`)와 `sensor_trend[]`(이번 이벤트의 기여 상위 피처 최대 4개의 최근 30분 1분 편차: `feature`, `sensor`, `sensor_name_ko`, `statistic`, `points[{t, z}]` — `/guns/{id}/trace`의 `deviation`과 같은 값). `contributing_features[]`와 trace `features[]`에 `sensor_name_ko`(이름표 `rag_mapping.SENSOR_KO`). `/predict`·`/guns`·trace 응답의 시각은 여전히 오프셋 없는 UTC다. FE 질문 답변은 `docs/fe-requests-reply.md`.
 
@@ -729,17 +731,17 @@ ML(이상탐지)과 온톨로지·RAG(원인·점검·매뉴얼·리포트)를 *
 | 단계 | 담당 | 예 |
 |---|---|---|
 | ① 이상 감지 | ML | "critical, 점수 0.61, c5 기여 41%, 에러 코드 E012" (`AnomalyResult`) |
-| ② 증상 번역 | **ML (이 절)** | "보정 압력(c5) 평소보다 낮음; 고장 유형 E01(보정 압력 도달 지연) 의심" + 상황 ID `S01` |
-| ③ 원인·점검·매뉴얼 | 온톨로지 | 상황 ID로 조회: 의심 부품, 점검 순서, 매뉴얼 섹션 |
+| ② 사실 전달 | **ML (이 절 + 5.11)** | "보정 압력(c5) 평소보다 낮음; 고장 유형 E01 의심, 에러 코드 E012" + 매분 센서 z 상위 4개·설정값 변경 |
+| ③ 해석·원인·점검·매뉴얼 | 온톨로지·RAG | 에러 코드·고장 유형·센서 z로 조회: 상황, 의심 부품, 점검 순서, 매뉴얼 섹션 |
 | ④ 리포트 | RAG + LLM | 7단계 리포트(5.10.6) |
 
-핸드오프에는 부품 이름·점검 절차·매뉴얼 쪽수가 **없다**(`test_no_causes_or_manuals_in_handoff`가 고정). 두 쪽을 잇는 키는 `situation_ids`다.
+핸드오프에는 부품 이름·점검 절차·매뉴얼 쪽수가 **없다**(`test_no_causes_or_manuals_in_handoff`가 고정). v1.2부터 상황 ID·증상도 없다(`test_no_situation_doc_mapping`). 두 쪽을 잇는 키는 에러 코드(`fault_class.terminal_code`)와 고장 유형(`fault_class.code`)이다.
 
 ##### 5.10.2 언제 넘기나 (트리거)
 
 - critical 에피소드의 **첫 요청**(직전 요청은 critical 아님 → 이번 `critical_in_request=true`)에 1회.
 - 종료 코드 규칙이 발화할 때마다(`rule_triggered=true`; 에피소드 시작 1회 + 건별 30분 쿨다운). 단 반복 발화(`rule_repeat=true`, 같은 코드가 이 건에서 24h 안에 이미 발화)는 critical이 아니므로 넘기지 않는다. 같은 요청에서 모델이 critical이면 모델 이벤트로 넘어가되, 반복 발화는 규칙 근거로 쓰지 않는다(`trigger.rule_code = null`, `fault_class.basis`는 `latest_error_code`).
-- `replay.py`도 같은 이벤트를 찍는다(`situations=[...] | 요약`).
+- `replay.py`도 같은 이벤트를 찍는다(`fault_class=E0x | 요약`).
 
 ##### 5.10.3 어떻게 넘기나 (전달 방식)
 
@@ -750,7 +752,7 @@ ML(이상탐지)과 온톨로지·RAG(원인·점검·매뉴얼·리포트)를 *
 | push | `RSW_RAG_URL=http://host:port/diagnose` | 백그라운드 워커가 `pending` 레코드를 POST(헤더 `Idempotency-Key: <event_id>`, `RSW_RAG_TIMEOUT_S` 기본 10초). 2xx → `delivered`. 네트워크 오류·5xx·408·429 → 10초·30초·2분·10분 뒤 재시도(`RSW_RAG_BACKOFF_S`), 5회(`RSW_RAG_MAX_ATTEMPTS`) 실패하면 `failed`(재시작 시 한 번 더 큐에). 그 밖의 4xx → 즉시 `failed`(`delivery_detail` "rejected: …", 계약 문제라 재시도 안 함). 레코드에 `attempts`·`last_attempt_at`·`next_attempt_at`. **수신 쪽 계약: 같은 `event_id`는 한 번만 처리한다**(재시도로 여러 번 올 수 있음; `mock_rag.py`가 예시). `event_id`는 (건, 창, 트리거)에서 만든 해시라 재시작 뒤 같은 이벤트가 다시 만들어져도 같다 |
 | 미리보기 | 없음 | `POST /handoffs/preview`: `AnomalyResult` JSON → 핸드오프(서버 상태 무관, RAG 쪽 개발용) |
 
-##### 5.10.4 무엇을 넘기나 (스키마 `RagHandoff` v1.0)
+##### 5.10.4 무엇을 넘기나 (스키마 `RagHandoff` v1.0 기록 — v1.2에서 `symptoms`·`situation_ids`·`fault_class.situation_id` 삭제)
 
 JSON Schema는 서버의 `/docs`·`/openapi.json`.
 
@@ -767,7 +769,9 @@ JSON Schema는 서버의 `/docs`·`/openapi.json`.
 
 호환 규칙: 필드 추가는 1.x, 삭제·의미 변경은 2.0. `rag_mapping.build_handoff()`와 `main.RagHandoff`의 키는 `tests/test_rag_mapping.py::test_schema_keys_match_main`이 묶는다.
 
-##### 5.10.5 증상 규칙 (센서 → 증상 → 상황 ID)
+##### 5.10.5 증상 규칙 (센서 → 증상 → 상황 ID) — v1.2에서 삭제, 기록으로 남김
+
+2026-10-21 삭제(`history.md` 33절): 정의서 매핑을 ML에서 하지 않는다. 아래는 v1.1까지의 규칙이다.
 
 근거: 팀 문서 「RSW용접건_매뉴얼_RAG_활용정리」 §8(매뉴얼 지식, 저장소 밖 — 데이터에서 도출한 규칙이 아니다). 방향은 이 gun의 워밍업 평균 대비 z-score다.
 
@@ -802,10 +806,10 @@ RAG 서비스는 `POST /diagnose`(핸드오프 JSON)를 받아 아래 형태로 
 
 | 단계 | 명령 | 통과 기준 |
 |---|---|---|
-| 1 매핑 단위 | `pytest tests/test_rag_mapping.py -v` | 13 passed, 1초 미만 |
+| 1 매핑 단위 | `pytest tests/test_rag_mapping.py tests/test_sensor_features.py -v` | 20 passed, 1초 미만 |
 | 2 전체 | `pytest` | 모두 passed(합성 데이터로 학습→API→핸드오프까지, 약 30초~1분) |
-| 3 미리보기 | `uvicorn main:app` → 브라우저 `http://127.0.0.1:8000/docs` → `POST /handoffs/preview`에 `docs/anomaly_result.example.json` 붙여넣기 | 200, `situation_ids` 첫 값 `S02` |
-| 4 실데이터 재생 | `python .py/replay.py test/test_1.csv --start-hours 156 --chunk-s 600` | 이벤트 1건, `situations=['S01']` |
+| 3 미리보기 | `uvicorn main:app` → 브라우저 `http://127.0.0.1:8000/docs` → `POST /handoffs/preview`에 `docs/anomaly_result.example.json` 붙여넣기 | 200, `fault_class.code` `E02`, `symptoms`·`situation_ids` 없음 |
+| 4 실데이터 재생 | `python .py/replay.py test/test_1.csv --start-hours 156 --chunk-s 600` | 이벤트 1건, `fault_class=E01` |
 | 5 push | 가짜 RAG(`uvicorn mock_rag:app --app-dir .py --port 8001`) + `RSW_RAG_URL` 설정 후 4 | `GET :8000/handoffs`의 `delivery`가 `delivered`, `GET :8001/received`에 같은 `event_id` |
 | 6 재시작·재시도 | 가짜 RAG를 끈 채 4 → 서버 재시작 → 가짜 RAG 켬 | `delivery`가 `pending`(`attempts` 증가) → 재시작 뒤 `delivered`, `/received`에 이벤트마다 정확히 한 번 |
 
@@ -815,3 +819,24 @@ RAG 서비스는 `POST /diagnose`(핸드오프 JSON)를 받아 아래 형태로 
 2. push 워커는 레코드를 하나씩 순서대로 보낸다 — RAG가 응답 없이 멈추면 레코드마다 타임아웃(10초)만큼 밀린다. 서버 여러 대가 같은 `RSW_STATE_DIR`를 쓰는 구성은 지원하지 않는다.
 3. `MIN_SHARE`(0.03)·`MIN_DEV`(0.5)는 실데이터 이벤트 132개에서 "과다·과소 보고 방지"(이벤트당 중앙값 1, 증상 없음 25%)로 맞춘 값이다 — 정답 레이블이 없어 정확도로 고른 값은 아니다(`history.md` 19절).
 4. 센서 증상은 모델 성능이 오르기 전까지 보조 정보다(5.9절 1).
+
+#### 5.11 ML → RAG 매분 센서 문서 (sensor-features-v4, D-6)
+
+2026-10-21 결정(WORK_LOG D-004, `history.md` 33·34절): 예지보전이 안 되므로(B-14) ML은 해석하지 않은 측정 사실만 매분 RAG에 보낸다(상황·증상 매핑, 모델 점수 없음). 코드 `.py/sensor_features.py`(순수 Python, RAG 쪽이 그대로 import 가능), 스키마 `docs/sensor_features.schema.json`, 예시 `docs/sensor_features.example.json`(지금은 합성 데이터 — `python docs/make_examples.py`로 실데이터 예시로 바꿀 것), RAG 쪽 설명서 `docs/sensor_features_for_rag.md`.
+
+센서 분류는 실데이터로 정했다(`results/D-6/pair_check.py`, 원본 값 종류 세기): c4·c10·c18은 값이 0/1(on/off) 두 가지뿐인 상태 신호, c7·c8·c9·c17은 건 안에서 상수, c13~c16은 용접점마다 바뀌는 설정값(1분에 여러 번), c2↔c14·c3↔c15는 같은 물리량(누르는 순간 c2 = c14, 대기 중 c3 ≈ c15), c5↔c13은 짝이 아님.
+
+| 필드 | 내용 |
+|---|---|
+| `observed_at`, `window_s`, `n_samples` | 그 1분 창의 끝(UTC, Z), 60, 그 1분의 1 Hz 행 수 |
+| `value_space`, `reference_id` | `ml_handoff_z` = round(창 피처 − 모델 정상 기준값, 3), 표준정규 z 아님. 기준값이 든 모델 번들 `name@created` |
+| `gun_norm` | `warming_up`(건 처음 몇 시간: 건 평소를 아직 몰라 전체 기준 z — 덜 믿을 값) / `gun` / `global` |
+| `error_code`, `fault_class` | 그 1분의 마지막 0 아닌 컨트롤러 코드(예: E012), 종료 코드일 때만 고장 유형(E01~E04) |
+| `measurements[]` | 측정값 c1·c2·c3·c5·c6 × 평균·흔들림 **10개 전부**, \|z\| 큰 순. 각각 `z`와 `value`(그 1분 CSV 숫자의 평균·표준편차, ddof 1) |
+| `states[]` | 상태 신호 c4·c10·c18의 `on_share`(그 1분 켜짐 비율 0~1). c4·c18 = 누르는 중, c10 = 작동 허용. 셋 다 0이면 건이 서 있던 1분 → 측정값 z는 멈춘 값 |
+| `setpoints[]` | 설정값 c13~c16의 `mean`·`std`(원래 값)와 `mean_z`·`std_z`. 용접점마다 바뀌므로 std > 0이 정상, 설정 z는 "평소와 다른 프로그램 조합"이지 고장 신호가 아님 |
+| (보내지 않음) | c7·c8·c9·c17(건 안 상수), c11·c12·c19(카운터) |
+
+전달: `/predict` 응답의 `sensor_features[]`(그 요청에서 처음 채점된 분마다 하나), `GET /guns/{id}/sensor-features?minutes=N`(최근 N분, 최대 360), `RSW_RAG_SENSOR_URL` 설정 시 매분 POST(헤더 `Idempotency-Key: <gun_id>|<observed_at>`, 실패하면 10초 뒤 재시도, 4xx는 버림, 큐 최대 1440개 — 서버를 끄면 큐에 남은 것은 사라짐, `GET /health`의 `sensor_queue`·`sensor_pushed`). 가짜 RAG `POST /sensor-features`가 받은 것을 콘솔 한 줄 + `results/rag_received/<gun>_sensors.jsonl`로 남긴다.
+
+실데이터 예시 만들기: `python results/D-6/sensor_examples.py`(기본 10개: test_0·test_3 × 끝 5·30·180·1440분 전 + 종료 코드가 처음 뜬 분, 요약표에 상위 4개 측정값·상태 비율·설정값 평균±흔들림). 파일·시점은 `--files … --before-end …`, `--at 파일=시각`, `--plan plan.csv`로 바꾼다. 결과 `results/D-6/examples/summary.md`.

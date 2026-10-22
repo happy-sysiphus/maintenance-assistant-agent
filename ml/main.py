@@ -23,9 +23,9 @@ Endpoints
     GET  /handoffs/{event_id}     one handoff document + its delivery status
     POST /handoffs/preview        AnomalyResult JSON -> handoff document (no state; for the RAG side's tests)
 
-ML -> RAG handoff (.py/rag_mapping.py, schema v1.0): the first request of every critical episode (and every
-terminal-code rule trigger) carries `handoff` - sensor findings in words, fault class, symptoms and the situation
-ids (S01..S10) the ontology looks up. Causes, checks and manual sections are the ontology's job. Every handoff
+ML -> RAG handoff (.py/rag_mapping.py, schema v1.2): the first request of every critical episode (and every
+terminal-code rule trigger) carries `handoff` - sensor findings in words, the terminal code and fault class (E01..E04).
+No situation ids since v1.2. Causes, checks and manual sections are the ontology's job. Every handoff
 is kept in the outbox (GET /handoffs); with RSW_RAG_URL set a background worker POSTs it there, retrying with
 backoff (header Idempotency-Key = event_id - the receiver drops duplicates).
 
@@ -78,6 +78,7 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, ".py"))  # train.py / preprocess.p
 import train as trainlib  # noqa: E402  (also makes PCADetector importable for pca bundles)
 from preprocess import BINARY_COL, ROLL, SENSOR_COLS, TERMINAL_TO_CLASS, VALUE_COLS, fill_gaps  # noqa: E402
 import rag_mapping  # noqa: E402  (ML -> RAG handoff; pure Python, shared with the RAG side)
+import sensor_features  # noqa: E402  (ML -> RAG per-minute sensor z document, sensor-features-v4; pure Python)
 
 TRACE_HTML = os.path.join(PROJECT_ROOT, "static", "trace.html")
 # default: the IsolationForest + LightGBM ensemble (B-9, history.md §18); models/baseline_iforest.joblib is the fallback
@@ -106,6 +107,12 @@ STATE_DIR = os.path.join(PROJECT_ROOT, "state")  # default RSW_STATE_DIR
 RAG_BACKOFF_S = (10.0, 30.0, 120.0, 600.0)  # wait before retry 1, 2, 3, 4+ (RSW_RAG_BACKOFF_S="10,30,120,600")
 RAG_MAX_ATTEMPTS = 5  # then delivery="failed" (retried once more after a restart)
 OUTBOX_POLL_S = 1.0  # how often the push worker looks for due handoffs
+# D-6 per-minute sensor document (.py/sensor_features.py) push target, e.g. http://127.0.0.1:8001/sensor-features;
+# unset = pull only (response field `sensor_features`, GET /guns/{id}/sensor-features). Not persisted: a document still
+# queued when the server stops is lost (the RAG side can pull the last hours from GET).
+RAG_SENSOR_URL = os.environ.get("RSW_RAG_SENSOR_URL")
+SENSOR_QUEUE_MAX = 1440  # documents waiting for the push (one gun-day); the oldest is dropped beyond
+SENSOR_RETRY_S = 10.0  # wait after a failed push before the next try
 OUTBOX_RETENTION_DAYS = 30.0  # delivered / pull-only / rejected handoffs are deleted after this
 # C-4 operations monitoring: daily counters per gun (data time, UTC day of the window end), kept STATS_DAYS days
 STATS_DAYS = 31
@@ -255,8 +262,8 @@ class ModelInfo(BaseModel):
 
 
 # ------------------------------------------------------------ ML -> RAG handoff (rag_mapping.build_handoff)
-# scope: (1) what is unusual + (2) symptom translation with situation ids S01..S10. Causes, check procedures and
-# manual sections belong to the ontology / RAG stage and are NOT in this document.
+# scope (v1.2): what is unusual - trigger, terminal code + fault class, contributing sensors. Situations, causes, check
+# procedures and manual sections belong to the ontology / RAG stage and are NOT in this document.
 class SensorFinding(BaseModel):
     sensor: str
     sensor_name: str
@@ -269,24 +276,11 @@ class SensorFinding(BaseModel):
     text_ko: str = Field(description="e.g. '보정(밸런스) 압력(c5) 평소보다 낮음'")
 
 
-class Symptom(BaseModel):
-    id: str = Field(description="symptom rule id P1..P8; P9 = rule fired with no sensor signal")
-    name_ko: str
-    match: Literal["full", "partial", "no_sensor_signal"]
-    evidence: list[str]
-    related_classes: list[FaultClass]
-    situation_ids: list[str] = Field(description="keys of the MVP situation definition doc (S01..S10)")
-    agrees_with_fault_class: bool
-    confidence: Literal["low", "medium"] = Field(
-        description="medium only when the terminal-code rule fired and agrees; never high (v1.0)")
-
-
 class FaultClassInfo(BaseModel):
     code: FaultClass
     name_en: str
     name_ko: str
-    terminal_code: str
-    situation_id: str
+    terminal_code: str = Field(description="controller code that marks this class (E012 / E016 / E028 / E029)")
     definition: str
     basis: Literal["rule_trigger", "latest_error_code"]
 
@@ -342,8 +336,8 @@ class SensorTrend(BaseModel):
 
 
 class RagHandoff(BaseModel):
-    """What the ontology / RAG stage receives for one critical event (schema_version 1.1 = 1.0 + error_timeline,
-    sensor_trend; every time is UTC with "Z")."""
+    """What the ontology / RAG stage receives for one critical event (schema_version 1.2 = 1.1 - symptoms,
+    situation_ids, fault_class.situation_id; 1.1 = 1.0 + error_timeline, sensor_trend; every time is UTC with "Z")."""
     schema_version: str
     event_id: str
     gun_id: str
@@ -353,8 +347,6 @@ class RagHandoff(BaseModel):
     summary_ko: str = Field(description="one line, e.g. '보정 압력 평소보다 낮음; 고장 유형 E01 ...로 보임'")
     sensor_findings: list[SensorFinding]
     fault_class: FaultClassInfo | None
-    symptoms: list[Symptom] = Field(description="rule-agreeing first, then full sensor match; may be empty")
-    situation_ids: list[str] = Field(description="situation ids to look up in the ontology, most likely first")
     context: HandoffContext
     detector: HandoffDetector
     caveats: list[str]
@@ -375,6 +367,43 @@ class HandoffRecord(BaseModel):
     attempts: int = Field(0, description="push attempts so far")
     last_attempt_at: datetime | None = None
     next_attempt_at: datetime | None = Field(None, description="when the worker pushes it next (pending only)")
+
+
+class SensorMeasurement(BaseModel):
+    feature: str = Field(description="c1 c2 c3 c5 c6 x _mean / _std (all 10, sorted by |z|, largest first)")
+    z: float | None = Field(description="round(window feature - model normal reference, 3); not a standard-normal z")
+    value: float | None = Field(description="raw value: the minute's mean / std (ddof 1) of the CSV numbers")
+
+
+class SensorState(BaseModel):
+    signal: str = Field(description="c4 c10 c18 - 0/1 signals (c4, c18 = gun pressing, c10 = US2 enable)")
+    on_share: float | None = Field(description="share of the minute's samples the signal was on, 0..1")
+
+
+class SensorSetpoint(BaseModel):
+    setpoint: str = Field(description="c13 c14 c15 c16")
+    mean: float | None = Field(description="raw mean of the minute")
+    std: float | None = Field(description="raw std of the minute (setpoints change per weld spot)")
+    mean_z: float | None = Field(description="mean feature - reference (another program mix, not a fault signal)")
+    std_z: float | None
+
+
+class SensorFeaturesDoc(BaseModel):
+    """ML -> RAG per-minute sensor document, schema sensor-features-v4 (docs/sensor_features.schema.json)."""
+    schema_version: Literal["sensor-features-v4"]
+    gun_id: str
+    observed_at: str = Field(description="window end, ISO 8601 UTC with Z")
+    window_s: int
+    value_space: Literal["ml_handoff_z"]
+    reference_id: str | None = Field(description="model bundle the normal reference comes from (name@created)")
+    gun_norm: Literal["warming_up", "gun", "global"] = Field(
+        description="warming_up: the gun's own normal is not fixed yet, z is against the global reference")
+    error_code: str | None = Field(description="last non-zero controller code of the minute, as reported")
+    fault_class: FaultClass | None = Field(description="E01..E04 when error_code is a terminal code (data mapping)")
+    n_samples: int = Field(description="1 Hz rows the minute had (60 = complete)")
+    measurements: list[SensorMeasurement]
+    states: list[SensorState]
+    setpoints: list[SensorSetpoint]
 
 
 class AnomalyResult(BaseModel):
@@ -462,6 +491,9 @@ class AnomalyResult(BaseModel):
                           "the RAG handoff document (also in GET /handoffs)")
     drift_warning: list[str] = Field(default_factory=list, description="operations monitoring: why this gun no longer "
                                      "behaves as designed (e.g. normal alarm rate > 3 % for 3 days) - see GET /stats")
+    sensor_features: list[SensorFeaturesDoc] = Field(
+        default_factory=list, description="D-6: the per-minute sensor document of every minute first scored in this "
+                                          "request, oldest first (also pushed to RSW_RAG_SENSOR_URL)")
 
 
 class WarmingUp(BaseModel):
@@ -948,11 +980,14 @@ class Detector:
                       sustained_episodes=v.sustained and not g.was_sustained)
                 g.was_sustained = v.sustained
                 codes = w["error_code"]
+                raw = sensor_features.raw_summary(  # D-6: the minute's raw numbers, kept with the trace point
+                    r for r in g.rows if w.index[0] <= pd.Timestamp(r["time"]) <= w.index[-1])
                 g.trace.append({"window_start": w.index[0], "window_end": w.index[-1], "score": v.score,
                                 "threshold": v.threshold, "alarm": alarm, "held": v.held, "sustained": v.sustained,
                                 "critical": v.critical,
                                 "non_welding_share": nw_share, "gun_norm": g.norm_status,
-                                "error_codes": list(dict.fromkeys(codes[codes != "0"].tolist())), "vec": vec})
+                                "error_codes": list(dict.fromkeys(codes[codes != "0"].tolist())), "vec": vec,
+                                "error_code": sensor_features.last_code(codes.tolist()), "raw": raw})
             out.append(v)
         return out
 
@@ -1330,11 +1365,18 @@ async def lifespan(app: FastAPI):
     app.state.outbox_poll_s = float(os.environ.get("RSW_OUTBOX_POLL_S", OUTBOX_POLL_S))
     if not hasattr(app.state, "rag_transport"):
         app.state.rag_transport = None  # httpx transport override (tests route the push to an in-process mock)
-    worker = asyncio.create_task(outbox_worker(app)) if app.state.rag_url else None
+    app.state.sensor_url = os.environ.get("RSW_RAG_SENSOR_URL", RAG_SENSOR_URL or "") or None
+    app.state.sensor_queue = deque(maxlen=SENSOR_QUEUE_MAX)
+    app.state.sensor_lock = threading.Lock()
+    app.state.sensor_pushed = 0
+    app.state.sensor_retry_s = float(os.environ.get("RSW_SENSOR_RETRY_S", SENSOR_RETRY_S))
+    workers = [asyncio.create_task(outbox_worker(app))] if app.state.rag_url else []
+    if app.state.sensor_url:
+        workers.append(asyncio.create_task(sensor_worker(app)))
     try:
         yield
     finally:
-        if worker is not None:
+        for worker in workers:
             worker.cancel()
             try:
                 await worker
@@ -1363,6 +1405,8 @@ async def health(request: Request) -> dict[str, Any]:
     ob = request.app.state.outbox.all()
     return {"status": "ok", "model_path": d.path, "model": d.info.model_dump(), "guns_tracked": len(request.app.state.guns),
             "max_chunk": MAX_CHUNK, "state_dir": request.app.state.state_dir, "rag_url": request.app.state.rag_url,
+            "rag_sensor_url": request.app.state.sensor_url, "sensor_queue": len(request.app.state.sensor_queue),
+            "sensor_pushed": request.app.state.sensor_pushed,
             "outbox": {k: sum(r.delivery == k for r in ob) for k in ("pending", "delivered", "failed", "pull_only")}}
 
 
@@ -1440,7 +1484,9 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
     f = d.gun_normalise(g, feats.f)
     fresh = g.last_end is None or f.index[wins[-1].stop - 1] > g.last_end
     vecs = np.stack([d.window_vector(f.iloc[s]) for s in wins])
+    last_trace = g.trace[-1]["window_end"] if g.trace else None
     verdicts = d.judge(g, f, wins, trainlib.anomaly_score(d.model, vecs), vecs, fresh)
+    new_minutes = [p for p in g.trace if last_trace is None or p["window_end"] > last_trace]  # D-6: first scored now
     score, contribs = d.score(vecs[-1])  # the latest window, with feature attributions
     g.last_score = score
     result = build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, rule, vecs[-1])
@@ -1466,6 +1512,9 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
                 log.warning("gun %s drift: %s", req.gun_id, reason)
         g.drift = drift
     result.drift_warning = drift
+    docs = [sensor_doc(d, req.gun_id, p) for p in new_minutes]
+    result.sensor_features = [SensorFeaturesDoc.model_validate(x) for x in docs]
+    queue_sensor_docs(request, docs)
     return result
 
 
@@ -1570,6 +1619,23 @@ def handoff_sensor_trend(d: Detector, g: "GunState", result: AnomalyResult) -> l
             for c in chosen]
 
 
+def sensor_doc(d: Detector, gun_id: str, p: dict[str, Any]) -> dict[str, Any]:
+    """One trace entry (a scored minute) -> the sensor-features-v4 document (D-6)."""
+    col = {c: j for j, c in enumerate(d.model_cols)}
+    feats = sensor_features.MEASURED_FEATURES + tuple(f"{c}_{s}" for c in sensor_features.SETPOINTS
+                                                      for s in ("mean", "std"))
+    z = {f: float(p["vec"][col[f]] - d.reference[col[f]]) for f in feats if f in col}
+    return sensor_features.build_doc(gun_id, p["window_end"], z, p.get("raw") or {}, p.get("error_code"),
+                                     p.get("gun_norm") or "global", f"{d.info.name}@{d.info.created}")
+
+
+def queue_sensor_docs(request: Request, docs: list[dict[str, Any]]) -> None:
+    """Hand the new minutes to the push worker (RSW_RAG_SENSOR_URL set); the queue drops its oldest beyond the cap."""
+    if request.app.state.sensor_url and docs:
+        with request.app.state.sensor_lock:
+            request.app.state.sensor_queue.extend(docs)
+
+
 def attach_handoff(request: Request, result: AnomalyResult, g: "GunState | None" = None) -> None:
     """ML -> RAG handoff (same events replay.py prints) into the outbox; the push worker delivers it when
     RSW_RAG_URL is set. A mapping error is logged and leaves the response without a handoff: the scored state is
@@ -1607,6 +1673,41 @@ async def outbox_worker(app: FastAPI) -> None:
         except Exception:
             log.exception("outbox worker")
         await asyncio.sleep(app.state.outbox_poll_s)
+
+
+async def sensor_worker(app: FastAPI) -> None:
+    """D-6: POST the per-minute sensor documents oldest first (Idempotency-Key = gun_id|observed_at). On a failure the
+    document stays at the head and the worker waits RSW_SENSOR_RETRY_S; a 4xx other than 408 / 429 drops it (a contract
+    problem - retrying cannot help). Never dies on an error."""
+    import httpx  # only needed when pushing
+
+    async with httpx.AsyncClient(timeout=RAG_TIMEOUT_S, transport=app.state.rag_transport) as client:
+        while True:
+            with app.state.sensor_lock:
+                doc = app.state.sensor_queue[0] if app.state.sensor_queue else None
+            if doc is None:
+                await asyncio.sleep(app.state.outbox_poll_s)
+                continue
+            wait = 0.0
+            try:
+                r = await client.post(app.state.sensor_url, json=doc,
+                                      headers={"Idempotency-Key": f"{doc['gun_id']}|{doc['observed_at']}"})
+                ok = 200 <= r.status_code < 300
+                drop = ok or (400 <= r.status_code < 500 and r.status_code not in (408, 429))
+                if not ok:
+                    log.warning("sensor push %s %s: HTTP %s %s", doc["gun_id"], doc["observed_at"], r.status_code,
+                                r.text[:200])
+                    wait = 0.0 if drop else app.state.sensor_retry_s
+            except Exception as e:  # network errors must not break anything; the document stays queued
+                log.warning("sensor push %s %s: %s", doc["gun_id"], doc["observed_at"], e)
+                drop, ok, wait = False, False, app.state.sensor_retry_s
+            if drop:
+                with app.state.sensor_lock:
+                    if app.state.sensor_queue and app.state.sensor_queue[0] is doc:
+                        app.state.sensor_queue.popleft()
+                app.state.sensor_pushed += int(ok)
+            if wait:
+                await asyncio.sleep(wait)
 
 
 async def push_handoff(app: FastAPI, rec: HandoffRecord) -> None:
@@ -1762,6 +1863,18 @@ def build_trace(d: Detector, gun_id: str, g: GunState, minutes: int, features: l
     return Trace(gun_id=gun_id, window_s=d.window, minutes=minutes, n_points=len(points), model=d.info,
                  focus=TraceFocus(**focus) if focus else None, features=chosen, axes=TraceAxes(score=d.score_axis),
                  events=events, points=points)
+
+
+@app.get("/guns/{gun_id}/sensor-features", response_model=list[SensorFeaturesDoc])
+async def gun_sensor_features(gun_id: str, request: Request,
+                              minutes: int = Query(60, ge=1, le=TRACE_WINDOWS)) -> list[dict[str, Any]]:
+    """D-6: the per-minute sensor documents of the last `minutes` scored minutes, oldest first (pull path; the same
+    documents /predict returns and RSW_RAG_SENSOR_URL receives)."""
+    g = gun_state(request, gun_id)
+    d: Detector = request.app.state.detector
+    with g.lock:
+        pts = list(g.trace)[-minutes:]
+    return [sensor_doc(d, gun_id, p) for p in pts]
 
 
 @app.get("/guns/{gun_id}/trace", response_model=Trace)

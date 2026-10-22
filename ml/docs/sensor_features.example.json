@@ -1,0 +1,108 @@
+{
+  "schema_version": "sensor-features-v4",
+  "gun_id": "synthetic_0",
+  "observed_at": "2021-10-01T01:55:59Z",
+  "window_s": 60,
+  "value_space": "ml_handoff_z",
+  "reference_id": "baseline_iforest@2026-10-21T10:53:36",
+  "gun_norm": "gun",
+  "error_code": "E029",
+  "fault_class": "E04",
+  "n_samples": 60,
+  "measurements": [
+    {
+      "feature": "c5_mean",
+      "z": 7.627,
+      "value": 502.548
+    },
+    {
+      "feature": "c3_mean",
+      "z": 0.275,
+      "value": 140.562
+    },
+    {
+      "feature": "c2_mean",
+      "z": -0.176,
+      "value": 523.6
+    },
+    {
+      "feature": "c1_mean",
+      "z": -0.117,
+      "value": 1.943
+    },
+    {
+      "feature": "c5_std",
+      "z": 0.115,
+      "value": 3.302
+    },
+    {
+      "feature": "c2_std",
+      "z": -0.096,
+      "value": 1004.264
+    },
+    {
+      "feature": "c3_std",
+      "z": -0.027,
+      "value": 1.918
+    },
+    {
+      "feature": "c1_std",
+      "z": 0.024,
+      "value": 0.508
+    },
+    {
+      "feature": "c6_mean",
+      "z": -0.02,
+      "value": -65.117
+    },
+    {
+      "feature": "c6_std",
+      "z": -0.007,
+      "value": 2.929
+    }
+  ],
+  "states": [
+    {
+      "signal": "c4",
+      "on_share": 0.383
+    },
+    {
+      "signal": "c10",
+      "on_share": 0.933
+    },
+    {
+      "signal": "c18",
+      "on_share": 0.183
+    }
+  ],
+  "setpoints": [
+    {
+      "setpoint": "c13",
+      "mean": 14.99,
+      "std": 0.0,
+      "mean_z": 0.0,
+      "std_z": 0.0
+    },
+    {
+      "setpoint": "c14",
+      "mean": 2200.0,
+      "std": 0.0,
+      "mean_z": 0.0,
+      "std_z": 0.0
+    },
+    {
+      "setpoint": "c15",
+      "mean": 150.0,
+      "std": 0.0,
+      "mean_z": 0.0,
+      "std_z": 0.0
+    },
+    {
+      "setpoint": "c16",
+      "mean": 1.6,
+      "std": 0.0,
+      "mean_z": 0.0,
+      "std_z": 0.0
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ML -> RAG per-minute sensor document",
+  "description": "sensor-features-v4 (2026-10-21). Three groups: measurements (c1 c2 c3 c5 c6 x mean/std, all 10, z + raw, sorted by |z|), states (c4 c10 c18 on-share), setpoints (c13..c16 mean/std raw + z). Produced by ml/.py/sensor_features.py every scored minute. ML sends measured facts only - no situation / symptom mapping, no model score.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "sensor-features-v4"
+    },
+    "gun_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "window end (UTC, Z)"
+    },
+    "window_s": {
+      "const": 60
+    },
+    "value_space": {
+      "const": "ml_handoff_z",
+      "description": "every z: round(window_feature - model_feature_reference, 3) in the model's scaled, gun-centred space - not a universal standard-normal z-score"
+    },
+    "reference_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "model bundle of the normal reference (name@created)"
+    },
+    "gun_norm": {
+      "enum": [
+        "warming_up",
+        "gun",
+        "global"
+      ],
+      "description": "warming_up = the gun's own normal is not fixed yet (first hours): z is against the global reference and less reliable"
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "last non-zero controller code in this minute, as reported (e.g. E012); null = none"
+    },
+    "fault_class": {
+      "enum": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        null
+      ],
+      "description": "set only when error_code is a terminal code (E012->E01, E016->E02, E028->E03, E029->E04; data mapping)"
+    },
+    "n_samples": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 60,
+      "description": "1 Hz rows the minute had (60 = complete)"
+    },
+    "measurements": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "description": "All measured features, largest |z| first. value = raw mean / std (ddof 1) of the minute's CSV numbers; units are masked in the dataset.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "feature": {
+            "enum": [
+              "c1_mean",
+              "c1_std",
+              "c2_mean",
+              "c2_std",
+              "c3_mean",
+              "c3_std",
+              "c5_mean",
+              "c5_std",
+              "c6_mean",
+              "c6_std"
+            ]
+          },
+          "z": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "feature",
+          "z",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "states": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "description": "0/1 signals: c4 and c18 = 1 while the gun presses, c10 = US2 enable on. on_share = share of the minute they were on. All three 0 = the gun stood still: the measurement z are then frozen values, not deviations.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "signal": {
+            "enum": [
+              "c4",
+              "c10",
+              "c18"
+            ]
+          },
+          "on_share": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "signal",
+          "on_share"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "setpoints": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "What the controller was told. They change per weld spot (one program per spot), so std > 0 is normal and a setpoint z means 'another program mix than usual', never a fault by itself.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "setpoint": {
+            "enum": [
+              "c13",
+              "c14",
+              "c15",
+              "c16"
+            ]
+          },
+          "mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "std": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "mean_z": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "std_z": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "setpoint",
+          "mean",
+          "std",
+          "mean_z",
+          "std_z"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "gun_id",
+    "observed_at",
+    "window_s",
+    "value_space",
+    "reference_id",
+    "gun_norm",
+    "error_code",
+    "fault_class",
+    "n_samples",
+    "measurements",
+    "states",
+    "setpoints"
+  ],
+  "additionalProperties": false
+}

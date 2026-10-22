@@ -84,7 +84,9 @@ def workspace(tmp_path_factory):
 def isolated_state(tmp_path, monkeypatch):
     """Every test serves from its own state dir (main.py persists guns / handoffs there) and pushes nowhere."""
     monkeypatch.setenv("RSW_STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setenv("RSW_MOCK_RAG_OUT", str(tmp_path / "rag_received"))
     monkeypatch.delenv("RSW_RAG_URL", raising=False)
+    monkeypatch.delenv("RSW_RAG_SENSOR_URL", raising=False)
 
 
 def run(*args):
@@ -393,7 +395,7 @@ def test_4_api_matches_offline(workspace):
         assert r.json()["rule_code"] == "E029" and r.json()["rule_class_hint"] == "E04"
         # ML -> RAG handoff rides on the rule trigger and lands in the outbox (pull; no RSW_RAG_URL in tests)
         ho = r.json()["handoff"]
-        assert ho is not None and ho["schema_version"] == "1.1" and ho["gun_id"] == "G2"
+        assert ho is not None and ho["schema_version"] == "1.2" and ho["gun_id"] == "G2"
         # v1.1 (FE requests 3-5): UTC times with Z, controller code runs, sensor trend, Korean names
         assert ho["detected_at"].endswith("Z") and ho["window_start"].endswith("Z")
         assert ho["trigger"]["rule_trigger_time"].endswith("Z")
@@ -405,7 +407,8 @@ def test_4_api_matches_offline(workspace):
         assert all(c["sensor_name_ko"] for c in r.json()["contributing_features"])
         assert ho["fault_class"]["code"] == "E04" and ho["fault_class"]["basis"] == "rule_trigger"
         assert ho["trigger"]["source"] in ("rule", "model+rule") and ho["trigger"]["rule_code"] == "E029"
-        assert ho["situation_ids"][0] == "S04" and "E04" in ho["summary_ko"]
+        assert ho["fault_class"]["terminal_code"] == "E029" and "E04" in ho["summary_ko"]
+        assert "situation_ids" not in ho and "symptoms" not in ho, "v1.2: no situation-doc mapping in ML"
         assert "hypotheses" not in ho and "search" not in ho, "causes / manuals are the ontology's job"
         recs = client.get("/handoffs", params={"gun_id": "G2"}).json()
         assert recs[-1]["handoff"]["event_id"] == ho["event_id"] and recs[-1]["delivery"] == "pull_only"
@@ -413,7 +416,7 @@ def test_4_api_matches_offline(workspace):
         assert client.get("/handoffs/nope").status_code == 404
         prev = client.post("/handoffs/preview", json={k: v for k, v in r.json().items() if k != "handoff"})
         assert prev.status_code == 200 and prev.json()["fault_class"]["code"] == "E04"
-        assert prev.json()["situation_ids"] == ho["situation_ids"]
+        assert prev.json()["fault_class"] == ho["fault_class"]
         n_off = len(main.trainlib.window_features(off.loc[pd.Timestamp(raw["time"].iloc[-750]).tz_localize(None):],
                                                   60, d.feat_cols))
         assert r.json()["windows_scored"] == n_off, "every clock minute of the chunk with >= 30 samples"
@@ -1014,3 +1017,67 @@ def test_10_rule_per_code_and_profile(workspace, monkeypatch):
         snap["stats"] = {day: {k: v for k, v in c.items() if k != "rule_out_of_profile"} for day, c in snap["stats"].items()}
         main.app.state.guns["OLD"] = main.GunState.restore(snap, gun_norm=True, model_created=d.info.created)
         assert client.get("/guns/OLD/stats").status_code == 200 and client.get("/stats").status_code == 200
+
+
+def test_11_sensor_features_per_minute(workspace, monkeypatch):
+    """D-6: every scored minute yields one sensor-features-v4 document (schema-valid; all 10 measurement features sorted
+    by |z| with z + raw value; on-share of the 0/1 states; setpoint mean / std raw + z; the minute's controller code +
+    fault class), in the /predict response, from GET /guns/{id}/sensor-features, and pushed to RSW_RAG_SENSOR_URL
+    exactly once each."""
+    import httpx
+    import jsonschema
+    import mock_rag
+
+    monkeypatch.setenv("RSW_RAG_SENSOR_URL", "http://rag.test/sensor-features")
+    monkeypatch.setenv("RSW_OUTBOX_POLL_S", "0.02")
+    main = load_main(workspace)
+    from fastapi.testclient import TestClient
+
+    schema = json.load(open(os.path.join(ROOT, "docs", "sensor_features.schema.json"), encoding="utf-8"))
+    mock_rag.SENSORS.clear()
+    mock_rag.SEEN_SENSORS.clear()
+    raw = pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
+    main.app.state.rag_transport = httpx.ASGITransport(app=mock_rag.app)
+    docs = []
+    with TestClient(main.app) as client:
+        d = main.app.state.detector
+        for a in range(0, len(raw), 60):
+            r = client.post("/predict", json={"gun_id": "SF", "readings": raw.iloc[a:a + 60].to_dict("records")})
+            if r.status_code == 200:
+                docs += r.json()["sensor_features"]
+        got = client.get("/guns/SF/sensor-features", params={"minutes": 5}).json()
+        assert got == docs[-5:], "GET serves the same documents"
+        assert wait_for(lambda: len(mock_rag.SENSORS) == len(docs))
+        assert client.get("/health").json()["sensor_pushed"] == len(docs)
+    times = [x["observed_at"] for x in docs]
+    assert times == sorted(set(times)) and len(docs) == len(main.app.state.guns["SF"].trace), "one per scored minute"
+    for x in docs:
+        jsonschema.validate(x, schema)
+        zs = [abs(m["z"]) for m in x["measurements"] if m["z"] is not None]
+        assert len(x["measurements"]) == 10 and zs == sorted(zs, reverse=True)
+        assert x["reference_id"] == f"{d.info.name}@{d.info.created}"
+    # z = window feature - reference (the trace / handoff value); value = raw mean / std of the minute's CSV rows
+    p = main.app.state.guns["SF"].trace[-1]
+    top = docs[-1]["measurements"][0]
+    j = d.model_cols.index(top["feature"])
+    assert top["z"] == round(float(p["vec"][j] - d.reference[j]), 3)
+    t = pd.to_datetime(raw["time"], utc=True).dt.tz_localize(None)
+    last = raw[(t >= p["window_start"]) & (t <= p["window_end"])]
+    c2 = next(m for m in docs[-1]["measurements"] if m["feature"] == "c2_mean")
+    assert c2["value"] == round(float(last["c2"].mean()), 3) and docs[-1]["n_samples"] == len(last)
+    # states: c10 is "on" 90 % of the synthetic rows, c4 / c18 are 1 for ~30 %
+    on = {s["signal"]: [x["states"][k]["on_share"] for x in docs] for k, s in enumerate(docs[0]["states"])}
+    assert 0.75 < np.mean(on["c10"]) < 1 and 0.2 < np.mean(on["c4"]) < 0.4 and 0.2 < np.mean(on["c18"]) < 0.4
+    # setpoints: constant c13 -> std 0; the cap dressing block (c16 1.6 -> 0 -> 1.6, starts mid-minute at 00:25:30 and
+    # ends on a minute boundary) -> mean 0 inside, std > 0 only in the minute it starts
+    sp = {x["observed_at"]: {s["setpoint"]: s for s in x["setpoints"]} for x in docs}
+    assert all(v["c13"]["std"] == 0 and v["c13"]["mean"] == 14.99 for v in sp.values())
+    c16 = [(v["c16"]["mean"], v["c16"]["std"]) for v in sp.values()]
+    assert sum(m == 0 and s_ == 0 for m, s_ in c16) >= 3 and sum(s_ > 0 for _, s_ in c16) == 1
+    assert all(m["feature"][:2] != "c4" and not m["feature"].startswith("c10") for x in docs for m in x["measurements"])
+    # controller codes: the long minor state (no class) and the terminal code at the end (E029 -> E04)
+    assert any(x["error_code"] == "E003" and x["fault_class"] is None for x in docs)
+    assert docs[-1]["error_code"] == "E029" and docs[-1]["fault_class"] == "E04"
+    assert docs[0]["gun_norm"] == "warming_up" and docs[-1]["gun_norm"] == "gun"
+    assert [m["observed_at"] for m in mock_rag.SENSORS] == times, "pushed in order, each exactly once"
+    os.environ.pop("RSW_MODEL_PATH")
