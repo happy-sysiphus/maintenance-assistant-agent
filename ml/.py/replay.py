@@ -104,7 +104,7 @@ def replay_file(client: Any, path: str, gun_id: str | None = None, chunk_s: int 
                 # ML -> RAG handoff attached by the API to the same event (None on an older server)
                 "handoff_event_id": (res.get("handoff") or {}).get("event_id"),
                 "summary_ko": (res.get("handoff") or {}).get("summary_ko"),
-                "situation_ids": (res.get("handoff") or {}).get("situation_ids")}
+                "fault_class": ((res.get("handoff") or {}).get("fault_class") or {}).get("code")}
             summary["critical_events"].append(event)
         was_critical = critical
         if on_result:
@@ -155,7 +155,7 @@ def main() -> None:
                     print(f"  [{gun}] CRITICAL {event['window_end']} source={event['severity_source']} "
                           f"code={event['error_code']} hint={event['class_hint']} "
                           f"score={event['anomaly_score']:.3f}/{event['threshold']:.3f} top={event['top_features']} "
-                          f"situations={event['situation_ids']} | {event['summary_ko']}",
+                          f"fault_class={event['fault_class']} | {event['summary_ko']}",
                           flush=True)
 
             t0 = time.time()

@@ -1,29 +1,47 @@
 """
-Stand-in for the ontology / RAG service, so the ML side can test the push path before the real one exists.
+Stand-in for the ontology / RAG service, so the ML side can test both push paths before the real one exists.
 
-It accepts the handoff document (POST /diagnose, schema rag_handoff v1.0 - see main.RagHandoff) and answers with
-the report shape the real service is expected to return (7 fixed sections, RSW용접건_매뉴얼_RAG_활용정리 §9).
-The ML handoff carries steps (1)-(2) only (what is unusual, symptom translation, situation ids); sections that need
-causes, checks and manual pages are left as placeholders here - the real ontology fills them from situation_ids.
+  POST /diagnose         critical-event handoff (schema rag_handoff v1.2 - main.RagHandoff), answered with the report
+                         shape the real service is expected to return (sections that need the manual are placeholders)
+  POST /sensor-features  the per-minute sensor document (sensor-features-v4 - .py/sensor_features.py), 204
+  GET  /received         handoffs received, newest last          GET /received-sensors  sensor documents, newest last
 
-    uvicorn mock_rag:app --app-dir .py --port 8001
-    RSW_RAG_URL=http://127.0.0.1:8001/diagnose uvicorn main:app          # main pushes every handoff here
-    python .py/replay.py test/test_0.csv --start-hours 156 --chunk-s 600  # then: GET :8001/received
+Every arrival is printed as one console line and appended to results/rag_received/<gun_id>.jsonl (handoffs) or
+results/rag_received/<gun_id>_sensors.jsonl (sensor documents), so you can see exactly what the RAG side gets.
 
-The real service only has to keep POST /diagnose, the top-level response keys, and dropping a known event_id
-(main.py retries with backoff and sends Idempotency-Key: <event_id>).
+    uvicorn mock_rag:app --app-dir .py --port 8001                       # from the ml folder
+    set RSW_RAG_URL=http://127.0.0.1:8001/diagnose                       # Windows cmd (bash: export ...)
+    set RSW_RAG_SENSOR_URL=http://127.0.0.1:8001/sensor-features
+    uvicorn main:app                                                     # another window, ml folder
+    python .py/replay.py test/test_0.csv --start-hours 150 --chunk-s 60 --speed 60
+
+The real service only has to keep the two POST paths and drop a known event_id / (gun_id, observed_at) it already has
+(main.py retries; handoffs carry Idempotency-Key: <event_id>, sensor documents Idempotency-Key: <gun_id>|<observed_at>).
 """
 from __future__ import annotations
 
+import json
+import os
 from collections import deque
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 
-app = FastAPI(title="mock RAG (RSW root cause)", version="0.2.0")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.path.join(ROOT, "results", "rag_received")  # RSW_MOCK_RAG_OUT overrides (tests write to a temp folder)
+app = FastAPI(title="mock RAG (RSW)", version="0.3.0")
 RECEIVED: deque[dict[str, Any]] = deque(maxlen=200)
+SENSORS: deque[dict[str, Any]] = deque(maxlen=2000)
 ANSWERED: dict[str, dict[str, Any]] = {}  # event_id -> response (duplicates are not processed twice)
-TODO = "[mock] 온톨로지가 situation_ids로 채울 항목"
+SEEN_SENSORS: set[tuple[str, str]] = set()
+TODO = "[mock] RAG가 매뉴얼에서 채울 항목"
+
+
+def _log(name: str, doc: dict[str, Any]) -> None:
+    out = os.environ.get("RSW_MOCK_RAG_OUT") or OUT
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, f"{name}.jsonl"), "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(doc, ensure_ascii=False) + "\n")
 
 
 def report(h: dict[str, Any]) -> dict[str, Any]:
@@ -31,10 +49,9 @@ def report(h: dict[str, Any]) -> dict[str, Any]:
     return {
         "detected_anomaly": (f"{h['gun_id']} {h['detected_at']} - {h.get('summary_ko', '')} "
                              f"(트리거: {h['trigger']['source']})"),
-        "suspected_device": TODO,
-        "cause_candidates": [{"situation_id": s, "name": TODO} for s in h.get("situation_ids", [])[:3]],
+        "fault_class": fc and {"code": fc["code"], "terminal_code": fc["terminal_code"]},
+        "cause_candidates": [TODO],
         "manual_references": [],
-        "additional_checks": [s["name_ko"] for s in h.get("symptoms", [])],
         "recommended_actions": [TODO],
         "confidence_and_limits": ([f"고장 유형 근거: {fc['basis']}"] if fc else []) + h.get("caveats", []),
     }
@@ -42,18 +59,42 @@ def report(h: dict[str, Any]) -> dict[str, Any]:
 
 @app.post("/diagnose")
 async def diagnose(handoff: dict[str, Any]) -> dict[str, Any]:
-    """The ML side retries until it gets a 2xx, so the same event can arrive more than once (Idempotency-Key header
-    = event_id): a known event_id is answered again but not processed again - the real service must do the same."""
+    """A known event_id is answered again but not processed again - the real service must do the same."""
     eid = handoff.get("event_id")
     if eid in ANSWERED:
         return {**ANSWERED[eid], "duplicate": True}
     RECEIVED.append(handoff)
+    fc = handoff.get("fault_class") or {}
+    print(f"[handoff] {handoff.get('gun_id')} {handoff.get('detected_at')} class={fc.get('code')} "
+          f"code={fc.get('terminal_code')} | {handoff.get('summary_ko')}", flush=True)
+    _log(str(handoff.get("gun_id")), handoff)
     ANSWERED[eid] = {"event_id": eid, "status": "ok", "generator": "mock", "report": report(handoff)}
     return ANSWERED[eid]
 
 
+@app.post("/sensor-features", status_code=204)
+async def sensor_features(doc: dict[str, Any]) -> Response:
+    key = (str(doc.get("gun_id")), str(doc.get("observed_at")))
+    if key not in SEEN_SENSORS:
+        SEEN_SENSORS.add(key)
+        SENSORS.append(doc)
+        top = " ".join(f"{m['feature']}={m['z']:+.2f}" for m in doc.get("measurements", [])[:4] if m["z"] is not None)
+        states = " ".join(f"{s['signal']}={s['on_share']:.0%}" for s in doc.get("states", []) if s["on_share"] is not None)
+        print(f"[sensor] {key[0]} {key[1]} code={doc.get('error_code')} norm={doc.get('gun_norm')} {top} | {states}",
+              flush=True)
+        _log(f"{key[0]}_sensors", doc)
+    return Response(status_code=204)
+
+
 @app.get("/received")
-async def received(limit: int = 20) -> list[dict[str, Any]]:
+async def received(limit: int = 20, full: bool = False) -> list[dict[str, Any]]:
+    docs = list(RECEIVED)[-limit:]
+    if full:
+        return docs
     return [{"event_id": h.get("event_id"), "gun_id": h.get("gun_id"), "detected_at": h.get("detected_at"),
-             "summary_ko": h.get("summary_ko"), "situation_ids": h.get("situation_ids")}
-            for h in list(RECEIVED)[-limit:]]
+             "summary_ko": h.get("summary_ko"), "fault_class": (h.get("fault_class") or {}).get("code")} for h in docs]
+
+
+@app.get("/received-sensors")
+async def received_sensors(limit: int = 20) -> list[dict[str, Any]]:
+    return list(SENSORS)[-limit:]
