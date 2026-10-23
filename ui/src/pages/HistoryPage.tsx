@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { SearchIcon } from '../components/Icons'
+import { ChevronIcon } from '../components/Icons'
+import { Select } from '../components/Select'
 import { EmptyState, ErrorState, LoadingRows } from '../components/StateViews'
 import { DotTag } from '../components/Tag'
-import { TopBar } from '../components/TopBar'
-import { btn, card, input } from '../components/ui'
+import { PageHeader, SearchBox } from '../components/PageHeader'
+import { btn, btnQuiet, card, page } from '../components/ui'
 import { apiGet } from '../lib/api'
 import { formatKst } from '../lib/time'
 import { useCaseQuery } from '../lib/useCase'
@@ -13,14 +14,14 @@ import { RecordTab } from './case/parts'
 import type { Closure, HistoryItem, HistoryResponse } from '../types/case'
 
 // 정비 이력 (wireframe/boards/V2History.dc.html): 해결 종료했거나 미해결로 저장한 고장 (읽기 전용).
-// 줄을 누르면 오른쪽에 요약과 시간순 기록, 정비일지 보기.
+// 줄을 누르면 그 줄 바로 아래로 요약이 펼쳐진다 (한 번에 한 줄). 시간순 기록은 "기록 전체 보기"를 눌러야 보인다.
 // 종료 · 걸린 시간은 작업 시각 기준이다. 데이터 시각(고장 발생)과 섞지 않는다.
 
 const EMPTY = '—'
-const RESULT: Record<Closure, { label: string; color: 'green' | 'amber' | 'purple' }> = {
-  resolved: { label: '해결', color: 'green' },
+const RESULT: Record<Closure, { label: string; color: 'gray' | 'amber' }> = {
+  resolved: { label: '해결', color: 'gray' },
   unresolved: { label: '미해결', color: 'amber' },
-  handed_over: { label: '도움 요청', color: 'purple' },
+  handed_over: { label: '도움 요청', color: 'amber' },
 }
 const FILTERS: { key: Closure | 'all'; label: string }[] = [
   { key: 'all', label: '전체' },
@@ -65,25 +66,17 @@ export default function HistoryPage() {
       new Date(i.closure.at).getTime() >= since &&
       (!k || [i.event.gun_id, i.event.trigger.rule_code].some((v) => v?.toLowerCase().includes(k))),
   )
-  const selectedId = params.get('case') ?? shown[0]?.case_id ?? null
-  const selected = shown.find((i) => i.case_id === selectedId) ?? null
+  // 펼친 줄은 ?case=로 둔다 (정비일지에서 해결 종료하면 그 건이 펼쳐진 채로 온다)
+  const openId = params.get('case')
   const filtered = result !== 'all' || gun || days !== 30 || k
 
   return (
     <>
-      <TopBar>
-        <h1 className="text-[19px] font-bold tracking-[-0.02em]">정비 이력</h1>
-        <div className="grow" />
-        <label className="relative w-[300px]">
-          <span className="sr-only">검색</span>
-          <span className="pointer-events-none absolute top-[13px] left-3.5 text-sub">
-            <SearchIcon size={18} />
-          </span>
-          <input type="search" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="설비 · 코드 검색" className={`${input} pl-[42px]`} />
-        </label>
-      </TopBar>
+      <div className={`${page()} flex grow flex-col gap-4 pt-7 pb-7`}>
+        <PageHeader title="정비 이력" description="해결했거나 미해결로 저장한 정비 기록을 모았습니다.">
+          <SearchBox value={keyword} onChange={setKeyword} placeholder="설비 · 코드 검색" />
+        </PageHeader>
 
-      <div className="flex grow flex-col gap-4 px-8 pt-6 pb-7">
         <div className="flex items-center gap-2">
           {FILTERS.map((f) => (
             <button
@@ -92,7 +85,7 @@ export default function HistoryPage() {
               aria-pressed={result === f.key}
               onClick={() => setResult(f.key)}
               className={`min-h-10 shrink-0 rounded-lg border px-3.5 text-sm whitespace-nowrap ${
-                result === f.key ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-[#4e5968]'
+                result === f.key ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-ink-2'
               }`}
             >
               {f.label}
@@ -100,50 +93,49 @@ export default function HistoryPage() {
           ))}
           <div className="grow" />
           <div className="w-40 shrink-0">
-            <select aria-label="설비" className={input} value={gun} onChange={(e) => setGun(e.target.value)}>
-              <option value="">설비 전체</option>
-              {guns.map((g) => (
-                <option key={g}>{g}</option>
-              ))}
-            </select>
+            <Select
+              ariaLabel="설비"
+              value={gun}
+              onChange={setGun}
+              options={[{ value: '', label: '설비 전체' }, ...guns.map((g) => ({ value: g, label: g }))]}
+            />
           </div>
           <div className="w-40 shrink-0">
-            <select aria-label="기간" className={input} value={days} onChange={(e) => setDays(Number(e.target.value))}>
-              {PERIODS.map((p) => (
-                <option key={p.days} value={p.days}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
+            <Select
+              ariaLabel="기간"
+              value={String(days)}
+              onChange={(v) => setDays(Number(v))}
+              options={PERIODS.map((p) => ({
+                value: String(p.days),
+                label: p.label,
+              }))}
+            />
           </div>
         </div>
 
-        <div className="grid grow grid-cols-[minmax(0,1fr)_380px] items-start gap-4">
-          <section className={`${card} overflow-hidden`}>
-            {isPending ? (
-              <LoadingRows label="정비 이력을 불러오는 중" />
-            ) : isError ? (
-              <ErrorState onRetry={() => refetch()} />
-            ) : shown.length === 0 ? (
-              filtered && all.length > 0 ? (
-                <EmptyState title="조건에 맞는 이력이 없습니다" note="결과 · 설비 · 기간 · 검색어를 확인해 주세요." />
-              ) : (
-                <EmptyState
-                  title="아직 정비 이력이 없습니다"
-                  note="작업함에서 고장을 해결 종료하거나 미해결로 저장하면 여기에 쌓입니다."
-                  action={
-                    <Link to="/" className={`${btn} mt-2`}>
-                      작업함으로
-                    </Link>
-                  }
-                />
-              )
+        <section className={`${card} overflow-hidden`}>
+          {isPending ? (
+            <LoadingRows label="정비 이력을 불러오는 중" />
+          ) : isError ? (
+            <ErrorState onRetry={() => refetch()} />
+          ) : shown.length === 0 ? (
+            filtered && all.length > 0 ? (
+              <EmptyState title="조건에 맞는 이력이 없습니다" note="결과 · 설비 · 기간 · 검색어를 확인해 주세요." />
             ) : (
-              <HistoryTable items={shown} selectedId={selected?.case_id ?? null} onSelect={(id) => setParams({ case: id }, { replace: true })} />
-            )}
-          </section>
-          {selected && <HistoryDetail item={selected} />}
-        </div>
+              <EmptyState
+                title="아직 정비 이력이 없습니다"
+                note="작업함에서 고장을 해결 종료하거나 미해결로 저장하면 여기에 쌓입니다."
+                action={
+                  <Link to="/" className={`${btn} mt-2`}>
+                    작업함으로
+                  </Link>
+                }
+              />
+            )
+          ) : (
+            <HistoryTable items={shown} openId={openId} onToggle={(id) => setParams(id === openId ? {} : { case: id }, { replace: true })} />
+          )}
+        </section>
       </div>
     </>
   )
@@ -156,20 +148,21 @@ const COLUMNS = [
   { label: '원인', width: 'w-[22%]' },
   { label: '조치', width: 'w-[11%]' },
   { label: '결과', width: 'w-[12%]' },
-  { label: '걸린 시간', width: 'w-[15%]' },
+  { label: '걸린 시간', width: 'w-[11%]' },
+  { label: '', width: 'w-16' },
 ]
 
-function HistoryTable({ items, selectedId, onSelect }: { items: HistoryItem[]; selectedId: string | null; onSelect: (id: string) => void }) {
-  const td = 'border-t border-line-soft px-5 py-3.5 align-middle text-[15px]'
+function HistoryTable({ items, openId, onToggle }: { items: HistoryItem[]; openId: string | null; onToggle: (id: string) => void }) {
+  const td = 'border-t border-line-soft px-5 py-3.5 align-middle text-base'
   return (
     <table className="w-full table-fixed border-collapse text-left">
       <thead>
         <tr>
-          {COLUMNS.map((c) => (
+          {COLUMNS.map((c, i) => (
             <th
-              key={c.label}
+              key={i}
               scope="col"
-              className={`border-b border-line bg-head px-5 py-[11px] text-[12.5px] font-medium whitespace-nowrap text-faint ${c.width}`}
+              className={`border-b border-line bg-head px-5 py-[11px] text-xs font-medium whitespace-nowrap text-faint ${c.width}`}
             >
               {c.label}
             </th>
@@ -178,31 +171,49 @@ function HistoryTable({ items, selectedId, onSelect }: { items: HistoryItem[]; s
       </thead>
       <tbody>
         {items.map((i) => {
-          const on = i.case_id === selectedId
+          const on = i.case_id === openId
           const r = RESULT[i.closure.outcome]
           return (
-            <tr key={i.case_id} className={`cursor-pointer ${on ? 'bg-[#f3f6ff]' : 'hover:bg-canvas'}`} onClick={() => onSelect(i.case_id)}>
-              <td className={td}>
-                {/* 키보드로도 고를 수 있게 첫 칸을 버튼으로 */}
-                <button type="button" aria-pressed={on} className="text-left whitespace-nowrap" onClick={() => onSelect(i.case_id)}>
-                  {formatKst(i.closure.at)}
-                </button>
-              </td>
-              <td className={`${td} font-semibold`}>{i.event.gun_id}</td>
-              <td className={td}>
-                {i.event.trigger.rule_code ? (
-                  <span className="font-semibold">{i.event.trigger.rule_code}</span>
-                ) : (
-                  <span className="text-[13px] font-medium text-sub">코드 없음</span>
-                )}
-              </td>
-              <td className={`${td} truncate`}>{i.cause ?? <span className="text-sub">찾지 못함</span>}</td>
-              <td className={td}>{i.action_kind ?? <span className="text-sub">{EMPTY}</span>}</td>
-              <td className={td}>
-                <DotTag color={r.color}>{r.label}</DotTag>
-              </td>
-              <td className={td}>{duration(i.started_at, i.closure.at) ?? <span className="text-sub">{EMPTY}</span>}</td>
-            </tr>
+            <Fragment key={i.case_id}>
+              <tr className={`cursor-pointer ${on ? 'bg-primary-soft' : 'hover:bg-canvas'}`} onClick={() => onToggle(i.case_id)}>
+                <td className={td}>
+                  {/* 키보드로도 펼칠 수 있게 첫 칸을 버튼으로 */}
+                  <button
+                    type="button"
+                    aria-expanded={on}
+                    aria-controls={`history-${i.case_id}`}
+                    className="text-left whitespace-nowrap"
+                    onClick={(e) => (e.stopPropagation(), onToggle(i.case_id))}
+                  >
+                    {formatKst(i.closure.at)}
+                  </button>
+                </td>
+                <td className={`${td} font-semibold`}>{i.event.gun_id}</td>
+                <td className={td}>
+                  {i.event.trigger.rule_code ? (
+                    <span className="font-semibold">{i.event.trigger.rule_code}</span>
+                  ) : (
+                    <span className="text-xs font-medium text-sub">코드 없음</span>
+                  )}
+                </td>
+                <td className={`${td} truncate`}>{i.cause ?? <span className="text-sub">찾지 못함</span>}</td>
+                <td className={td}>{i.action_kind ?? <span className="text-sub">{EMPTY}</span>}</td>
+                <td className={td}>
+                  <DotTag color={r.color}>{r.label}</DotTag>
+                </td>
+                <td className={td}>{duration(i.started_at, i.closure.at) ?? <span className="text-sub">{EMPTY}</span>}</td>
+                <td className={`${td} text-right text-sub`}>
+                  <ChevronIcon size={18} className={`inline transition-transform ${on ? 'rotate-180' : ''}`} />
+                </td>
+              </tr>
+              {on && (
+                <tr id={`history-${i.case_id}`}>
+                  <td colSpan={COLUMNS.length} className="border-t border-line-soft bg-head px-5 py-5">
+                    <HistoryDetail item={i} />
+                  </td>
+                </tr>
+              )}
+            </Fragment>
           )
         })}
       </tbody>
@@ -210,36 +221,42 @@ function HistoryTable({ items, selectedId, onSelect }: { items: HistoryItem[]; s
   )
 }
 
+/** 펼친 칸: 요약 한 줄 + 버튼. 긴 시간순 기록은 "기록 전체 보기"를 눌렀을 때만 */
 function HistoryDetail({ item }: { item: HistoryItem }) {
   const { data } = useCaseQuery(item.case_id)
-  const r = RESULT[item.closure.outcome]
+  const [showRecord, setShowRecord] = useState(false)
   const judged = data ? new Set(data.records.judgments.map((j) => j.situation_id)).size : null
-  const code = item.event.trigger.rule_code ?? '코드 없음'
   return (
-    <aside className={`${card} flex flex-col gap-3.5 p-5`} aria-label="선택한 이력">
-      <div className="flex items-center gap-3">
-        <b className="grow text-base font-semibold">
-          {item.event.gun_id} · {code}
-        </b>
-        <DotTag color={r.color}>{r.label}</DotTag>
+    <div className="flex flex-col gap-4" aria-label="선택한 이력">
+      <div className="flex flex-wrap items-end gap-x-10 gap-y-3">
+        <dl className="flex flex-wrap gap-x-10 gap-y-3">
+          <Fact label="원인">{item.cause ?? <span className="text-sub">찾지 못함</span>}</Fact>
+          <Fact label="조치">{item.action_kind ?? EMPTY}</Fact>
+          <Fact label="확인한 원인">{judged === null ? EMPTY : `${judged}개`}</Fact>
+          <Fact label="작업자">{item.worker ?? EMPTY}</Fact>
+        </dl>
+        <div className="grow" />
+        <div className="flex items-center gap-2">
+          <button type="button" className={btnQuiet} aria-expanded={showRecord} onClick={() => setShowRecord((v) => !v)}>
+            {showRecord ? '기록 접기' : '기록 전체 보기'}
+          </button>
+          {data?.records.log && (
+            <Link to={`/cases/${item.case_id}/log`} className={btn}>
+              정비일지 보기
+            </Link>
+          )}
+        </div>
       </div>
-      <dl className="grid grid-cols-[88px_minmax(0,1fr)] items-baseline gap-x-3 gap-y-[9px] text-[14.5px]">
-        <dt className="text-[13.5px] text-faint">원인</dt>
-        <dd>{item.cause ?? <span className="text-sub">찾지 못함</span>}</dd>
-        <dt className="text-[13.5px] text-faint">조치</dt>
-        <dd>{item.action_kind ?? EMPTY}</dd>
-        <dt className="text-[13.5px] text-faint">확인한 원인</dt>
-        <dd>{judged === null ? EMPTY : `${judged}개`}</dd>
-        <dt className="text-[13.5px] text-faint">작업자</dt>
-        <dd>{item.worker ?? EMPTY}</dd>
-      </dl>
-      <div className="h-px bg-line-soft" />
-      {data ? <RecordTab d={data} /> : <LoadingRows rows={2} label="기록을 불러오는 중" />}
-      {data?.records.log && (
-        <Link to={`/cases/${item.case_id}/log`} className={`${btn} self-start`}>
-          정비일지 보기
-        </Link>
-      )}
-    </aside>
+      {showRecord && <div className={`${card} p-5`}>{data ? <RecordTab d={data} /> : <LoadingRows rows={2} label="기록을 불러오는 중" />}</div>}
+    </div>
+  )
+}
+
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <dt className="text-xs font-medium text-faint">{label}</dt>
+      <dd className="text-base">{children}</dd>
+    </div>
   )
 }

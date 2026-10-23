@@ -12,6 +12,7 @@ export default function OverviewPage() {
   const trends = d.event.sensor_trend
   // ML은 sensor_trend를 이번 고장에 기여가 큰 신호부터 준다 → 첫 번째를 먼저 보여준다
   const [selected, setSelected] = useState(trends[0]?.feature ?? '')
+  const [howTo, setHowTo] = useState(false)
   const current = currentCandidate(d)
   const started = Object.keys(d.records.checks).length > 0 || d.records.judgments.length > 0
   const noGuide = d.guidance.candidates.length === 0
@@ -24,12 +25,11 @@ export default function OverviewPage() {
             {d.event.trigger.rule_code ? `${d.event.trigger.rule_code} 발생 전후` : '모델 이상 신호 전후'}
           </h2>
           <div className="grow" />
-          <span className="text-[13.5px] text-sub">최근 30분</span>
+          <span className="text-sm text-sub">최근 30분</span>
         </div>
-        {d.event.summary_ko && <p className="-mt-1 text-sm text-sub">ML 요약 · {d.event.summary_ko}</p>}
         <SignalChart trends={trends} selected={selected} score={d.score_trace} codes={d.event.error_timeline} />
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-[13px] font-medium text-sub">신호</span>
+          <span className="text-xs font-medium text-sub">신호</span>
           {trends.map((t) => (
             <button
               key={t.feature}
@@ -37,22 +37,37 @@ export default function OverviewPage() {
               aria-pressed={t.feature === selected}
               onClick={() => setSelected(t.feature)}
               className={`min-h-10 rounded-lg border px-3.5 text-sm ${
-                t.feature === selected ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-[#4e5968]'
+                t.feature === selected ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-ink-2'
               }`}
             >
               {signalLabel(t)}
             </button>
           ))}
           <div className="grow" />
-          <span className="text-[13.5px] text-sub">값 = 이 설비 평소 대비 편차 · 1분 단위</span>
+          <button
+            type="button"
+            aria-expanded={howTo}
+            onClick={() => setHowTo((v) => !v)}
+            className="inline-flex min-h-9 items-center px-2 text-sm font-medium text-primary-ink hover:underline"
+          >
+            {howTo ? '설명 접기' : '그래프 읽는 법'}
+          </button>
         </div>
+        {/* 글을 줄이려고 설명 · ML 요약은 눌렀을 때만 보여준다 (10/23) */}
+        {howTo && (
+          <div className="flex flex-col gap-1 rounded-lg bg-canvas px-3.5 py-3 text-sm text-ink-2">
+            <p>값은 실제 측정값이 아니라 이 설비 평소 대비 편차입니다 (1분 단위, ±1이 평소 범위). 빨간 선은 고장 코드가 뜬 시각입니다.</p>
+            <p>이상 점수는 0~1이며 고장 확률이 아닙니다. 점선이 기준선입니다.</p>
+            {d.event.summary_ko && <p>ML 요약 · {d.event.summary_ko}</p>}
+          </div>
+        )}
         <div className="mt-1 border-t border-line-soft pt-4">
           <CaseFacts d={d} />
         </div>
       </section>
 
       <section className={`${card} flex flex-col gap-3.5 p-[22px]`}>
-        <span className="text-[13px] font-medium text-sub">확인할 원인</span>
+        <span className="text-xs font-medium text-sub">확인할 원인</span>
         {noGuide ? (
           <p className="text-sm text-sub">이 고장에 맞는 매뉴얼 안내를 찾지 못했습니다. 직접 점검한 내용을 기록하거나 도움을 요청하세요.</p>
         ) : (

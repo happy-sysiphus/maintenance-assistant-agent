@@ -141,7 +141,7 @@ export function SignalChart({ trends, selected, score = [], codes = [] }: Props)
   )
 
   return (
-    <div className="rounded-xl bg-[#fafbfd] px-2 pt-2 pb-1" role="img" aria-label="고장 전후 30분, 이 설비 평소 대비 신호 편차와 이상 점수">
+    <div className="rounded-xl bg-head px-2 pt-2 pb-1" role="img" aria-label="고장 전후 30분, 이 설비 평소 대비 신호 편차와 이상 점수">
       <div className={showScore ? 'h-[270px]' : 'h-[300px]'}>
         <ResponsiveContainer width="100%" height="100%">
           {deviation}

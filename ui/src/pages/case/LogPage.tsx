@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 import { DotTag } from '../../components/Tag'
 import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../components/ui'
@@ -6,6 +6,7 @@ import { latestJudgment, resolvedCandidate, resolvedCauseName } from '../../lib/
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
 import { MANUAL_CAUSE, RECURRENCE, type CaseDetail, type Closure, type LogInput } from '../../types/case'
+import { Select } from '../../components/Select'
 import { useCaseDetail } from './context'
 import { SidePanel, TwoColumns } from './parts'
 
@@ -59,7 +60,7 @@ export default function LogPage() {
   const saveLog = useCaseMutation<LogInput & { approved: boolean }>('PUT', '/log')
   const close = useCaseMutation<{ outcome: Closure }>('POST', '/close')
   const saved = d.records.log
-  const { register, handleSubmit, getValues, formState } = useForm<FormValues>({
+  const { register, control, handleSubmit, getValues, formState } = useForm<FormValues>({
     defaultValues: saved ?? draft(d),
   })
   const { errors } = formState
@@ -107,8 +108,8 @@ export default function LogPage() {
   const resolve = () => close.mutate({ outcome: 'resolved' }, { onSuccess: () => navigate(`/history?case=${d.case_id}`) })
 
   const field = 'flex min-w-0 flex-col gap-1.5'
-  const ro = locked ? 'bg-canvas text-[#4e5968]' : ''
-  const err = (show: unknown, text: string) => (show ? <span className="text-[13px] text-alarm">{text}</span> : null)
+  const ro = locked ? 'bg-canvas text-ink-2' : ''
+  const err = (show: unknown, text: string) => (show ? <span className="text-xs text-alarm">{text}</span> : null)
 
   return (
     <TwoColumns
@@ -118,7 +119,7 @@ export default function LogPage() {
             <span className={label}>종료 전 확인</span>
             {checklist.map((c) => (
               <div key={c.text} className="flex items-center gap-3">
-                <span className={`inline-flex w-[18px] justify-center font-semibold ${c.ok ? 'text-[#12805c]' : 'text-faint'}`} aria-hidden="true">
+                <span className={`inline-flex w-[18px] justify-center font-semibold ${c.ok ? 'text-primary' : 'text-faint'}`} aria-hidden="true">
                   {c.ok ? '✓' : '–'}
                 </span>
                 <span className={c.ok ? '' : 'text-sub'}>
@@ -134,11 +135,11 @@ export default function LogPage() {
     >
       <form onSubmit={approve} className={`${card} flex flex-col gap-3.5 p-[26px]`} noValidate>
         <div className="flex items-center gap-3">
-          <h2 className="grow text-[19px] font-semibold tracking-[-0.015em]">정비일지</h2>
+          <h2 className="grow text-xl font-semibold tracking-[-0.015em]">정비일지</h2>
           {closed ? (
-            <DotTag color="green">해결 종료 · 읽기 전용</DotTag>
+            <DotTag color="gray">해결 종료 · 읽기 전용</DotTag>
           ) : (
-            !saved && <span className="text-[13.5px] text-sub">앞 단계 기록으로 채웠습니다. 고칠 곳만 고치세요.</span>
+            !saved && <span className="text-sm text-sub">앞 단계 기록으로 채웠습니다. 고칠 곳만 고치세요.</span>
           )}
         </div>
         <fieldset disabled={locked} className="flex flex-col gap-3.5">
@@ -180,16 +181,21 @@ export default function LogPage() {
             </label>
             <label className={field}>
               <span className={label}>같은 고장 반복</span>
-              <select className={`${input} ${ro}`} {...register('recurrence', { required: true })}>
-                <option value="" disabled>
-                  골라 주세요
-                </option>
-                {RECURRENCE.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="recurrence"
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    className={ro}
+                    placeholder="골라 주세요"
+                    options={RECURRENCE.map((r) => ({ value: r, label: r }))}
+                  />
+                )}
+              />
               {err(errors.recurrence, '반복 여부를 골라 주세요')}
             </label>
           </div>
@@ -200,11 +206,11 @@ export default function LogPage() {
             <button type="button" className={btn} disabled={busy} onClick={saveUnresolved}>
               미해결로 저장
             </button>
-            {(saveLog.isError || close.isError) && <span className="text-[13.5px] text-alarm">저장하지 못했습니다. 입력 내용은 남아 있습니다.</span>}
+            {(saveLog.isError || close.isError) && <span className="text-sm text-alarm">저장하지 못했습니다. 입력 내용은 남아 있습니다.</span>}
             <div className="grow" />
             {approved ? (
               <>
-                <DotTag color="green">일지 승인됨 {hhmm(saved?.approved_at ?? undefined)}</DotTag>
+                <DotTag color="blue">일지 승인됨 {hhmm(saved?.approved_at ?? undefined)}</DotTag>
                 <button type="button" className={btnQuiet} disabled={busy} onClick={unapprove}>
                   승인 취소하고 고치기
                 </button>

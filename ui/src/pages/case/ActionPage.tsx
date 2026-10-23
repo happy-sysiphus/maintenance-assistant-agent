@@ -1,15 +1,17 @@
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
-import { Link, Navigate, useNavigate } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
+import { ManualPanel } from '../../components/ManualPanel'
 import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../components/ui'
 import { activeCause, latestJudgment, manualAction } from '../../lib/caseFlow'
 import { useCaseMutation } from '../../lib/useCase'
 import { ACTION_KINDS, type ActionInput, type ActionKind } from '../../types/case'
 import { useCaseDetail } from './context'
-import { SidePanel, Steps, TwoColumns } from './parts'
+import { ManualActionPanel, Steps, TwoColumns } from './parts'
 
 // 조치 (wireframe/boards/V2Action.dc.html): 사람이 실제로 한 일만 적는다. 정비일지에는 여기 적은 내용만 들어간다.
 // 시작 · 종료는 작업 시각(지금 시계)이고, 고장 시각(데이터 시각)과 다르다.
 // 원인은 지금 원인 후보, 없으면 수동 모드에서 직접 찾은 원인이다.
+// (10/23) 맨 위는 "확정 원인" 한 줄, 오른쪽은 매뉴얼 조치(참고) 패널. 원문 보기를 누르면 그 자리에 PDF가 열린다.
 
 interface FormValues {
   kind: ActionKind | ''
@@ -33,6 +35,18 @@ export default function ActionPage() {
   const save = useCaseMutation<ActionInput>('POST', '/actions')
   const cause = activeCause(d)
   const cand = cause?.candidate ?? null
+  const [params, setParams] = useSearchParams()
+  const openPage = Number(params.get('manual')) || null
+  const setPage = (page: number | null) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (page) next.set('manual', String(page))
+        else next.delete('manual')
+        return next
+      },
+      { replace: true },
+    )
   const { register, control, handleSubmit, setValue, formState } = useForm<FormValues>({
     defaultValues: { kind: '', did: '', parts: [], worker: '', started_at: localNow(), ended_at: localNow() },
   })
@@ -41,6 +55,7 @@ export default function ActionPage() {
   if (!cause) return <Navigate to="../no-cause" replace />
 
   const judgment = cand ? latestJudgment(d, cand.situation_id) : undefined
+  const phenomenon = d.event.fault_class?.name_ko
   const manual = cand ? manualAction(cand) : null
   const { errors } = formState
 
@@ -62,7 +77,10 @@ export default function ActionPage() {
   return (
     <>
       <Steps current="조치" />
-      <TwoColumns side={<SidePanel d={d} initial="상황" />}>
+      <TwoColumns
+        wide={openPage !== null}
+        side={openPage ? <ManualPanel page={openPage} onPage={setPage} onClose={() => setPage(null)} /> : <ManualActionPanel cand={cand} onOpen={setPage} />}
+      >
         <form onSubmit={onSubmit} className={`${card} flex flex-col gap-5 p-[26px]`} noValidate>
           <div className="flex items-center gap-3">
             <h2 className="grow text-xl font-semibold tracking-[-0.015em]">어떤 조치를 했나요?</h2>
@@ -73,11 +91,11 @@ export default function ActionPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-3 rounded-lg bg-[#f7f8fa] px-3.5 py-2.5 text-sm">
-            <span className="text-[13px] font-medium text-sub">판단</span>
-            <b className="font-semibold">
-              {cand ? `${cand.name} · ${judgment?.verdict === 'yes' ? '맞아요' : '판단 전'}` : `직접 찾은 원인 · ${cause.name}`}
-            </b>
+          <div className="flex items-center gap-3 rounded-lg bg-canvas px-3.5 py-2.5 text-sm">
+            <span className="text-xs font-medium text-sub">{cand && judgment?.verdict !== 'yes' ? '원인 (판단 전)' : '확정 원인'}</span>
+            <b className="font-semibold">{cand ? cand.name : cause.name}</b>
+            {!cand && <span className="text-sub">· 직접 찾음</span>}
+            {phenomenon && phenomenon !== cause.name && <span className="text-sub">· 현상 {phenomenon}</span>}
             <div className="grow" />
             <Link to={cand ? '../judge' : '../manual'} className={btnQuiet}>
               바꾸기
@@ -91,7 +109,7 @@ export default function ActionPage() {
                 <label
                   key={k}
                   className={`inline-flex min-h-10 cursor-pointer items-center rounded-lg border px-3.5 text-sm ${
-                    kind === k ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-[#4e5968]'
+                    kind === k ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-ink-2'
                   }`}
                 >
                   <input type="radio" value={k} className="sr-only" {...register('kind', { required: true })} />
@@ -99,13 +117,13 @@ export default function ActionPage() {
                 </label>
               ))}
             </div>
-            {errors.kind && <span className="text-[13px] text-alarm">조치 종류를 골라 주세요</span>}
+            {errors.kind && <span className="text-xs text-alarm">조치 종류를 골라 주세요</span>}
           </fieldset>
 
           <label className="flex flex-col gap-1.5">
             <span className={label}>한 일 *</span>
             <textarea rows={3} className={`${input} resize-y`} placeholder="실제로 한 작업을 적어 주세요" {...register('did', { required: true })} />
-            {errors.did && <span className="text-[13px] text-alarm">한 일을 적어 주세요</span>}
+            {errors.did && <span className="text-xs text-alarm">한 일을 적어 주세요</span>}
           </label>
 
           <div className="flex flex-col gap-1.5">
@@ -128,7 +146,7 @@ export default function ActionPage() {
             <label className="flex flex-col gap-1.5">
               <span className={label}>작업자 *</span>
               <input className={input} placeholder="이름" {...register('worker', { required: true })} />
-              {errors.worker && <span className="text-[13px] text-alarm">작업자를 적어 주세요</span>}
+              {errors.worker && <span className="text-xs text-alarm">작업자를 적어 주세요</span>}
             </label>
             <label className="flex flex-col gap-1.5">
               <span className={label}>시작 (작업 시각)</span>
@@ -141,8 +159,8 @@ export default function ActionPage() {
           </div>
 
           <div className="flex items-center gap-3 border-t border-line-soft pt-4">
-            <span className="rounded-full bg-[#eef3ff] px-2.5 py-1 text-[13px] font-medium text-primary-ink">정비일지에는 여기 적은 내용이 들어갑니다</span>
-            {save.isError && <span className="text-[13.5px] text-alarm">저장하지 못했습니다. 입력 내용은 남아 있습니다.</span>}
+            <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary-ink">정비일지에는 여기 적은 내용이 들어갑니다</span>
+            {save.isError && <span className="text-sm text-alarm">저장하지 못했습니다. 입력 내용은 남아 있습니다.</span>}
             <div className="grow" />
             <button type="submit" className={`${btnPrimary} ${btnLarge}`} disabled={save.isPending}>
               저장

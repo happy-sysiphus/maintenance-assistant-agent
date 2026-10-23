@@ -4,12 +4,14 @@ import { ResultSeg } from '../../components/ResultSeg'
 import { btn, btnLarge, btnPrimary, card, input, label } from '../../components/ui'
 import { activeCause } from '../../lib/caseFlow'
 import { useCaseMutation } from '../../lib/useCase'
-import type { CheckRecord } from '../../types/case'
+import { addPhotos as addTo, MAX_PHOTOS } from '../../lib/photo'
+import type { CheckRecord, Photo } from '../../types/case'
 import { useCaseDetail } from './context'
 
 // 현장 확인 입력 (wireframe/boards/V2Field.dc.html): 센서로 알 수 없어 직접 확인해야 할 때 본인이 결과를 넣는다.
 // 항목은 지금 원인의 점검 항목이다 (지어내지 않음). 결과는 점검 결과에 같이 저장되고, 저장하면 점검 화면으로 돌아간다.
 // 인쇄하면 종이 체크시트로 쓸 수 있다. (10/8) 측정값 칸 대신 메모 칸 · 확인한 사람은 직접 입력.
+// (10/23) 사진을 4장까지 붙일 수 있다. 업로드 api가 없어 지금은 data URL로 케이스 기록에 같이 저장한다 (lib/photo).
 
 export default function FieldPage() {
   const d = useCaseDetail()
@@ -18,7 +20,10 @@ export default function FieldPage() {
   const [checks, setChecks] = useState<Record<string, CheckRecord>>({})
   const [by, setBy] = useState('')
   const [tried, setTried] = useState(false)
-  const save = useCaseMutation<{ by: string; checks: Record<string, CheckRecord> }>('POST', '/field')
+  const [photos, setPhotos] = useState<Photo[]>([])
+  const save = useCaseMutation<{ by: string; checks: Record<string, CheckRecord>; photos: Photo[] }>('POST', '/field')
+
+  const addPhotos = async (files: FileList | null) => setPhotos(await addTo(photos, files))
 
   const ctx = d.event.context
   const set = (id: string, patch: Partial<CheckRecord>) =>
@@ -28,13 +33,13 @@ export default function FieldPage() {
   const submit = () => {
     setTried(true)
     if (!by.trim() || changed === 0) return
-    save.mutate({ by: by.trim(), checks }, { onSuccess: () => navigate('../check') })
+    save.mutate({ by: by.trim(), checks, photos }, { onSuccess: () => navigate('../check') })
   }
 
   return (
     <>
       <div className="flex items-center gap-3">
-        <h2 className="grow text-[19px] font-semibold tracking-[-0.015em]">현장 확인</h2>
+        <h2 className="grow text-xl font-semibold tracking-[-0.015em]">현장 확인</h2>
         <button type="button" className={`${btn} print:hidden`} onClick={() => window.print()}>
           인쇄 · PDF
         </button>
@@ -43,8 +48,8 @@ export default function FieldPage() {
         <section className={`${card} overflow-hidden`}>
           {cand ? (
             <>
-              <div className="flex items-center gap-3 border-b border-[#eef0f4] px-[22px] py-4">
-                <span className="text-[13px] font-medium text-sub">{d.event.gun_id}</span>
+              <div className="flex items-center gap-3 border-b border-line-soft px-[22px] py-4">
+                <span className="text-xs font-medium text-sub">{d.event.gun_id}</span>
                 <b className="text-base font-semibold">{cand.name}</b>
               </div>
               <ol>
@@ -52,7 +57,7 @@ export default function FieldPage() {
                   const rec = checks[item.id] ?? d.records.checks[item.id]
                   return (
                     <li key={item.id} className="flex items-center gap-3 border-t border-line-soft px-5 py-3.5 first:border-t-0">
-                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#f2f4f6] text-[12.5px] font-semibold text-sub">{i + 1}</span>
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-fill text-xs font-semibold text-sub">{i + 1}</span>
                       <span className="min-w-0 grow text-base font-semibold tracking-[-0.015em]">{item.title}</span>
                       <div className="w-[220px] shrink-0">
                         <input
@@ -72,12 +77,45 @@ export default function FieldPage() {
                 <label className="flex flex-col gap-1.5">
                   <span className={label}>확인한 사람 *</span>
                   <input className={input} placeholder="이름" value={by} onChange={(e) => setBy(e.target.value)} />
-                  {tried && !by.trim() && <span className="text-[13px] text-alarm print:hidden">확인한 사람을 적어 주세요</span>}
+                  {tried && !by.trim() && <span className="text-xs text-alarm print:hidden">확인한 사람을 적어 주세요</span>}
                 </label>
                 <label className="flex flex-col gap-1.5">
                   <span className={label}>확인 시각</span>
-                  <input className={`${input} bg-canvas text-[#4e5968]`} value="저장할 때 자동 기록" readOnly />
+                  <input className={`${input} bg-canvas text-ink-2`} value="저장할 때 자동 기록" readOnly />
                 </label>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 border-t border-line-soft px-5 py-4 print:hidden">
+                <span className={label}>사진</span>
+                {photos.map((p, i) => (
+                  <div key={i} className="relative">
+                    <img src={p.url} alt={`현장 사진 ${i + 1}`} className="size-16 rounded-lg border border-line object-cover" />
+                    <button
+                      type="button"
+                      aria-label={`사진 ${i + 1} 빼기`}
+                      onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+                      className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full border border-field bg-white text-xs text-ink-2"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                {photos.length < MAX_PHOTOS && (
+                  <label className={`${btn} cursor-pointer`}>
+                    + 사진 추가
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      multiple
+                      className="sr-only"
+                      onChange={(e) => {
+                        void addPhotos(e.target.files)
+                        e.target.value = ''
+                      }}
+                    />
+                  </label>
+                )}
+                <span className="text-xs text-sub">{photos.length} / {MAX_PHOTOS}장</span>
               </div>
             </>
           ) : (
@@ -95,15 +133,15 @@ export default function FieldPage() {
             <span className={label}>이유</span>
             <p className="text-sm">센서로는 알 수 없는 상태라 직접 보고 확인해야 합니다.</p>
             {(ctx.alarm_held || ctx.non_welding_share > 0) && (
-              <p className="text-sm text-[#4e5968]">
+              <p className="text-sm text-ink-2">
                 {ctx.alarm_held && <b className="mr-1 font-semibold text-warn">판단 보류 ·</b>}
                 알림 시점 용접 안 한 비율 {Math.round(ctx.non_welding_share * 100)}% (ML 핸드오프)
               </p>
             )}
           </section>
           <div className="flex items-center gap-3">
-            {save.isError && <span className="text-[13.5px] text-alarm">저장하지 못했습니다. 입력 내용은 남아 있습니다.</span>}
-            {tried && changed === 0 && <span className="text-[13.5px] text-alarm">확인한 항목이 없습니다</span>}
+            {save.isError && <span className="text-sm text-alarm">저장하지 못했습니다. 입력 내용은 남아 있습니다.</span>}
+            {tried && changed === 0 && <span className="text-sm text-alarm">확인한 항목이 없습니다</span>}
             <div className="grow" />
             <Link to="../check" className={btn}>
               취소

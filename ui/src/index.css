@@ -1,37 +1,67 @@
 @import "tailwindcss";
 @import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 
-/* 색 · 글꼴은 와이어프레임 v2(wireframe/boards/V2*.dc.html) 기준.
-   빨강 · 주황은 경보에만 쓴다. */
+/* 디자인 규칙 (10/23, 와이어프레임 V2 점검 후)
+   - 색은 세 가지만: 파랑 = 지금 할 일 · 진행 · 선택 / 빨강 = 긴급 · 이상 / 주황 = 주의 · 보류.
+     정상 · 대기 · 건너뜀 · 새 고장은 회색. 보라는 쓰지 않는다.
+   - 예외 (10/23 FE 결정): 점검 "정상" 체크 표시만 초록, 점검 "이상일 때" 안내 칸은 연한 노랑 바탕
+   - 글자 크기 6단계: xs 13 · sm 14 · base 15 · lg 17 · xl 20 · 2xl 32 (페이지 제목, 굵기 600)
+   - 모서리 2단계: 버튼 · 입력칸 rounded-lg(8px) · 카드 rounded-xl(12px)
+   - 가장 연한 글자도 흰 바탕 대비 4.5:1 이상 (sub = #6b7684) */
 @theme {
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 
-  --color-canvas: #f7f8fa;
+  --text-xs: 13px;
+  --text-xs--line-height: 1.45;
+  --text-sm: 14px;
+  --text-sm--line-height: 1.45;
+  --text-base: 15px;
+  --text-base--line-height: 1.45;
+  --text-lg: 17px;
+  --text-lg--line-height: 1.4;
+  --text-xl: 20px;
+  --text-xl--line-height: 1.35;
+  --text-2xl: 32px;
+  --text-2xl--line-height: 1.25;
+
+  /* 회색: 글자 3 · 선 3 · 바탕 3 */
   --color-ink: #191f28;
-  --color-ink-2: #333d4b;
+  --color-ink-2: #4e5968;
   --color-sub: #6b7684;
-  --color-faint: #8b95a1;
+  --color-faint: #6b7684;
+  --color-field: #d1d6db;
   --color-line: #e5e8eb;
   --color-line-soft: #f0f2f4;
+  --color-fill: #f2f4f6;
   --color-head: #fafbfc;
-  --color-field: #d1d6db;
+  --color-canvas: #f7f8fa;
 
+  /* 파랑: 지금 할 일 · 진행 · 선택 */
   --color-primary: #3563e9;
   --color-primary-ink: #2f55c8;
+  --color-primary-soft: #eef3ff;
+
+  /* 빨강: 긴급 · 이상 */
+  --color-alarm: #c22d20;
+  --color-alarm-dot: #d92d20;
+  --color-alarm-soft: #fef3f2;
+
+  /* 주황: 주의 · 보류 */
+  --color-warn: #8a4b00;
+  --color-warn-dot: #e08a00;
+  --color-warn-soft: #fff6e6;
+
+  /* 예외 두 가지: 정상 체크 표시 · 이상일 때 안내 칸 */
+  --color-ok: #0f7b5f;
+  --color-hint: #fffaeb;
+  --color-hint-line: #f79009;
 
   --color-side: #1b2029;
   --color-side-on: #2a313e;
   --color-side-ink: #9ba4b5;
 
-  --color-alarm: #c22d20;
-  --color-alarm-dot: #d92d20;
-  --color-warn: #8a4b00;
-  --color-warn-dot: #e08a00;
-
   --color-dot-gray: #9aa3b2;
   --color-dot-blue: #3563e9;
-  --color-dot-purple: #7a5af8;
-  --color-dot-green: #12805c;
 }
 
 body {

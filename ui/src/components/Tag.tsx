@@ -2,17 +2,17 @@
 import type { ReactNode } from 'react'
 import type { CaseStatus, Severity } from '../types/case'
 
+// 색 규칙 (index.css): 파랑 = 진행 · 선택, 주황 = 주의 · 보류 · 기다림, 빨강 = 이상, 나머지는 회색
 const DOT = {
   gray: 'bg-dot-gray',
   blue: 'bg-dot-blue',
-  purple: 'bg-dot-purple',
-  green: 'bg-dot-green',
   amber: 'bg-warn-dot',
+  red: 'bg-alarm-dot',
 } as const
 
 export function DotTag({ color, children }: { color: keyof typeof DOT; children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-[7px] whitespace-nowrap text-[13.5px] font-medium text-ink-2">
+    <span className="inline-flex items-center gap-[7px] whitespace-nowrap text-sm font-medium text-ink-2">
       <span className={`size-[7px] shrink-0 rounded-full ${DOT[color]}`} />
       {children}
     </span>
@@ -22,11 +22,11 @@ export function DotTag({ color, children }: { color: keyof typeof DOT; children:
 const STATUS: Record<CaseStatus, { label: string; color: keyof typeof DOT }> = {
   new: { label: '새 고장', color: 'gray' },
   in_progress: { label: '점검 중', color: 'blue' },
-  logging: { label: '일지 작성', color: 'green' },
-  log_approved: { label: '일지 승인됨', color: 'green' },
+  logging: { label: '일지 작성', color: 'blue' },
+  log_approved: { label: '일지 승인됨', color: 'blue' },
   unresolved: { label: '미해결', color: 'amber' },
-  handed_over: { label: '도움 요청', color: 'purple' },
-  resolved: { label: '해결', color: 'green' },
+  handed_over: { label: '도움 요청', color: 'amber' },
+  resolved: { label: '해결', color: 'gray' },
 }
 
 export function StatusTag({ status }: { status: CaseStatus }) {

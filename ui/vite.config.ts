@@ -8,6 +8,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 // 레포의 rag/data/ 원본을 개발 서버가 그대로 내려준다. ui/로 복사하지 않고 빌드에도 넣지 않는다.
 const MANUALS: Record<string, string> = {
   'festo.pdf': fileURLToPath(new URL('../rag/data/festo_manual.pdf', import.meta.url)),
+  'rsw.pdf': fileURLToPath(new URL('../rag/data/rsw_situations.pdf', import.meta.url)),
 }
 
 function devManuals(): Plugin {

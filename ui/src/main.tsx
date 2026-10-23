@@ -9,6 +9,7 @@ import { setMockReconnect } from './lib/api.ts'
 import EquipmentPage from './pages/EquipmentPage.tsx'
 import HistoryPage from './pages/HistoryPage.tsx'
 import InboxPage from './pages/InboxPage.tsx'
+import AssistantPage from './pages/AssistantPage.tsx'
 import ActionPage from './pages/case/ActionPage.tsx'
 import CaseLayout from './pages/case/CaseLayout.tsx'
 import CheckPage from './pages/case/CheckPage.tsx'
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
       { index: true, element: <InboxPage /> },
       { path: 'history', element: <HistoryPage /> },
       { path: 'equipment', element: <EquipmentPage /> },
+      { path: 'assistant', element: <AssistantPage /> },
       {
         path: 'cases/:caseId',
         element: <CaseLayout />,

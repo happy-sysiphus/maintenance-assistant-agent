@@ -35,9 +35,13 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return (await res.json()) as T
 }
 
+/** 근거 문서: festo = Festo 서보 공압 매뉴얼, rsw = 팀의 RSW 상황 정의서 (RAG가 인용하는 두 문서) */
+export type ManualDoc = 'festo' | 'rsw'
+export const MANUAL_NAME: Record<ManualDoc, string> = { festo: 'Festo 매뉴얼', rsw: 'RSW 상황 정의서' }
+
 /** 매뉴얼 PDF 주소. page는 PDF 파일의 쪽 순서(1부터)이고 RAG의 page_number와 같다 */
-export function manualUrl(page: number) {
-  return `${BASE_URL}/manuals/festo.pdf#page=${page}`
+export function manualUrl(page: number, doc: ManualDoc = 'festo') {
+  return `${BASE_URL}/manuals/${doc}.pdf#page=${page}`
 }
 
 export function apiGet<T>(path: string): Promise<T> {

@@ -226,19 +226,27 @@ export interface ManualRecord {
   saved_at: string
 }
 
+/** 현장 확인 사진. 데모(mock)에서는 data URL로 저장하고, api가 생기면 업로드한 파일 주소로 바꾼다 (FE 제안) */
+export interface Photo {
+  name: string
+  url: string
+}
+
 /** 현장 확인 입력: 누가 언제 직접 확인했나 (결과는 records.checks에 같이 저장) */
 export interface FieldRecord {
   by: string
   check_ids: string[]
+  photos?: Photo[]
   at: string
 }
 
-export const URGENCY = ['보통', '급함', '매우 급함'] as const
+/** 도움 요청의 "지금 설비 상태" (10/23): 급함 같은 형용사 대신 현장에서 보이는 사실을 고르고, 우선순위는 받는 사람이 정한다 */
+export const EQUIPMENT_STATES = ['계속 용접 중', '이 설비만 멈춤', '라인 멈춤'] as const
 export const HANDOVER_REASONS = ['원인을 못 찾음', '권한이 필요함', '부품이 필요함', '기타'] as const
 
 export interface HandoverInput {
   to: string
-  urgency: (typeof URGENCY)[number]
+  equipment_state: (typeof EQUIPMENT_STATES)[number]
   reasons: (typeof HANDOVER_REASONS)[number][]
   note: string
 }

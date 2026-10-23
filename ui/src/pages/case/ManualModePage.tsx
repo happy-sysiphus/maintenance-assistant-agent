@@ -70,14 +70,14 @@ export default function ManualModePage() {
 
   return (
     <>
-      <div className="flex items-center gap-3 rounded-lg border border-[#f3d9a8] bg-[#fff6e6] px-[18px] py-3.5 text-[#6b3a00]">
+      <div className="flex items-center gap-3 rounded-lg border border-warn-dot/30 bg-warn-soft px-[18px] py-3.5 text-warn">
         <b className="font-semibold">이 고장에 맞는 매뉴얼 안내를 찾지 못했습니다.</b>
         <span className="grow">직접 점검한 내용을 기록하거나 도움을 요청하세요.</span>
         <button type="button" className={btnQuiet} aria-expanded={why} onClick={() => setWhy((v) => !v)}>
           왜 없나요?
         </button>
       </div>
-      {why && <p className="-mt-2 px-1 text-sm text-[#6b3a00]">{reason}</p>}
+      {why && <p className="-mt-2 px-1 text-sm text-warn">{reason}</p>}
 
       <TwoColumns
         wide={openPage !== null}
@@ -85,7 +85,7 @@ export default function ManualModePage() {
       >
         <form onSubmit={toAction} className="flex flex-col gap-4" noValidate>
           <section className={`${card} flex flex-col gap-3.5 p-6`}>
-            <h2 className="text-[17px] font-semibold tracking-[-0.015em]">점검 기록</h2>
+            <h2 className="text-lg font-semibold tracking-[-0.015em]">점검 기록</h2>
             {rows.fields.map((f, i) => (
               <div key={f.id} className="flex flex-col gap-2">
                 <div className="flex items-center gap-2.5">
@@ -114,14 +114,14 @@ export default function ManualModePage() {
           </section>
 
           <section className={`${card} flex flex-col gap-3 p-6`}>
-            <h2 className="text-[17px] font-semibold tracking-[-0.015em]">원인을 찾았나요?</h2>
+            <h2 className="text-lg font-semibold tracking-[-0.015em]">원인을 찾았나요?</h2>
             <input className={input} placeholder="찾은 원인을 적어주세요" aria-label="찾은 원인" {...register('cause', { validate: (v) => v.trim() !== '' })} />
-            {formState.errors.cause && <span className="text-[13px] text-alarm">조치를 기록하려면 찾은 원인을 적어 주세요. 못 찾았으면 도움을 요청하세요.</span>}
+            {formState.errors.cause && <span className="text-xs text-alarm">조치를 기록하려면 찾은 원인을 적어 주세요. 못 찾았으면 도움을 요청하세요.</span>}
             <div className="mt-2 flex items-center gap-3">
               <button type="button" className={btn} disabled={save.isPending} onClick={saveDraft}>
                 {save.isSuccess && !save.isPending ? '저장됨' : '임시 저장'}
               </button>
-              {save.isError && <span className="text-[13.5px] text-alarm">저장하지 못했습니다. 입력 내용은 남아 있습니다.</span>}
+              {save.isError && <span className="text-sm text-alarm">저장하지 못했습니다. 입력 내용은 남아 있습니다.</span>}
               <div className="grow" />
               <Link to="../handover" className={btn}>
                 도움 요청
@@ -163,7 +163,7 @@ function ManualSearch({ openPage, onOpen }: { openPage: number | null; onOpen: (
         </span>
         <input type="search" className={`${input} pl-[42px]`} value={text} onChange={(e) => setText(e.target.value)} placeholder="예: 압력, 캡, MPYD" aria-label="매뉴얼 검색" />
       </form>
-      <p className="text-[13px] text-sub">매뉴얼 전문이 아니라 RAG가 원인별로 연결해 둔 근거 쪽에서 찾습니다.</p>
+      <p className="text-xs text-sub">매뉴얼 전문이 아니라 RAG가 원인별로 연결해 둔 근거 쪽에서 찾습니다.</p>
       {isError && <p className="text-sm text-alarm">찾지 못했습니다. 다시 시도해 주세요.</p>}
       {q && !isFetching && !isError && items.length === 0 && <p className="text-sm text-sub">"{q}"에 맞는 근거 쪽이 없습니다.</p>}
       <ul className="flex flex-col gap-2">
@@ -171,7 +171,7 @@ function ManualSearch({ openPage, onOpen }: { openPage: number | null; onOpen: (
           <li key={`${i.page}-${i.situation_id}-${i.title}`} className="flex items-center gap-3 rounded-lg border border-line px-3.5 py-3">
             <div className="min-w-0 grow">
               <b className="font-semibold">{i.title}</b>
-              <div className="truncate text-[13px] text-sub" title={i.quote ?? undefined}>
+              <div className="truncate text-xs text-sub" title={i.quote ?? undefined}>
                 {i.situation_name ?? i.situation_id} · Festo 매뉴얼
               </div>
             </div>

@@ -5,11 +5,12 @@ import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../c
 import { candidateState, checkCounts, latestJudgment } from '../../lib/caseFlow'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
-import { HANDOVER_REASONS, URGENCY, type CaseDetail, type HandoverInput } from '../../types/case'
+import { EQUIPMENT_STATES, HANDOVER_REASONS, type CaseDetail, type HandoverInput } from '../../types/case'
+import { Select } from '../../components/Select'
 import { useCaseDetail } from './context'
 import { RecordTab } from './parts'
 
-// 도움 요청 · 인계 (wireframe/boards/V2Handover.dc.html): 받는 사람 · 급한 정도 · 이유 · 내용만 적는다.
+// 도움 요청 · 인계 (wireframe/boards/V2Handover.dc.html): 받는 사람 · 지금 설비 상태 · 이유 · 내용만 적는다.
 // 지금까지의 점검 · 판단 · 조치 기록은 케이스에 이미 있어서 자동으로 함께 전달된다.
 
 const RECEIVERS = ['설비 전문가', '공정 담당']
@@ -17,7 +18,7 @@ const OUTCOME = { resolved: '해결됨', retry: '해결 안 됨', next: '해결 
 
 const chip = (on: boolean) =>
   `inline-flex min-h-10 items-center rounded-lg border px-3.5 text-sm whitespace-nowrap ${
-    on ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-[#4e5968]'
+    on ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-ink-2'
   }`
 
 /** 함께 전달되는 내용: 저장된 기록에서 계산한다 */
@@ -55,37 +56,43 @@ export default function HandoverPage() {
   const [all, setAll] = useState(false)
   const send = useCaseMutation<HandoverInput>('POST', '/handover')
   const { register, control, handleSubmit, formState } = useForm<FormValues>({
-    defaultValues: { to: '', urgency: '보통', reasons: [], note: '' },
+    defaultValues: { to: '', equipment_state: '계속 용접 중', reasons: [], note: '' },
   })
   const { errors } = formState
   const onSubmit = handleSubmit((v) => send.mutate(v, { onSuccess: () => navigate('/') }))
 
   return (
     <>
-      <h2 className="text-[19px] font-semibold tracking-[-0.015em]">도움 요청</h2>
+      <h2 className="text-xl font-semibold tracking-[-0.015em]">도움 요청</h2>
       <div className="grid grow grid-cols-[minmax(0,1fr)_380px] items-start gap-4">
         <form onSubmit={onSubmit} className={`${card} flex flex-col gap-[18px] p-[26px]`} noValidate>
           <div className="grid grid-cols-2 gap-3.5">
             <label className="flex flex-col gap-1.5">
               <span className={label}>받는 사람 *</span>
-              <select className={input} {...register('to', { required: true })}>
-                <option value="" disabled>
-                  선택
-                </option>
-                {RECEIVERS.map((r) => (
-                  <option key={r}>{r}</option>
-                ))}
-              </select>
-              {errors.to && <span className="text-[13px] text-alarm">받는 사람을 골라 주세요</span>}
-            </label>
-            <fieldset className="flex flex-col gap-1.5">
-              <legend className={label}>급한 정도</legend>
               <Controller
                 control={control}
-                name="urgency"
+                name="to"
+                rules={{ required: true }}
                 render={({ field }) => (
-                  <div className="mt-1.5 flex gap-2">
-                    {URGENCY.map((u) => (
+                  <Select
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="선택"
+                    options={RECEIVERS.map((r) => ({ value: r, label: r }))}
+                  />
+                )}
+              />
+              {errors.to && <span className="text-xs text-alarm">받는 사람을 골라 주세요</span>}
+            </label>
+            <fieldset className="flex flex-col gap-1.5">
+              <legend className={label}>지금 설비 상태</legend>
+              <Controller
+                control={control}
+                name="equipment_state"
+                render={({ field }) => (
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    {EQUIPMENT_STATES.map((u) => (
                       <button key={u} type="button" aria-pressed={field.value === u} className={chip(field.value === u)} onClick={() => field.onChange(u)}>
                         {u}
                       </button>
@@ -93,6 +100,7 @@ export default function HandoverPage() {
                   </div>
                 )}
               />
+              <span className="text-xs text-sub">받는 사람이 이걸 보고 먼저 볼 일을 정합니다</span>
             </fieldset>
           </div>
           <fieldset className="flex flex-col gap-1.5">
@@ -120,18 +128,18 @@ export default function HandoverPage() {
                 </div>
               )}
             />
-            {errors.reasons && <span className="text-[13px] text-alarm">이유를 하나 이상 골라 주세요</span>}
+            {errors.reasons && <span className="text-xs text-alarm">이유를 하나 이상 골라 주세요</span>}
           </fieldset>
           <label className="flex flex-col gap-1.5">
             <span className={label}>요청 내용 *</span>
             <textarea rows={5} className={`${input} resize-y`} placeholder="무엇을 도와주면 되는지 적어주세요" {...register('note', { required: true })} />
-            {errors.note && <span className="text-[13px] text-alarm">요청 내용을 적어 주세요</span>}
+            {errors.note && <span className="text-xs text-alarm">요청 내용을 적어 주세요</span>}
           </label>
           <div className="mt-2 flex items-center gap-3">
             <button type="button" className={btn} onClick={() => navigate(-1)}>
               취소
             </button>
-            {send.isError && <span className="text-[13.5px] text-alarm">보내지 못했습니다. 입력 내용은 남아 있습니다.</span>}
+            {send.isError && <span className="text-sm text-alarm">보내지 못했습니다. 입력 내용은 남아 있습니다.</span>}
             <div className="grow" />
             <button type="submit" className={`${btnPrimary} ${btnLarge}`} disabled={send.isPending}>
               보내기
@@ -141,19 +149,24 @@ export default function HandoverPage() {
 
         <aside className={`${card} flex flex-col gap-3 p-5`} aria-label="함께 전달되는 내용">
           <span className={label}>함께 전달되는 내용</span>
-          <dl className="grid grid-cols-[88px_minmax(0,1fr)] items-baseline gap-x-3 gap-y-[9px] text-[14.5px]">
+          <dl className="grid grid-cols-[88px_minmax(0,1fr)] items-baseline gap-x-3 gap-y-[9px] text-sm">
             {summary(d).map((r) => (
               <div key={r.k} className="contents">
-                <dt className="text-[13.5px] text-faint">{r.k}</dt>
+                <dt className="text-sm text-faint">{r.k}</dt>
                 <dd>{r.v}</dd>
               </div>
             ))}
           </dl>
-          <div className="h-px bg-line-soft" />
           <button type="button" className={`${btnQuiet} self-start`} aria-expanded={all} onClick={() => setAll((v) => !v)}>
             {all ? '기록 접기' : '기록 전체 보기'}
           </button>
           {all && <RecordTab d={d} />}
+          <div className="h-px bg-line-soft" />
+          <span className={label}>보낸 뒤</span>
+          <div className="flex flex-col gap-1 rounded-lg bg-canvas px-3.5 py-3 text-sm">
+            <b className="font-semibold">작업함에 ‘도움 요청’ 상태로 남습니다</b>
+            <span className="text-ink-2">답을 기다리는 동안에도 점검을 이어갈 수 있습니다</span>
+          </div>
         </aside>
       </div>
     </>

@@ -19,6 +19,7 @@ MSW가 api 서버 대신 돌려주는 데이터. 손으로 지어낸 값이 아�
 | `case-details.json` | 케이스 상세 (`GET /api/cases/:id`). `event` = 핸드오프 원문, `score_trace` = 고장 전 30분 이상 점수, `guidance` = RAG 매핑, `records` = 사람 입력(처음엔 비어 있음) |
 | `health.json` | 연결 확인용 |
 | `guns.json` | 설비 화면 (`GET /api/guns`). 재생 뒤 ML `GET /guns` 응답 그대로 (test_0, test_3). 열린 고장은 MSW가 붙인다 |
+| `situations.json` | AI 챗봇의 상황 목록과 mock 답변 재료 (S01~S10). `rag/data/situation_mapping.json`의 점검 순서 · 근거 쪽 · 오류 번호와 `rag/pipeline/build.py`의 이름 · 정의를 그대로 모은 것. 매뉴얼 원문(`manual`)은 `case-details.json`에서 확인한 Festo 오류 12뿐 |
 | `manual-index.json` | 수동 모드 "매뉴얼에서 직접 찾기". `rag/data/situation_mapping.json`의 근거 쪽 · 부품과 `rag/pipeline/build.py`의 원인 이름을 그대로 모은 것 (56개). 레포 밖 `ml-data/tools/build_manual_index.py`로 만들었다 |
 
 | 케이스 | 설비 · 코드 | 원인 후보 (ML 순서) | 화면에서 보여주는 것 |

@@ -45,27 +45,27 @@ export default function ResultPage() {
       },
     )
 
-  const row = 'flex items-center gap-3 border-t border-line-soft px-3.5 py-2.5 text-[14.5px] first:border-t-0'
+  const row = 'flex items-center gap-3 border-t border-line-soft px-3.5 py-2.5 text-sm first:border-t-0'
   return (
     <>
       <Steps current="결과" />
       <TwoColumns side={<SidePanel d={d} initial="기록" />}>
         <section className={`${card} flex flex-col gap-[22px] p-[30px]`}>
           <div>
-            <span className="text-[13px] font-medium text-sub">
+            <span className="text-xs font-medium text-sub">
               {cand ? `원인 ${d.guidance.candidates.indexOf(cand) + 1} / ${d.guidance.candidates.length}` : `직접 찾은 원인 · ${cause.name}`}
             </span>
-            <h2 className="mt-3 text-[22px] font-semibold tracking-[-0.015em]">해결됐나요?</h2>
+            <h2 className="mt-3 text-xl font-semibold tracking-[-0.015em]">해결됐나요?</h2>
           </div>
           <div className="overflow-hidden rounded-lg border border-line">
             <div className="flex items-center bg-head py-1.5 pr-1.5 pl-3.5">
-              <span className="grow text-[13px] font-medium text-sub">지금까지 한 일</span>
+              <span className="grow text-xs font-medium text-sub">지금까지 한 일</span>
               <Link to="../action" className={btnQuiet}>
                 조치 수정
               </Link>
             </div>
             <div className={row}>
-              <span className="w-14 shrink-0 text-[13.5px] text-faint">점검</span>
+              <span className="w-14 shrink-0 text-sm text-faint">점검</span>
               <span className="grow">
                 {abnormal.length ? (
                   abnormal.map((c) => (
@@ -78,40 +78,40 @@ export default function ResultPage() {
                   <span className="text-sub">이상 항목 없음</span>
                 )}
               </span>
-              <span className="text-[13.5px] text-sub">
+              <span className="text-sm text-sub">
                 정상 {counts.normal} · 건너뜀 {counts.skipped} · 미확인 {counts.total - counts.normal - counts.abnormal - counts.skipped}
               </span>
             </div>
             <div className={row}>
-              <span className="w-14 shrink-0 text-[13.5px] text-faint">판단</span>
+              <span className="w-14 shrink-0 text-sm text-faint">판단</span>
               <span className="grow">{cand ? `${josa(cand.name, '이', '가')} ${judgment?.verdict === 'yes' ? '맞아요' : '판단 전'}` : `직접 찾음 · ${cause.name}`}</span>
-              <span className="text-[13.5px] text-sub">{judgment && formatKst(judgment.at)?.slice(11)}</span>
+              <span className="text-sm text-sub">{judgment && formatKst(judgment.at)?.slice(11)}</span>
             </div>
             <div className={row}>
-              <span className="w-14 shrink-0 text-[13.5px] text-faint">조치</span>
+              <span className="w-14 shrink-0 text-sm text-faint">조치</span>
               <span className="grow">
                 <b className="font-semibold">{action.kind}</b> — {action.did}
               </span>
-              <span className="text-[13.5px] text-sub">
+              <span className="text-sm text-sub">
                 {formatKst(action.started_at)?.slice(11)} ~ {formatKst(action.ended_at)?.slice(11)}
               </span>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3.5">
             <button type="button" className={bigChoice} disabled={save.isPending} onClick={() => choose('resolved')}>
-              <b className="text-[17px] font-semibold">해결됐어요</b>
-              <span className="text-[13.5px] text-sub">정비일지를 작성합니다</span>
+              <b className="text-lg font-semibold">해결됐어요</b>
+              <span className="text-sm text-sub">정비일지를 작성합니다</span>
             </button>
             <button type="button" className={bigChoice} disabled={save.isPending} onClick={() => choose('retry')}>
-              <b className="text-[17px] font-semibold">다른 조치를 해볼게요</b>
-              <span className="text-[13.5px] text-sub">같은 원인으로 다시 기록</span>
+              <b className="text-lg font-semibold">다른 조치를 해볼게요</b>
+              <span className="text-sm text-sub">같은 원인으로 다시 기록</span>
             </button>
             <button type="button" className={bigChoice} disabled={save.isPending} onClick={() => choose('next')}>
-              <b className="text-[17px] font-semibold">다음 원인 확인</b>
-              <span className="text-[13.5px] text-sub">{next ? next.name : '남은 원인이 없습니다'}</span>
+              <b className="text-lg font-semibold">다음 원인 확인</b>
+              <span className="text-sm text-sub">{next ? next.name : '남은 원인이 없습니다'}</span>
             </button>
           </div>
-          {save.isError && <p className="text-[13.5px] text-alarm">저장하지 못했습니다. 다시 눌러 주세요.</p>}
+          {save.isError && <p className="text-sm text-alarm">저장하지 못했습니다. 다시 눌러 주세요.</p>}
         </section>
       </TwoColumns>
     </>

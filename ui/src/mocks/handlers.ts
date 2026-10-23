@@ -15,12 +15,15 @@ import type {
   ManualCheck,
   ManualHit,
   Outcome,
+  Photo,
   Verdict,
 } from '../types/case'
 import caseDetails from './fixtures/case-details.json'
 import guns from './fixtures/guns.json'
 import health from './fixtures/health.json'
 import manualIndex from './fixtures/manual-index.json'
+import situationsFixture from './fixtures/situations.json'
+import type { AnswerBlock, AskInput, AssistantAnswer, Situation } from '../types/assistant'
 
 // 고정 JSON은 src/mocks/fixtures/에 둔다.
 // ui/mock/은 깃에 안 올라가는 개인 폴더이고, data/라는 폴더 이름은 레포 루트 .gitignore에 걸린다.
@@ -64,6 +67,139 @@ function withCase(id: string, update?: (d: CaseDetail) => void) {
   if (!d) return HttpResponse.json({ error: 'not found' }, { status: 404 })
   if (update) update(d)
   return HttpResponse.json(d)
+}
+
+// ---- AI 챗봇 (mock) ----
+// 진짜 RAG(LLM) 대신, RAG 매핑 원본(situations.json)에서 근거만 골라 답을 조립한다.
+// RAG의 use_llm=False와 같은 "근거만 조회(retrieval_only)" 응답이라 AI 요약 문장은 만들지 않는다.
+// 질문에 맞는 상황은 고장 코드 · Festo 오류 번호 · 글자 겹침(두 글자 단위)으로 고른다. 진짜 api에서는
+// 벡터 검색이나 LLM 분류로 바꿀 자리다 (docs/05 "AI 챗봇 API").
+const situations = (situationsFixture as { situations: Situation[] }).situations
+const OTHER_MANUALS = /(milco|abb|fanuc|yaskawa|화낙|야스카와)/i
+
+// 종료 코드 → 상황 ID (ml/.py/rag_mapping.py, docs/03)
+const CODE_TO_SITUATION: Record<string, string> = { E012: 'S01', E016: 'S02', E028: 'S03', E029: 'S04' }
+
+function bigrams(text: string) {
+  const t = text.replace(/[^가-힣a-z0-9]/gi, '').toLowerCase()
+  const out = new Set<string>()
+  for (let i = 0; i < t.length - 1; i++) out.add(t.slice(i, i + 2))
+  return out
+}
+
+// 앞 질문을 이어 묻는 말 ("그럼 다음은?", "그거 왜 그래?")일 때만 앞 대화 주제를 이어 쓴다
+const FOLLOW_UP = /(그럼|그거|그건|이거|이건|거기|다음|더 자세히|왜 그래|그 다음)/
+
+/** 질문에 가장 맞는 상황. 이어 묻는 말이면 앞 질문까지 보고, 못 찾으면 null */
+function pickSituation(input: AskInput): Situation | null {
+  const now = matchSituation(input.question)
+  if (now || !FOLLOW_UP.test(input.question)) return now
+  // 가장 최근 질문부터 거꾸로 보며 주제가 잡히는 첫 질문을 따른다
+  for (const h of [...input.history].reverse()) {
+    const hit = h.role === 'user' ? matchSituation(h.text) : null
+    if (hit) return hit
+  }
+  return null
+}
+
+function matchSituation(text: string): Situation | null {
+  if (!text.trim()) return null
+  const code = text.toUpperCase().match(/E0?(12|16|28|29)\b/)
+  if (code) return situations.find((s) => s.situation_id === CODE_TO_SITUATION[`E0${code[1]}`]) ?? null
+  const err = text.match(/오류\s*(\d+)/)
+  if (err) {
+    const hit = situations.find((s) => s.diagnostics.some((d) => d.number === Number(err[1])))
+    if (hit) return hit
+  }
+  const q = bigrams(text)
+  let best: Situation | null = null
+  let bestScore = 0
+  for (const s of situations) {
+    const name = bigrams(s.name)
+    const body = bigrams([s.definition, ...s.check_sequence].join(' '))
+    let score = 0
+    for (const g of q) score += name.has(g) ? 3 : body.has(g) ? 1 : 0
+    if (score > bestScore) [best, bestScore] = [s, score]
+  }
+  return bestScore >= 4 ? best : null
+}
+
+const NOT_FOUND: AssistantAnswer = {
+  status: 'no_evidence',
+  situation_ids: [],
+  blocks: [
+    {
+      type: 'p',
+      parts: [
+        { text: '질문과 맞는 매뉴얼 근거를 찾지 못했습니다. 근거 없이 답하지 않아요. ' },
+        { text: '고장 코드(E012 등)나 증상, 부품 이름', bold: true },
+        { text: '을 넣어 다시 물어봐 주세요.' },
+      ],
+    },
+  ],
+  caution: null,
+  evidence: [],
+}
+
+function mockAnswer(s: Situation, input: AskInput): AssistantAnswer {
+  const other = input.question.match(OTHER_MANUALS)
+  if (other) {
+    return {
+      status: 'no_evidence',
+      situation_ids: [],
+      blocks: [
+        {
+          type: 'p',
+          parts: [
+            { text: '지금 연결된 매뉴얼은 ' },
+            { text: 'Festo 하나', bold: true },
+            { text: `뿐이라 ${other[1].toUpperCase()} 내용은 찾지 못했습니다. 근거 없이 답하지 않습니다.` },
+          ],
+        },
+      ],
+      caution: null,
+      evidence: [],
+    }
+  }
+  const blocks: AnswerBlock[] = []
+  if (input.photos.length) {
+    blocks.push({ type: 'p', parts: [{ text: '사진 속 부품 상태는 ' }, { text: '판단하지 않습니다', bold: true }, { text: '. 사진은 이 대화에 저장해 두었어요.' }] })
+  }
+  blocks.push({
+    type: 'p',
+    parts: [
+      { text: '상황 정의서의 ' },
+      { text: s.name, bold: true },
+      { text: ' 점검 순서는 다음과 같습니다 ' },
+      { cite: { doc: 'rsw', page: s.check_source_page } },
+    ],
+  })
+  blocks.push({ type: 'ol', items: s.check_sequence })
+  for (const d of s.diagnostics.filter((x) => x.manual)) {
+    blocks.push({
+      type: 'p',
+      parts: [
+        { text: `Festo 매뉴얼 오류 ${d.number}(${d.manual!.name}) 원문: “${d.manual!.text}” ` },
+        { cite: { doc: 'festo', page: d.manual!.page } },
+      ],
+    })
+  }
+  if (!s.diagnostics.some((x) => x.manual) && s.diagnostics.length) {
+    blocks.push({
+      type: 'p',
+      parts: [{ text: `관련 Festo 오류 번호 후보: ${s.diagnostics.map((d) => d.number).join(', ')}. 점검 후보일 뿐, 그 오류가 실제로 떴다는 뜻은 아닙니다.` }],
+    })
+  }
+  return {
+    status: 'retrieval_only',
+    situation_ids: [s.situation_id],
+    blocks,
+    caution: s.coverage_note,
+    evidence: [
+      { doc: 'rsw', page: s.check_source_page, title: `${s.name} 정의 · 점검 순서` },
+      ...s.evidence.map((e) => ({ doc: 'festo' as const, page: e.page, title: e.rationale ?? 'Festo 매뉴얼' })),
+    ],
+  }
 }
 
 export const handlers = [
@@ -179,11 +315,11 @@ export const handlers = [
 
   // 현장 확인 입력: 결과는 점검 결과에 합치고, 누가 확인했는지 남긴다
   http.post('*/api/cases/:id/field', async ({ params, request }) => {
-    const body = (await request.json()) as { by: string; checks: Record<string, CheckRecord> }
+    const body = (await request.json()) as { by: string; checks: Record<string, CheckRecord>; photos?: Photo[] }
     return withCase(params.id as string, (d) => {
       touch(d)
       d.records.checks = { ...d.records.checks, ...body.checks }
-      d.records.field.push({ by: body.by, check_ids: Object.keys(body.checks), at: new Date().toISOString() })
+      d.records.field.push({ by: body.by, check_ids: Object.keys(body.checks), photos: body.photos ?? [], at: new Date().toISOString() })
     })
   }),
 
@@ -221,4 +357,18 @@ export const handlers = [
     )
     return HttpResponse.json({ items })
   }),
+
+  // AI 챗봇: 상황 목록 · 질문 · 답변 피드백
+  http.get('*/api/situations', () => HttpResponse.json({ situations })),
+
+  http.post('*/api/assistant/ask', async ({ request }) => {
+    const input = (await request.json()) as AskInput
+    await delay(mockMode() === 'slow' ? 3000 : 700)
+    if (mockMode() === 'error') return HttpResponse.json({ error: 'mock error' }, { status: 500 })
+    if (OTHER_MANUALS.test(input.question)) return HttpResponse.json(mockAnswer(situations[0], input))
+    const s = pickSituation(input)
+    return HttpResponse.json(s ? mockAnswer(s, input) : NOT_FOUND)
+  }),
+
+  http.post('*/api/assistant/feedback', () => HttpResponse.json({ ok: true })),
 ]
