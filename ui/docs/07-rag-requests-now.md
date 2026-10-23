@@ -84,7 +84,7 @@ python -m rag ask --situation-ids S04 --question "이 상황의 원인 후보와
 ### 5. 확인 부탁
 
 - 답 하나 만드는 데 몇 초 걸리는지 (10초가 넘으면 화면에 진행 표시를 따로 둡니다)
-- RSW 상황 정의서 PDF(`rag/data/rsw_situations.pdf`)를 화면에서 원본으로 보여줘도 되는지 (지금 FE 개발 서버는 이 파일을 `/api/manuals/rsw.pdf`로 열고 있습니다)
+- RSW 상황 정의서 PDF(`rag/data/rsw_situations.pdf`)를 화면에서 원본으로 보여줘도 되는지 (지금 FE 개발 서버와 api 초안이 이 파일을 `/api/manuals/rsw.pdf`로 내려주고 있습니다)
 
 ### 6. (필수) api에서 RAG를 부르려면 — 받아야 할 것
 
@@ -103,7 +103,7 @@ api 담당이 없어서 FE가 데모용 api 초안을 `api/`에 올렸습니다 
    - 클라우드(Aura 등)라면 → 접속 정보를 개인 메시지로 주세요.
    - 본인 PC에만 있다면 → FE가 자기 PC에 Neo4j를 설치하고 README의 `parse → chunk → ingest → build`로 같은 그래프를 만들어도 되는지, `build --skip-llm`으로 해도 답 품질이 같은지 알려 주세요.
 2. **OpenAI 키는 누구 계정으로 쓰나요?** 팀 공용 키가 있는지, 데모 때 호출해도 되는 범위가 있는지.
-3. 비밀번호 · 키는 단톡이나 깃에 올리지 말고 개인 메시지로 주세요. FE가 직접 `rag/.env`에 넣습니다 (`.env`는 깃에서 제외됨).
+3. 비밀번호 · 키는 깃에 올리지 말고 개인 메시지로 주세요. FE가 직접 `rag/.env`에 넣습니다 (`.env`는 깃에서 제외됨).
 
 ## 안 하셔도 되는 것
 
