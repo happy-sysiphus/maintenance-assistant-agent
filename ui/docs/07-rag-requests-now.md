@@ -86,9 +86,29 @@ python -m rag ask --situation-ids S04 --question "이 상황의 원인 후보와
 - 답 하나 만드는 데 몇 초 걸리는지 (10초가 넘으면 화면에 진행 표시를 따로 둡니다)
 - RSW 상황 정의서 PDF(`rag/data/rsw_situations.pdf`)를 화면에서 원본으로 보여줘도 되는지 (지금 FE 개발 서버는 이 파일을 `/api/manuals/rsw.pdf`로 열고 있습니다)
 
+### 6. (필수) api에서 RAG를 부르려면 — 받아야 할 것
+
+api 담당이 없어서 FE가 데모용 api 초안을 `api/`에 올렸습니다 (`08-api-draft.md`). 지금은 `rag/data/situation_mapping.json`만 직접 읽고, `answer_question()`은 아직 부르지 않습니다. **RAG를 붙일 자리는 `api/guidance.py` 한 파일**이고, FE 로컬에서 RAG를 돌리려면 아래가 필요합니다.
+
+**`rag/.env`에 넣을 값** (`rag/.env.example` 기준)
+
+| 변수 | 필요한 이유 |
+|---|---|
+| `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE` | 매뉴얼 그래프 조회 |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` | LLM 한국어 답 (없으면 `use_llm=False` 근거만 조회) |
+
+**알려 주세요**
+
+1. **Neo4j는 어디에 있나요?** 예시 주소가 `bolt://localhost:7687`이라 담당자 PC에만 있는 것으로 보입니다.
+   - 클라우드(Aura 등)라면 → 접속 정보를 개인 메시지로 주세요.
+   - 본인 PC에만 있다면 → FE가 자기 PC에 Neo4j를 설치하고 README의 `parse → chunk → ingest → build`로 같은 그래프를 만들어도 되는지, `build --skip-llm`으로 해도 답 품질이 같은지 알려 주세요.
+2. **OpenAI 키는 누구 계정으로 쓰나요?** 팀 공용 키가 있는지, 데모 때 호출해도 되는 범위가 있는지.
+3. 비밀번호 · 키는 단톡이나 깃에 올리지 말고 개인 메시지로 주세요. FE가 직접 `rag/.env`에 넣습니다 (`.env`는 깃에서 제외됨).
+
 ## 안 하셔도 되는 것
 
-- 웹 서버: api 서버가 파이썬 함수로 부르면 됩니다 (api 담당은 아직 미정).
+- 웹 서버: api 서버(`api/`, FE 초안)가 파이썬 함수로 직접 부릅니다.
+- PDF 파일: 레포의 `rag/data/*.pdf`를 api가 화면에 내려줍니다. RAG는 **몇 쪽을 볼지(쪽 번호와 연결)**만 주시면 됩니다.
 - 화면용 순서 · 상태 · 버전: api가 붙입니다.
 - `status` 6종은 그대로 씁니다.
 
