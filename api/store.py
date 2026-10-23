@@ -64,7 +64,7 @@ def open_case(gun_id: str, code: str | None) -> dict[str, Any] | None:
     """같은 설비 · 같은 코드로 아직 끝나지 않은 케이스 (반복 알림을 묶을 곳)."""
     with _lock, _conn() as c:
         row = c.execute(
-            "SELECT data FROM cases WHERE gun_id = ? AND code IS ? AND status NOT IN ('resolved', 'unresolved')"
+            "SELECT data FROM cases WHERE gun_id = ? AND code IS ? AND status NOT IN ('resolved', 'unresolved', 'false_alarm')"
             " ORDER BY detected_at DESC LIMIT 1",
             (gun_id, code),
         ).fetchone()

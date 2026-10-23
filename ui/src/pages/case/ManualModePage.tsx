@@ -10,7 +10,7 @@ import { apiGet } from '../../lib/api'
 import { useCaseMutation } from '../../lib/useCase'
 import type { ManualCheck, ManualHit } from '../../types/case'
 import { useCaseDetail } from './context'
-import { SideLabel, sideCard, TwoColumns } from './parts'
+import { BackLink, FalseAlarmButton, SideLabel, sideCard, TwoColumns } from './parts'
 
 // 수동 모드 (wireframe/boards/V2NoGuide.dc.html): 맞는 매뉴얼 안내가 없을 때.
 // 점검 순서를 지어내지 않고 사람이 확인한 것을 적는다. 오른쪽에서 매뉴얼 근거 쪽을 찾아 원본을 연다.
@@ -63,6 +63,7 @@ export default function ManualModePage() {
 
   return (
     <>
+      <BackLink />
       <div className="flex items-center gap-3 rounded-lg border border-warn-dot/30 bg-warn-soft px-[18px] py-3.5 text-warn">
         <b className="font-semibold">이 고장에 맞는 매뉴얼 안내를 찾지 못했습니다.</b>
         <span className="grow">직접 점검한 내용을 기록하거나 도움을 요청하세요.</span>
@@ -70,7 +71,13 @@ export default function ManualModePage() {
 
       <TwoColumns
         wide={openPage !== null}
-        side={openPage ? <ManualPanel page={openPage} onPage={setPage} onClose={() => setPage(null)} /> : <ManualSearch openPage={openPage} onOpen={setPage} />}
+        side={
+          openPage ? (
+            <ManualPanel page={openPage} onPage={setPage} onClose={() => setPage(null)} />
+          ) : (
+            <ManualSearch openPage={openPage} onOpen={setPage} />
+          )
+        }
       >
         <form onSubmit={toAction} className="flex flex-col gap-4" noValidate>
           <section className={`${card} flex flex-col gap-3.5 p-6`}>
@@ -104,14 +111,22 @@ export default function ManualModePage() {
 
           <section className={`${card} flex flex-col gap-3 p-6`}>
             <h2 className="text-lg font-semibold tracking-[-0.015em]">원인을 찾았나요?</h2>
-            <input className={input} placeholder="찾은 원인을 적어주세요" aria-label="찾은 원인" {...register('cause', { validate: (v) => v.trim() !== '' })} />
-            {formState.errors.cause && <span className="text-xs text-alarm">조치를 기록하려면 찾은 원인을 적어 주세요. 못 찾았으면 도움을 요청하세요.</span>}
+            <input
+              className={input}
+              placeholder="찾은 원인을 적어주세요"
+              aria-label="찾은 원인"
+              {...register('cause', { validate: (v) => v.trim() !== '' })}
+            />
+            {formState.errors.cause && (
+              <span className="text-xs text-alarm">조치를 기록하려면 찾은 원인을 적어 주세요. 못 찾았으면 도움을 요청하세요.</span>
+            )}
             <div className="mt-2 flex items-center gap-3">
               <button type="button" className={btn} disabled={save.isPending} onClick={saveDraft}>
                 {save.isSuccess && !save.isPending ? '저장됨' : '임시 저장'}
               </button>
               {save.isError && <span className="text-sm text-alarm">저장하지 못했습니다. 입력 내용은 남아 있습니다.</span>}
               <div className="grow" />
+              <FalseAlarmButton />
               <Link to="../handover" className={btn}>
                 도움 요청
               </Link>
@@ -150,7 +165,14 @@ function ManualSearch({ openPage, onOpen }: { openPage: number | null; onOpen: (
         <span className="pointer-events-none absolute top-[13px] left-3.5 text-sub">
           <SearchIcon size={18} />
         </span>
-        <input type="search" className={`${input} pl-[42px]`} value={text} onChange={(e) => setText(e.target.value)} placeholder="예: 압력, 캡, MPYD" aria-label="매뉴얼 검색" />
+        <input
+          type="search"
+          className={`${input} pl-[42px]`}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="예: 압력, 캡, MPYD"
+          aria-label="매뉴얼 검색"
+        />
       </form>
       {isError && <p className="text-sm text-alarm">찾지 못했습니다. 다시 시도해 주세요.</p>}
       {q && !isFetching && !isError && items.length === 0 && <p className="text-sm text-sub">"{q}"에 맞는 근거 쪽이 없습니다.</p>}

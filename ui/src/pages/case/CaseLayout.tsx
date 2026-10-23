@@ -23,18 +23,13 @@ export default function CaseLayout() {
         </Link>
         {data && (
           <>
-            <h1 className="text-xl font-bold tracking-[-0.02em]">{data.event.gun_id}</h1>
-            {/* 어떤 고장을 처리 중인지 모든 단계에서 보이게 (와이어프레임 V2Action 상단) */}
-            {data.event.trigger.rule_code ? (
-              <span className="text-base font-semibold text-alarm">{data.event.trigger.rule_code}</span>
-            ) : (
-              <span className="text-sm font-medium text-sub">코드 없음</span>
-            )}
+            {/* 어떤 고장을 처리 중인지 모든 단계에서 보이게. 설비 이름은 화면에서 빼고 읽어 주기용으로만 남긴다 (10/23) */}
+            <h1 className={`text-base font-semibold ${data.event.trigger.rule_code ? 'text-alarm' : 'text-sub'}`}>
+              <span className="sr-only">{data.event.gun_id} </span>
+              {data.event.trigger.rule_code ?? '코드 없음'}
+            </h1>
             <StatusTag status={data.status} />
             <div className="grow" />
-            <Link to="field" className={`${btn} print:hidden`}>
-              현장 확인 입력
-            </Link>
             <Link to="handover" className={`${btn} print:hidden`}>
               도움 요청
             </Link>

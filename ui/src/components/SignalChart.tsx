@@ -98,13 +98,13 @@ export function SignalChart({ trends, selected, score = [], codes = [] }: Props)
         <ReferenceArea key={x} x1={x} x2={x + MINUTE} fill="#dde1ea" fillOpacity={0.8} />
       ))}
       <CartesianGrid vertical={false} stroke="transparent" />
-      <XAxis dataKey="x" type="number" domain={[x0, x1]} ticks={ticks} hide={showScore} tickMargin={12} tickFormatter={(v: number) => kstTime.format(v)} tick={{ fontSize: 12, fill: '#6b7684' }} />
+      <XAxis dataKey="x" type="number" domain={[x0, x1]} ticks={ticks} hide={showScore} tickMargin={12} tickFormatter={(v: number) => kstTime.format(v)} tick={{ fontSize: 13, fill: '#6b7684' }} />
       <YAxis
         domain={yDomain}
         ticks={[-2, -1, 0, 1, 2]}
         width={44}
         tickFormatter={(v: number) => (v === 0 ? '평소' : v > 0 ? `+${v}` : `−${-v}`)}
-        tick={{ fontSize: 12, fill: '#8b95a1' }}
+        tick={{ fontSize: 13, fill: '#8b95a1' }}
         axisLine={false}
         tickLine={false}
       />
@@ -154,7 +154,7 @@ export function SignalChart({ trends, selected, score = [], codes = [] }: Props)
           <div className="pl-11 text-xs font-semibold text-sub">이상 점수 · 0~1, 고장 확률 아님 · 점선 = 기준선 {threshold!.toFixed(2)}</div>
           <ResponsiveContainer width="100%" height={96}>
             <LineChart data={rows} margin={{ top: 6, right: 16, bottom: 0, left: 0 }} syncId="signal">
-              <XAxis dataKey="x" type="number" domain={[x0, x1]} ticks={ticks} tickFormatter={(v: number) => kstTime.format(v)} tick={{ fontSize: 12, fill: '#6b7684' }} />
+              <XAxis dataKey="x" type="number" domain={[x0, x1]} ticks={ticks} tickFormatter={(v: number) => kstTime.format(v)} tick={{ fontSize: 13, fill: '#6b7684' }} />
               <YAxis domain={[0, 1]} width={44} tick={false} axisLine={false} tickLine={false} />
               <ReferenceLine
                 y={threshold}

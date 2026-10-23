@@ -159,7 +159,7 @@ def load(case_id: str) -> dict[str, Any]:
     d = store.get(case_id)
     if d is None:
         raise HTTPException(404, "not found")
-    return d
+    return guidance.attach_criteria(d)
 
 
 def save(d: dict[str, Any]) -> dict[str, Any]:
@@ -186,7 +186,7 @@ def health():
 @app.get("/api/cases")
 def list_cases():
     sync_from_ml()
-    cases = [summary(d) for d in store.all_cases() if d["status"] != "resolved"]
+    cases = [summary(d) for d in store.all_cases() if d["status"] not in ("resolved", "false_alarm")]
     cases.sort(key=lambda c: c["event"]["detected_at"], reverse=True)
     return {"cases": cases}
 
@@ -324,7 +324,7 @@ def history():
 def guns():
     open_by_gun: dict[str, list[dict[str, Any]]] = {}
     for d in store.all_cases():
-        if d["status"] != "resolved":
+        if d["status"] not in ("resolved", "false_alarm"):
             open_by_gun.setdefault(d["event"]["gun_id"], []).append(summary(d))
     out = []
     for g in ml_get("/guns"):

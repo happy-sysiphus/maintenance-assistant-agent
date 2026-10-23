@@ -29,8 +29,8 @@ export default function App() {
 
   const items: { to: string; label: string; icon: (size: number) => ReactNode; on?: boolean }[] = [
     { to: '/', label: '작업함', icon: (s) => <InboxIcon size={s} />, on: inCase },
-    { to: '/equipment', label: '설비', icon: (s) => <PulseIcon size={s} /> },
-    { to: '/history', label: '이력', icon: (s) => <ClockIcon size={s} /> },
+    { to: '/equipment', label: '설비 현황', icon: (s) => <PulseIcon size={s} /> },
+    { to: '/history', label: '정비 이력', icon: (s) => <ClockIcon size={s} /> },
     { to: '/assistant', label: 'AI 챗봇', icon: (s) => <ChatIcon size={s} /> },
   ]
 
@@ -41,7 +41,7 @@ export default function App() {
         className={`sticky top-0 flex h-screen shrink-0 flex-col gap-1 bg-side py-5 print:hidden ${compact ? 'w-24 items-center' : 'w-[220px] px-3'}`}
       >
         <div title="RSW 정비 지원" className={`mb-5 flex items-baseline gap-2 py-1.5 ${compact ? '' : 'px-3'}`}>
-          <span className={`font-extrabold tracking-[0.02em] text-white ${compact ? 'text-[17px]' : 'text-[19px]'}`}>
+          <span className={`font-extrabold tracking-[0.02em] text-white ${compact ? 'text-lg' : 'text-xl'}`}>
             RSW<span className="text-primary">.</span>
           </span>
           {!compact && <span className="text-sm font-medium text-side-ink">정비 지원</span>}

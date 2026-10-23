@@ -12,7 +12,7 @@ export type Severity = 'critical' | 'warning'
  * 작업함: 새 고장 / 점검 중 / 일지 작성 / 일지 승인됨 / 미해결 / 도움 요청.
  * resolved(해결 종료)는 작업함에서 빠지고 정비 이력에만 보인다.
  */
-export type CaseStatus = 'new' | 'in_progress' | 'logging' | 'log_approved' | 'unresolved' | 'handed_over' | 'resolved'
+export type CaseStatus = 'new' | 'in_progress' | 'logging' | 'log_approved' | 'unresolved' | 'handed_over' | 'resolved' | 'false_alarm'
 
 /** ML 핸드오프 trigger 중 작업함이 쓰는 부분 */
 export interface CaseTrigger {
@@ -116,6 +116,19 @@ export type GuidanceStatus =
   | 'error'
 
 /** 원인 후보 1개 = 상황 ID 1개 */
+/**
+ * 점검 항목의 정상 기준 · 확인 방법 (10/23 FE 초안, RAG 확인 전 — docs/07 요청 3).
+ * 매뉴얼 원문에 적힌 것만. value = 숫자 기준, how = 확인 방법(숫자 없음). 원문에 없으면 criterion 자체가 없다.
+ */
+export interface CheckCriterion {
+  kind: 'value' | 'how'
+  text: string
+  /** 원문 그대로 (영어 · 정의서 한국어) */
+  quote: string
+  doc: 'festo' | 'rsw'
+  page: number
+}
+
 export interface Candidate {
   situation_id: string
   rank: number
@@ -123,7 +136,7 @@ export interface Candidate {
   definition: string
   coverage_note: string | null
   /** 점검 항목. id는 RAG에 아직 없어 FE가 붙인 임시 값 (docs/06 요청 3) */
-  checks: { id: string; title: string }[]
+  checks: { id: string; title: string; criterion?: CheckCriterion }[]
   /** Festo 오류 번호 후보. manual은 원문을 확인한 조치 문구가 있을 때만 */
   diagnostics: {
     number: number
@@ -146,6 +159,8 @@ export type CheckResult = 'normal' | 'abnormal' | 'skipped'
 export interface CheckRecord {
   result: CheckResult
   memo?: string
+  /** 그 항목을 직접 보고 찍은 사진 (10/23, 현장 확인 입력을 점검 화면에 합침) */
+  photos?: Photo[]
 }
 
 export type Verdict = 'yes' | 'no' | 'unsure'
@@ -207,7 +222,8 @@ export interface MaintenanceLog extends LogInput {
 }
 
 /** 케이스를 닫은 방식. resolved = 해결 종료, unresolved = 미해결로 저장, handed_over = 도움 요청 (뒤의 둘은 작업함에 남음) */
-export type Closure = 'resolved' | 'unresolved' | 'handed_over'
+/** false_alarm: 실제 고장이 아니었음 (사람이 오알람으로 닫음, ML 개선 자료) */
+export type Closure = 'resolved' | 'unresolved' | 'handed_over' | 'false_alarm'
 
 /** 수동 모드에서 원인을 직접 찾았을 때 조치 · 결과에 쓰는 situation_id */
 export const MANUAL_CAUSE = 'MANUAL'

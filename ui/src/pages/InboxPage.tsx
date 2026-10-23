@@ -144,7 +144,7 @@ export default function InboxPage() {
   )
 }
 
-const STATUS_ORDER: CaseStatus[] = ['new', 'in_progress', 'handed_over', 'unresolved', 'logging', 'log_approved', 'resolved']
+const STATUS_ORDER: CaseStatus[] = ['new', 'in_progress', 'handed_over', 'unresolved', 'logging', 'log_approved', 'resolved', 'false_alarm']
 
 /** 작업함 정렬: 긴급 → 처리 단계(새 고장 먼저) → 발생 시각 최근 */
 function byPriority(a: CaseSummary, b: CaseSummary) {

@@ -27,6 +27,7 @@ const STATUS: Record<CaseStatus, { label: string; color: keyof typeof DOT }> = {
   unresolved: { label: '미해결', color: 'amber' },
   handed_over: { label: '도움 요청', color: 'amber' },
   resolved: { label: '해결', color: 'gray' },
+  false_alarm: { label: '오알람', color: 'gray' },
 }
 
 export function StatusTag({ status }: { status: CaseStatus }) {

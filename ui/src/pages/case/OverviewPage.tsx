@@ -4,7 +4,7 @@ import { SignalChart } from '../../components/SignalChart'
 import { btnLarge, btnPrimary, card } from '../../components/ui'
 import { checkCounts, currentCandidate, signalLabel } from '../../lib/caseFlow'
 import { useCaseDetail } from './context'
-import { CaseFacts, CauseList } from './parts'
+import { CaseFacts, CauseList, FalseAlarmButton } from './parts'
 
 // 상황 (wireframe/boards/V2Case.dc.html): 고장 전후 30분 그래프 + 확인할 원인
 export default function OverviewPage() {
@@ -84,9 +84,10 @@ export default function OverviewPage() {
           </Link>
         ) : (
           <Link to="no-cause" className={`${btnPrimary} ${btnLarge}`}>
-            남은 원인 없음 · 다음 할 일
+            원인 찾기
           </Link>
         )}
+        <FalseAlarmButton />
       </section>
     </div>
   )

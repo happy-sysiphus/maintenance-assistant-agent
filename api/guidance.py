@@ -13,6 +13,8 @@ from typing import Any
 
 REPO = Path(__file__).resolve().parent.parent
 MAPPING = REPO / "rag" / "data" / "situation_mapping.json"
+# 점검 항목별 정상 기준 · 확인 방법 (FE 초안, 매뉴얼 원문에 적힌 것만 — RAG 확인 전)
+CRITERIA = Path(__file__).resolve().parent / "check_criteria.json"
 
 # 종료 코드 → 상황 ID (ml/docs/sensor_features_for_rag.md: S01~S04는 E01~E04와 같음). 임시 표.
 CODE_TO_SITUATION = {"E012": "S01", "E016": "S02", "E028": "S03", "E029": "S04"}
@@ -83,12 +85,28 @@ def candidate(sid: str, rank: int) -> dict[str, Any] | None:
         "name": s["name"],
         "definition": s["definition"],
         "coverage_note": s["coverage_note"],
-        "checks": [{"id": f"{sid}-K{i + 1}", "title": t} for i, t in enumerate(s["check_sequence"])],
+        "checks": [_check(f"{sid}-K{i + 1}", t) for i, t in enumerate(s["check_sequence"])],
         "diagnostics": s["diagnostics"],
         "evidence": [
             {"page": e["page"], "quote": e.get("contains"), "rationale": e.get("rationale")} for e in m.get("evidence", [])
         ],
     }
+
+
+def _check(check_id: str, title: str) -> dict[str, Any]:
+    c = json.loads(CRITERIA.read_text(encoding="utf-8"))["criteria"].get(check_id)
+    return {"id": check_id, "title": title, **({"criterion": c} if c else {})}
+
+
+def attach_criteria(case: dict[str, Any]) -> dict[str, Any]:
+    """저장된 케이스에도 지금 기준표를 붙인다 (기준표가 나중에 바뀌어도 화면은 최신을 보게)."""
+    table = json.loads(CRITERIA.read_text(encoding="utf-8"))["criteria"]
+    for c in case.get("guidance", {}).get("candidates", []):
+        for k in c.get("checks", []):
+            k.pop("criterion", None)
+            if k["id"] in table:
+                k["criterion"] = table[k["id"]]
+    return case
 
 
 def guidance_for(event: dict[str, Any]) -> dict[str, Any]:

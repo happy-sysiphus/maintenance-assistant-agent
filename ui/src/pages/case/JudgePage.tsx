@@ -6,7 +6,7 @@ import { josa } from '../../lib/josa'
 import { useCaseMutation } from '../../lib/useCase'
 import type { CheckResult, Verdict } from '../../types/case'
 import { useCaseDetail } from './context'
-import { CauseList, SideLabel, sideCard, StepPanel, Steps, TwoColumns } from './parts'
+import { BackLink, CauseList, SideLabel, sideCard, StepPanel, Steps, TwoColumns } from './parts'
 
 // 판단 (wireframe/boards/V2Judge.dc.html): 점검 결과를 보고 카드 하나를 누르면 바로 넘어간다
 
@@ -42,6 +42,7 @@ export default function JudgePage() {
 
   return (
     <>
+      <BackLink to={`../check?cause=${cand.situation_id}`} />
       <Steps current="판단" />
       <TwoColumns
         side={

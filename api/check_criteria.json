@@ -1,0 +1,20 @@
+{
+  "_note": "점검 항목별 정상 기준 · 확인 방법. FE 초안(2026-10-23, 한혜원): rag/data/festo_manual.pdf · rsw_situations.pdf 원문에 적힌 것만 옮겼다. 항목과 쪽을 짝지은 것은 FE 판단이라 RAG 담당 확인 전이다 (ui/docs/07 요청 3). 같은 내용이 ui/src/mocks/fixtures/check-criteria.json 에 있다 (api/check_criteria.json 이 원본). kind: value = 숫자 기준, how = 확인 방법(숫자 없음), none = 원문에 없음.",
+  "criteria": {
+    "S01-K1": { "kind": "value", "text": "공급 압력 5 bar 이상", "quote": "Check supply pressure at least 5 bar.", "doc": "festo", "page": 90 },
+    "S01-K2": { "kind": "how", "text": "필터는 5 µm 필터(0Z1)가 설치 규격", "quote": "0Z1 Filter (5 µm)", "doc": "festo", "page": 16 },
+    "S01-K3": { "kind": "how", "text": "MPYD(압력 조절 밸브 2V1) 케이블 연결 확인", "quote": "Check cable to the MPYD.", "doc": "festo", "page": 90 },
+    "S01-K4": { "kind": "how", "text": "보정 실린더 배관은 2·4번 연결, 내경 8 mm (설치 규격)", "quote": "2 8 mm Front chamber Rear chamber / 4 8 mm Rear chamber Front chamber", "doc": "festo", "page": 18 },
+    "S01-K5": { "kind": "value", "text": "압력 감소 보통 1.0~3.0 bar, 감소 시간 보통 150~200 ms", "quote": "Typical values: 1.0-3.0 bar … Typical value: 150 – 200 ms", "doc": "festo", "page": 42 },
+    "S02-K1": { "kind": "how", "text": "캡이 빠졌는지 확인", "quote": "Check whether the cap is missing.", "doc": "festo", "page": 91 },
+    "S02-K2": { "kind": "how", "text": "WinSPZ 실제값 화면의 '캡 마모(Cap abrasion)'가 최대 수명 안인지. 기준값은 설비 파라미터", "quote": "Cap abrasion Total cap wear. / Maximum life of the caps is reached. Replace caps.", "doc": "festo", "page": 85 },
+    "S02-K3": { "kind": "how", "text": "드레싱 뒤 측정이 허용오차 안이면 'Milling OK'. 허용오차는 설비 파라미터", "quote": "If the measurement is within tolerance, the gun reports “Milling OK”.", "doc": "festo", "page": 83 },
+    "S02-K4": { "kind": "how", "text": "새 캡으로 축 보정 (가공한 캡이면 영점이 틀어짐)", "quote": "Perform axis calibration only with new caps and electrode shafts. If machined caps are used, an incorrect zero point is stored in the controller.", "doc": "festo", "page": 28 },
+    "S03-K1": { "kind": "how", "text": "이동 범위에 장애물이 없는지", "quote": "Check for obstacle in the travel range.", "doc": "festo", "page": 89 },
+    "S03-K2": { "kind": "value", "text": "축 보정 뒤 변환비 확인: C형 건 1.0, X형 건 1.0보다 큼", "quote": "The translation ratio for C-guns is 1.0. The translation ratio for X-guns is greater than 1.0", "doc": "festo", "page": 62 },
+    "S03-K3": { "kind": "how", "text": "차단 밸브 1V2 LED와 21번 연결 확인", "quote": "Check connection 21 to the main cylinder … Check status of output 0 and LED at the shut-off valve 1V2", "doc": "festo", "page": 94 },
+    "S04-K1": { "kind": "how", "text": "진단 중 주 실린더 압력·위치 변화가 없으면 정상", "quote": "If no pressure and position change takes place in the main cylinder 1A1, the blocking function is working properly.", "doc": "festo", "page": 84 },
+    "S04-K2": { "kind": "value", "text": "잠긴 상태에서 분당 5 mm 넘게 움직이면 이상", "quote": "잠긴 실린더가 멈추지 않고 분당 5 mm 넘게 움직임.", "doc": "rsw", "page": 6 },
+    "S04-K3": { "kind": "how", "text": "차단 밸브 1V2·1V3·1V4 작동 확인 (진단 시작 전 1V2 LED 꺼짐)", "quote": "1V2 at rest (LED 1V2 off).", "doc": "festo", "page": 98 }
+  }
+}

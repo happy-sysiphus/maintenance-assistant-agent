@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import { BackIcon, DocIcon } from '../../components/Icons'
 import { DotTag } from '../../components/Tag'
-import { card } from '../../components/ui'
+import { btn, card } from '../../components/ui'
 import { candidateState, checkCounts, latestJudgment, signalLabel } from '../../lib/caseFlow'
 import { formatKst } from '../../lib/time'
-import type { Candidate, CaseDetail } from '../../types/case'
+import { useCaseMutation } from '../../lib/useCase'
+import type { Candidate, CaseDetail, CheckCriterion, Closure } from '../../types/case'
 
 // 케이스 화면들이 같이 쓰는 조각: 진행 표시, 오른쪽 칸 틀, 고장 정보 · 원인 목록 · 기록
 
@@ -53,30 +55,61 @@ export const sideCard = `${card} flex flex-col gap-3.5 p-5`
 export const SideLabel = ({ children }: { children: ReactNode }) => <span className="text-xs font-medium text-sub">{children}</span>
 export const SideDivider = () => <div className="h-px bg-line-soft" />
 
-/** 점검 단계의 오른쪽 칸: 지금 원인의 정의 · 주의. 그래프 · 기록은 눌렀을 때만 (남은 점검 수는 아래 진행 표시에 있다) */
-export function StepPanel({ d, cand }: { d: CaseDetail; cand: Candidate }) {
-  const [note, setNote] = useState(false)
-  const quiet = 'inline-flex min-h-9 items-center px-2 text-sm font-medium text-primary-ink hover:underline'
+/**
+ * 점검 · 판단 단계의 오른쪽 칸.
+ * 점검: 지금 고른 항목의 정상 기준(매뉴얼 원문에 적힌 것만, FE 초안) → 고장 기준(상황 정의서) → 기록.
+ * 판단: 항목 없이 고장 기준 → 기록.
+ */
+export function StepPanel({
+  d,
+  cand,
+  item,
+  onOpenDoc,
+}: {
+  d: CaseDetail
+  cand: Candidate
+  item?: { no: number; title: string; criterion?: CheckCriterion }
+  onOpenDoc?: (page: number, doc: 'festo' | 'rsw') => void
+}) {
+  const crit = item?.criterion
   return (
-    <aside className={sideCard} aria-label="이 원인">
-      <SideLabel>정의</SideLabel>
-      <p className="text-sm">{cand.definition}</p>
-      {cand.coverage_note && (
-        <div className="rounded-lg bg-canvas px-3 py-2.5 text-sm text-ink-2">
-          <div className="flex items-center gap-2">
-            <span className="grow">매뉴얼 기준은 이 설비와 다를 수 있음</span>
-            <button type="button" className={quiet} aria-expanded={note} onClick={() => setNote((v) => !v)}>
-              {note ? '접기' : '자세히'}
-            </button>
-          </div>
-          {note && <p className="mt-1.5 leading-relaxed">{cand.coverage_note}</p>}
-        </div>
+    <aside className={sideCard} aria-label="점검 기준">
+      {item && (
+        <>
+          <SideLabel>
+            {item.no}. {crit?.kind === 'value' ? '정상 기준' : '확인할 것'}
+          </SideLabel>
+          {crit ? (
+            <>
+              <p className="text-base font-semibold">{crit.text}</p>
+              {/* 원문 문장과 그 쪽 열기를 한 상자에 */}
+              <div className="flex flex-col gap-2.5 rounded-lg bg-canvas px-3.5 py-3">
+                <p className="text-sm leading-relaxed text-ink-2">“{crit.quote}”</p>
+                {onOpenDoc && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenDoc(crit.page, crit.doc)}
+                    className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-field bg-white text-sm font-medium text-primary-ink transition-colors hover:bg-primary-soft"
+                  >
+                    <DocIcon size={16} />
+                    {crit.doc === 'rsw' ? '상황 정의서' : '매뉴얼'} {crit.page}쪽 열기
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-sub">매뉴얼 원문에 이 항목의 기준이 없어요. 직접 보고 판단하세요.</p>
+          )}
+          <SideDivider />
+        </>
       )}
+      <SideLabel>고장 기준</SideLabel>
+      <p className="text-sm">{cand.definition}</p>
       <SideDivider />
       <RecordToggle
         d={d}
         extra={
-          <Link to=".." className={quiet}>
+          <Link to=".." className="inline-flex min-h-9 items-center px-2 text-sm font-medium text-primary-ink hover:underline">
             그래프 보기
           </Link>
         }
@@ -208,7 +241,7 @@ export function CauseList({ d }: { d: CaseDetail }) {
 
 const VERDICT = { yes: '맞아요', no: '아니에요', unsure: '잘 모르겠어요' }
 const OUTCOME = { resolved: '해결됐어요', retry: '다른 조치를 해볼게요', next: '다음 원인 확인' }
-const CLOSURE = { resolved: '해결 종료', unresolved: '미해결로 저장', handed_over: '도움 요청' }
+const CLOSURE = { resolved: '해결 종료', unresolved: '미해결로 저장', handed_over: '도움 요청', false_alarm: '오알람으로 닫음' }
 
 export function RecordTab({ d }: { d: CaseDetail }) {
   const name = (sid: string) => d.guidance.candidates.find((c) => c.situation_id === sid)?.name ?? sid
@@ -247,5 +280,56 @@ export function RecordTab({ d }: { d: CaseDetail }) {
       ))}
       {items.length === 0 && <li className="pl-14 text-sm text-sub">아직 기록이 없습니다.</li>}
     </ol>
+  )
+}
+
+/** 오알람으로 닫기: 실제 고장이 아니었을 때. 한 번 더 눌러야 닫힌다. 닫으면 작업함에서 빠지고 이력에 "오알람"으로 남는다 */
+export function FalseAlarmButton() {
+  const navigate = useNavigate()
+  const close = useCaseMutation<{ outcome: Closure }>('POST', '/close')
+  const [ask, setAsk] = useState(false)
+  if (!ask)
+    return (
+      <button type="button" className={btn} onClick={() => setAsk(true)}>
+        오알람으로 닫기
+      </button>
+    )
+  return (
+    // 두 버튼을 같은 폭으로 나란히 (상황 화면에서는 칸 폭 전체를 반씩)
+    <span className="grid grid-cols-2 gap-2">
+      <button
+        type="button"
+        className={`${btn} border-ink`}
+        disabled={close.isPending}
+        onClick={() => close.mutate({ outcome: 'false_alarm' }, { onSuccess: () => navigate('/') })}
+      >
+        오알람 맞아요
+      </button>
+      <button type="button" className={btn} onClick={() => setAsk(false)}>
+        취소
+      </button>
+      {close.isError && <span className="col-span-2 text-sm text-alarm">저장하지 못했습니다</span>}
+    </span>
+  )
+}
+
+/** "‹ 이전": 단계 화면 맨 위 왼쪽, 같은 자리 · 같은 모양. to가 없으면 온 화면으로 돌아간다 */
+export function BackLink({ to }: { to?: string }) {
+  const navigate = useNavigate()
+  const cls = '-mb-2 inline-flex min-h-8 items-center gap-1 self-start text-sm font-medium text-sub hover:text-ink print:hidden'
+  const inner = (
+    <>
+      <BackIcon size={16} />
+      이전
+    </>
+  )
+  return to ? (
+    <Link to={to} className={cls}>
+      {inner}
+    </Link>
+  ) : (
+    <button type="button" className={cls} onClick={() => navigate(-1)}>
+      {inner}
+    </button>
   )
 }

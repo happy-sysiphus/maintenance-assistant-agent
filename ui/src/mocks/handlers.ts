@@ -5,6 +5,7 @@ import type {
   CaseDetail,
   CaseListResponse,
   CaseSummary,
+  CheckCriterion,
   CheckRecord,
   Closure,
   GunsResponse,
@@ -19,6 +20,7 @@ import type {
   Verdict,
 } from '../types/case'
 import caseDetails from './fixtures/case-details.json'
+import checkCriteria from './fixtures/check-criteria.json'
 import guns from './fixtures/guns.json'
 import health from './fixtures/health.json'
 import manualIndex from './fixtures/manual-index.json'
@@ -37,6 +39,13 @@ function mockMode() {
 }
 
 const store: Record<string, CaseDetail> = structuredClone(caseDetails as unknown as Record<string, CaseDetail>)
+// 점검 항목에 정상 기준을 붙인다 (api/guidance.py와 같은 표, FE 초안)
+for (const d of Object.values(store))
+  for (const c of d.guidance.candidates)
+    for (const k of c.checks) {
+      const crit = (checkCriteria.criteria as Record<string, CheckCriterion>)[k.id]
+      if (crit) k.criterion = crit
+    }
 
 function summary(d: CaseDetail): CaseSummary {
   const { event: e } = d
@@ -212,7 +221,7 @@ export const handlers = [
     if (mode === 'empty') return HttpResponse.json<CaseListResponse>({ cases: [] })
     // 해결 종료한 케이스는 작업함에서 빠지고 정비 이력에만 보인다
     const cases = Object.values(store)
-      .filter((d) => d.status !== 'resolved')
+      .filter((d) => d.status !== 'resolved' && d.status !== 'false_alarm')
       .map(summary)
       .sort((a, b) => b.event.detected_at.localeCompare(a.event.detected_at))
     return HttpResponse.json<CaseListResponse>({ cases })
@@ -342,7 +351,7 @@ export const handlers = [
     const list = (guns.guns as Omit<GunStatus, 'open_cases'>[]).map((g) => ({
       ...g,
       open_cases: Object.values(store)
-        .filter((d) => d.event.gun_id === g.gun_id && d.status !== 'resolved')
+        .filter((d) => d.event.gun_id === g.gun_id && d.status !== 'resolved' && d.status !== 'false_alarm')
         .map(summary)
         .sort((a, b) => b.event.detected_at.localeCompare(a.event.detected_at)),
     }))

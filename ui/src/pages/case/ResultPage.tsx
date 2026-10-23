@@ -6,7 +6,7 @@ import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
 import type { Outcome } from '../../types/case'
 import { useCaseDetail } from './context'
-import { RecordToggle, SideDivider, SideLabel, sideCard, Steps, TwoColumns } from './parts'
+import { BackLink, RecordToggle, SideDivider, SideLabel, sideCard, Steps, TwoColumns } from './parts'
 
 // 결과 (wireframe/boards/V2Result.dc.html): 지금까지 한 일을 보고 해결됐는지 고른다.
 // "조치 후 재발 없음" 자동 표시는 지금은 뺐다 (10/8 결정).
@@ -51,6 +51,7 @@ export default function ResultPage() {
   const row = 'flex items-center gap-3 border-t border-line-soft px-3.5 py-2.5 text-sm first:border-t-0'
   return (
     <>
+      <BackLink to="../action" />
       <Steps current="결과" />
       <TwoColumns
         side={

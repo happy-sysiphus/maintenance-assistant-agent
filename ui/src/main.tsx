@@ -14,7 +14,6 @@ import ActionPage from './pages/case/ActionPage.tsx'
 import CaseLayout from './pages/case/CaseLayout.tsx'
 import CheckPage from './pages/case/CheckPage.tsx'
 import JudgePage from './pages/case/JudgePage.tsx'
-import FieldPage from './pages/case/FieldPage.tsx'
 import HandoverPage from './pages/case/HandoverPage.tsx'
 import LogPage from './pages/case/LogPage.tsx'
 import ManualModePage from './pages/case/ManualModePage.tsx'
@@ -43,7 +42,6 @@ const router = createBrowserRouter([
           { path: 'no-cause', element: <NoCausePage /> },
           { path: 'log', element: <LogPage /> },
           { path: 'manual', element: <ManualModePage /> },
-          { path: 'field', element: <FieldPage /> },
           { path: 'handover', element: <HandoverPage /> },
         ],
       },

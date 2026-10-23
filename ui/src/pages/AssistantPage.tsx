@@ -369,7 +369,7 @@ function Composer({
                   type="button"
                   aria-label={`사진 ${i + 1} 빼기`}
                   onClick={() => setPhotos(photos.filter((_, j) => j !== i))}
-                  className="absolute -top-2 -right-2 flex size-[22px] items-center justify-center rounded-full border border-field bg-white text-[11px] text-ink-2"
+                  className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full border border-field bg-white text-xs text-ink-2"
                 >
                   ✕
                 </button>

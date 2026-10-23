@@ -6,7 +6,7 @@ import { activeCause, latestJudgment, manualAction } from '../../lib/caseFlow'
 import { useCaseMutation } from '../../lib/useCase'
 import { ACTION_KINDS, type ActionInput, type ActionKind } from '../../types/case'
 import { useCaseDetail } from './context'
-import { ManualActionPanel, Steps, TwoColumns } from './parts'
+import { BackLink, ManualActionPanel, Steps, TwoColumns } from './parts'
 
 // 조치 (wireframe/boards/V2Action.dc.html): 사람이 실제로 한 일만 적는다. 정비일지에는 여기 적은 내용만 들어간다.
 // 시작 · 종료는 작업 시각(지금 시계)이고, 고장 시각(데이터 시각)과 다르다.
@@ -76,16 +76,27 @@ export default function ActionPage() {
 
   return (
     <>
+      <BackLink to={cand ? `../judge?cause=${cand.situation_id}` : '../manual'} />
       <Steps current="조치" />
       <TwoColumns
         wide={openPage !== null}
-        side={openPage ? <ManualPanel page={openPage} onPage={setPage} onClose={() => setPage(null)} /> : <ManualActionPanel cand={cand} onOpen={setPage} />}
+        side={
+          openPage ? (
+            <ManualPanel page={openPage} onPage={setPage} onClose={() => setPage(null)} />
+          ) : (
+            <ManualActionPanel cand={cand} onOpen={setPage} />
+          )
+        }
       >
         <form onSubmit={onSubmit} className={`${card} flex flex-col gap-5 p-[26px]`} noValidate>
           <div className="flex items-center gap-3">
             <h2 className="grow text-xl font-semibold tracking-[-0.015em]">어떤 조치를 했나요?</h2>
             {manual && (
-              <button type="button" className={btn} onClick={() => setValue('did', `${manual.text} (Festo ${manual.page}쪽, 초안 — 실제로 한 일로 고치세요)`)}>
+              <button
+                type="button"
+                className={btn}
+                onClick={() => setValue('did', `${manual.text} (Festo ${manual.page}쪽, 초안 — 실제로 한 일로 고치세요)`)}
+              >
                 매뉴얼 조치 불러오기
               </button>
             )}
@@ -131,7 +142,13 @@ export default function ActionPage() {
             {parts.fields.map((f, i) => (
               <div key={f.id} className="flex gap-2">
                 <input className={input} placeholder="부품명" aria-label={`부품 ${i + 1} 이름`} {...register(`parts.${i}.name`)} />
-                <input type="number" min={1} className={`${input} w-24`} aria-label={`부품 ${i + 1} 수량`} {...register(`parts.${i}.qty`, { valueAsNumber: true })} />
+                <input
+                  type="number"
+                  min={1}
+                  className={`${input} w-24`}
+                  aria-label={`부품 ${i + 1} 수량`}
+                  {...register(`parts.${i}.qty`, { valueAsNumber: true })}
+                />
                 <button type="button" className={btn} onClick={() => parts.remove(i)}>
                   빼기
                 </button>
