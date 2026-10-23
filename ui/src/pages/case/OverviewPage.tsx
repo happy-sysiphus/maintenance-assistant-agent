@@ -4,7 +4,7 @@ import { SignalChart } from '../../components/SignalChart'
 import { btnLarge, btnPrimary, card } from '../../components/ui'
 import { checkCounts, currentCandidate, signalLabel } from '../../lib/caseFlow'
 import { useCaseDetail } from './context'
-import { CaseFacts, CauseList, FalseAlarmButton } from './parts'
+import { BackLink, CaseFacts, CauseList, FalseAlarmButton } from './parts'
 
 // 상황 (wireframe/boards/V2Case.dc.html): 고장 전후 30분 그래프 + 확인할 원인
 export default function OverviewPage() {
@@ -18,77 +18,80 @@ export default function OverviewPage() {
   const noGuide = d.guidance.candidates.length === 0
 
   return (
-    <div className="grid grow grid-cols-[minmax(0,1fr)_380px] items-start gap-4">
-      <section className={`${card} flex flex-col gap-3.5 p-6`}>
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-lg font-semibold tracking-[-0.015em]">
-            {d.event.trigger.rule_code ? `${d.event.trigger.rule_code} 발생 전후` : '모델 이상 신호 전후'}
-          </h2>
-          <div className="grow" />
-          <span className="text-sm text-sub">최근 30분</span>
-        </div>
-        <SignalChart trends={trends} selected={selected} score={d.score_trace} codes={d.event.error_timeline} />
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-medium text-sub">신호</span>
-          {trends.map((t) => (
-            <button
-              key={t.feature}
-              type="button"
-              aria-pressed={t.feature === selected}
-              onClick={() => setSelected(t.feature)}
-              className={`min-h-10 rounded-lg border px-3.5 text-sm ${
-                t.feature === selected ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-ink-2'
-              }`}
-            >
-              {signalLabel(t)}
-            </button>
-          ))}
-          <div className="grow" />
-          <button
-            type="button"
-            aria-expanded={howTo}
-            onClick={() => setHowTo((v) => !v)}
-            className="inline-flex min-h-9 items-center px-2 text-sm font-medium text-primary-ink hover:underline"
-          >
-            {howTo ? '설명 접기' : '그래프 읽는 법'}
-          </button>
-        </div>
-        {/* 글을 줄이려고 설명 · ML 요약은 눌렀을 때만 보여준다 (10/23) */}
-        {howTo && (
-          <div className="flex flex-col gap-1 rounded-lg bg-canvas px-3.5 py-3 text-sm text-ink-2">
-            <p>값은 실제 측정값이 아니라 이 설비 평소 대비 편차입니다 (1분 단위, ±1이 평소 범위). 빨간 선은 고장 코드가 뜬 시각입니다.</p>
-            <p>이상 점수는 0~1이며 고장 확률이 아닙니다. 점선이 기준선입니다.</p>
-            {d.event.summary_ko && <p>ML 요약 · {d.event.summary_ko}</p>}
+    <>
+      <BackLink to="/" />
+      <div className="grid grow grid-cols-[minmax(0,1fr)_380px] items-start gap-4">
+        <section className={`${card} flex flex-col gap-3.5 p-6`}>
+          <div className="flex items-baseline gap-3">
+            <h2 className="text-lg font-semibold tracking-[-0.015em]">
+              {d.event.trigger.rule_code ? `${d.event.trigger.rule_code} 발생 전후` : '모델 이상 신호 전후'}
+            </h2>
+            <div className="grow" />
+            <span className="text-sm text-sub">최근 30분</span>
           </div>
-        )}
-        <div className="mt-1 border-t border-line-soft pt-4">
-          <CaseFacts d={d} />
-        </div>
-      </section>
+          <SignalChart trends={trends} selected={selected} score={d.score_trace} codes={d.event.error_timeline} />
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-medium text-sub">신호</span>
+            {trends.map((t) => (
+              <button
+                key={t.feature}
+                type="button"
+                aria-pressed={t.feature === selected}
+                onClick={() => setSelected(t.feature)}
+                className={`min-h-10 rounded-lg border px-3.5 text-sm ${
+                  t.feature === selected ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-ink-2'
+                }`}
+              >
+                {signalLabel(t)}
+              </button>
+            ))}
+            <div className="grow" />
+            <button
+              type="button"
+              aria-expanded={howTo}
+              onClick={() => setHowTo((v) => !v)}
+              className="inline-flex min-h-9 items-center px-2 text-sm font-medium text-primary-ink hover:underline"
+            >
+              {howTo ? '설명 접기' : '그래프 읽는 법'}
+            </button>
+          </div>
+          {/* 글을 줄이려고 설명 · ML 요약은 눌렀을 때만 보여준다 (10/23) */}
+          {howTo && (
+            <div className="flex flex-col gap-1 rounded-lg bg-canvas px-3.5 py-3 text-sm text-ink-2">
+              <p>값은 실제 측정값이 아니라 이 설비 평소 대비 편차입니다 (1분 단위, ±1이 평소 범위). 빨간 선은 고장 코드가 뜬 시각입니다.</p>
+              <p>이상 점수는 0~1이며 고장 확률이 아닙니다. 점선이 기준선입니다.</p>
+              {d.event.summary_ko && <p>ML 요약 · {d.event.summary_ko}</p>}
+            </div>
+          )}
+          <div className="mt-1 border-t border-line-soft pt-4">
+            <CaseFacts d={d} />
+          </div>
+        </section>
 
-      <section className={`${card} flex flex-col gap-3.5 p-[22px]`}>
-        <span className="text-xs font-medium text-sub">확인할 원인</span>
-        {noGuide ? (
-          <p className="text-sm text-sub">이 고장에 맞는 매뉴얼 안내를 찾지 못했습니다. 직접 점검한 내용을 기록하거나 도움을 요청하세요.</p>
-        ) : (
-          <CauseList d={d} />
-        )}
-        {noGuide ? (
-          <Link to="manual" className={`${btnPrimary} ${btnLarge}`}>
-            직접 점검해서 기록
-          </Link>
-        ) : current ? (
-          <Link to="check" className={`${btnPrimary} ${btnLarge}`}>
-            {started ? '이어서 점검' : '점검 시작'}
-            {current && started && ` · ${checkCounts(current, d.records.checks).done}/${current.checks.length}`}
-          </Link>
-        ) : (
-          <Link to="no-cause" className={`${btnPrimary} ${btnLarge}`}>
-            원인 찾기
-          </Link>
-        )}
-        <FalseAlarmButton />
-      </section>
-    </div>
+        <section className={`${card} flex flex-col gap-3.5 p-[22px]`}>
+          <span className="text-xs font-medium text-sub">확인할 원인</span>
+          {noGuide ? (
+            <p className="text-sm text-sub">이 고장에 맞는 매뉴얼 안내를 찾지 못했습니다. 직접 점검한 내용을 기록하거나 도움을 요청하세요.</p>
+          ) : (
+            <CauseList d={d} />
+          )}
+          {noGuide ? (
+            <Link to="manual" className={`${btnPrimary} ${btnLarge}`}>
+              직접 점검해서 기록
+            </Link>
+          ) : current ? (
+            <Link to="check" className={`${btnPrimary} ${btnLarge}`}>
+              {started ? '이어서 점검' : '점검 시작'}
+              {current && started && ` · ${checkCounts(current, d.records.checks).done}/${current.checks.length}`}
+            </Link>
+          ) : (
+            <Link to="no-cause" className={`${btnPrimary} ${btnLarge}`}>
+              원인 찾기
+            </Link>
+          )}
+          <FalseAlarmButton />
+        </section>
+      </div>
+    </>
   )
 }

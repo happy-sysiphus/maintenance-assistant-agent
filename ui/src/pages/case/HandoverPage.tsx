@@ -7,7 +7,7 @@ import { useCaseMutation } from '../../lib/useCase'
 import { EQUIPMENT_STATES, HANDOVER_REASONS, type CaseDetail, type HandoverInput } from '../../types/case'
 import { Select } from '../../components/Select'
 import { useCaseDetail } from './context'
-import { RecordToggle, SideDivider, SideLabel, sideCard } from './parts'
+import { BackLink, RecordToggle, SideDivider, SideLabel, sideCard } from './parts'
 
 // 도움 요청 · 인계 (wireframe/boards/V2Handover.dc.html): 받는 사람 · 지금 설비 상태 · 이유 · 내용만 적는다.
 // 지금까지의 점검 · 판단 · 조치 기록은 케이스에 이미 있어서 자동으로 함께 전달된다.
@@ -61,6 +61,7 @@ export default function HandoverPage() {
 
   return (
     <>
+      <BackLink />
       <h2 className="text-xl font-semibold tracking-[-0.015em]">도움 요청</h2>
       <div className="grid grow grid-cols-[minmax(0,1fr)_380px] items-start gap-4">
         <form onSubmit={onSubmit} className={`${card} flex flex-col gap-[18px] p-[26px]`} noValidate>

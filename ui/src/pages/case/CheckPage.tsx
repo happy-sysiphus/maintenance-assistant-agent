@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { DocButton, ManualPanel } from '../../components/ManualPanel'
 import { ResultSeg } from '../../components/ResultSeg'
-import { CameraIcon } from '../../components/Icons'
+import { BackIcon, CameraIcon } from '../../components/Icons'
 import { btn, btnLarge, btnPrimary, card, input } from '../../components/ui'
-import { checkCounts, manualAction, pickCandidate } from '../../lib/caseFlow'
+import { checkCounts, pickCandidate } from '../../lib/caseFlow'
 import { addPhotos, MAX_PHOTOS } from '../../lib/photo'
 import { useCaseMutation } from '../../lib/useCase'
 import type { CheckRecord } from '../../types/case'
@@ -15,7 +15,7 @@ import { BackLink, StepPanel, Steps, TwoColumns } from './parts'
 // 항목마다 정상 / 이상 / 건너뜀. "이상"이면 메모 칸이 열린다 (측정값 · 단위 · 기준값 칸은 두지 않음, 10/8 결정)
 // 매뉴얼 쪽 버튼을 누르면 오른쪽에 원본 PDF가 열린다 (V2Manual, 주소 ?manual=쪽).
 // RAG가 점검 항목별 쪽수를 아직 주지 않아서, 쪽 버튼은 원인 단위 근거 쪽과 오류 조치 쪽에만 단다 (docs/06 요청 3).
-// (10/23) 근거 버튼은 쪽수만 (설명은 마우스를 올리면). "이상"을 고르면 이상일 때 줄에 원인 · 조치 쪽 버튼을 보여준다.
+// (10/23) 근거 버튼은 쪽수만 (설명은 마우스를 올리면). "이상"이면 메모 칸만 열린다 (매뉴얼은 오른쪽 칸에서 연다).
 // 오른쪽은 탭 대신 이 단계에 필요한 것만 (정의 · 주의).
 // (10/23) 현장 확인 입력을 여기로 합쳤다: 항목마다 사진(최대 4장)을 붙인다. 인쇄는 정비일지에만 둔다.
 
@@ -31,8 +31,9 @@ export default function CheckPage() {
   if (!cand) return <Navigate to="../no-cause" replace />
   const index = d.guidance.candidates.indexOf(cand) + 1
   const total = d.guidance.candidates.length
+  // 앞 원인 (원인 2부터): "이전"은 그 원인의 판단 화면으로, 머리글에서 그 원인의 점검으로 바로 갈 수 있다
+  const prev = index > 1 ? d.guidance.candidates[index - 2] : null
   const counts = checkCounts(cand, checks)
-  const manual = manualAction(cand)
   const openPage = Number(params.get('manual')) || null
   // 어느 문서를 열지 (기본 Festo 매뉴얼, 항목 기준이 상황 정의서에 있으면 rsw)
   const openDoc = params.get('doc') === 'rsw' ? 'rsw' : 'festo'
@@ -49,7 +50,9 @@ export default function CheckPage() {
       { replace: true },
     )
   // 오른쪽 칸에 기준을 보여줄 항목: 사용자가 마지막으로 누른 항목, 없으면 아직 안 한 첫 항목
-  const activeId = picked ?? cand.checks.find((c) => !checks[c.id])?.id ?? cand.checks[0]?.id
+  // 원인을 바꾸면(원인 1 ↔ 2) 앞 원인에서 고른 항목은 무시한다
+  const pickedHere = cand.checks.some((c) => c.id === picked) ? picked : null
+  const activeId = pickedHere ?? cand.checks.find((c) => !checks[c.id])?.id ?? cand.checks[0]?.id
   const activeIndex = cand.checks.findIndex((c) => c.id === activeId)
   const active = activeIndex >= 0 ? cand.checks[activeIndex] : undefined
   // 근거 쪽: 같은 쪽이 여러 번 나오면 설명을 합친다
@@ -66,7 +69,7 @@ export default function CheckPage() {
 
   return (
     <>
-      <BackLink to=".." />
+      <BackLink to={prev ? `../judge?cause=${prev.situation_id}` : '..'} />
       <Steps current="점검" />
       <TwoColumns
         wide={openPage !== null}
@@ -88,7 +91,16 @@ export default function CheckPage() {
             <span className="text-xs font-medium text-sub">
               원인 {index} / {total}
             </span>
-            <b className="text-base font-semibold">{cand.name}</b>
+            <b className="grow text-base font-semibold">{cand.name}</b>
+            {prev && (
+              <Link
+                to={`?cause=${prev.situation_id}`}
+                className="inline-flex min-h-8 items-center gap-1 text-sm font-medium text-primary-ink hover:underline"
+              >
+                <BackIcon size={14} />
+                원인 {index - 1} 점검 보기
+              </Link>
+            )}
           </div>
           {pages.size > 0 && (
             <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-[22px] py-3">
@@ -168,24 +180,6 @@ export default function CheckPage() {
                           onChange={(e) => set(item.id, { memo: e.target.value })}
                         />
                       </label>
-                      {manual && (
-                        <div
-                          className="ml-9 flex items-center gap-3 rounded border-l-[3px] border-hint-line bg-hint py-2 pr-2 pl-3 text-sm text-ink-2"
-                          title={manual.text}
-                        >
-                          <b className="font-semibold text-warn">이상일 때</b>
-                          <span className="grow">
-                            매뉴얼 원인 · 조치 — Festo 오류 {cand.diagnostics.find((x) => x.manual)?.number} {manual.name}
-                          </span>
-                          {/* RAG 검토 메모(정의서 기준과 매뉴얼 기준의 차이)는 매뉴얼 숫자를 읽는 이 자리에서 */}
-                          {cand.coverage_note && (
-                            <span title={cand.coverage_note} className="shrink-0 cursor-help text-xs text-sub underline decoration-dotted">
-                              기준 차이
-                            </span>
-                          )}
-                          <DocButton page={manual.page} name="원인 · 조치" on={openPage === manual.page} onOpen={(p) => setPage(p)} />
-                        </div>
-                      )}
                     </>
                   )}
                 </li>
