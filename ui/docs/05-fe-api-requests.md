@@ -281,15 +281,15 @@ api 서버가 아직 없어서 FE가 주소와 모양을 정하고 MSW(mock)로 
 | --- | --- | --- |
 | `GET /api/cases` | 작업함 목록 | — (응답: `{ "cases": [...] }`, 발생 시각 최근순) |
 | `GET /api/cases/{id}` | 케이스 한 건 (`event`, `score_trace`, `guidance`, `records`) | — |
-| `PUT /api/cases/{id}/checks` | 점검 결과 저장. 보낸 항목만 덮어씀 | `{ "checks": { "S01-K1": { "result": "abnormal", "memo": "4.2 bar" } } }` |
+| `PUT /api/cases/{id}/checks` | 점검 결과 저장. 보낸 항목만 덮어씀. 항목마다 `photos`(사진, 선택) | `{ "checks": { "S01-K1": { "result": "abnormal", "memo": "4.2 bar" } } }` |
 | `POST /api/cases/{id}/judgments` | 원인 판단 추가 | `{ "situation_id": "S01", "verdict": "yes" }` |
 | `POST /api/cases/{id}/actions` | 조치 기록 추가 | 아래 예시 |
 | `POST /api/cases/{id}/results` | 결과 추가 | `{ "situation_id": "S01", "outcome": "resolved" }` |
 | `PUT /api/cases/{id}/log` | 정비일지 저장. `approved: true`면 승인, `false`면 승인 취소 | 아래 예시 |
-| `POST /api/cases/{id}/close` | 해결 종료(`resolved`, 일지 승인 뒤에만) 또는 미해결로 저장(`unresolved`) | `{ "outcome": "resolved" }` |
+| `POST /api/cases/{id}/close` | 해결 종료(`resolved`, 일지 승인 뒤에만), 미해결로 저장(`unresolved`), 오알람으로 닫기(`false_alarm`, 10/23 추가: 실제 고장이 아님, 작업함에서 빠지고 이력에 남음) | `{ "outcome": "resolved" }` |
 | `GET /api/history` | 정비 이력: 해결 종료했거나 미해결로 저장한 케이스 | — (응답: `{ "items": [...] }`, 종료 최근순) |
 | `PUT /api/cases/{id}/manual` | 수동 모드 기록 (통째로 덮어씀) | `{ "checks": [{ "title": "…", "result": "abnormal", "memo": "…" }], "cause": "…" }` |
-| `POST /api/cases/{id}/field` | 현장 확인 입력. 결과는 점검 결과에 합치고 확인한 사람을 남김 | `{ "by": "…", "checks": { "S01-K1": { "result": "normal" } } }` |
+| `POST /api/cases/{id}/field` | (10/23부터 화면에서 안 씀: 현장 확인을 점검 화면에 합쳐 사진은 `PUT /checks`의 `checks[id].photos`로 보냄) 현장 확인 입력. 결과는 점검 결과에 합치고 확인한 사람을 남김 | `{ "by": "…", "checks": { "S01-K1": { "result": "normal" } } }` |
 | `POST /api/cases/{id}/handover` | 도움 요청. 케이스 기록은 이미 api에 있으므로 요청 내용만 보냄 | `{ "to": "공정 담당", "equipment_state": "이 설비만 멈춤", "reasons": ["원인을 못 찾음"], "note": "…" }` |
 | `GET /api/guns` | 설비 목록. ML `GET /guns` 그대로 + `open_cases`(해결 종료 전 케이스) | — (응답: `{ "guns": [...] }`) |
 | `GET /api/manuals/festo/search?q=` | 수동 모드 "매뉴얼에서 직접 찾기". 지금은 RAG 매핑의 근거 쪽(설명 · 인용 · 원인 이름)에서 찾음 | — (응답: `{ "items": [{ "page", "title", "quote", "situation_id", "situation_name" }] }`) |
