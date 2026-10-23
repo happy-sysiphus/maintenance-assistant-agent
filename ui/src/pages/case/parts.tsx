@@ -64,16 +64,25 @@ export function StepPanel({
   d,
   cand,
   item,
+  top,
   onOpenDoc,
 }: {
   d: CaseDetail
   cand: Candidate
   item?: { no: number; title: string; criterion?: CheckCriterion }
+  /** 맨 위에 붙일 구역 (판단: 원인 목록). 같은 카드 안에 나눔선으로 이어 붙인다 */
+  top?: ReactNode
   onOpenDoc?: (page: number, doc: 'festo' | 'rsw') => void
 }) {
   const crit = item?.criterion
   return (
     <aside className={sideCard} aria-label="점검 기준">
+      {top && (
+        <>
+          {top}
+          <SideDivider />
+        </>
+      )}
       {item && (
         <>
           <SideLabel>

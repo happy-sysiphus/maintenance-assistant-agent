@@ -90,7 +90,7 @@ export default function ActionPage() {
       >
         <form onSubmit={onSubmit} className={`${card} flex flex-col gap-5 p-[26px]`} noValidate>
           <div className="flex items-center gap-3">
-            <h2 className="grow text-xl font-semibold tracking-[-0.015em]">어떤 조치를 했나요?</h2>
+            <h2 className="grow text-[22px] leading-snug font-medium tracking-[-0.015em]">어떤 조치를 했나요?</h2>
             {manual && (
               <button
                 type="button"

@@ -82,7 +82,7 @@ export default function ResultPage() {
             <span className="text-xs font-medium text-sub">
               {cand ? `원인 ${d.guidance.candidates.indexOf(cand) + 1} / ${d.guidance.candidates.length}` : `직접 찾은 원인 · ${cause.name}`}
             </span>
-            <h2 className="mt-3 text-xl font-semibold tracking-[-0.015em]">해결됐나요?</h2>
+            <h2 className="mt-3 text-[22px] leading-snug font-medium tracking-[-0.015em]">해결됐나요?</h2>
           </div>
           <div className="overflow-hidden rounded-lg border border-line">
             <div className="flex items-center bg-head py-1.5 pr-1.5 pl-3.5">

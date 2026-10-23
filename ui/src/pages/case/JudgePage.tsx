@@ -6,7 +6,7 @@ import { josa } from '../../lib/josa'
 import { useCaseMutation } from '../../lib/useCase'
 import type { CheckResult, Verdict } from '../../types/case'
 import { useCaseDetail } from './context'
-import { BackLink, CauseList, SideLabel, sideCard, StepPanel, Steps, TwoColumns } from './parts'
+import { BackLink, CauseList, SideLabel, StepPanel, Steps, TwoColumns } from './parts'
 
 // 판단 (wireframe/boards/V2Judge.dc.html): 점검 결과를 보고 카드 하나를 누르면 바로 넘어간다
 
@@ -46,16 +46,19 @@ export default function JudgePage() {
       <Steps current="판단" />
       <TwoColumns
         side={
-          // 점검 화면과 같은 칸(정의 · 주의 · 그래프 · 기록). 원인이 여럿이면 위에 원인 목록
-          <div className="flex flex-col gap-4">
-            {d.guidance.candidates.length > 1 && (
-              <aside className={sideCard} aria-label="원인 목록">
-                <SideLabel>원인 목록</SideLabel>
-                <CauseList d={d} />
-              </aside>
-            )}
-            <StepPanel d={d} cand={cand} />
-          </div>
+          // 점검 화면과 같은 카드 하나. 원인이 여럿이면 맨 위에 원인 목록을 붙인다
+          <StepPanel
+            d={d}
+            cand={cand}
+            top={
+              d.guidance.candidates.length > 1 && (
+                <>
+                  <SideLabel>원인 목록</SideLabel>
+                  <CauseList d={d} />
+                </>
+              )
+            }
+          />
         }
       >
         <section className={`${card} flex flex-col gap-[22px] p-[30px]`}>
@@ -63,7 +66,7 @@ export default function JudgePage() {
             <span className="text-xs font-medium text-sub">
               원인 {index} / {d.guidance.candidates.length}
             </span>
-            <h2 className="mt-3 text-xl font-semibold tracking-[-0.015em]">{josa(cand.name, '이', '가')} 맞나요?</h2>
+            <h2 className="mt-3 text-[22px] leading-snug font-medium tracking-[-0.015em]">{josa(cand.name, '이', '가')} 맞나요?</h2>
           </div>
           <div className="overflow-hidden rounded-lg border border-line">
             <div className="flex items-center gap-3 bg-head py-1.5 pr-1.5 pl-3.5">
