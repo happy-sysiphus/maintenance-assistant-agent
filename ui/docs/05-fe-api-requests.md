@@ -1,6 +1,8 @@
 # FE가 받을 데이터 형식 — ML · RAG 담당에게 요청할 것 (레포 기준)
 
-2026-10-02 · FE 담당
+2026-10-02 · FE 담당 (10-23 덧붙임)
+
+> **10-23:** ML 핸드오프 v1.2에서 `situation_ids` · `symptoms`가 빠졌다 (`04-repo-status.md` 맨 위). 아래 표의 "순서는 ML" 부분은 옛 기준이다. RAG에 지금 필요한 것은 `07-rag-requests-now.md` 한 장에 다시 정리했다. 저장 API · AI 챗봇 API(맨 아래 두 절)는 최신이다.
 
 ## 한눈에 보기
 
@@ -288,7 +290,7 @@ api 서버가 아직 없어서 FE가 주소와 모양을 정하고 MSW(mock)로 
 | `GET /api/history` | 정비 이력: 해결 종료했거나 미해결로 저장한 케이스 | — (응답: `{ "items": [...] }`, 종료 최근순) |
 | `PUT /api/cases/{id}/manual` | 수동 모드 기록 (통째로 덮어씀) | `{ "checks": [{ "title": "…", "result": "abnormal", "memo": "…" }], "cause": "…" }` |
 | `POST /api/cases/{id}/field` | 현장 확인 입력. 결과는 점검 결과에 합치고 확인한 사람을 남김 | `{ "by": "…", "checks": { "S01-K1": { "result": "normal" } } }` |
-| `POST /api/cases/{id}/handover` | 도움 요청. 케이스 기록은 이미 api에 있으므로 요청 내용만 보냄 | `{ "to": "공정 담당", "urgency": "급함", "reasons": ["원인을 못 찾음"], "note": "…" }` |
+| `POST /api/cases/{id}/handover` | 도움 요청. 케이스 기록은 이미 api에 있으므로 요청 내용만 보냄 | `{ "to": "공정 담당", "equipment_state": "이 설비만 멈춤", "reasons": ["원인을 못 찾음"], "note": "…" }` |
 | `GET /api/guns` | 설비 목록. ML `GET /guns` 그대로 + `open_cases`(해결 종료 전 케이스) | — (응답: `{ "guns": [...] }`) |
 | `GET /api/manuals/festo/search?q=` | 수동 모드 "매뉴얼에서 직접 찾기". 지금은 RAG 매핑의 근거 쪽(설명 · 인용 · 원인 이름)에서 찾음 | — (응답: `{ "items": [{ "page", "title", "quote", "situation_id", "situation_name" }] }`) |
 | `GET /api/manuals/festo.pdf` | Festo 매뉴얼 원본 PDF (`Content-Type: application/pdf`). FE는 `#page=90`처럼 쪽을 붙여 연다 | — |
@@ -333,3 +335,19 @@ api 서버가 아직 없어서 FE가 주소와 모양을 정하고 MSW(mock)로 
 - 수동 모드에서 직접 찾은 원인으로 조치 · 결과를 저장할 때 `situation_id`는 `"MANUAL"`입니다.
 - 도움 요청을 보내면 `status`가 `handed_over`가 되고 `records.closure`에 `handed_over`가 남습니다. 작업함에 남고 이력의 "도움 요청"에도 보입니다.
 - RAG에 요청할 것: 매뉴얼 전문 키워드 검색 (위 RAG 요청 표의 "수동 모드 문서 검색"). 생기면 `/manuals/festo/search`가 그 결과를 돌려주면 됩니다. 다음 화면을 만들 때 이 표에 추가합니다.
+
+## AI 챗봇 API — FE가 정한 안 (2026-10-23)
+
+왼쪽 메뉴 "AI 챗봇"(ChatGPT형 질문 화면)가 쓰는 주소. 사용자는 상황을 고르지 않고 그냥 질문한다. **어떤 상황(S01~S10)의 근거를 쓸지는 api가 질문 · 앞 대화를 보고 고르고**, 그 상황 ID로 RAG `answer_question`을 부른다. 지금은 MSW mock이 고장 코드 · 오류 번호 · 글자 겹침으로 상황을 고르고, RAG 매핑 원본(`src/mocks/fixtures/situations.json`)으로 "근거만 조회" 답을 만든다. 타입은 `src/types/assistant.ts`.
+
+| 주소 | 하는 일 | 보내는 것 · 받는 것 |
+|---|---|---|
+| `GET /api/situations` | 상황 목록 (S01~S10). 대화 목록에 상황 이름을 보여줄 때 씀 | `{ situations: [{ situation_id, name, definition, check_sequence, check_source_page, coverage_note, evidence, diagnostics }] }` |
+| `POST /api/assistant/ask` | 질문 하나에 답 | 보냄: `{ question, photos: [{ name, url }], history: [{ role, text }] }` / 받음: `{ status, situation_ids, blocks, caution, evidence }` (`situation_ids` = api가 고른 상황) |
+| `POST /api/assistant/feedback` | 답변이 도움이 됐는지 | `{ conversation_id, message_index, helpful }` |
+
+- `status`는 RAG `status` 6종을 그대로 쓴다. `blocks`는 문단(`p`)과 번호 목록(`ol`)이고, 문단 안 인용은 `{ cite: { doc: "festo" | "rsw", page } }`로 나눠서 준다 (RAG 답변의 `[Festo PDF p.N]`, `[RSW PDF p.N]`을 api가 바꿔 줌).
+- 지금 RAG는 질문 문장으로 매뉴얼 전체를 검색하지 못한다(상황 ID로만 조회). api가 상황을 고르는 방법(키워드 · 벡터 검색 · LLM 분류)을 RAG 담당과 정해야 한다. 맞는 상황이 없으면 `no_evidence`로 "찾지 못함"을 돌려준다.
+- RAG 함수는 대화를 기억하지 않아서 `history`(앞 대화)를 api가 같이 넘겨야 이어 묻기가 된다.
+- 사진은 지금 data URL로 보낸다. RAG는 글만 다루므로 사진 속 상태는 판단하지 않는다고 답에 밝힌다 (멀티모달 연결 전).
+- 매뉴얼 PDF는 `GET /api/manuals/festo.pdf`, `GET /api/manuals/rsw.pdf` (RSW 상황 정의서)를 api가 내려줘야 한다.

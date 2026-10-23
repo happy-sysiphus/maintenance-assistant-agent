@@ -1,4 +1,24 @@
-# 04. 팀 레포 진행 상태 (2026-10-02 커밋 기준)
+# 04. 팀 레포 진행 상태 (2026-10-02 커밋 기준, 10-23 갱신 추가)
+
+## 10-23 갱신 (main `a6a1a95`)
+
+10/2 이후 바뀐 것만 적는다. 아래 본문은 10/2 스냅샷 그대로다.
+
+| 폴더 | 10/2 이후 | 누가 |
+|---|---|---|
+| `ml/` | 10/8 핸드오프 v1.1(FE 요청 3·4·5 반영: `error_timeline` · `sensor_trend` · 시각 Z · `sensor_name_ko`). 10/21~22 **핸드오프 v1.2 + 매분 센서 문서 sensor-features v4** | baejonghyuk |
+| `rag/` | 변경 없음 (마지막 10/2 `b1a9db1`) | — |
+| `api/` | 변경 없음 (README만) | — |
+| `ui/` | 10/2~10/9 화면 구현(작업함~정비일지 · 이력 · 설비 · 수동 모드 · 현장 확인 · 도움 요청), 10/23 디자인 정리 · AI 챗봇 | 한혜원(FE) |
+
+**ML v1.2가 FE에 주는 영향** (`ml/README.md` 5.10 · 5.11, `ml/history.md` 33 · 34절)
+
+- 핸드오프에서 `symptoms`(P1~P9), `situation_ids`(S01~S10), `fault_class.situation_id`가 **삭제**됐다. ML은 상황 해석을 하지 않고 코드(`terminal_code`, 예: E029)와 고장 유형(`fault_class.code`, 예: E04)만 보낸다.
+- RAG로는 핸드오프 대신 **매분 센서 문서**(측정값 10 · 상태 3 · 설정값 4, z + 원래 값)를 보낸다. 핸드오프는 UI용으로 ML 안에 남는다.
+- ML 문서에 "S05~S10은 데이터 근거가 없어 쓰지 않는다"고 적혀 있다. FE 화면은 S05~S09를 원인 후보로 쓰고 있어서, RAG 입력 방식이 정해지면 원인 찾기 흐름을 다시 맞춰야 한다 → `07-rag-requests-now.md` 1번.
+- FE mock(`src/mocks/fixtures/case-details.json`)은 아직 `situation_ids`를 가진 옛 모양이다. api가 생기면 이 값은 ML이 아니라 RAG(또는 api의 E 코드 → S 변환)에서 와야 한다.
+
+---
 
 레포: `happy-sysiphus/maintenance-assistant-agent`. 커밋 5개(마지막 `b1a9db1`, 10-02 19:48 KST).
 이 문서는 그 시점의 스냅샷이다. 레포가 바뀌었으면 다시 확인할 것.
