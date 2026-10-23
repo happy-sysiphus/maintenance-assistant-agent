@@ -1,14 +1,13 @@
-import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
-import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../components/ui'
+import { btn, btnLarge, btnPrimary, card, input, label } from '../../components/ui'
 import { candidateState, checkCounts, latestJudgment } from '../../lib/caseFlow'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
 import { EQUIPMENT_STATES, HANDOVER_REASONS, type CaseDetail, type HandoverInput } from '../../types/case'
 import { Select } from '../../components/Select'
 import { useCaseDetail } from './context'
-import { RecordTab } from './parts'
+import { RecordToggle, SideDivider, SideLabel, sideCard } from './parts'
 
 // 도움 요청 · 인계 (wireframe/boards/V2Handover.dc.html): 받는 사람 · 지금 설비 상태 · 이유 · 내용만 적는다.
 // 지금까지의 점검 · 판단 · 조치 기록은 케이스에 이미 있어서 자동으로 함께 전달된다.
@@ -53,7 +52,6 @@ interface FormValues extends Omit<HandoverInput, 'to'> {
 export default function HandoverPage() {
   const d = useCaseDetail()
   const navigate = useNavigate()
-  const [all, setAll] = useState(false)
   const send = useCaseMutation<HandoverInput>('POST', '/handover')
   const { register, control, handleSubmit, formState } = useForm<FormValues>({
     defaultValues: { to: '', equipment_state: '계속 용접 중', reasons: [], note: '' },
@@ -93,14 +91,19 @@ export default function HandoverPage() {
                 render={({ field }) => (
                   <div className="mt-1.5 flex flex-wrap gap-2">
                     {EQUIPMENT_STATES.map((u) => (
-                      <button key={u} type="button" aria-pressed={field.value === u} className={chip(field.value === u)} onClick={() => field.onChange(u)}>
+                      <button
+                        key={u}
+                        type="button"
+                        aria-pressed={field.value === u}
+                        className={chip(field.value === u)}
+                        onClick={() => field.onChange(u)}
+                      >
                         {u}
                       </button>
                     ))}
                   </div>
                 )}
               />
-              <span className="text-xs text-sub">받는 사람이 이걸 보고 먼저 볼 일을 정합니다</span>
             </fieldset>
           </div>
           <fieldset className="flex flex-col gap-1.5">
@@ -132,7 +135,12 @@ export default function HandoverPage() {
           </fieldset>
           <label className="flex flex-col gap-1.5">
             <span className={label}>요청 내용 *</span>
-            <textarea rows={5} className={`${input} resize-y`} placeholder="무엇을 도와주면 되는지 적어주세요" {...register('note', { required: true })} />
+            <textarea
+              rows={5}
+              className={`${input} resize-y`}
+              placeholder="무엇을 도와주면 되는지 적어주세요"
+              {...register('note', { required: true })}
+            />
             {errors.note && <span className="text-xs text-alarm">요청 내용을 적어 주세요</span>}
           </label>
           <div className="mt-2 flex items-center gap-3">
@@ -147,8 +155,8 @@ export default function HandoverPage() {
           </div>
         </form>
 
-        <aside className={`${card} flex flex-col gap-3 p-5`} aria-label="함께 전달되는 내용">
-          <span className={label}>함께 전달되는 내용</span>
+        <aside className={sideCard} aria-label="함께 전달되는 내용">
+          <SideLabel>함께 전달되는 내용</SideLabel>
           <dl className="grid grid-cols-[88px_minmax(0,1fr)] items-baseline gap-x-3 gap-y-[9px] text-sm">
             {summary(d).map((r) => (
               <div key={r.k} className="contents">
@@ -157,16 +165,8 @@ export default function HandoverPage() {
               </div>
             ))}
           </dl>
-          <button type="button" className={`${btnQuiet} self-start`} aria-expanded={all} onClick={() => setAll((v) => !v)}>
-            {all ? '기록 접기' : '기록 전체 보기'}
-          </button>
-          {all && <RecordTab d={d} />}
-          <div className="h-px bg-line-soft" />
-          <span className={label}>보낸 뒤</span>
-          <div className="flex flex-col gap-1 rounded-lg bg-canvas px-3.5 py-3 text-sm">
-            <b className="font-semibold">작업함에 ‘도움 요청’ 상태로 남습니다</b>
-            <span className="text-ink-2">답을 기다리는 동안에도 점검을 이어갈 수 있습니다</span>
-          </div>
+          <SideDivider />
+          <RecordToggle d={d} />
         </aside>
       </div>
     </>

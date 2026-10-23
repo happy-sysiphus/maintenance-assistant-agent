@@ -75,7 +75,7 @@ export default function EquipmentPage() {
           ))}
         </div>
 
-        <section className={`${card} overflow-hidden`}>
+        <section className={`${card} overflow-x-auto`}>
           {isPending ? (
             <LoadingRows label="설비 목록을 불러오는 중" />
           ) : isError ? (
@@ -114,7 +114,7 @@ function OpenTag({ gun }: { gun: GunStatus }) {
 function GunTable({ guns, openId, onToggle }: { guns: GunStatus[]; openId: string | null; onToggle: (id: string) => void }) {
   const td = 'border-t border-line-soft px-5 py-3.5 align-middle text-base'
   return (
-    <table className="w-full table-fixed border-collapse text-left">
+    <table className="w-full min-w-[760px] table-fixed border-collapse text-left">
       <thead>
         <tr>
           {COLUMNS.map((c, i) => (
@@ -182,7 +182,7 @@ function GunTable({ guns, openId, onToggle }: { guns: GunStatus[]; openId: strin
 /** 펼친 칸: 왼쪽 요약, 오른쪽 열린 고장(가로로 나열), 아래 정비 이력 버튼 */
 function GunDetail({ gun }: { gun: GunStatus }) {
   return (
-    <div className="grid grid-cols-[300px_minmax(0,1fr)] gap-6" aria-label={`${gun.gun_id} 상세`}>
+    <div className="grid animate-enter grid-cols-[300px_minmax(0,1fr)] gap-6" aria-label={`${gun.gun_id} 상세`}>
       <div className="flex flex-col gap-4">
         <dl className="grid grid-cols-[88px_minmax(0,1fr)] items-baseline gap-x-3 gap-y-[9px] text-sm">
           <dt className="text-sm text-faint">판단 기준</dt>

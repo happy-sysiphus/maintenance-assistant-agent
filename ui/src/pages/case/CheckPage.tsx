@@ -59,7 +59,7 @@ export default function CheckPage() {
           openPage ? (
             <ManualPanel page={openPage} onPage={setPage} onClose={() => setPage(null)} />
           ) : (
-            <StepPanel d={d} cand={cand} remaining={counts.total - counts.done} />
+            <StepPanel d={d} cand={cand} />
           )
         }
       >

@@ -10,7 +10,7 @@ import { apiGet } from '../../lib/api'
 import { useCaseMutation } from '../../lib/useCase'
 import type { ManualCheck, ManualHit } from '../../types/case'
 import { useCaseDetail } from './context'
-import { TwoColumns } from './parts'
+import { SideLabel, sideCard, TwoColumns } from './parts'
 
 // 수동 모드 (wireframe/boards/V2NoGuide.dc.html): 맞는 매뉴얼 안내가 없을 때.
 // 점검 순서를 지어내지 않고 사람이 확인한 것을 적는다. 오른쪽에서 매뉴얼 근거 쪽을 찾아 원본을 연다.
@@ -28,7 +28,6 @@ export default function ManualModePage() {
   const d = useCaseDetail()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const [why, setWhy] = useState(false)
   const save = useCaseMutation<{ checks: ManualCheck[]; cause: string }>('PUT', '/manual')
   const saved = d.records.manual
   const { register, control, handleSubmit, setValue, getValues, formState } = useForm<FormValues>({
@@ -62,22 +61,12 @@ export default function ManualModePage() {
   const saveDraft = () => save.mutate(body(getValues()))
   const toAction = handleSubmit((v) => save.mutate(body(v), { onSuccess: () => navigate('../action') }))
 
-  // "왜 없나요?": 실제로 안내가 없는 이유 (ML이 후보를 안 줬는지, 사람이 모두 아니라고 했는지)
-  const reason =
-    d.guidance.candidates.length === 0
-      ? 'ML이 이 고장에 맞는 원인 후보(상황 ID)를 넘기지 않아서, 연결할 매뉴얼 점검 순서가 없습니다.'
-      : '매뉴얼 안내가 있는 원인 후보를 모두 "아니에요"로 판단했습니다.'
-
   return (
     <>
       <div className="flex items-center gap-3 rounded-lg border border-warn-dot/30 bg-warn-soft px-[18px] py-3.5 text-warn">
         <b className="font-semibold">이 고장에 맞는 매뉴얼 안내를 찾지 못했습니다.</b>
         <span className="grow">직접 점검한 내용을 기록하거나 도움을 요청하세요.</span>
-        <button type="button" className={btnQuiet} aria-expanded={why} onClick={() => setWhy((v) => !v)}>
-          왜 없나요?
-        </button>
       </div>
-      {why && <p className="-mt-2 px-1 text-sm text-warn">{reason}</p>}
 
       <TwoColumns
         wide={openPage !== null}
@@ -149,8 +138,8 @@ function ManualSearch({ openPage, onOpen }: { openPage: number | null; onOpen: (
   const items = data?.items ?? []
 
   return (
-    <aside className={`${card} flex flex-col gap-3 p-5`} aria-label="매뉴얼에서 직접 찾기">
-      <span className={label}>매뉴얼에서 직접 찾기</span>
+    <aside className={sideCard} aria-label="매뉴얼에서 직접 찾기">
+      <SideLabel>매뉴얼에서 직접 찾기</SideLabel>
       <form
         className="relative"
         onSubmit={(e) => {
@@ -163,7 +152,6 @@ function ManualSearch({ openPage, onOpen }: { openPage: number | null; onOpen: (
         </span>
         <input type="search" className={`${input} pl-[42px]`} value={text} onChange={(e) => setText(e.target.value)} placeholder="예: 압력, 캡, MPYD" aria-label="매뉴얼 검색" />
       </form>
-      <p className="text-xs text-sub">매뉴얼 전문이 아니라 RAG가 원인별로 연결해 둔 근거 쪽에서 찾습니다.</p>
       {isError && <p className="text-sm text-alarm">찾지 못했습니다. 다시 시도해 주세요.</p>}
       {q && !isFetching && !isError && items.length === 0 && <p className="text-sm text-sub">"{q}"에 맞는 근거 쪽이 없습니다.</p>}
       <ul className="flex flex-col gap-2">

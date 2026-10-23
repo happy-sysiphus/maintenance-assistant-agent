@@ -79,6 +79,7 @@ export function SignalChart({ trends, selected, score = [], codes = [] }: Props)
     .filter((c) => c.e >= x0 && c.s <= x1 + MINUTE)
     // 그래프 범위 밖에서 시작 · 끝난 구간은 범위 안으로 자른다 (밖으로 나가면 그래프 전체가 가려진다)
     .map((c) => ({ ...c, inside: c.s >= x0, s0: Math.max(c.s, x0), e0: Math.min(Math.max(c.e, c.s + 1000), x1) }))
+  const inside = spans.filter((c) => c.inside)
   const stopped = score.filter((p) => p.non_welding_share > 0.5).map((p) => minuteMs(p.t))
   const threshold = score[0]?.threshold
   const ticks = rows.filter((r) => Math.round((r.x - x0) / MINUTE) % 5 === 0).map((r) => r.x)
@@ -90,7 +91,7 @@ export function SignalChart({ trends, selected, score = [], codes = [] }: Props)
   ]
 
   const deviation = (
-    <LineChart data={rows} margin={{ top: 34, right: 16, bottom: showScore ? 0 : 6, left: 0 }} syncId="signal">
+    <LineChart data={rows} margin={{ top: inside.length > 1 ? 54 : 34, right: 16, bottom: showScore ? 0 : 6, left: 0 }} syncId="signal">
       <ReferenceArea y1={-2} y2={2} fill="#f2f4f8" ifOverflow="hidden" />
       <ReferenceArea y1={-1} y2={1} fill="#e6ebf3" ifOverflow="hidden" />
       {stopped.map((x) => (
@@ -111,13 +112,14 @@ export function SignalChart({ trends, selected, score = [], codes = [] }: Props)
       {spans.map((c) => (
         <ReferenceArea key={`a${c.start}`} x1={c.s0} x2={c.e0} fill={RED} fillOpacity={0.1} />
       ))}
-      {spans.filter((c) => c.inside).map((c) => (
+      {/* 코드가 여러 번 뜨면 이름표가 겹치지 않게 한 줄씩 위로 번갈아 올린다 */}
+      {inside.map((c, i) => (
         <ReferenceLine
           key={`l${c.start}`}
           x={c.s}
           stroke={RED}
           strokeWidth={2.5}
-          label={{ value: `${c.code} ${kstTimeSec.format(c.s)} · ${c.duration_s}초`, position: 'top', fill: RED, fontSize: 13, fontWeight: 700 }}
+          label={{ value: `${c.code} ${kstTimeSec.format(c.s)} · ${c.duration_s}초`, position: 'top', offset: i % 2 ? 24 : 5, fill: RED, fontSize: 13, fontWeight: 700 }}
         />
       ))}
       {ordered.map((t) => (

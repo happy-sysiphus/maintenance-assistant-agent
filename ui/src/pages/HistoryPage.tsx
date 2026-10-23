@@ -113,7 +113,7 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        <section className={`${card} overflow-hidden`}>
+        <section className={`${card} overflow-x-auto`}>
           {isPending ? (
             <LoadingRows label="정비 이력을 불러오는 중" />
           ) : isError ? (
@@ -155,7 +155,7 @@ const COLUMNS = [
 function HistoryTable({ items, openId, onToggle }: { items: HistoryItem[]; openId: string | null; onToggle: (id: string) => void }) {
   const td = 'border-t border-line-soft px-5 py-3.5 align-middle text-base'
   return (
-    <table className="w-full table-fixed border-collapse text-left">
+    <table className="w-full min-w-[960px] table-fixed border-collapse text-left">
       <thead>
         <tr>
           {COLUMNS.map((c, i) => (
@@ -227,7 +227,7 @@ function HistoryDetail({ item }: { item: HistoryItem }) {
   const [showRecord, setShowRecord] = useState(false)
   const judged = data ? new Set(data.records.judgments.map((j) => j.situation_id)).size : null
   return (
-    <div className="flex flex-col gap-4" aria-label="선택한 이력">
+    <div className="flex animate-enter flex-col gap-4" aria-label="선택한 이력">
       <div className="flex flex-wrap items-end gap-x-10 gap-y-3">
         <dl className="flex flex-wrap gap-x-10 gap-y-3">
           <Fact label="원인">{item.cause ?? <span className="text-sub">찾지 못함</span>}</Fact>

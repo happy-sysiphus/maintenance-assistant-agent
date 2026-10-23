@@ -3,7 +3,7 @@ import { DotTag } from '../../components/Tag'
 import { bigChoice, card } from '../../components/ui'
 import { checkCounts } from '../../lib/caseFlow'
 import { useCaseDetail } from './context'
-import { RecordTab, TwoColumns } from './parts'
+import { RecordTab, SideLabel, sideCard, TwoColumns } from './parts'
 
 // 남은 원인 없음 (wireframe/boards/V2NoCause.dc.html): 모든 원인이 "아니에요"일 때 막히지 않게
 export default function NoCausePage() {
@@ -19,8 +19,8 @@ export default function NoCausePage() {
   return (
     <TwoColumns
       side={
-        <aside className={`${card} flex flex-col gap-3.5 p-[18px]`} aria-label="기록">
-          <span className="text-xs font-medium text-sub">기록</span>
+        <aside className={sideCard} aria-label="기록">
+          <SideLabel>기록</SideLabel>
           <RecordTab d={d} />
         </aside>
       }

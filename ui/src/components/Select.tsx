@@ -101,7 +101,7 @@ export function Select({
           id={listId}
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute top-[calc(100%+4px)] right-0 left-0 z-20 max-h-64 overflow-auto rounded-lg border border-line bg-white py-1 shadow-[0_8px_24px_rgba(16,24,40,0.12)]"
+          className="absolute top-[calc(100%+4px)] right-0 left-0 z-20 animate-enter max-h-64 overflow-auto rounded-lg border border-line bg-white py-1 shadow-[0_8px_24px_rgba(16,24,40,0.12)]"
         >
           {options.map((o, i) => {
             const on = o.value === value

@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { PageHeader, SearchBox } from '../components/PageHeader'
 import { EmptyState, ErrorState, LoadingRows } from '../components/StateViews'
 import { SeverityTag, StatusTag } from '../components/Tag'
-import { btn, btnPrimary, card, page } from '../components/ui'
+import { btn, card, page } from '../components/ui'
 import { apiGet } from '../lib/api'
 import { formatKst, formatUtc } from '../lib/time'
 import type { CaseListResponse, CaseStatus, CaseSummary } from '../types/case'
@@ -16,7 +16,8 @@ import type { CaseListResponse, CaseStatus, CaseSummary } from '../types/case'
 
 const EMPTY = '—'
 
-// 짧은 칸은 고정 폭, 글이 긴 "현상" 칸만 남는 폭을 차지한다 (본문 최대 폭이 있어 지나치게 벌어지지 않음)
+// 짧은 칸은 고정 폭, 글이 긴 "현상" 칸만 남는 폭을 차지한다 (본문 최대 폭이 있어 지나치게 벌어지지 않음).
+// 창이 좁으면 표에 최소 폭을 두고 가로로 넘겨 본다 (글자가 한 자씩 줄바꿈되지 않게)
 const COLUMNS: { label: string; width: string }[] = [
   { label: '경보', width: 'w-24' },
   { label: '설비', width: 'w-28' },
@@ -89,7 +90,7 @@ export default function InboxPage() {
           })}
         </div>
 
-        <section className={`${card} overflow-hidden`}>
+        <section className={`${card} overflow-x-auto`}>
           {isPending ? (
             <LoadingRows label="고장 목록을 불러오는 중" />
           ) : isError ? (
@@ -116,7 +117,7 @@ export default function InboxPage() {
               <EmptyState title="처리할 고장이 없습니다" note="설비가 모두 정상이라는 뜻은 아닙니다." />
             )
           ) : (
-            <table className="w-full table-fixed border-collapse text-left">
+            <table className="w-full min-w-[1080px] table-fixed border-collapse text-left">
               <thead>
                 <tr>
                   {COLUMNS.map((c, i) => (
@@ -131,8 +132,8 @@ export default function InboxPage() {
                 </tr>
               </thead>
               <tbody>
-                {shown.map((c, i) => (
-                  <CaseRow key={c.case_id} item={c} first={i === 0} />
+                {shown.map((c) => (
+                  <CaseRow key={c.case_id} item={c} />
                 ))}
               </tbody>
             </table>
@@ -173,17 +174,16 @@ function action(item: CaseSummary): { to: string; label: string } {
   }
 }
 
-/** first: 우선순위 맨 위 줄. 그 줄이 새 고장이면 버튼을 파랗게 강조한다 */
-function CaseRow({ item, first }: { item: CaseSummary; first: boolean }) {
+/** 버튼은 모두 흰색, 줄에 마우스를 올리거나 키보드로 고르면 그 줄 버튼만 파랗게 */
+function CaseRow({ item }: { item: CaseSummary }) {
   const { event } = item
   // 발생 시각: 종료 코드가 뜬 시각이 있으면 그것, 없으면 ML 판정 시각
   const occurredAt = event.trigger.rule_trigger_time ?? event.detected_at
   const td = 'border-t border-line-soft px-5 py-3.5 align-middle text-base'
   const next = action(item)
-  const top = first && item.status === 'new'
 
   return (
-    <tr>
+    <tr className="group transition-colors duration-150 hover:bg-canvas">
       <td className={td}>
         <SeverityTag severity={item.severity} />
       </td>
@@ -212,7 +212,10 @@ function CaseRow({ item, first }: { item: CaseSummary; first: boolean }) {
       </td>
       <td className={td}>
         <div className="flex items-center justify-end gap-2.5">
-          <Link to={next.to} className={`${top ? btnPrimary : btn} w-[112px]`}>
+          <Link
+            to={next.to}
+            className={`${btn} w-[112px] group-hover:border-primary! group-hover:bg-primary! group-hover:font-semibold group-hover:text-white! focus-visible:border-primary! focus-visible:bg-primary! focus-visible:text-white!`}
+          >
             {next.label}
           </Link>
         </div>

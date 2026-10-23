@@ -6,7 +6,7 @@ import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
 import type { Outcome } from '../../types/case'
 import { useCaseDetail } from './context'
-import { SidePanel, Steps, TwoColumns } from './parts'
+import { RecordToggle, SideDivider, SideLabel, sideCard, Steps, TwoColumns } from './parts'
 
 // 결과 (wireframe/boards/V2Result.dc.html): 지금까지 한 일을 보고 해결됐는지 고른다.
 // "조치 후 재발 없음" 자동 표시는 지금은 뺐다 (10/8 결정).
@@ -28,10 +28,13 @@ export default function ResultPage() {
     ? checkCounts(cand, d.records.checks)
     : { normal: manualChecks.filter((c) => c.result === 'normal').length, abnormal: 0, skipped: 0, total: manualChecks.length }
   const abnormal = cand
-    ? cand.checks.filter((c) => d.records.checks[c.id]?.result === 'abnormal').map((c) => ({ key: c.id, title: c.title, memo: d.records.checks[c.id]?.memo }))
+    ? cand.checks
+        .filter((c) => d.records.checks[c.id]?.result === 'abnormal')
+        .map((c) => ({ key: c.id, title: c.title, memo: d.records.checks[c.id]?.memo }))
     : manualChecks.filter((c) => c.result === 'abnormal').map((c, i) => ({ key: String(i), title: c.title, memo: c.memo }))
   if (!cand) counts.abnormal = abnormal.length
   const next = cand ? nextCandidate(d, cand.situation_id) : null
+  const code = d.event.trigger.rule_code
 
   const choose = (outcome: Outcome) =>
     save.mutate(
@@ -49,7 +52,30 @@ export default function ResultPage() {
   return (
     <>
       <Steps current="결과" />
-      <TwoColumns side={<SidePanel d={d} initial="기록" />}>
+      <TwoColumns
+        side={
+          // 해결됐는지 고를 때 볼 기준: 같은 코드가 다시 뜨는지, 이 원인의 정의(상황 정의서)
+          <aside className={sideCard} aria-label="해결 확인">
+            <SideLabel>해결 확인</SideLabel>
+            {code ? (
+              <p className="text-sm">
+                조치 뒤 <b className="font-semibold text-alarm">{code}</b> 재발 여부
+              </p>
+            ) : (
+              <p className="text-sm">조치 뒤 같은 이상 신호 재발 여부</p>
+            )}
+            {cand && (
+              <>
+                <SideDivider />
+                <SideLabel>정의</SideLabel>
+                <p className="text-sm">{cand.definition}</p>
+              </>
+            )}
+            <SideDivider />
+            <RecordToggle d={d} />
+          </aside>
+        }
+      >
         <section className={`${card} flex flex-col gap-[22px] p-[30px]`}>
           <div>
             <span className="text-xs font-medium text-sub">
@@ -84,7 +110,9 @@ export default function ResultPage() {
             </div>
             <div className={row}>
               <span className="w-14 shrink-0 text-sm text-faint">판단</span>
-              <span className="grow">{cand ? `${josa(cand.name, '이', '가')} ${judgment?.verdict === 'yes' ? '맞아요' : '판단 전'}` : `직접 찾음 · ${cause.name}`}</span>
+              <span className="grow">
+                {cand ? `${josa(cand.name, '이', '가')} ${judgment?.verdict === 'yes' ? '맞아요' : '판단 전'}` : `직접 찾음 · ${cause.name}`}
+              </span>
               <span className="text-sm text-sub">{judgment && formatKst(judgment.at)?.slice(11)}</span>
             </div>
             <div className={row}>

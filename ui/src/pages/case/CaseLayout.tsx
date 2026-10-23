@@ -1,4 +1,4 @@
-import { Link, Outlet, useSearchParams } from 'react-router'
+import { Link, Outlet, useLocation, useSearchParams } from 'react-router'
 import { BackIcon } from '../../components/Icons'
 import { ErrorState, LoadingRows } from '../../components/StateViews'
 import { StatusTag } from '../../components/Tag'
@@ -12,6 +12,7 @@ export default function CaseLayout() {
   // 매뉴얼 PDF가 열리면(?manual=쪽) 최대 폭을 풀어 PDF를 크게 보여준다
   const [params] = useSearchParams()
   const wide = params.has('manual')
+  const { pathname } = useLocation()
 
   return (
     <>
@@ -50,7 +51,10 @@ export default function CaseLayout() {
             <ErrorState onRetry={() => refetch()} />
           </section>
         ) : (
-          <Outlet context={data} />
+          // 단계(점검 → 판단 …)를 넘어가면 내용이 살짝 떠오르며 나타난다
+          <div key={pathname} className="flex grow animate-enter flex-col gap-4">
+            <Outlet context={data} />
+          </div>
         )}
       </div>
     </>

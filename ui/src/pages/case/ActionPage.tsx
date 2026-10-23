@@ -159,7 +159,6 @@ export default function ActionPage() {
           </div>
 
           <div className="flex items-center gap-3 border-t border-line-soft pt-4">
-            <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary-ink">정비일지에는 여기 적은 내용이 들어갑니다</span>
             {save.isError && <span className="text-sm text-alarm">저장하지 못했습니다. 입력 내용은 남아 있습니다.</span>}
             <div className="grow" />
             <button type="submit" className={`${btnPrimary} ${btnLarge}`} disabled={save.isPending}>

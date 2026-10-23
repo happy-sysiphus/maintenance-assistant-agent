@@ -6,7 +6,7 @@ import { candidateState, checkCounts, latestJudgment, signalLabel } from '../../
 import { formatKst } from '../../lib/time'
 import type { Candidate, CaseDetail } from '../../types/case'
 
-// 케이스 화면들이 같이 쓰는 조각: 진행 표시, 오른쪽 패널(상황 / 원인 / 기록)
+// 케이스 화면들이 같이 쓰는 조각: 진행 표시, 오른쪽 칸 틀, 고장 정보 · 원인 목록 · 기록
 
 const STEPS = ['점검', '판단', '조치', '결과'] as const
 export type Step = (typeof STEPS)[number]
@@ -37,8 +37,8 @@ export function Steps({ current }: { current: Step }) {
   )
 }
 
-/** 본문 + 오른쪽 380px 패널 (wide: 매뉴얼이 열렸을 때 540px) */
-export function TwoColumns({ children, side, wide = false }: { children: ReactNode; side: ReactNode; wide?: boolean }) {
+/** 본문 + 오른쪽 380px 칸 (wide: 매뉴얼이 열렸을 때 540px). side가 없어도 본문 폭은 같게 둔다 (단계를 넘겨도 왼쪽이 흔들리지 않게) */
+export function TwoColumns({ children, side, wide = false }: { children: ReactNode; side?: ReactNode; wide?: boolean }) {
   return (
     <div className={`grid grow items-start gap-4 ${wide ? 'grid-cols-[minmax(0,1fr)_540px]' : 'grid-cols-[minmax(0,1fr)_380px]'}`}>
       <div className="flex min-w-0 flex-col gap-4">{children}</div>
@@ -47,43 +47,19 @@ export function TwoColumns({ children, side, wide = false }: { children: ReactNo
   )
 }
 
-type Tab = '상황' | '원인' | '기록'
+// ---- 오른쪽 칸 공통 틀 (10/23): 카드 하나 + 작은 회색 제목 + 나눔선. 탭은 쓰지 않고, 필요 없는 화면은 오른쪽 칸을 두지 않는다 ----
 
-export function SidePanel({ d, initial }: { d: CaseDetail; initial: Tab }) {
-  const [tab, setTab] = useState<Tab>(initial)
-  return (
-    <aside className={`${card} overflow-hidden`} aria-label="고장 정보">
-      <div role="tablist" className="flex gap-1 border-b border-line px-4">
-        {(['상황', '원인', '기록'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            role="tab"
-            type="button"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            className={`-mb-px border-b-2 px-2.5 pt-[13px] pb-[11px] text-sm ${tab === t ? 'border-ink font-semibold text-ink' : 'border-transparent font-medium text-faint'}`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-col gap-3.5 p-[18px]">
-        {tab === '상황' && <CaseFacts d={d} />}
-        {tab === '원인' && <CauseTab d={d} />}
-        {tab === '기록' && <RecordTab d={d} />}
-      </div>
-    </aside>
-  )
-}
+export const sideCard = `${card} flex flex-col gap-3.5 p-5`
+export const SideLabel = ({ children }: { children: ReactNode }) => <span className="text-xs font-medium text-sub">{children}</span>
+export const SideDivider = () => <div className="h-px bg-line-soft" />
 
-/** 점검 단계의 오른쪽 패널 (와이어프레임 V2Check 10/23): 탭 대신 지금 필요한 것만. 그래프 · 기록은 눌렀을 때만 */
-export function StepPanel({ d, cand, remaining }: { d: CaseDetail; cand: Candidate; remaining: number }) {
+/** 점검 단계의 오른쪽 칸: 지금 원인의 정의 · 주의. 그래프 · 기록은 눌렀을 때만 (남은 점검 수는 아래 진행 표시에 있다) */
+export function StepPanel({ d, cand }: { d: CaseDetail; cand: Candidate }) {
   const [note, setNote] = useState(false)
-  const [records, setRecords] = useState(false)
   const quiet = 'inline-flex min-h-9 items-center px-2 text-sm font-medium text-primary-ink hover:underline'
   return (
-    <aside className={`${card} flex flex-col gap-3.5 p-5`} aria-label="이 단계에서 볼 것">
-      <span className="text-xs font-medium text-sub">정의</span>
+    <aside className={sideCard} aria-label="이 원인">
+      <SideLabel>정의</SideLabel>
       <p className="text-sm">{cand.definition}</p>
       {cand.coverage_note && (
         <div className="rounded-lg bg-canvas px-3 py-2.5 text-sm text-ink-2">
@@ -96,23 +72,37 @@ export function StepPanel({ d, cand, remaining }: { d: CaseDetail; cand: Candida
           {note && <p className="mt-1.5 leading-relaxed">{cand.coverage_note}</p>}
         </div>
       )}
-      <div className="h-px bg-line-soft" />
-      <span className="text-xs font-medium text-sub">다음 할 일</span>
-      <div className="flex flex-col gap-0.5 rounded-lg bg-primary-soft px-3.5 py-3 text-sm text-primary-ink">
-        <b className="font-semibold">{remaining > 0 ? `점검 ${remaining}개 남음` : '점검을 마쳤습니다'}</b>
-        <span>{remaining > 0 ? '끝나면 판단에서 이 원인이 맞는지 고릅니다' : '"다음"을 눌러 이 원인이 맞는지 고릅니다'}</span>
-      </div>
-      <div className="h-px bg-line-soft" />
+      <SideDivider />
+      <RecordToggle
+        d={d}
+        extra={
+          <Link to=".." className={quiet}>
+            그래프 보기
+          </Link>
+        }
+      />
+    </aside>
+  )
+}
+
+/** "기록 보기"를 눌렀을 때만 시간순 기록을 편다 */
+export function RecordToggle({ d, extra }: { d: CaseDetail; extra?: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
       <div className="flex gap-1">
-        <Link to=".." className={quiet}>
-          그래프 보기
-        </Link>
-        <button type="button" className={quiet} aria-expanded={records} onClick={() => setRecords((v) => !v)}>
-          {records ? '기록 접기' : '기록 전체 보기'}
+        {extra}
+        <button
+          type="button"
+          className="inline-flex min-h-9 items-center px-2 text-sm font-medium text-primary-ink hover:underline"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? '기록 접기' : '기록 보기'}
         </button>
       </div>
-      {records && <RecordTab d={d} />}
-    </aside>
+      {open && <RecordTab d={d} />}
+    </>
   )
 }
 
@@ -121,8 +111,8 @@ export function ManualActionPanel({ cand, onOpen }: { cand: Candidate | null; on
   const diag = cand?.diagnostics.find((x) => x.manual)
   const manual = diag?.manual
   return (
-    <aside className={`${card} flex flex-col gap-3 p-5`} aria-label="매뉴얼 조치">
-      <span className="text-xs font-medium text-sub">매뉴얼 조치 (참고)</span>
+    <aside className={sideCard} aria-label="매뉴얼 조치">
+      <SideLabel>매뉴얼 조치 (참고)</SideLabel>
       {manual && diag ? (
         <>
           <b className="font-semibold">
@@ -144,8 +134,6 @@ export function ManualActionPanel({ cand, onOpen }: { cand: Candidate | null; on
       ) : (
         <p className="text-sm text-sub">원문을 확인한 매뉴얼 조치가 없습니다.</p>
       )}
-      <div className="h-px bg-line-soft" />
-      <span className="text-sm text-sub">매뉴얼 조치는 참고용이고, 왼쪽에는 실제로 한 일만 적습니다.</span>
     </aside>
   )
 }
@@ -186,7 +174,7 @@ const STATE_TAG = {
   waiting: <DotTag color="gray">대기</DotTag>,
 }
 
-export function CauseTab({ d }: { d: CaseDetail }) {
+export function CauseList({ d }: { d: CaseDetail }) {
   if (d.guidance.candidates.length === 0) return <p className="text-sm text-sub">매뉴얼 안내가 있는 원인이 없습니다.</p>
   return (
     <>
@@ -199,7 +187,9 @@ export function CauseTab({ d }: { d: CaseDetail }) {
             key={c.situation_id}
             className={`flex items-center gap-3 rounded-lg border px-3.5 py-3 ${st === 'current' ? 'border-primary ring-1 ring-primary' : 'border-line'}`}
           >
-            <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${st === 'current' ? 'bg-primary text-white' : 'bg-fill text-sub'}`}>
+            <span
+              className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${st === 'current' ? 'bg-primary text-white' : 'bg-fill text-sub'}`}
+            >
               {i + 1}
             </span>
             <div className="min-w-0 grow">
@@ -227,12 +217,15 @@ export function RecordTab({ d }: { d: CaseDetail }) {
   for (const j of d.records.judgments) items.push({ at: j.at, text: `${name(j.situation_id)} · ${VERDICT[j.verdict]}` })
   for (const a of d.records.actions) items.push({ at: a.at, text: `조치 기록 · ${a.kind}` })
   for (const r of d.records.results) items.push({ at: r.at, text: `결과 · ${OUTCOME[r.outcome]}` })
-  if (d.records.manual) items.push({ at: d.records.manual.saved_at, text: `수동 점검 기록${d.records.manual.cause ? ` · 원인 ${d.records.manual.cause}` : ''}` })
-  for (const f of d.records.field) items.push({ at: f.at, text: `현장 확인 · ${f.by} · ${f.check_ids.length}개${f.photos?.length ? ` · 사진 ${f.photos.length}장` : ''}` })
+  if (d.records.manual)
+    items.push({ at: d.records.manual.saved_at, text: `수동 점검 기록${d.records.manual.cause ? ` · 원인 ${d.records.manual.cause}` : ''}` })
+  for (const f of d.records.field)
+    items.push({ at: f.at, text: `현장 확인 · ${f.by} · ${f.check_ids.length}개${f.photos?.length ? ` · 사진 ${f.photos.length}장` : ''}` })
   for (const h of d.records.handovers) items.push({ at: h.at, text: `도움 요청 · ${h.to} · ${h.equipment_state}` })
   if (d.records.log?.approved_at) items.push({ at: d.records.log.approved_at, text: '정비일지 승인' })
   // 도움 요청은 위에서 이미 한 줄로 보여준다
-  if (d.records.closure && d.records.closure.outcome !== 'handed_over') items.push({ at: d.records.closure.at, text: CLOSURE[d.records.closure.outcome] })
+  if (d.records.closure && d.records.closure.outcome !== 'handed_over')
+    items.push({ at: d.records.closure.at, text: CLOSURE[d.records.closure.outcome] })
   items.sort((a, b) => a.at.localeCompare(b.at))
   const code = d.event.trigger.rule_code
   return (
@@ -241,7 +234,8 @@ export function RecordTab({ d }: { d: CaseDetail }) {
         <span className="w-11 shrink-0" />
         <i className="mt-[7px] size-[7px] shrink-0 rounded-full bg-alarm-dot" />
         <div>
-          <b className="font-semibold">{code ? `${code} 발생` : '모델 이상 신호'}</b> · 데이터 시각 {formatKst(d.event.trigger.rule_trigger_time ?? d.event.detected_at)}
+          <b className="font-semibold">{code ? `${code} 발생` : '모델 이상 신호'}</b> · 데이터 시각{' '}
+          {formatKst(d.event.trigger.rule_trigger_time ?? d.event.detected_at)}
         </div>
       </li>
       {items.map((it, i) => (

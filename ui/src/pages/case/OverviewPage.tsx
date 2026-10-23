@@ -4,7 +4,7 @@ import { SignalChart } from '../../components/SignalChart'
 import { btnLarge, btnPrimary, card } from '../../components/ui'
 import { checkCounts, currentCandidate, signalLabel } from '../../lib/caseFlow'
 import { useCaseDetail } from './context'
-import { CaseFacts, CauseTab } from './parts'
+import { CaseFacts, CauseList } from './parts'
 
 // 상황 (wireframe/boards/V2Case.dc.html): 고장 전후 30분 그래프 + 확인할 원인
 export default function OverviewPage() {
@@ -71,7 +71,7 @@ export default function OverviewPage() {
         {noGuide ? (
           <p className="text-sm text-sub">이 고장에 맞는 매뉴얼 안내를 찾지 못했습니다. 직접 점검한 내용을 기록하거나 도움을 요청하세요.</p>
         ) : (
-          <CauseTab d={d} />
+          <CauseList d={d} />
         )}
         {noGuide ? (
           <Link to="manual" className={`${btnPrimary} ${btnLarge}`}>

@@ -8,7 +8,7 @@ import { useCaseMutation } from '../../lib/useCase'
 import { MANUAL_CAUSE, RECURRENCE, type CaseDetail, type Closure, type LogInput } from '../../types/case'
 import { Select } from '../../components/Select'
 import { useCaseDetail } from './context'
-import { SidePanel, TwoColumns } from './parts'
+import { RecordTab, SideDivider, SideLabel, sideCard, TwoColumns } from './parts'
 
 // 정비일지 (wireframe/boards/V2Log.dc.html 승인 전, V2LogDone.dc.html 승인 후).
 // 앞 단계에서 사람이 저장한 기록으로 미리 채운다 (AI 생성 아님). 고칠 곳만 고친다.
@@ -114,33 +114,29 @@ export default function LogPage() {
   return (
     <TwoColumns
       side={
-        <div className="flex flex-col gap-4">
-          <section className={`${card} flex flex-col gap-3 p-5`} aria-label="종료 전 확인">
-            <span className={label}>종료 전 확인</span>
-            {checklist.map((c) => (
-              <div key={c.text} className="flex items-center gap-3">
-                <span className={`inline-flex w-[18px] justify-center font-semibold ${c.ok ? 'text-primary' : 'text-faint'}`} aria-hidden="true">
-                  {c.ok ? '✓' : '–'}
-                </span>
-                <span className={c.ok ? '' : 'text-sub'}>
-                  {c.text}
-                  <span className="sr-only">{c.ok ? ' (완료)' : ' (아직)'}</span>
-                </span>
-              </div>
-            ))}
-          </section>
-          <SidePanel d={d} initial="기록" />
-        </div>
+        <aside className={sideCard} aria-label="종료 전 확인 · 기록">
+          <SideLabel>종료 전 확인</SideLabel>
+          {checklist.map((c) => (
+            <div key={c.text} className="flex items-center gap-3">
+              <span className={`inline-flex w-[18px] justify-center font-semibold ${c.ok ? 'text-primary' : 'text-faint'}`} aria-hidden="true">
+                {c.ok ? '✓' : '–'}
+              </span>
+              <span className={c.ok ? '' : 'text-sub'}>
+                {c.text}
+                <span className="sr-only">{c.ok ? ' (완료)' : ' (아직)'}</span>
+              </span>
+            </div>
+          ))}
+          <SideDivider />
+          <SideLabel>기록</SideLabel>
+          <RecordTab d={d} />
+        </aside>
       }
     >
       <form onSubmit={approve} className={`${card} flex flex-col gap-3.5 p-[26px]`} noValidate>
         <div className="flex items-center gap-3">
           <h2 className="grow text-xl font-semibold tracking-[-0.015em]">정비일지</h2>
-          {closed ? (
-            <DotTag color="gray">해결 종료 · 읽기 전용</DotTag>
-          ) : (
-            !saved && <span className="text-sm text-sub">앞 단계 기록으로 채웠습니다. 고칠 곳만 고치세요.</span>
-          )}
+          {closed && <DotTag color="gray">해결 종료 · 읽기 전용</DotTag>}
         </div>
         <fieldset disabled={locked} className="flex flex-col gap-3.5">
           <div className="grid grid-cols-3 gap-3">

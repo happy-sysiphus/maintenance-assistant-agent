@@ -1,5 +1,5 @@
 import { useSyncExternalStore, type ReactNode } from 'react'
-import { NavLink, Outlet, useMatch, useSearchParams } from 'react-router'
+import { NavLink, Outlet, useLocation, useMatch, useSearchParams } from 'react-router'
 import { ChatIcon, ClockIcon, InboxIcon, PulseIcon } from './components/Icons'
 
 // 화면 공통 틀: 왼쪽 어두운 메뉴 + 본문.
@@ -24,6 +24,7 @@ export default function App() {
   const inCase = useMatch('/cases/*') !== null
   const [params] = useSearchParams()
   const narrow = useNarrow()
+  const section = useLocation().pathname.split('/')[1]
   const compact = AUTO_COMPACT && (narrow || params.has('manual'))
 
   const items: { to: string; label: string; icon: (size: number) => ReactNode; on?: boolean }[] = [
@@ -52,7 +53,8 @@ export default function App() {
           </NavLink>
         ))}
       </nav>
-      <div className="flex min-w-0 grow flex-col">
+      {/* 메뉴를 바꾸면 본문이 살짝 떠오르며 나타난다. 케이스 안의 단계 이동은 CaseLayout이 따로 맡는다 */}
+      <div key={section} className="flex min-w-0 grow animate-enter flex-col">
         <Outlet />
       </div>
     </div>

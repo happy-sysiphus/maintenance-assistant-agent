@@ -6,7 +6,7 @@ import { josa } from '../../lib/josa'
 import { useCaseMutation } from '../../lib/useCase'
 import type { CheckResult, Verdict } from '../../types/case'
 import { useCaseDetail } from './context'
-import { SidePanel, Steps, TwoColumns } from './parts'
+import { CauseList, SideLabel, sideCard, StepPanel, Steps, TwoColumns } from './parts'
 
 // 판단 (wireframe/boards/V2Judge.dc.html): 점검 결과를 보고 카드 하나를 누르면 바로 넘어간다
 
@@ -43,7 +43,20 @@ export default function JudgePage() {
   return (
     <>
       <Steps current="판단" />
-      <TwoColumns side={<SidePanel d={d} initial="원인" />}>
+      <TwoColumns
+        side={
+          // 점검 화면과 같은 칸(정의 · 주의 · 그래프 · 기록). 원인이 여럿이면 위에 원인 목록
+          <div className="flex flex-col gap-4">
+            {d.guidance.candidates.length > 1 && (
+              <aside className={sideCard} aria-label="원인 목록">
+                <SideLabel>원인 목록</SideLabel>
+                <CauseList d={d} />
+              </aside>
+            )}
+            <StepPanel d={d} cand={cand} />
+          </div>
+        }
+      >
         <section className={`${card} flex flex-col gap-[22px] p-[30px]`}>
           <div>
             <span className="text-xs font-medium text-sub">
@@ -65,7 +78,9 @@ export default function JudgePage() {
               const tag = rec ? RESULT_TAG[rec.result] : null
               return (
                 <div key={item.id} className="flex items-center gap-3 border-t border-line-soft px-3.5 py-2.5 text-sm">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-fill text-xs font-semibold text-sub">{i + 1}</span>
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-fill text-xs font-semibold text-sub">
+                    {i + 1}
+                  </span>
                   <span className="grow">{item.title}</span>
                   {rec?.memo && <span className="text-sm text-sub">메모: {rec.memo}</span>}
                   <span className={`w-16 text-sm font-medium ${tag?.tone ?? 'text-faint'}`}>{tag?.label ?? '미확인'}</span>
@@ -107,7 +122,9 @@ function ResultBar({ counts }: { counts: ReturnType<typeof checkCounts> }) {
     ...Array<string>(counts.normal).fill('bg-ink-2'),
     ...Array<string>(counts.skipped + unchecked).fill('bg-line'),
   ]
-  const text = [`이상 ${counts.abnormal}`, `정상 ${counts.normal}`, `건너뜀 ${counts.skipped}`, unchecked ? `미확인 ${unchecked}` : ''].filter(Boolean).join(' · ')
+  const text = [`이상 ${counts.abnormal}`, `정상 ${counts.normal}`, `건너뜀 ${counts.skipped}`, unchecked ? `미확인 ${unchecked}` : '']
+    .filter(Boolean)
+    .join(' · ')
   return (
     <span className="flex items-center gap-2.5" role="img" aria-label={text} title={text}>
       <span className="flex gap-0.5">
