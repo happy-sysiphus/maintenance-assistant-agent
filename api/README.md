@@ -37,6 +37,7 @@ cd ml && python .py/replay.py test/test_0.csv --chunk-s 600     # 약 2분, 알�
 | `main.py` | 주소 19개. 모양은 FE mock(`ui/src/mocks/handlers.ts`)과 같다 (`ui/docs/05` "저장 API", "AI 챗봇 API") |
 | `store.py` | SQLite 저장. 케이스 한 건 = JSON 한 줄. 같은 `event_id`는 한 번만 처리 |
 | `guidance.py` | 고장 코드 → 상황 ID → 점검 순서 · 근거 쪽. **RAG를 붙일 자리** |
+| `check_criteria.json` | 점검 항목별 정상 기준 · 확인 방법 (FE 초안: 매뉴얼 · 정의서 원문에 적힌 것만, RAG 확인 전). `guidance.py`가 점검 항목에 붙인다 |
 | `assistant.py` | AI 챗봇 답 (임시, 매핑에서 근거만 골라 조립) |
 
 ## 흐름
@@ -56,6 +57,8 @@ ML push로 받으려면 ML 서버를 `RSW_RAG_URL=http://localhost:9000/api/ml/h
 - **원인 후보는 현상 하나**: 코드의 상황(S01~S04) 하나와 그 점검 순서만 준다. 원인 상황(S05~S09)을 고르는 근거가 지금은 없다. 코드 없는 알림(모델 신호만)은 `no_evidence` → 화면은 수동 모드.
 - **반복 알림 묶기**: 같은 설비 · 같은 코드(코드 없음끼리도)로 아직 끝나지 않은 케이스가 있으면 새 케이스 대신 `repeats`에 쌓는다. test_0은 알림 12건 → 케이스 3건.
 - **긴급도**: ML은 critical일 때만 알림을 보내므로 케이스 `severity`는 모두 `critical`.
+- **점검 항목 정상 기준**: RAG에 항목별 기준이 없어 `check_criteria.json` 초안을 쓴다. 항목과 쪽을 짝지은 건 FE 판단이다 (`ui/docs/07` 요청 3).
+- **오알람**: `POST /api/cases/{id}/close`에 `false_alarm`. 작업함 · 열린 케이스 묶기에서 빠지고 이력에 남는다.
 - **RAG 없이 근거만**: `rag/data/situation_mapping.json`을 직접 읽는다 (RAG의 "근거만 조회"와 같은 수준). LLM 답은 없다. Festo 원문은 확인한 오류 12만 넣었다.
 
 ## 아직 없는 것
