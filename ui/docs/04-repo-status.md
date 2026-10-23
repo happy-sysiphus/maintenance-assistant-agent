@@ -8,7 +8,7 @@
 |---|---|---|
 | `ml/` | 10/8 핸드오프 v1.1(FE 요청 3·4·5 반영: `error_timeline` · `sensor_trend` · 시각 Z · `sensor_name_ko`). 10/21~22 **핸드오프 v1.2 + 매분 센서 문서 sensor-features v4** | baejonghyuk |
 | `rag/` | 변경 없음 (마지막 10/2 `b1a9db1`) | — |
-| `api/` | 변경 없음 (README만) | — |
+| `api/` | 10/23 FE가 데모용 초안을 올림 (FastAPI + SQLite, ML 알림 → 케이스, RAG 매핑 직접 읽기) → `08-api-draft.md` | 한혜원(FE) |
 | `ui/` | 10/2~10/9 화면 구현(작업함~정비일지 · 이력 · 설비 · 수동 모드 · 현장 확인 · 도움 요청), 10/23 디자인 정리 · AI 챗봇 | 한혜원(FE) |
 
 **ML v1.2가 FE에 주는 영향** (`ml/README.md` 5.10 · 5.11, `ml/history.md` 33 · 34절)

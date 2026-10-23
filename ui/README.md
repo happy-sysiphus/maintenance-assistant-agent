@@ -21,6 +21,6 @@ npm run dev                  # http://localhost:5173
 
 | 경로 | 내용 |
 |---|---|
-| `docs/` | 프로젝트 배경, 도메인·데이터 설명, 팀 레포 상태, ML·RAG에 요청할 API 형식. RAG 담당은 `docs/07-rag-requests-now.md`부터 |
+| `docs/` | 프로젝트 배경, 도메인·데이터 설명, 팀 레포 상태, ML·RAG에 요청할 API 형식. RAG 담당은 `docs/07-rag-requests-now.md`부터, api 초안 안내는 `docs/08-api-draft.md` |
 | `wireframe/` | 화면 와이어프레임. 먼저 `wireframe/README.md`를 읽고 그림은 `wireframe/screenshots/` |
 | `src/` | 화면 코드. mock 데이터는 `src/mocks/fixtures/` |
