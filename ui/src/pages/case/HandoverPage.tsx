@@ -4,7 +4,7 @@ import { btn, btnLarge, btnPrimary, card, input, label } from '../../components/
 import { candidateState, checkCounts, latestJudgment } from '../../lib/caseFlow'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
-import { EQUIPMENT_STATES, HANDOVER_REASONS, type CaseDetail, type HandoverInput } from '../../types/case'
+import { HANDOVER_REASONS, type CaseDetail, type HandoverInput } from '../../types/case'
 import { Select } from '../../components/Select'
 import { useCaseDetail } from './context'
 import { BackLink, RecordToggle, SideDivider, SideLabel, sideCard } from './parts'
@@ -20,7 +20,7 @@ const chip = (on: boolean) =>
     on ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-ink-2'
   }`
 
-/** 함께 전달되는 내용: 저장된 기록에서 계산한다 */
+/** 전달 내용: 저장된 기록에서 계산한다 */
 function summary(d: CaseDetail) {
   const e = d.event
   const yes = d.guidance.candidates.filter((c) => latestJudgment(d, c.situation_id)?.verdict === 'yes').map((c) => c.name)
@@ -54,7 +54,7 @@ export default function HandoverPage() {
   const navigate = useNavigate()
   const send = useCaseMutation<HandoverInput>('POST', '/handover')
   const { register, control, handleSubmit, formState } = useForm<FormValues>({
-    defaultValues: { to: '', equipment_state: '계속 용접 중', reasons: [], note: '' },
+    defaultValues: { to: '', equipment_state: '가동 중', reasons: [], note: '' },
   })
   const { errors } = formState
   const onSubmit = handleSubmit((v) => send.mutate(v, { onSuccess: () => navigate('/') }))
@@ -89,21 +89,33 @@ export default function HandoverPage() {
               <Controller
                 control={control}
                 name="equipment_state"
-                render={({ field }) => (
-                  <div className="mt-1.5 flex flex-wrap gap-2">
-                    {EQUIPMENT_STATES.map((u) => (
-                      <button
-                        key={u}
-                        type="button"
-                        aria-pressed={field.value === u}
-                        className={chip(field.value === u)}
-                        onClick={() => field.onChange(u)}
-                      >
-                        {u}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                render={({ field }) => {
+                  // 가동 중 / 정지 두 가지만 고르고, 정지일 때만 라인까지 멈췄는지 묻는다
+                  const stopped = field.value !== '가동 중'
+                  return (
+                    <div className="mt-1.5 flex flex-col gap-2.5">
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" aria-pressed={!stopped} className={chip(!stopped)} onClick={() => field.onChange('가동 중')}>
+                          가동 중
+                        </button>
+                        <button type="button" aria-pressed={stopped} className={chip(stopped)} onClick={() => field.onChange('설비 정지')}>
+                          정지
+                        </button>
+                      </div>
+                      {stopped && (
+                        <label className="flex min-h-9 items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            className="size-4 accent-primary"
+                            checked={field.value === '라인 정지'}
+                            onChange={(e) => field.onChange(e.target.checked ? '라인 정지' : '설비 정지')}
+                          />
+                          라인도 멈춤
+                        </label>
+                      )}
+                    </div>
+                  )
+                }}
               />
             </fieldset>
           </div>
@@ -156,8 +168,8 @@ export default function HandoverPage() {
           </div>
         </form>
 
-        <aside className={sideCard} aria-label="함께 전달되는 내용">
-          <SideLabel>함께 전달되는 내용</SideLabel>
+        <aside className={sideCard} aria-label="전달 내용">
+          <SideLabel>전달 내용</SideLabel>
           <dl className="grid grid-cols-[88px_minmax(0,1fr)] items-baseline gap-x-3 gap-y-[9px] text-sm">
             {summary(d).map((r) => (
               <div key={r.k} className="contents">

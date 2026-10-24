@@ -1,6 +1,6 @@
 import { Link, Navigate, useNavigate } from 'react-router'
 import { bigChoice, btnQuiet, card } from '../../components/ui'
-import { activeCause, checkCounts, latestJudgment, nextCandidate } from '../../lib/caseFlow'
+import { activeCause, latestJudgment, nextCandidate } from '../../lib/caseFlow'
 import { josa } from '../../lib/josa'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
@@ -24,15 +24,11 @@ export default function ResultPage() {
   const judgment = cand ? latestJudgment(d, cand.situation_id) : undefined
   // 점검 줄: 매뉴얼 후보면 그 후보의 점검, 수동 모드면 사람이 적은 점검
   const manualChecks = d.records.manual?.checks ?? []
-  const counts = cand
-    ? checkCounts(cand, d.records.checks)
-    : { normal: manualChecks.filter((c) => c.result === 'normal').length, abnormal: 0, skipped: 0, total: manualChecks.length }
   const abnormal = cand
     ? cand.checks
         .filter((c) => d.records.checks[c.id]?.result === 'abnormal')
         .map((c) => ({ key: c.id, title: c.title, memo: d.records.checks[c.id]?.memo }))
     : manualChecks.filter((c) => c.result === 'abnormal').map((c, i) => ({ key: String(i), title: c.title, memo: c.memo }))
-  if (!cand) counts.abnormal = abnormal.length
   const next = cand ? nextCandidate(d, cand.situation_id) : null
   const code = d.event.trigger.rule_code
 
@@ -104,9 +100,6 @@ export default function ResultPage() {
                 ) : (
                   <span className="text-sub">이상 항목 없음</span>
                 )}
-              </span>
-              <span className="text-sm text-sub">
-                정상 {counts.normal} · 건너뜀 {counts.skipped} · 미확인 {counts.total - counts.normal - counts.abnormal - counts.skipped}
               </span>
             </div>
             <div className={row}>

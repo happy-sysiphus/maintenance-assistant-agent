@@ -257,7 +257,8 @@ export interface FieldRecord {
 }
 
 /** 도움 요청의 "지금 설비 상태" (10/23): 급함 같은 형용사 대신 현장에서 보이는 사실을 고르고, 우선순위는 받는 사람이 정한다 */
-export const EQUIPMENT_STATES = ['계속 용접 중', '이 설비만 멈춤', '라인 멈춤'] as const
+/** 지금 설비 상태: 화면은 가동 중 / 정지 두 칩 + 정지일 때만 "라인도 멈춤" 체크 (10/24) */
+export const EQUIPMENT_STATES = ['가동 중', '설비 정지', '라인 정지'] as const
 export const HANDOVER_REASONS = ['원인을 못 찾음', '권한이 필요함', '부품이 필요함', '기타'] as const
 
 export interface HandoverInput {
