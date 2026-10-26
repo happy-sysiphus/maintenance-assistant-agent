@@ -11,6 +11,10 @@ doc's mapping, which the data could not confirm (history.md 33). The RAG side re
 (`fault_class.terminal_code`, `trigger.rule_code`) and the fault class (`fault_class.code`) as they are, plus the
 per-minute sensor document (.py/sensor_features.py, sensor-features-v4).
 
+2026-10-26 (D-7, history.md 35): c4 / c18 are the Festo fieldbus bit-13 pair - c18 the robot's "Close gun" (build up
+force) command, c4 the gun's "Force reached" answer (manual A.2 p.100, Table 9.38 p.74); both 0/1, so their window
+mean is the share of the minute the bit was on (wording "켜진 비율"), not a time or a set value.
+
 Pure Python (no pandas / pydantic / fastapi) so the ontology side can import it as-is. main.py validates the
 output with pydantic (RagHandoff); tests/test_rag_mapping.py keeps the keys of both in sync.
 """
@@ -40,14 +44,16 @@ SENSOR_GROUP = {
     "error_share_10min": "activity", "hour_sin": "activity", "hour_cos": "activity",
 }
 SENSOR_KO = {
-    "c1": "전극 캡 오프셋", "c2": "전극 힘", "c3": "전극 위치", "c4": "힘 형성 시간", "c5": "보정(밸런스) 압력",
+    "c1": "전극 캡 오프셋", "c2": "전극 힘", "c3": "전극 위치", "c4": "힘 도달 신호", "c5": "보정(밸런스) 압력",
     "c6": "마찰", "c7": "최대 열림 폭", "c8": "최대 전극 힘", "c9": "시작 마찰", "c10": "US2 작동 허용 신호",
     "c13": "보정 압력 설정값", "c14": "전극 힘 설정값", "c15": "전극 위치 설정값", "c16": "판 두께 설정값",
-    "c17": "속도 설정값", "c18": "힘 형성 설정값", "welds_delta": "초당 용접 수", "pos_delta": "초당 위치 이동 수",
+    "c17": "속도 설정값", "c18": "건 닫기·힘 형성 명령", "welds_delta": "초당 용접 수", "pos_delta": "초당 위치 이동 수",
     "welds_10min": "최근 10분 용접 수", "weld_duty_10min": "최근 10분 용접 가동률",
     "error_share_10min": "최근 10분 에러 상태 비율", "hour_sin": "시각", "hour_cos": "시각",
 }
 DIRECTION_KO = {"high": "평소보다 높음", "low": "평소보다 낮음", "unstable": "평소보다 흔들림"}
+# 0/1 handshake bits (D-7): a window mean is the share of the minute the bit was on
+ON_SHARE_BITS = {"c4", "c18"}
 
 # fault classes of the paper (readme 1.5); terminal code = the code a failure file shows in its last 10 min (readme 5.3.4)
 FAULT_CLASSES: dict[str, dict[str, str]] = {
@@ -102,6 +108,8 @@ def sensor_findings(contributing_features: list[dict[str, Any]], min_share: floa
         name_ko = SENSOR_KO.get(s, s)
         # c10 is binary (on = 1): a low window mean means the enable signal dropped out
         says = "꺼짐(평소 켜짐)" if (s == "c10" and direction == "low") else DIRECTION_KO[direction]
+        if s in ON_SHARE_BITS and stat == "mean":
+            says = f"켜진 비율 {says}"
         out.append({"sensor": s, "sensor_name": c.get("sensor_name", s), "sensor_name_ko": name_ko,
                     "group": SENSOR_GROUP.get(s, "other"), "statistic": stat, "direction": direction,
                     "deviation_z": round(dev, 2), "share": round(float(c["share"]), 3),

@@ -44,7 +44,7 @@ def test_rule_gives_fault_class_and_code():
     h = rm.build_handoff(r, "ev1")
     assert h["fault_class"]["code"] == "E01" and h["fault_class"]["terminal_code"] == "E012"
     assert h["trigger"]["rule_code"] == "E012"
-    assert h["summary_ko"] == ("보정(밸런스) 압력(c5) 평소보다 낮음, 힘 형성 시간(c4) 평소보다 높음; "
+    assert h["summary_ko"] == ("보정(밸런스) 압력(c5) 평소보다 낮음, 힘 도달 신호(c4) 켜진 비율 평소보다 높음; "
                                "고장 유형 E01(보정 압력 도달 지연) 의심, 에러 코드 E012.")
 
 
@@ -82,6 +82,14 @@ def test_time_of_day_is_not_a_symptom():
 def test_c10_reads_as_dropout():
     fs = rm.sensor_findings([feat("c10", "mean", -1.0, reference=1.0)])
     assert fs[0]["text_ko"] == "US2 작동 허용 신호(c10) 꺼짐(평소 켜짐)"
+
+
+def test_force_bits_read_as_on_share():
+    """D-7: c4 / c18 are the Festo bit-13 pair (Force reached / Close gun, manual A.2 p.100) - 0/1 signals, so a
+    window mean is the share of the minute the bit was on, not a time or a set value."""
+    fs = rm.sensor_findings([feat("c4", "mean", 2.0, share=0.3), feat("c18", "mean", -1.5, share=0.2)])
+    assert [f["text_ko"] for f in fs] == ["힘 도달 신호(c4) 켜진 비율 평소보다 높음",
+                                          "건 닫기·힘 형성 명령(c18) 켜진 비율 평소보다 낮음"]
 
 
 def test_no_causes_or_manuals_in_handoff():

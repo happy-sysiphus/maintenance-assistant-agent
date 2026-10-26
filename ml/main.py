@@ -1645,7 +1645,9 @@ def attach_handoff(request: Request, result: AnomalyResult, g: "GunState | None"
         if g is not None:  # v1.1 context (techspec D-3); a failure here must not cost the event
             d = request.app.state.detector
             try:
-                doc["error_timeline"] = handoff_error_timeline(d, g, result.window_end)
+                # up to the trigger as well: a rule can fire in the minute after the last full window (C-7)
+                until = max(result.window_end, result.rule_trigger_time or result.window_end)
+                doc["error_timeline"] = handoff_error_timeline(d, g, until)
                 doc["sensor_trend"] = handoff_sensor_trend(d, g, result)
             except Exception:
                 log.exception("handoff context failed for %s at %s", result.gun_id, result.window_end)
@@ -1720,8 +1722,10 @@ async def push_handoff(app: FastAPI, rec: HandoffRecord) -> None:
     rec.attempts, rec.last_attempt_at = rec.attempts + 1, now
     try:
         async with httpx.AsyncClient(timeout=RAG_TIMEOUT_S, transport=app.state.rag_transport) as client:
-            r = await client.post(app.state.rag_url, json=rec.handoff.model_dump(mode="json"),
-                                  headers={"Idempotency-Key": rec.handoff.event_id})
+            # model_dump_json writes NaN / inf as null; httpx's json= refuses them, which failed every attempt (C-7)
+            r = await client.post(app.state.rag_url, content=rec.handoff.model_dump_json(),
+                                  headers={"Idempotency-Key": rec.handoff.event_id,
+                                           "Content-Type": "application/json"})
         code = r.status_code
         if 200 <= code < 300:
             rec.delivery, rec.delivery_detail, rec.next_attempt_at = "delivered", f"HTTP {code}", None

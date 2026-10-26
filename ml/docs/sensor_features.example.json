@@ -1,107 +1,107 @@
 {
   "schema_version": "sensor-features-v4",
-  "gun_id": "synthetic_0",
-  "observed_at": "2021-10-01T01:55:59Z",
+  "gun_id": "test_3",
+  "observed_at": "2021-09-03T09:25:59Z",
   "window_s": 60,
   "value_space": "ml_handoff_z",
-  "reference_id": "baseline_iforest@2026-10-21T10:53:36",
+  "reference_id": "baseline_ensemble@2026-10-06T10:17:47",
   "gun_norm": "gun",
-  "error_code": "E029",
-  "fault_class": "E04",
+  "error_code": "E016",
+  "fault_class": "E02",
   "n_samples": 60,
   "measurements": [
     {
-      "feature": "c5_mean",
-      "z": 7.627,
-      "value": 502.548
-    },
-    {
       "feature": "c3_mean",
-      "z": 0.275,
-      "value": 140.562
-    },
-    {
-      "feature": "c2_mean",
-      "z": -0.176,
-      "value": 523.6
+      "z": -1.433,
+      "value": -9.312
     },
     {
       "feature": "c1_mean",
-      "z": -0.117,
-      "value": 1.943
-    },
-    {
-      "feature": "c5_std",
-      "z": 0.115,
-      "value": 3.302
+      "z": -0.138,
+      "value": 0.0
     },
     {
       "feature": "c2_std",
-      "z": -0.096,
-      "value": 1004.264
+      "z": 0.111,
+      "value": 115.158
     },
     {
-      "feature": "c3_std",
-      "z": -0.027,
-      "value": 1.918
+      "feature": "c2_mean",
+      "z": 0.106,
+      "value": 423.783
     },
     {
-      "feature": "c1_std",
-      "z": 0.024,
-      "value": 0.508
+      "feature": "c5_mean",
+      "z": 0.099,
+      "value": 535.133
+    },
+    {
+      "feature": "c5_std",
+      "z": 0.083,
+      "value": 132.029
     },
     {
       "feature": "c6_mean",
-      "z": -0.02,
-      "value": -65.117
+      "z": -0.01,
+      "value": 7.0
+    },
+    {
+      "feature": "c1_std",
+      "z": 0.0,
+      "value": 0.0
+    },
+    {
+      "feature": "c3_std",
+      "z": 0.0,
+      "value": 0.106
     },
     {
       "feature": "c6_std",
-      "z": -0.007,
-      "value": 2.929
+      "z": 0.0,
+      "value": 0.0
     }
   ],
   "states": [
     {
       "signal": "c4",
-      "on_share": 0.383
+      "on_share": 0.0
     },
     {
       "signal": "c10",
-      "on_share": 0.933
+      "on_share": 0.467
     },
     {
       "signal": "c18",
-      "on_share": 0.183
+      "on_share": 0.617
     }
   ],
   "setpoints": [
     {
       "setpoint": "c13",
-      "mean": 14.99,
+      "mean": 8.965,
       "std": 0.0,
-      "mean_z": 0.0,
+      "mean_z": -2.397,
       "std_z": 0.0
     },
     {
       "setpoint": "c14",
-      "mean": 2200.0,
+      "mean": 2500.0,
       "std": 0.0,
-      "mean_z": 0.0,
+      "mean_z": -0.195,
       "std_z": 0.0
     },
     {
       "setpoint": "c15",
-      "mean": 150.0,
-      "std": 0.0,
-      "mean_z": 0.0,
-      "std_z": 0.0
+      "mean": 28.12,
+      "std": 27.992,
+      "mean_z": -1.175,
+      "std_z": 0.492
     },
     {
       "setpoint": "c16",
-      "mean": 1.6,
+      "mean": 2.2,
       "std": 0.0,
-      "mean_z": 0.0,
+      "mean_z": -3.002,
       "std_z": 0.0
     }
   ]

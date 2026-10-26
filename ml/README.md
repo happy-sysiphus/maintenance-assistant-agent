@@ -70,6 +70,8 @@ https://drive.google.com/drive/folders/1EDQcJj-L1btXrTOmXwPp8Jps24oy989d?usp=dri
 | c9 | Start friction | c19 | Offset value in robot **〔확인〕 초당 ~55씩 증가하는 카운터 — 모델 입력에서 제외(5.6절)** |
 | c10 | US2 (on/off) | | |
 
+c4·c18은 0/1 비트로, Festo fieldbus 13번 비트의 짝이다: c18 = 로봇의 "Close gun"(건 닫기·힘 형성 명령), c4 = 건의 "Force reached"(힘 도달; 설정 힘 − 실제 힘 < 100 N). 1분 평균은 그 분에 켜진 비율이다(`history.md` 35절).
+
 - 마스킹 때문에 도메인 해석에는 한계가 있으나, 데이터에서 역으로 알 수 있는 것이 있다. **`c16`(판 두께 setpoint)이 0 이하이면 용접이 아니라 캡 교체·드레싱 같은 비용접 작업**이다(학습 파일의 카운터 정지 구간은 사실상 전부 `c16 == 0`). 논문·벤치마크 코드는 `c16 > 5`(논문 본문은 6)도 비용접으로 보지만, 그 행들은 시간당 800~980회 용접하는 **두꺼운 판 setpoint**라 이 프로젝트는 **`c16 ≤ 0`만** 비용접으로 본다(5.4절, `--outlier-hi 5`로 논문 규칙 복원 가능, 경위는 `history.md`). 저활동(대기)은 비용접 플래그가 아니라 `welds_10min`·`weld_duty_10min` 피처가 표현한다.
 - **〔확인〕** `c7`·`c8`·`c9`는 한 파일 안에서 상수다(72개 중 69개). 건별 고유 속성으로 봐야 한다. `c11`·`c12`는 누적 카운터라 절대값이 건마다 다르다.
 
@@ -722,7 +724,7 @@ python .py/replay.py test/test_0.csv --speed 60               # 60배속
 
 **v1.2 (2026-10-21, D-003·D-6 결정 — 필드 삭제라 호환 깨짐)**: `symptoms[]`(P1~P9), `situation_ids`(S01~S10), `fault_class.situation_id`를 뺐다. ML은 정의서의 상황·증상 매핑을 하지 않고, 컨트롤러 코드(`fault_class.terminal_code`, `trigger.rule_code` — 예: E012)와 고장 유형(`fault_class.code` — 예: E01, 종료 코드를 데이터로 연결한 것)만 그대로 보낸다. 센서 편차는 매분 따로 보내는 sensor-features 문서(5.11, 현재 v4)가 맡는다. RAG 쪽(`rag/service.py`, 지금 S ID 입력)은 E 코드로 조회하도록 바꿔야 한다. 아래 5.10.4~5.10.5의 symptoms·situation_ids 설명은 v1.1 기록으로 남겨 둔다.
 
-**v1.1 (2026-10-08, FE 요청 `ui/docs/05-fe-api-requests.md` 반영, 1.0과 호환 — 필드 추가만)**: 핸드오프의 모든 시각은 UTC이고 끝에 `Z`가 붙는다(`detected_at`, `window_start`, `trigger.rule_trigger_time`). 새 필드 `error_timeline[]`(이 건 버퍼 약 30분의 컨트롤러 코드 구간: `code`, `start`, `end`, `duration_s`, `class_hint`)와 `sensor_trend[]`(이번 이벤트의 기여 상위 피처 최대 4개의 최근 30분 1분 편차: `feature`, `sensor`, `sensor_name_ko`, `statistic`, `points[{t, z}]` — `/guns/{id}/trace`의 `deviation`과 같은 값). `contributing_features[]`와 trace `features[]`에 `sensor_name_ko`(이름표 `rag_mapping.SENSOR_KO`). `/predict`·`/guns`·trace 응답의 시각은 여전히 오프셋 없는 UTC다. FE 질문 답변은 `docs/fe-requests-reply.md`.
+**v1.1 (2026-10-08, FE 요청 `ui/docs/05-fe-api-requests.md` 반영, 1.0과 호환 — 필드 추가만)**: 핸드오프의 모든 시각은 UTC이고 끝에 `Z`가 붙는다(`detected_at`, `window_start`, `trigger.rule_trigger_time`). 새 필드 `error_timeline[]`(이 건 버퍼 약 30분의 컨트롤러 코드 구간, 규칙 발화 시각까지: `code`, `start`, `end`, `duration_s`, `class_hint`)와 `sensor_trend[]`(이번 이벤트의 기여 상위 피처 최대 4개의 최근 30분 1분 편차: `feature`, `sensor`, `sensor_name_ko`, `statistic`, `points[{t, z}]` — `/guns/{id}/trace`의 `deviation`과 같은 값). `contributing_features[]`와 trace `features[]`에 `sensor_name_ko`(이름표 `rag_mapping.SENSOR_KO`). `/predict`·`/guns`·trace 응답의 시각은 여전히 오프셋 없는 UTC다. FE 질문 답변은 `docs/fe-requests-reply.md`(10-08, `ui/docs/05` 요청)와 `docs/fe-api-draft-reply.md`(10-26, `ui/docs/08` api 초안).
 
 ML(이상탐지)과 온톨로지·RAG(원인·점검·매뉴얼·리포트)를 **따로 개발하기 위한 인터페이스 명세**다. 코드: `.py/rag_mapping.py`(매핑, 순수 Python), `main.py`(스키마 `RagHandoff`·엔드포인트), `.py/mock_rag.py`(가짜 RAG). 예시(실데이터 test_3 이벤트): `docs/anomaly_result.example.json` → `docs/rag_handoff.example.json` → `docs/rag_response.example.json`. 상황 ID의 정의는 팀 문서 「RSW 용접건 MVP 오류 상황 정의서」(S01~S10).
 
@@ -761,7 +763,7 @@ JSON Schema는 서버의 `/docs`·`/openapi.json`.
 | `schema_version`, `event_id`, `gun_id`, `detected_at`, `window_start` | 식별. `event_id`는 UUID hex, 시각은 naive UTC ISO |
 | `trigger` | `source`(model / rule / model+rule), `rule_code`·`rule_trigger_time`(이 이벤트를 일으킨 규칙 발화; 반복 발화·모델 단독이면 `null`), `anomaly_score`, `threshold`, `score_z`, `alarm_duration_s`, `sustained` |
 | `summary_ko` | 한 줄 요약. 예: "보정(밸런스) 압력(c5) 평소보다 낮음; 고장 유형 E01(보정 압력 도달 지연) 의심, 에러 코드 E012." |
-| `sensor_findings[]` | 점수의 3% 이상을 설명하고 정상 기준에서 z 0.5 이상 벗어난 피처(최대 6개, 시각 피처 제외): `sensor`, `sensor_name(_ko)`, `group`, `statistic`, `direction`(high / low / unstable), `deviation_z`, `share`, `text_ko` |
+| `sensor_findings[]` | 점수의 3% 이상을 설명하고 정상 기준에서 z 0.5 이상 벗어난 피처(최대 6개, 시각 피처 제외): `sensor`, `sensor_name(_ko)`, `group`, `statistic`, `direction`(high / low / unstable), `deviation_z`, `share`, `text_ko`(c10 low는 "꺼짐(평소 켜짐)", 0/1 비트 c4·c18의 평균은 "켜진 비율 평소보다 높음/낮음") |
 | `fault_class` | 종료 코드 기준 고장 유형: `code`(E01~E04), `name_en`, `name_ko`, `terminal_code`, `situation_id`(S01~S04), `definition`, `basis`(rule_trigger = 이 요청의 규칙 발화, 반복 제외 / latest_error_code = 최신 에러 코드). 없으면 `null` |
 | `symptoms[]` | 센서 증상 규칙(5.10.5) 매칭: `id`(P1~P9), `name_ko`, `match`, `evidence`, `related_classes`, `situation_ids`, `agrees_with_fault_class`, `confidence`(low / medium) |
 | `situation_ids` | 온톨로지에서 조회할 상황 ID, 가능성 높은 순(고장 유형의 상황이 항상 먼저) |

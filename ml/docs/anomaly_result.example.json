@@ -35,6 +35,7 @@
       "feature": "error_share_10min_mean",
       "sensor": "error_share_10min",
       "sensor_name": "Share of time in error state (10 min)",
+      "sensor_name_ko": "최근 10분 에러 상태 비율",
       "statistic": "mean",
       "value": 0.1810833364725113,
       "reference": 0.0,
@@ -45,6 +46,7 @@
       "feature": "c10_std",
       "sensor": "c10",
       "sensor_name": "US2",
+      "sensor_name_ko": "US2 작동 허용 신호",
       "statistic": "std",
       "value": 0.5030977725982666,
       "reference": 0.0,
@@ -55,6 +57,7 @@
       "feature": "error_share_10min_std",
       "sensor": "error_share_10min",
       "sensor_name": "Share of time in error state (10 min)",
+      "sensor_name_ko": "최근 10분 에러 상태 비율",
       "statistic": "std",
       "value": 0.01851813867688179,
       "reference": 0.0,
@@ -65,6 +68,7 @@
       "feature": "c13_mean",
       "sensor": "c13",
       "sensor_name": "Setpoint counterbalance pressure",
+      "sensor_name_ko": "보정 압력 설정값",
       "statistic": "mean",
       "value": -2.3934874534606934,
       "reference": 0.003209191607311368,
@@ -75,6 +79,7 @@
       "feature": "c10_mean",
       "sensor": "c10",
       "sensor_name": "US2",
+      "sensor_name_ko": "US2 작동 허용 신호",
       "statistic": "mean",
       "value": 0.46666666865348816,
       "reference": 1.0,
@@ -85,6 +90,7 @@
       "feature": "c3_mean",
       "sensor": "c3",
       "sensor_name": "Electrode position",
+      "sensor_name_ko": "전극 위치",
       "statistic": "mean",
       "value": -1.428297519683838,
       "reference": 0.0044960081577301025,
@@ -95,6 +101,7 @@
       "feature": "c16_mean",
       "sensor": "c16",
       "sensor_name": "Setpoint sheet thickness",
+      "sensor_name_ko": "판 두께 설정값",
       "statistic": "mean",
       "value": -3.0106422901153564,
       "reference": -0.008953487500548363,
@@ -105,6 +112,7 @@
       "feature": "c15_mean",
       "sensor": "c15",
       "sensor_name": "Setpoint electrode position",
+      "sensor_name_ko": "전극 위치 설정값",
       "statistic": "mean",
       "value": -1.173952579498291,
       "reference": 0.0009113758569583297,
@@ -120,7 +128,25 @@
     "welds_10min": 54.0000358042023,
     "weld_duty_10min": 0.9416666626930237,
     "known_code_class_hint": null,
-    "known_code_in_profile": null
+    "known_code_in_profile": null,
+    "mean_dev": {
+      "c1": -0.138,
+      "c2": 0.106,
+      "c3": -1.433,
+      "c4": -0.312,
+      "c5": 0.099,
+      "c6": -0.01,
+      "c7": 0.0,
+      "c8": 0.0,
+      "c9": 0.0,
+      "c13": -2.397,
+      "c14": -0.195,
+      "c15": -1.175,
+      "c16": -3.002,
+      "c17": 0.0,
+      "c18": 1.522,
+      "c10": -0.533
+    }
   },
   "model": {
     "name": "baseline_ensemble",
@@ -146,5 +172,115 @@
   },
   "drift_warning": [
     "2 critical terminal-code rule triggers on 2021-09-03"
+  ],
+  "sensor_features": [
+    {
+      "schema_version": "sensor-features-v4",
+      "gun_id": "test_3",
+      "observed_at": "2021-09-03T09:25:59Z",
+      "window_s": 60,
+      "value_space": "ml_handoff_z",
+      "reference_id": "baseline_ensemble@2026-10-06T10:17:47",
+      "gun_norm": "gun",
+      "error_code": "E016",
+      "fault_class": "E02",
+      "n_samples": 60,
+      "measurements": [
+        {
+          "feature": "c3_mean",
+          "z": -1.433,
+          "value": -9.312
+        },
+        {
+          "feature": "c1_mean",
+          "z": -0.138,
+          "value": 0.0
+        },
+        {
+          "feature": "c2_std",
+          "z": 0.111,
+          "value": 115.158
+        },
+        {
+          "feature": "c2_mean",
+          "z": 0.106,
+          "value": 423.783
+        },
+        {
+          "feature": "c5_mean",
+          "z": 0.099,
+          "value": 535.133
+        },
+        {
+          "feature": "c5_std",
+          "z": 0.083,
+          "value": 132.029
+        },
+        {
+          "feature": "c6_mean",
+          "z": -0.01,
+          "value": 7.0
+        },
+        {
+          "feature": "c1_std",
+          "z": 0.0,
+          "value": 0.0
+        },
+        {
+          "feature": "c3_std",
+          "z": 0.0,
+          "value": 0.106
+        },
+        {
+          "feature": "c6_std",
+          "z": 0.0,
+          "value": 0.0
+        }
+      ],
+      "states": [
+        {
+          "signal": "c4",
+          "on_share": 0.0
+        },
+        {
+          "signal": "c10",
+          "on_share": 0.467
+        },
+        {
+          "signal": "c18",
+          "on_share": 0.617
+        }
+      ],
+      "setpoints": [
+        {
+          "setpoint": "c13",
+          "mean": 8.965,
+          "std": 0.0,
+          "mean_z": -2.397,
+          "std_z": 0.0
+        },
+        {
+          "setpoint": "c14",
+          "mean": 2500.0,
+          "std": 0.0,
+          "mean_z": -0.195,
+          "std_z": 0.0
+        },
+        {
+          "setpoint": "c15",
+          "mean": 28.12,
+          "std": 27.992,
+          "mean_z": -1.175,
+          "std_z": 0.492
+        },
+        {
+          "setpoint": "c16",
+          "mean": 2.2,
+          "std": 0.0,
+          "mean_z": -3.002,
+          "std_z": 0.0
+        }
+      ]
+    }
   ]
 }

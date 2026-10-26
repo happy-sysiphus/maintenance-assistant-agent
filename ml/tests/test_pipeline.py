@@ -452,6 +452,25 @@ def test_4_api_matches_offline(workspace):
         assert client.delete("/guns/G1").status_code == 404
 
 
+def test_4b_handoff_timeline_keeps_the_triggering_code(workspace):
+    """C-7: a rule fired in the minute that is not complete yet (after `window_end`) still shows its code in the
+    handoff's `error_timeline`. With 1-min streaming this is the usual case; the timeline used to stop at window_end."""
+    main = load_main(workspace)
+    from fastapi.testclient import TestClient
+
+    raw = pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
+    part = raw.iloc[:900].copy()
+    t = pd.to_datetime(part["time"], utc=True)
+    part.loc[(t >= t.iloc[-1].floor("min")).to_numpy(), "error"] = "E029"  # only the minute still in progress
+    with TestClient(main.app) as client:
+        r = client.post("/predict", json={"gun_id": "TL", "readings": part.to_dict("records")}).json()
+    assert r["rule_triggered"] is True and r["rule_code"] == "E029"
+    assert pd.Timestamp(r["rule_trigger_time"]) > pd.Timestamp(r["window_end"]), "trigger after the last full window"
+    runs = r["handoff"]["error_timeline"]
+    assert any(x["code"] == "E029" and x["class_hint"] == "E04" for x in runs), runs
+    os.environ.pop("RSW_MODEL_PATH")
+
+
 def card_repeat(client):
     return client.get("/model").json()["model"]["rule_repeat_s"]
 
@@ -855,6 +874,40 @@ def test_8_outbox_retry_restart_idempotent(workspace, tmp_path, monkeypatch):
         time.sleep(0.2)
         r = client.get(f"/handoffs/{eid}").json()
         assert r["delivery"] == "failed" and r["delivery_detail"].startswith("rejected") and r["attempts"] == 1
+    os.environ.pop("RSW_MODEL_PATH")
+
+
+def test_8b_push_sends_nan_as_null(workspace):
+    """C-7: a handoff holding NaN / inf still reaches the receiver, with null in those fields. pydantic's JSON mode
+    keeps NaN as a float and httpx refuses it in `json=`, so every attempt used to fail and the event was lost."""
+    import asyncio
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+
+    import httpx
+
+    main = load_main(workspace)
+    doc = json.load(open(os.path.join(ROOT, "docs", "rag_handoff.example.json"), encoding="utf-8"))
+    ho = main.RagHandoff(**doc)
+    ho.trigger.anomaly_score, ho.trigger.score_z = float("nan"), float("inf")
+    now = datetime.now(timezone.utc)
+    rec = main.HandoffRecord(handoff=ho, created_at=now, delivery="pending", next_attempt_at=now)
+    seen = []
+
+    def receive(request):
+        seen.append((request.headers.get("content-type", ""), request.headers.get("idempotency-key"),
+                     json.loads(request.content)))
+        return httpx.Response(200, json={"event_id": doc["event_id"], "status": "ok"})
+
+    app = SimpleNamespace(state=SimpleNamespace(
+        rag_url="http://api.test/diagnose", rag_transport=httpx.MockTransport(receive), outbox=main.Outbox(None),
+        rag_backoff_s=(0.05,), rag_max_attempts=3))
+    asyncio.run(main.push_handoff(app, rec))
+    assert (rec.delivery, rec.attempts) == ("delivered", 1), rec.delivery_detail
+    ctype, key, body = seen[0]
+    assert ctype.startswith("application/json") and key == doc["event_id"]
+    assert body["trigger"]["anomaly_score"] is None and body["trigger"]["score_z"] is None
+    assert body["event_id"] == doc["event_id"] and body["gun_id"] == doc["gun_id"]
     os.environ.pop("RSW_MODEL_PATH")
 
 

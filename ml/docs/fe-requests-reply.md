@@ -16,10 +16,14 @@
 
 ## 요청 1 · 서버 띄우기
 
+> 2026-10-26: 드라이브의 모델 파일은 10/06 재학습본(`created 2026-10-06T10:17:47`)이 맞다 → `fe-api-draft-reply.md` 1절.
+
 - 모델 파일: README 0절의 구글 드라이브에서 `baseline_ensemble.joblib`을 받아 `ml/models/`에, 원본 CSV는 `ml/train/`·`ml/test/`에 둔다. 그다음 `uvicorn main:app`.
 - mock부터 개발하려면: 서버를 띄운 PC에서 `python .py/replay.py test/test_0.csv --out-dir mock/` → 응답이 한 줄씩 `mock/test_0.jsonl`에 쌓인다(핸드오프가 붙은 줄이 critical 이벤트). trace는 재생 직후 `GET /guns/test_0/trace?minutes=360`을 저장. 8건 다 만들어 공유할 수 있다 — 필요하면 말해 달라.
 
 ## 요청 2 · 핸드오프를 api 서버로
+
+> 2026-10-26: FE api 초안의 받는 주소(`/api/ml/handoffs`)와, push·당기기를 같이 쓸 때의 주의점은 `fe-api-draft-reply.md` 2절.
 
 코드 변경 없이 된다. `RSW_RAG_URL=http://api:9000/diagnose`로 띄우면 critical 이벤트마다 그 주소로 POST한다(헤더 `Idempotency-Key: <event_id>`, 실패 시 백오프 재시도, 4xx는 재시도 안 함 — README 5.10.3).
 
@@ -52,6 +56,8 @@
 `contributing_features[]`(응답·trace의 `focus`)와 trace `features[]`에 `sensor_name_ko`를 넣었다. 이름표는 `rag_mapping.SENSOR_KO` 하나다.
 
 ## 요청 6 · 조치 뒤 "재발 없음"
+
+> 2026-10-26 갱신: 아래 판정 방법(`/handoffs` + `events`)은 놓치는 경우가 있다. 또 `DELETE` 뒤 "모델 알람은 글로벌 기준"은 틀렸다(워밍업 중에는 모델 경보가 없다). 고친 답은 `fe-api-draft-reply.md` 4절.
 
 계획대로 하면 된다: 조치 저장 시각 이후 `GET /handoffs?gun_id=`에 새 이벤트가 없고 trace `events`에 `rule`·`rule_repeat`가 없으면 재발 없음.
 
