@@ -1,0 +1,224 @@
+{
+  "E012": [
+    {
+      "doc": "manual82",
+      "page": 78,
+      "text": "12 Timeout compensation X",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    },
+    {
+      "doc": "diagnostic4",
+      "page": 1,
+      "text": "Error 12: Counterbalance Timeout\nThe error is monitored in active as well as inactive\ncompensation. The error is output if the specified\ncompensation pressure is not reached for 1800ms\n(tolerance + -600mbar).\nIf compensation is activated, the pressure must be\nreached for a certain time (+ -600mbar for > =\n10ms). If this is reached, an OK flag is set internally.\nThis monitoring was additionally introduced because\nthe force build-up time is typically shorter than\n1800ms.\nBalance must be active for at least 300ms. If the\nforce buildup is shorter, no error is output.\nThis error is also output when the set pressure is\nhigher than the supply pressure.",
+      "pdf_sha256": "dcea813c4041f047ec9242bc3377e5f06398fe96b989ef355126da3109244eab",
+      "extraction": "exact PDF table row, adjacent rows excluded"
+    }
+  ],
+  "E016": [
+    {
+      "doc": "manual82",
+      "page": 38,
+      "text": "6 Operation via WinSPAS\nElectrode monitoring\nCommand Button Function\nReport error when mm If an electrode position (relative to the refer-\nelectrode position is less ence position) less than this value is reached\nduring force build-up, an error is generated.\nProtects against electrode breaks/cap loss.\nMaximum cylinder force N Specifies the maximum cylinder force. An error\nis generated if exceeded during operation and\nif a greater force is required.\nCompensation\nTwo functions have been implemented for control of the compensating cylinder.\n− Brief differential pressure overshoot for smooth break-away and movement to\nthe welding piece\n− Brief pressure reduction for movement to the stop (“soft landing”)\n• Therefore, connect the compensating cylinder in such a way that the smaller compen-\nsating pressure must be set for movement to the welding piece, and the greater com-\npensating pressure must be set for movement to the stop.\nThe overshoot or reduction is generated in the case of pressure changes of\n1 bar or greater. Teaching of the compensation is therefore not affected.\nParameter Unit Significance\nRise of pressure bar When the compensating pressure is changed\nin a negative direction (P < P ):\nsetpoint actual\nActivated pressure:\nP = P – P\ncompensation setpoint rise\nDuration of rise of pressure ms Time for which the pressure overshoot is in ef-\nfect.\nPressure reduction bar When the compensating pressure is changed\nin a positive direction (P > P ):\nsetpoint actual\nSet pressure:\nP = P + P\ncompensation setpoint reduction\nDuration of pressure ms Time for which the pressure reduction is in ef-\nreduction fect.\n38 CPX-WELD-2G-SA 2020-06a",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    },
+    {
+      "doc": "manual82",
+      "page": 53,
+      "text": "6 Operation via WinSPAS\n6.10 Travel calibration\nThe travel calibration is used to determine:\n− the zero position\n− the transmission ratio for X guns\nTravel calibration is carried out independently of the gun geometry (C/X).\n6.10.1 Zero position and reference position\nAll position specifications (both fieldbus and in WinSPAS) refer to the gun's electrodes.\nThe closed gun has the position “0 mm”.\nZero position During positioning, every specification is in relation to\nthe zero position. This value changes only during travel cali-\nbration, so that the opening angle of the gun arms remains\nconstant during positioning.\nNote\n• Carry out a travel calibration with new electrode caps only.\nReference position The reference position refers to the opening width (sheet\nthickness) specified for welding and can change when homing\nis carried out (reason: burn-off and milling of the electrode\ncaps; drift of the caps on the shafts, etc.).\nThe position of the drive with the gun arms closed which is determined during travel cali-\nbration is saved as the zero and reference position. The zero position remains constant\nuntil the travel calibration is performed again. The reference position can change each\ntime homing is carried out.\nAfter homing is carried out, the opening angle of the gun arms does not\nchange during free positioning of the gun.\nCPX-WELD-2G-SA 2020-06a 53",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    },
+    {
+      "doc": "manual82",
+      "page": 78,
+      "text": "16 Electrode monitoring X",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    },
+    {
+      "doc": "diagnostic4",
+      "page": 1,
+      "text": "Error 16: Electrode Broken\nThe electrode position is smaller than the zero\nposition from the reference travel + the electrode\nmonitoring limit value written in WinSPAS during the\nbuild-up of force for at least 12ms. The error is not\nmonitored during path calibration and homing.",
+      "pdf_sha256": "dcea813c4041f047ec9242bc3377e5f06398fe96b989ef355126da3109244eab",
+      "extraction": "exact PDF table row, adjacent rows excluded"
+    }
+  ],
+  "E028": [
+    {
+      "doc": "manual82",
+      "page": 79,
+      "text": "28 Unintentional movement X",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    },
+    {
+      "doc": "diagnostic4",
+      "page": 2,
+      "text": "Error 28: Unwanted Movement\nIf, after reaching MC_Position in State HoldPosition\nor State Work, the control difference becomes\ngreater than 10mm, the error is triggered (error\nreaction) but not yet reported. There must not be any\nerror in the pressure supply and the check valves\nmust not be switched. After 10s, the error is reported\nif no other error is present. If another error occurs in\nthe meantime, the monitoring is restarted again.",
+      "pdf_sha256": "dcea813c4041f047ec9242bc3377e5f06398fe96b989ef355126da3109244eab",
+      "extraction": "exact PDF table row, adjacent rows excluded"
+    }
+  ],
+  "E029": [
+    {
+      "doc": "manual82",
+      "page": 44,
+      "text": "6 Operation via WinSPAS\nController\nParameter Significance\nK0, K1, K2, K3 and K3 init Gain factors of the closed-loop position controller.\nKp and Ki Amplification gains of the force and pressure regulator.\nValve offset Offset for valve.\nCylinder Drive used (from the database). Contains length and diame-\nter information.\nDrift tolerance\nParameter Significance\nDrift tolerance Specifies the maximum permitted drift in mm while the addi-\ntional pneumatic circuit is active. The drive can drift due to\nleakage. If the drift exceeds the specified limit, the “Set-\npoint/actual position comparison” bit on the fieldbus is re-\nset. In such cases, the higher-order controller must\nensure when restarting that the drive is in the specified\nsetpoint position before any robot movement is carried out.\nHoming\nCommand Button Function\nFriction limit N If the friction measured during homing exceeds\nor falls below this value, an error is generated.\nTarget pressure bar Final value of the pressure ramp.\nReference pressure bar Trigger pressure identifying the point at which\nthe gun arms are closed.\n44 CPX-WELD-2G-SA 2020-06a",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    },
+    {
+      "doc": "manual82",
+      "page": 79,
+      "text": "29 Drift X",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    },
+    {
+      "doc": "diagnostic4",
+      "page": 2,
+      "text": "Error 29: Drift\nIn addition, there is an absolute drift detection, which\nis switched off immediately from US2 or air saving\nmode is actively active. Thus, even in the first 10\nseconds in which the relative drift is not measured\nyet. The limit value for absolute drift is a CPX\nparameter and can be set via WinSPAS. Exceeding\nthe absolute drift will only result in a status word\nchange and not a system error, as with relative drift.\nIf the absolute drift is exceeded, the status bit\nCompare setpoint / actual position is set to 0.",
+      "pdf_sha256": "dcea813c4041f047ec9242bc3377e5f06398fe96b989ef355126da3109244eab",
+      "extraction": "exact PDF table row, adjacent rows excluded"
+    }
+  ],
+  "general-manual82-21": [
+    {
+      "doc": "manual82",
+      "page": 21,
+      "text": "4 Installation\nFigure 4-3 Tubing connection between the manifold block and compensating cylinder\n• When connecting the compensating cylinder, please note the following:\n− the smaller differential pressure is set for movement to the welding piece\n− the greater differential pressure is set for movement to the stop\nCPX-WELD-2G-SA 2020-06a 21",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-manual82-30": [
+    {
+      "doc": "manual82",
+      "page": 30,
+      "text": "6 Operation via WinSPAS\n[Calibration] menu\nThe commands in the [Calibration] menu are used for calibrating the welding gun system.\nCommand Button Function\n[Travel calibration] Adjustment of the travel of the welding gun.\n[Force calibration] Adjustment of the force of the welding gun.\n[Commissioning assistant] Opens the commissioning assistant.\n[Trace] menu\nCommand Button Function\n[Export trace] Exports the current trace to a file.\n[Show crosshair] Shows or hides the crosshairs.\n[Show legend] Shows or hides the legend.\n[Reset zoom] Sets the zoom factor to 100 %.\n[Start trace recording] Starts the trace recording immediately.\n[Simulation] menu\nCommand Button Function\n[Start] Starts the simulation.\n[Pause] Interrupts the simulation.\n[Repeat endless] Repeats the simulation continuously,\nin an endless loop.\n[Options] menu\nCommand Function\n[Welding guns] Opens the welding gun database.\n[Drives] Opens the drive database.\n[Firmware] Opens the submenu for downloading\nfirmware updates.\n[Language] Setting the programming language.\n30 CPX-WELD-2G-SA 2020-06a",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-manual82-45": [
+    {
+      "doc": "manual82",
+      "page": 45,
+      "text": "6 Operation via WinSPAS\nFriction detection The controller checks the friction of the system during\nthe homing procedure.\nAfter processing the travel calibration, the break-away pres-\nsures measured during the next 10 homing runs are aver-\naged. For every homing run after that, the current break-away\npressure is measured and compared with this average.\nIf the current break-away pressure deviates from the set\nvalue, an error is generated.\nThe welding gun should always be in the same spatial position when\nhoming and should always be started from the same position.\nt\nP\nx\nt\n1 Homing 4 Reference pressure\n2 Pressure profile in the main cylinder 5 Gun position\n3 Break-away pressure 6 Target pressure\nFigure 6-19 Friction detection\nThe system friction value can be reset with the “Reset detection” button.\nThe system friction is then determined again.\nCPX-WELD-2G-SA 2020-06a 45",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-manual82-46": [
+    {
+      "doc": "manual82",
+      "page": 46,
+      "text": "6 Operation via WinSPAS\nForce build-up\nStandstill detection: During force build-up, the gun arms could move due to deflec-\ntion of the gun. The standstill detection value determines\nthe limit value below which the speed must fall in order for\nthe “Force reached” signal to be generated.\nThe following applies:\nStandstill detection Severity level\n0 Detection switched off.\n“Force reached” is output as soon as the welding force\nis reached.\n1 ... 5 Detection active.\nThe “Force reached” signal is output as soon as the welding\nforce is reached and the speed of the drive falls below\nthe limit value.\nThe permitted limit falls with increasing value. The “Force reached” signal is output later\nas the filter factor rises.\nError\nThe generation of particular errors can be prevented by deactivating the corresponding\ncheck boxes.\nFigure 6-20 Expert dialog box – Errors\n46 CPX-WELD-2G-SA 2020-06a",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-manual82-53": [
+    {
+      "doc": "manual82",
+      "page": 53,
+      "text": "6 Operation via WinSPAS\n6.10 Travel calibration\nThe travel calibration is used to determine:\n− the zero position\n− the transmission ratio for X guns\nTravel calibration is carried out independently of the gun geometry (C/X).\n6.10.1 Zero position and reference position\nAll position specifications (both fieldbus and in WinSPAS) refer to the gun's electrodes.\nThe closed gun has the position “0 mm”.\nZero position During positioning, every specification is in relation to\nthe zero position. This value changes only during travel cali-\nbration, so that the opening angle of the gun arms remains\nconstant during positioning.\nNote\n• Carry out a travel calibration with new electrode caps only.\nReference position The reference position refers to the opening width (sheet\nthickness) specified for welding and can change when homing\nis carried out (reason: burn-off and milling of the electrode\ncaps; drift of the caps on the shafts, etc.).\nThe position of the drive with the gun arms closed which is determined during travel cali-\nbration is saved as the zero and reference position. The zero position remains constant\nuntil the travel calibration is performed again. The reference position can change each\ntime homing is carried out.\nAfter homing is carried out, the opening angle of the gun arms does not\nchange during free positioning of the gun.\nCPX-WELD-2G-SA 2020-06a 53",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-manual82-56": [
+    {
+      "doc": "manual82",
+      "page": 56,
+      "text": "6 Operation via WinSPAS\nWarning\nRisk of injury\nThe drive is under pressure during the measurements.\nThe pressure in the main cylinder is locked in the cylinder by the additional\npneumatic circuit.\n• Do not remove any hoses or cables during the measuring process.\nThe friction detection factor is reset during travel calibration – the friction\nfactor is determined again.\n6.11 Force calibration\nThe force calibration is used to determine the ratio of transmission of cylinder force to\nelectrode force. This is done by measuring the pliers forces corresponding to two specified\ncylinder forces.\nIn the controller CPX-WELD-2G-SA, the force setpoints are converted into cylinder forces\nbased on the force calibration.\n• Carry out the force calibration in the force range in which the welding gun is operated.\nF\nElectrodes\nF\nMeasured 2\nF\nMeasured 1\nF F F\nSpecification 1 Specification 2 Cylinder\nFigure 6-31 Force calibration diagram\n56 CPX-WELD-2G-SA 2020-06a",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-manual82-59": [
+    {
+      "doc": "manual82",
+      "page": 59,
+      "text": "6 Operation via WinSPAS\n6.12 Control of the welding gun\nWinSPAS can be used to carry out all the functions which can also be carried out by\nthe fieldbus.\n6.12.1 Functions of the “Controller” panel\nWarning\nPossible risk of injury and material damage.\nWhen switching master control (PC controller) to the fieldbus, the values set\nthrough the fieldbus apply immediately (e.g. for position). As a result,\nthe main cylinder and the compensating cylinder can move with great force\nand at high speed.\nWhen operated via the “Controller” panel, the cylinders perform movements\nwith high dynamics and force.\n• Make sure that nobody can enter the positioning range of moving parts.\nFigure 6-33 “Controller” panel\nCPX-WELD-2G-SA 2020-06a 59",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-manual82-64": [
+    {
+      "doc": "manual82",
+      "page": 64,
+      "text": "6 Operation via WinSPAS\n6.13 Simulation\nYou can use the “Simulation” tab to program a procedure for testing the welding gun\nsystem.\nFigure 6-36 “Compensation” dialog box\nOne row in the table represents one simulation step. The simulation switches to the next\nstep once the desired status word has been received and the time under “Timer” has\nelapsed.\nSetting the control and status words\nClick this button to set the control or status word. A dialog\nbox appears for setting the control or status word.\nFigure 6-37 Dialog box for control and status words\nCheck box Significance\nThe corresponding bit in the status word must be set.\nThe corresponding bit in the status word must be reset.\nThe state of the corresponding bit in the status word has no sig-\nnificance.\n64 CPX-WELD-2G-SA 2020-06a",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-manual82-66": [
+    {
+      "doc": "manual82",
+      "page": 66,
+      "text": "6 Operation via WinSPAS\n6.14 Firmware update\nYou can update the firmware for the controller by using the WinSPAS program.\nNote\nDamage to the product\n• The logic voltage supply US1 must not be switched off during the firm-\nware update.\nThe firmware update takes several minutes.\n• Before starting it, switch off the compressed air supply.\n• Open the “Firmware update” dialog box by accessing the [Options] menu and clicking\n[Firmware], then [Firmware update].\nFigure 6-39 Menu command [Firmware] [Firmware update]\nFigure 6-40 “Firmware Update” dialog box\n1. Click “Open” to select a firmware file.\n2. Click “Start” to transfer the firmware to the controller.\n66 CPX-WELD-2G-SA 2020-06a",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-manual82-76": [
+    {
+      "doc": "manual82",
+      "page": 76,
+      "text": "7 Control via fieldbus\n7.3.3 Diagnostics via WinSPAS\nWinSPAS supports diagnostics with:\n− Display of setpoints and actual values\n− Display of fieldbus data\n− Trace function\n“Setpoint/actual values” panel\nWhen the online mode is selected, the “Setpoint/actual values” panel displays the cyclical\ndata in real time.\nFigure 7-8 “Setpoint/actual values” panel\n76 CPX-WELD-2G-SA 2020-06a",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-manual82-77": [
+    {
+      "doc": "manual82",
+      "page": 77,
+      "text": "A Technical data\nA. Technical data\nA.1 General information\nGeneral information Value\nNominal pressure [bar] 5 … 12\nOperating pressure [bar] ≤ 12\nPermissible overpressure (t ≤ 1 sec, [bar] 16\nno damage)\nOperating medium at main port 1 of Compressed air to\nthe control block ISO 8573 1:2010 [6:4:2] 1)\nOperating voltage\nLogic voltage supply US1 [V DC] 24 ± 10 %\nLoad voltage supply US2 [V DC] 24 ± 10 %\nRated operating current [A] ≤ 4\n(load and logic voltage supply)\nLoad current for digital outputs [mA] ≤ 250\nAmbient conditions\nAmbient temperature °C [°C] 0 … 50\nStorage temperature [°C] –10 … +60\nTemperature of medium [°C] 5 … +40\nRelative humidity (non-condensing) [%] ≤ 90\nDegree of protection (DIN EN 60529) IP 652)\nElectromagnetic compatibility\nEmitted interference to EN 61000-6-43)\nImmunity to interference to EN 61000-6-2\nShock resistance (IEC68-2-27) severity level 2 4) 30 g\nVibration resistance (IEC68-2-6) severity level 2 4) 5 g\n1) A 5 µm filter is integrated in the manifold block.\n2) Note: All electrical connections must be capped. The protective transport cap does\nnot constitute IP protection.\n3) The component is intended for industrial use.\n4) Note: Assemble the welding gun controller and control block using rubber buffers.\nTable A.1 Technical data – General\nCPX-WELD-2G-SA 2020-06a 77",
+      "pdf_sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00"
+    }
+  ],
+  "general-festo-40": [
+    {
+      "doc": "festo",
+      "page": 40,
+      "text": "8 Commissioning\n8.11 Set equalizer\nPreparation to set equalizer\nNo. Action Comment\n1 Enable PC control\n2 Switch gun to positioning mode\n3 Open electrodes to 15 mm\n4 Specify welding force Set desired welding force\n5 Specify compensating pressure Simulate setting value from the robot\n6 Activate force build-up Gun closes\nEqualizer is activated with equalizer pressure [bar]\n7 Deactivate force build-up Gun opens to setpoint position\nEqualizer travels to initial position\n8 Search for optimal equalization Adapt equalization pressure until gun is floating\npressure Repeat steps 5 – 7\n40",
+      "pdf_sha256": "af7b8bdb5b420996364ed34571e0fc7f3356cd8776935b772294bf3a7a7e210b"
+    }
+  ],
+  "general-festo-41": [
+    {
+      "doc": "festo",
+      "page": 41,
+      "text": "8 Commissioning\nSet rise of pressure\nWith the rise of pressure, a pressure pulse is generated to overcome friction. The stuck electrode should\nthereby move to the component.\nNo. Action Comment\n1 Open System menu\n2 Adjust parameter for rise of\npressure\n3 Actuate download\n4 1 Rise of pressure [bar]\n2 Duration of rise of\npressure [ms]\n5 1 Rise of pressure [bar] Adjust values until the stuck electrode moves to the\n2 Duration of rise of component.\npressure [ms] Typical values:\nRise of pressure: 0.5-1.5 bar\nDuration: 50 – 150 ms\n6 Actuate force build-up\n7 Adapt settings Repeat step 2 until an optimal result is achieved.\n41",
+      "pdf_sha256": "af7b8bdb5b420996364ed34571e0fc7f3356cd8776935b772294bf3a7a7e210b"
+    }
+  ],
+  "general-festo-43": [
+    {
+      "doc": "festo",
+      "page": 43,
+      "text": "8 Commissioning\n8.12 Save project data\nSave parameter as project file\nNo. Action Comment\n1 Select upload\nData are read out of the controller\n2 Save project as\n3 Enter filename\n4 Print project data\n43",
+      "pdf_sha256": "af7b8bdb5b420996364ed34571e0fc7f3356cd8776935b772294bf3a7a7e210b"
+    }
+  ],
+  "general-festo-50": [
+    {
+      "doc": "festo",
+      "page": 50,
+      "text": "9 Software WinSPZ\n9.7.1 Connection PC - CPX controller with RS232 USB adapter\nTo connect the service interface on the CPX node to the PC, use the adapter (NEFC-M12G5-0.3-U1G5) and\nalso a conventional USB cable with mini USB connector.\nInformation on installing the adapter and on the COM1 interface used can be found in the documentation for\nthe adapter.\n1 Adapter\n2 USB cable\n1\n2\nFig. 9.5: Adapter for connection to the PC\nNote\nThe service interface (V.24) of the CPX terminal is not galvanically isolate d. It is not intended\nfor permanent connection to PC systems or as a control interface.\n• Remove the adapter during continuous operation.\nFollow the instructions for operation and for installation of the required d rivers on the\naccompanying CD-ROM or on the Internet:\n www.festo.com → Support/Downloads → Enter search term: FMT\n3 After commissioning, seal the service interface of the CPX node with the protective cap s upplied.\n9.7.2 Enable or deactivate online mode\nOnce you have connected the PC and controller, go to the [Online] menu and select [Con nect], or click on\n“Establish connection” on the toolbar.\nFig. 9.6: Online mode\nThe connection assistant is opened.\n50",
+      "pdf_sha256": "af7b8bdb5b420996364ed34571e0fc7f3356cd8776935b772294bf3a7a7e210b"
+    }
+  ],
+  "general-whitepaper11-5": [
+    {
+      "doc": "whitepaper11",
+      "page": 5,
+      "text": "5\n2. Implementation on the servo-pneumatic\nwelding gun\nFieldbus (e.g. PROFINET)\nThe robot control system Controller reports back actual\nspecifies position and force data measured values for position\nas setpoint values. and force\nThe welding gun controller The double-acting main drive cylinder\n• Connection to the higher-order • Including position sensor\nwelding controller via fieldbus • Integrated pressure sensors\n• Point-to-point • Available in various sizes\n• Or 7-axis actuation\nThe control block The compensating cylinder\n• Consisting of base plate, • Double-acting, space-saving\nproportional valves and standards-based cylinder to\nmanifold block ISO 15552\n• Functions: trapping the cylinder air, • Available in various sizes\nair-saving system, 5 μm filter\nThe operating software Welding\nGun Suite\n• Especially easy commissioning\nMatching accessories • Module-orientated diagnostics\n• E.g. cabling and tubing • Overview of all welding guns in the\n(welding-spatter resistant) cell/line\n• Simultaneous updates of several\nwelding guns\nFigure 3. The main components of the servo-pneumatic welding gun\nWelding guns come in C and X designs. Modern drive systems predominantly use\nclosed-loop control, either servo-electric or servo-pneumatic.\nThe servo-pneumatic drive system consists of:\n• Drive cylinder with integrated pressure and position sensors\n• Compensating cylinder with regulator for the balancer function\n• Controller with fieldbus connection to the robot (generally PROFINET)\n• PC software with graphic interface for commissioning, operation and diagnostics\nThe robot provides the system with the setpoint values for position and force control.\n2.1 Concept and basic architecture\nIn the concept, a software program (Festo Welding Gun Cloud Connector) is added to\nthe existing plant PC of the robot cell. This gathers the welding gun’s diagnostic data\nand sends it to a cloud entry point. Running in the cloud is a maintenance application\nthat visualises the data in the browser (maintenance dashboards) and evaluates it with\nrespect to the expected service life on the basis of causes of wear and learned failure\ncauses (Figure 4).\nWhite Paper: Predictive maintenance for pneumatic drives © Copyright 2021, Festo SE & Co. KG\nusing the example of the servo-pneumatic welding gun",
+      "pdf_sha256": "20864a37c99feb62227a6fa4ac76bcf51f6937148dcf46e180b65fb141a73f3f"
+    }
+  ],
+  "general-whitepaper11-6": [
+    {
+      "doc": "whitepaper11",
+      "page": 6,
+      "text": "6\n2.2 Step-by-step plan\nTo meet the long-term goal of predictive maintenance, a step-by-step plan was created\nin order to reduce the complexity and risk inherent in implementation and to generate Step-by-step approach mini-\nadded value for the maintenance technician with each step.\nmises complexity and risks.\n1 Definition, formulation of a hypothesis and cloud connectivity\n2 Gathering, displaying and evaluating data; condition monitoring models\n3 Creating physical models and AI models with a focus on predictive maintenance\n4 Roll-out of the predictive maintenance product\n• Visualisation of the welding\nWelding gun Cloud Connector Maintenance app Dashboards\ngun data\n(PC software (e.g. in the cloud)\n• Time-based progression of\non plant PC)\nthe measured values\n• Welding gun comparisons\n• Monitoring parameters\n• Identifying anomalies\n• Carries out a test cycle • Controls the execution of • Saves historical data\n• Provides measured values the test function • Processes the measured values\nfrom the test cycle • Gathers measured values • Recommended actions for the Maintenance system\nfor the guns in a plant welding gun (gun condition,\nand provides them via faulty components)\ninterfaces (MQTT, OPC-UA) • Alarm function for the\nmaintenance system\nFigure 4. Connecting the welding gun to the cloud via the plant PC\nThe first challenge for both end customers and system suppliers is to transfer the welding\ngun’s data from production to the cloud. Requirements for network traffic, processor\nloads and data security were not yet known at this time. If these requirements cannot be\nidentified and implemented, the use case cannot be realised using this basic architecture.\n2.3 Test function of the drive system\nThe definition of the data to be saved was influenced by discussions about the expecta-\ntions of the data scientists, and by what is technically feasible and technically useful. Process and component data\nWhile the data scientist wanted sensor and environmental data with the highest possible\nprovides valuable information –\nresolution, the welding gun experts had to apply the brakes: the components used that\ndespite the limited data scope.\nhave been tried and tested for many years cannot provide the Festo Welding Gun Cloud\nConnector with the sensor data within milliseconds.\nApart from this purely technological restriction, the welding gun domain experts were\nunanimous that saving data to this level of detail does not offer any added value and would\nonly have resulted in increased costs for the data transfer and processing in the cloud.\nInstead, it was decided to carry out a test cycle during which the welding gun, outside of\nproductive operation, was aligned in a specific orientation approximately 3 to 5 times a\nday and had to carry out prescribed motion tasks (positioning and building up force).\nDuring the motion, characteristic values such as positioning times or friction in the welding\ngun were measured and processed further in the cloud application as the result of the\ntest function.\nIn addition to this process data, component data (e.g. firmware version, serial number),\ncalibration data, controller data and operating data (e.g. number of weld spots, operating\nhours) was also transferred and saved. This data also provides important information\nthat is required to interpret the welding gun's condition.\nWith this solution, the volume of data is low; less than 10 KB of data is transferred per\nday and welding gun.\nWhite Paper: Predictive maintenance for pneumatic drives © Copyright 2021, Festo SE & Co. KG\nusing the example of the servo-pneumatic welding gun",
+      "pdf_sha256": "20864a37c99feb62227a6fa4ac76bcf51f6937148dcf46e180b65fb141a73f3f"
+    }
+  ],
+  "general-whitepaper11-9": [
+    {
+      "doc": "whitepaper11",
+      "page": 9,
+      "text": "9\n2.6 Data transparency: 25% fewer malfunctions\nThe data is visualised in the browser using Power BI, a business analytics application.\nTo reduce the complexity and interfaces in this early phase of the project, the project By evaluating the data in simple\nteam deliberately decided against a higher-performing solution. The software allows\ndashboards downtimes were\nthe dashboards to be configured with minimal effort and just with a knowledge of Excel.\nreduced by 22% and malfunctions\nEven just the ability to visualise overviews (What firmware is running where? Which\ncontroller parameters are used and in which gun?) provides the maintenance technician by 25%.\nwith added value. If there is a stoppage, they can make an initial diagnosis of the cause\nof the fault based on the fault pattern. After the test phase, once the dashboards are\nstable, they will be successively replaced with higher-performance and lower-cost web\ninterfaces tailored to the use case.\nAfter evaluating the welding gun data, it was possible to identify further cases of wear\nbefore the actual failure. These were gathering and evaluated in a cost/benefit analysis\nat the end of the year. All in all, the downtimes for malfunctions of more than 30 minutes\ncould be reduced by 22%. The number of malfunctions was reduced by 25%.\n2.7 Condition monitoring and AI models\nIn addition to evaluating friction characteristic curves or positioning times over the ser-\nvice life, initial limit values for these characteristic values should already be determined Proven by machine learning:\nin the second stage so that the welding gun status could then be visualised via the\nthere is a correlation between\nmaintenance dashboard in line with VDMA Standard Sheet 24582 4.\nthe failure of a main cylinder and\nAs in condition monitoring, the question was raised during the course of the project about\nthe correct limit values for a warning or a critical alarm. Due to the large variety of gun the parameters recorded by a test\ngeometries, different controller parameters and even fewer empirically established function that makes it possible\nfigures (too few component failures for statistical relevance), determining the limits is\nto predict the service life of the\nnow an essential task.\ncylinders.\nOriginally, according to the step-by-step plan, the welding gun’s characteristic values\nwere to be monitored based on its condition before predictive monitoring methods\nwere applied. However, in order to also gather empirically established figures using the\nmachine learning methods at an early stage, the correlation between the results of the\ntest function and the feedback about faults from maintenance was also examined using\nthis approach.\nThe initial results show, for example, that there is a correlation between the failure of a\nmain cylinder and the parameters recorded by the test function. It was then possible to\ntrain a model that correctly predicted a failure during the course of the project. Based on\nthe result, cylinders were replaced as a preventive measure. Tests confirmed that the\ncylinders were coming close to the end of their service life.\n4 VDMA. Fieldbus-neutral reference architecture for\ncondition monitoring in factory automation.\nStandard Sheet 24582, 2014. Industry standard.\nWhite Paper: Predictive maintenance for pneumatic drives © Copyright 2021, Festo SE & Co. KG\nusing the example of the servo-pneumatic welding gun",
+      "pdf_sha256": "20864a37c99feb62227a6fa4ac76bcf51f6937148dcf46e180b65fb141a73f3f"
+    }
+  ]
+}

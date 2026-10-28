@@ -1,0 +1,21 @@
+{
+  "dataset_samples": 50,
+  "distribution": {
+    "E012": 8,
+    "E016": 8,
+    "E028": 8,
+    "E029": 8,
+    "general": 18
+  },
+  "answers_ok": 50,
+  "valid_metric_values": 250,
+  "metric_attempts": 255,
+  "initial_failed_metric_attempts": 5,
+  "csv_rows": 50,
+  "recorded_usd": 1.19325779,
+  "production_files_compared_to": "ed7a890",
+  "production_files_checked": 38,
+  "changed_production_files": [],
+  "broken_local_document_links": [],
+  "dataset_sha256": "be3762c2a9be90ddc760cedd28407597688defba57b7d8916e14b1007157eb36"
+}

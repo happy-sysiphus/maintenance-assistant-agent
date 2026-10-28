@@ -1,0 +1,482 @@
+[
+  {
+    "id": "E012-01",
+    "response_claims": 17,
+    "response_claims_supported_by_reference": 5,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.29411764705882354,
+    "reference_claim_coverage_ratio": 0.5,
+    "official_factual_f1": 0.42
+  },
+  {
+    "id": "E016-01",
+    "response_claims": 22,
+    "response_claims_supported_by_reference": 7,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.3181818181818182,
+    "reference_claim_coverage_ratio": 0.6666666666666666,
+    "official_factual_f1": 0.47
+  },
+  {
+    "id": "E028-01",
+    "response_claims": 17,
+    "response_claims_supported_by_reference": 3,
+    "reference_claims": 2,
+    "reference_claims_supported_by_response": 1,
+    "response_reference_support_ratio": 0.17647058823529413,
+    "reference_claim_coverage_ratio": 0.5,
+    "official_factual_f1": 0.29
+  },
+  {
+    "id": "E029-01",
+    "response_claims": 22,
+    "response_claims_supported_by_reference": 4,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.18181818181818182,
+    "reference_claim_coverage_ratio": 0.75,
+    "official_factual_f1": 0.3
+  },
+  {
+    "id": "general-manual82-21-01",
+    "response_claims": 7,
+    "response_claims_supported_by_reference": 4,
+    "reference_claims": 2,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.5714285714285714,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.73
+  },
+  {
+    "id": "E028-02",
+    "response_claims": 14,
+    "response_claims_supported_by_reference": 6,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.42857142857142855,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.6
+  },
+  {
+    "id": "E012-02",
+    "response_claims": 14,
+    "response_claims_supported_by_reference": 3,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.21428571428571427,
+    "reference_claim_coverage_ratio": 0.75,
+    "official_factual_f1": 0.33
+  },
+  {
+    "id": "E016-02",
+    "response_claims": 21,
+    "response_claims_supported_by_reference": 8,
+    "reference_claims": 2,
+    "reference_claims_supported_by_response": 1,
+    "response_reference_support_ratio": 0.38095238095238093,
+    "reference_claim_coverage_ratio": 0.5,
+    "official_factual_f1": 0.53
+  },
+  {
+    "id": "general-manual82-30-01",
+    "response_claims": 8,
+    "response_claims_supported_by_reference": 4,
+    "reference_claims": 2,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.5,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.67
+  },
+  {
+    "id": "E029-02",
+    "response_claims": 19,
+    "response_claims_supported_by_reference": 7,
+    "reference_claims": 5,
+    "reference_claims_supported_by_response": 5,
+    "response_reference_support_ratio": 0.3684210526315789,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.54
+  },
+  {
+    "id": "E012-03",
+    "response_claims": 16,
+    "response_claims_supported_by_reference": 4,
+    "reference_claims": 5,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.25,
+    "reference_claim_coverage_ratio": 0.6,
+    "official_factual_f1": 0.36
+  },
+  {
+    "id": "E016-03",
+    "response_claims": 19,
+    "response_claims_supported_by_reference": 6,
+    "reference_claims": 2,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.3157894736842105,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.48
+  },
+  {
+    "id": "E029-03",
+    "response_claims": 17,
+    "response_claims_supported_by_reference": 5,
+    "reference_claims": 5,
+    "reference_claims_supported_by_response": 4,
+    "response_reference_support_ratio": 0.29411764705882354,
+    "reference_claim_coverage_ratio": 0.8,
+    "official_factual_f1": 0.43
+  },
+  {
+    "id": "E028-03",
+    "response_claims": 19,
+    "response_claims_supported_by_reference": 3,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 4,
+    "response_reference_support_ratio": 0.15789473684210525,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.27
+  },
+  {
+    "id": "general-manual82-45-01",
+    "response_claims": 6,
+    "response_claims_supported_by_reference": 3,
+    "reference_claims": 5,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.5,
+    "reference_claim_coverage_ratio": 0.4,
+    "official_factual_f1": 0.5
+  },
+  {
+    "id": "E012-04",
+    "response_claims": 13,
+    "response_claims_supported_by_reference": 1,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 1,
+    "response_reference_support_ratio": 0.07692307692307693,
+    "reference_claim_coverage_ratio": 0.25,
+    "official_factual_f1": 0.12
+  },
+  {
+    "id": "E016-04",
+    "response_claims": 21,
+    "response_claims_supported_by_reference": 9,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 0,
+    "response_reference_support_ratio": 0.42857142857142855,
+    "reference_claim_coverage_ratio": 0.0,
+    "official_factual_f1": 0.53
+  },
+  {
+    "id": "E028-04",
+    "response_claims": 12,
+    "response_claims_supported_by_reference": 0,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.0,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.0
+  },
+  {
+    "id": "general-manual82-46-01",
+    "response_claims": 4,
+    "response_claims_supported_by_reference": 3,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 1,
+    "response_reference_support_ratio": 0.75,
+    "reference_claim_coverage_ratio": 0.3333333333333333,
+    "official_factual_f1": 0.67
+  },
+  {
+    "id": "E029-04",
+    "response_claims": 23,
+    "response_claims_supported_by_reference": 2,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.08695652173913043,
+    "reference_claim_coverage_ratio": 0.6666666666666666,
+    "official_factual_f1": 0.15
+  },
+  {
+    "id": "E016-05",
+    "response_claims": 23,
+    "response_claims_supported_by_reference": 5,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.21739130434782608,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.36
+  },
+  {
+    "id": "E028-05",
+    "response_claims": 17,
+    "response_claims_supported_by_reference": 11,
+    "reference_claims": 2,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.6470588235294118,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.79
+  },
+  {
+    "id": "general-manual82-53-01",
+    "response_claims": 6,
+    "response_claims_supported_by_reference": 2,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.3333333333333333,
+    "reference_claim_coverage_ratio": 0.6666666666666666,
+    "official_factual_f1": 0.44
+  },
+  {
+    "id": "E029-05",
+    "response_claims": 21,
+    "response_claims_supported_by_reference": 7,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.3333333333333333,
+    "reference_claim_coverage_ratio": 0.75,
+    "official_factual_f1": 0.48
+  },
+  {
+    "id": "E012-06",
+    "response_claims": 18,
+    "response_claims_supported_by_reference": 6,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.3333333333333333,
+    "reference_claim_coverage_ratio": 0.6666666666666666,
+    "official_factual_f1": 0.48
+  },
+  {
+    "id": "E016-06",
+    "response_claims": 24,
+    "response_claims_supported_by_reference": 6,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.25,
+    "reference_claim_coverage_ratio": 0.6666666666666666,
+    "official_factual_f1": 0.39
+  },
+  {
+    "id": "E028-06",
+    "response_claims": 14,
+    "response_claims_supported_by_reference": 8,
+    "reference_claims": 2,
+    "reference_claims_supported_by_response": 1,
+    "response_reference_support_ratio": 0.5714285714285714,
+    "reference_claim_coverage_ratio": 0.5,
+    "official_factual_f1": 0.7
+  },
+  {
+    "id": "general-manual82-56-01",
+    "response_claims": 10,
+    "response_claims_supported_by_reference": 4,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.4,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.57
+  },
+  {
+    "id": "E029-06",
+    "response_claims": 17,
+    "response_claims_supported_by_reference": 4,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.23529411764705882,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.38
+  },
+  {
+    "id": "E012-07",
+    "response_claims": 15,
+    "response_claims_supported_by_reference": 5,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 1,
+    "response_reference_support_ratio": 0.3333333333333333,
+    "reference_claim_coverage_ratio": 0.25,
+    "official_factual_f1": 0.43
+  },
+  {
+    "id": "E016-07",
+    "response_claims": 22,
+    "response_claims_supported_by_reference": 7,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.3181818181818182,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.48
+  },
+  {
+    "id": "E028-07",
+    "response_claims": 21,
+    "response_claims_supported_by_reference": 4,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 3,
+    "response_reference_support_ratio": 0.19047619047619047,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.32
+  },
+  {
+    "id": "E029-07",
+    "response_claims": 20,
+    "response_claims_supported_by_reference": 9,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.45,
+    "reference_claim_coverage_ratio": 0.6666666666666666,
+    "official_factual_f1": 0.6
+  },
+  {
+    "id": "general-manual82-59-01",
+    "response_claims": 6,
+    "response_claims_supported_by_reference": 0,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 0,
+    "response_reference_support_ratio": 0.0,
+    "reference_claim_coverage_ratio": 0.0,
+    "official_factual_f1": 0.0
+  },
+  {
+    "id": "E012-08",
+    "response_claims": 19,
+    "response_claims_supported_by_reference": 6,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.3157894736842105,
+    "reference_claim_coverage_ratio": 0.5,
+    "official_factual_f1": 0.44
+  },
+  {
+    "id": "E016-08",
+    "response_claims": 20,
+    "response_claims_supported_by_reference": 5,
+    "reference_claims": 2,
+    "reference_claims_supported_by_response": 1,
+    "response_reference_support_ratio": 0.25,
+    "reference_claim_coverage_ratio": 0.5,
+    "official_factual_f1": 0.38
+  },
+  {
+    "id": "E028-08",
+    "response_claims": 17,
+    "response_claims_supported_by_reference": 4,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.23529411764705882,
+    "reference_claim_coverage_ratio": 0.6666666666666666,
+    "official_factual_f1": 0.36
+  },
+  {
+    "id": "general-manual82-64-01",
+    "response_claims": 5,
+    "response_claims_supported_by_reference": 3,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.6,
+    "reference_claim_coverage_ratio": 0.6666666666666666,
+    "official_factual_f1": 0.67
+  },
+  {
+    "id": "E029-08",
+    "response_claims": 23,
+    "response_claims_supported_by_reference": 6,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 4,
+    "response_reference_support_ratio": 0.2608695652173913,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.41
+  },
+  {
+    "id": "general-manual82-66-01",
+    "response_claims": 10,
+    "response_claims_supported_by_reference": 2,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 0,
+    "response_reference_support_ratio": 0.2,
+    "reference_claim_coverage_ratio": 0.0,
+    "official_factual_f1": 0.25
+  },
+  {
+    "id": "general-manual82-76-01",
+    "response_claims": 4,
+    "response_claims_supported_by_reference": 4,
+    "reference_claims": 2,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 1.0,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 1.0
+  },
+  {
+    "id": "general-festo-41-01",
+    "response_claims": 5,
+    "response_claims_supported_by_reference": 2,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 1,
+    "response_reference_support_ratio": 0.4,
+    "reference_claim_coverage_ratio": 0.25,
+    "official_factual_f1": 0.4
+  },
+  {
+    "id": "general-festo-40-01",
+    "response_claims": 8,
+    "response_claims_supported_by_reference": 1,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 1,
+    "response_reference_support_ratio": 0.125,
+    "reference_claim_coverage_ratio": 0.25,
+    "official_factual_f1": 0.17
+  },
+  {
+    "id": "general-festo-43-01",
+    "response_claims": 6,
+    "response_claims_supported_by_reference": 4,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 2,
+    "response_reference_support_ratio": 0.6666666666666666,
+    "reference_claim_coverage_ratio": 0.6666666666666666,
+    "official_factual_f1": 0.73
+  },
+  {
+    "id": "general-festo-50-01",
+    "response_claims": 4,
+    "response_claims_supported_by_reference": 3,
+    "reference_claims": 4,
+    "reference_claims_supported_by_response": 4,
+    "response_reference_support_ratio": 0.75,
+    "reference_claim_coverage_ratio": 1.0,
+    "official_factual_f1": 0.86
+  },
+  {
+    "id": "general-whitepaper11-5-01",
+    "response_claims": 4,
+    "response_claims_supported_by_reference": 0,
+    "reference_claims": 5,
+    "reference_claims_supported_by_response": 0,
+    "response_reference_support_ratio": 0.0,
+    "reference_claim_coverage_ratio": 0.0,
+    "official_factual_f1": 0.0
+  },
+  {
+    "id": "general-whitepaper11-6-01",
+    "response_claims": 7,
+    "response_claims_supported_by_reference": 0,
+    "reference_claims": 5,
+    "reference_claims_supported_by_response": 0,
+    "response_reference_support_ratio": 0.0,
+    "reference_claim_coverage_ratio": 0.0,
+    "official_factual_f1": 0.0
+  },
+  {
+    "id": "general-whitepaper11-9-01",
+    "response_claims": 13,
+    "response_claims_supported_by_reference": 6,
+    "reference_claims": 3,
+    "reference_claims_supported_by_response": 1,
+    "response_reference_support_ratio": 0.46153846153846156,
+    "reference_claim_coverage_ratio": 0.3333333333333333,
+    "official_factual_f1": 0.57
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "samples": 50,
+  "distribution": {
+    "E012": 8,
+    "E016": 8,
+    "E028": 8,
+    "E029": 8,
+    "general": 18
+  },
+  "generator": "gpt-5.4-mini",
+  "generation_method": "custom PDF-grounded stratified generation; not RAGAS TestsetGenerator",
+  "human_reviewed": false,
+  "history": false,
+  "document_fingerprint": "843e9311ddae73609a7c8428232aa2fa79b4234606cb3cf53bf9d6c077240b47"
+}

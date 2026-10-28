@@ -1,0 +1,11 @@
+{
+  "ragas": "0.4.3",
+  "openai": "2.44.0",
+  "langchain-core": "1.4.8",
+  "langchain-community": "0.3.31",
+  "instructor": "1.17.0",
+  "pydantic": "2.14.1",
+  "httpx": "0.28.1",
+  "pdfplumber": "0.11.10",
+  "numpy": "2.5.4"
+}

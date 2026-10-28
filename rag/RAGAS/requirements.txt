@@ -1,0 +1,5 @@
+-r ../requirements.txt
+ragas==0.4.3
+# RAGAS 0.4.3 still imports the legacy vertexai module removed in 0.4.x.
+langchain-community==0.3.31
+dataclasses-json==0.6.7
