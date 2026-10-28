@@ -1,0 +1,41 @@
+[
+  {
+    "id": "festo",
+    "title": "Festo 서보 공압 용접건 매뉴얼 (구판)",
+    "path": "festo_manual.pdf",
+    "pages": 101,
+    "sha256": "af7b8bdb5b420996364ed34571e0fc7f3356cd8776935b772294bf3a7a7e210b",
+    "role": "supplemental_legacy",
+    "version": "legacy"
+  },
+  {
+    "id": "manual82",
+    "title": "Servo-pneumatic welding gun system, 2nd generation CPX-WELD-2G-SA",
+    "path": "manuals/festo_cpx_weld_2g_sa_manual_2020_en.pdf",
+    "pages": 82,
+    "sha256": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00",
+    "role": "system_manual",
+    "version": "2020-06a",
+    "authority": "manufacturer_portal_verified"
+  },
+  {
+    "id": "diagnostic4",
+    "title": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA",
+    "path": "manuals/festo_bmw_2gen_error_messages_en.pdf",
+    "pages": 4,
+    "sha256": "dcea813c4041f047ec9242bc3377e5f06398fe96b989ef355126da3109244eab",
+    "role": "diagnostic_attachment",
+    "version": "metadata-created-2018-06-21",
+    "authority": "service_attachment_publisher_unverified"
+  },
+  {
+    "id": "whitepaper11",
+    "title": "Predictive maintenance for pneumatic drives using the example of the servo-pneumatic welding gun",
+    "path": "manuals/4459_documentation.pdf",
+    "pages": 11,
+    "sha256": "20864a37c99feb62227a6fa4ac76bcf51f6937148dcf46e180b65fb141a73f3f",
+    "role": "whitepaper",
+    "version": "2021-02",
+    "authority": "manufacturer_domain_verified"
+  }
+]

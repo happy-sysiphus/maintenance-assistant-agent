@@ -1,70 +1,68 @@
-# api
+# 정비 지원 API
 
-UI와 ml · rag를 연결하는 API 서버. UI는 이 서버만 호출한다.
+UI와 ML·RAG를 연결하는 FastAPI 서버입니다.
+RAG 요청별 개발 답변은 [ui/docs/09-rag-development-reply.md](../ui/docs/09-rag-development-reply.md)를 참고하세요.
 
-> **지금 있는 코드는 FE(한혜원)가 만든 데모용 초안이다 (2026-10-23).** api 담당이 정해지지 않아서, 화면을 실제 ML 데이터로 돌려 보려고 먼저 만들었다. 구조 · 주소 · 임시 결정에 다른 의견이 있으면 말해 주세요. 담당이 정해지면 넘기거나 같이 고친다.
-> 팀원별로 알아야 할 것: [`ui/docs/08-api-draft.md`](../ui/docs/08-api-draft.md)
+## 실행
 
-## 켜는 법
+저장소 루트에서 다음 순서로 실행합니다.
 
-ML 서버 → api 서버 → 화면 순서로 켠다.
-
-```bash
-# 1) ML 서버 (ml/README 0절: 모델 .joblib을 ml/models/에, test CSV를 ml/test/에)
-cd ml && uvicorn main:app --port 8000
-
-# 2) api 서버
+```powershell
+python -m pip install -r api/requirements.txt
+# rag/.env에 개인적으로 전달받은 Aura·OpenAI 설정을 입력
 cd api
-python -m venv .venv && .venv/bin/pip install -r requirements.txt   # 처음 한 번
-.venv/bin/uvicorn main:app --port 9000
-
-# 3) 화면: ui/.env.local 에 VITE_USE_MOCK=false, VITE_API_PROXY_TARGET=http://localhost:9000
-cd ui && npm run dev            # http://localhost:5173
-
-# 4) 고장 상황 흘려보내기 (ML이 감지 → api가 케이스로 만듦)
-cd ml && python .py/replay.py test/test_0.csv --chunk-s 600     # 약 2분, 알림 12건
+python -m uvicorn main:app --port 9000
 ```
 
-| 환경 변수 | 기본값 | 뜻 |
-|---|---|---|
-| `ML_URL` | `http://localhost:8000` | ML 서버 주소 |
-| `API_DB` | `api/state/api.db` | SQLite 파일 (깃에 안 올라감). 지우면 처음부터 |
+화면은 ui/.env.local에 VITE_USE_MOCK=false, VITE_API_PROXY_TARGET=http://localhost:9000을 설정합니다.
+ML_URL의 기본값은 http://localhost:8000, API_DB의 기본값은 api/state/api.db입니다.
+ML이 꺼져 있어도 챗봇·PDF와 저장된 케이스는 사용할 수 있습니다.
 
-## 파일
+## 연결과 저장
 
-| 파일 | 하는 일 |
+- ML 알림: GET /handoffs를 당겨 오거나 POST /api/ml/handoffs로 수신합니다.
+- RAG 입력: 알림의 trigger.rule_code 또는 fault_class.terminal_code만 사용합니다. 센서는 보내지 않습니다.
+- 신규 케이스: E 코드당 후보 하나와 고정 점검 ID를 즉시 생성합니다. ML 수신 응답은 LLM 생성을 기다리지 않습니다.
+- GET /api/cases/{id}: 최초 상세 조회에서 한국어 구조화 안내를 생성·저장합니다. 동일 질문은 캐시를 재사용합니다.
+- guidance에는 status·candidates와 함께 sections·causes·evidence·answer 등 실제 RAG 필드가 있습니다.
+- 기존 S 기반 저장 케이스의 기록 키는 자동 변환하지 않습니다. 새 케이스부터 E 코드 키를 사용합니다.
+- 점검·판단·조치·결과·일지·도움 요청은 기존 SQLite에 저장합니다. 생성 중 추가된 기록도 보존합니다.
+- 같은 event_id는 중복 처리하지 않고, 같은 설비·코드의 열린 케이스는 반복으로 묶습니다.
+
+## 챗봇·문서
+
+POST /api/assistant/ask:
+
+```json
+{"question":"그럼 다음에는?","history":[{"role":"user","text":"E029 오류를 설명해 주세요."}],"photos":[]}
+```
+
+기존 blocks·caution·situation_ids와 함께 구조화 RAG 필드도 반환합니다.
+일반 질문은 error_code=null, situation_ids=[]입니다. 사진은 분석하지 않습니다.
+
+| 경로 | 내용 |
 |---|---|
-| `main.py` | 주소 19개. 모양은 FE mock(`ui/src/mocks/handlers.ts`)과 같다 (`ui/docs/05` "저장 API", "AI 챗봇 API") |
-| `store.py` | SQLite 저장. 케이스 한 건 = JSON 한 줄. 같은 `event_id`는 한 번만 처리 |
-| `guidance.py` | 고장 코드 → 상황 ID → 점검 순서 · 근거 쪽. **RAG를 붙일 자리** |
-| `check_criteria.json` | 점검 항목별 정상 기준 · 확인 방법 (FE 초안: 매뉴얼 · 정의서 원문에 적힌 것만, RAG 확인 전). `guidance.py`가 점검 항목에 붙인다 |
-| `assistant.py` | AI 챗봇 답 (임시, 매핑에서 근거만 골라 조립) |
+| GET /api/situations | E 코드 네 개의 목록 |
+| GET /api/manuals/{doc}.pdf | festo / manual82 / diagnostic4 / whitepaper11 원본 |
+| GET /api/manuals/festo/search?q= | 네 문서의 키워드 검색. 경로 이름은 기존 UI 호환용 |
+| GET /api/health | ML 상태와 RAG 연결 방식 |
 
-## 흐름
+문서 검색 결과에는 doc·page가 함께 있습니다. PDF의 page는 1부터 시작합니다.
+기존 rsw PDF 경로는 제거했습니다.
 
-```
-ML 서버 ──(고장 알림: GET /handoffs 를 api가 5초마다 당겨 옴, 또는 ML이 POST /api/ml/handoffs 로 push)──▶ api
-api ── 케이스 생성: event = 알림 그대로, score_trace = ML trace 30분, guidance = guidance.py
-화면 ◀── GET /api/cases, /api/cases/{id}, /api/guns(ML /guns + 열린 케이스) …
-화면 ──▶ 점검 · 판단 · 조치 · 일지 · 도움 요청 · 사진 저장 (SQLite. ML · RAG에는 보내지 않음)
-```
+## UI 연동에서 바뀐 부분
 
-ML push로 받으려면 ML 서버를 `RSW_RAG_URL=http://localhost:9000/api/ml/handoffs`로 켠다 (이름은 RAG지만 알림을 보낼 주소 설정이다).
+화면 수정은 UI 담당 범위입니다. S ID 기반 원인 후보 전환 대신 E 코드당 안내 하나를 사용합니다.
+ManualDoc와 문서 이름표를 네 종류로 확장하고, guidance.causes의 한국어 조치·근거를 표시해야 합니다.
+기존 저장 주소와 candidates/checks의 기본 모양은 유지합니다. 새 답변의 필드 상세는 RAG README와 실제 예시를 참고하세요.
 
-## 임시 결정 (바뀔 수 있음)
+## 검증
 
-- **고장 코드 → 상황 ID 표** (`guidance.CODE_TO_SITUATION`): E012→S01, E016→S02, E028→S03, E029→S04. ML 핸드오프 v1.2부터 상황 ID가 오지 않아서 api가 바꾼다. RAG 입력 방식이 정해지면 고친다 (`ui/docs/07` 요청 1).
-- **원인 후보는 현상 하나**: 코드의 상황(S01~S04) 하나와 그 점검 순서만 준다. 원인 상황(S05~S09)을 고르는 근거가 지금은 없다. 코드 없는 알림(모델 신호만)은 `no_evidence` → 화면은 수동 모드.
-- **반복 알림 묶기**: 같은 설비 · 같은 코드(코드 없음끼리도)로 아직 끝나지 않은 케이스가 있으면 새 케이스 대신 `repeats`에 쌓는다. test_0은 알림 12건 → 케이스 3건.
-- **긴급도**: ML은 critical일 때만 알림을 보내므로 케이스 `severity`는 모두 `critical`.
-- **점검 항목 정상 기준**: RAG에 항목별 기준이 없어 `check_criteria.json` 초안을 쓴다. 항목과 쪽을 짝지은 건 FE 판단이다 (`ui/docs/07` 요청 3).
-- **오알람**: `POST /api/cases/{id}/close`에 `false_alarm`. 작업함 · 열린 케이스 묶기에서 빠지고 이력에 남는다.
-- **RAG 없이 근거만**: `rag/data/situation_mapping.json`을 직접 읽는다 (RAG의 "근거만 조회"와 같은 수준). LLM 답은 없다. Festo 원문은 확인한 오류 12만 넣었다.
+저장소 루트에서 python -B -m unittest discover -s rag/tests -v.
+API 의존성 파일은 RAG 의존성도 포함합니다. 테스트 DB는 임시 디렉터리를 사용합니다.
 
-## 아직 없는 것
+## 브라우저에서 직접 질문하기
 
-- RAG `answer_question` 호출 (Neo4j · OpenAI 키 필요), 원인 후보 여러 개, 한국어 조치 문장
-- 자동 테스트 (10/23 수동으로 저장 주소 전부 확인)
-- 사진은 DB에 data URL 글자로 저장 (데모 규모용, 나중에 파일 저장으로)
-- ML trace는 최근 6시간만 있어서, 알림을 늦게 당겨 오면 그래프(`score_trace`)가 비어 있다 → push로 받으면 해결
-- 화면에 반복 횟수(`repeat_count`) 표시
+API 실행 후 http://127.0.0.1:9000/docs 에서 POST /api/assistant/ask를 펼칩니다.
+Try it out을 누른 뒤 Request body의 E029 예시 질문을 수정하고 Execute를 누릅니다.
+Request body가 없으면 API 서버를 재시작하고 페이지를 새로고침합니다.

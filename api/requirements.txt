@@ -1,3 +1,4 @@
+-r ../rag/requirements.txt
 fastapi>=0.121
 uvicorn[standard]>=0.38
-httpx>=0.28
+httpx>=0.28,<1

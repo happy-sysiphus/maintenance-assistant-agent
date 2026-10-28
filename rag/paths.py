@@ -9,8 +9,8 @@ from .config import ROOT, load_environment
 load_environment()
 DATA = ROOT / "data"
 MANUAL_PDF = DATA / "festo_manual.pdf"
-RSW_PDF = DATA / "rsw_situations.pdf"
-MAPPING_PATH = DATA / "situation_mapping.json"
+MAPPING_PATH = DATA / "error_mapping.json"
+DOCUMENTS_PATH = DATA / "manuals.json"
 
 _runtime = Path(os.getenv("RAG_RUNTIME_DIR", "var")).expanduser()
 RUNTIME = _runtime if _runtime.is_absolute() else ROOT / _runtime

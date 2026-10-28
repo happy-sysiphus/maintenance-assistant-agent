@@ -1,23 +1,11 @@
-"""GraphRAG service for RSW welding-gun situations S01–S10."""
-
-from typing import Any
+"""E-code/manual GraphRAG public API. No sensor inputs or stored conversations."""
 
 
-def answer_question(
-    situation_ids: str | list[str],
-    question: str,
-    *,
-    database: str | None = None,
-    use_llm: bool = True,
-    use_cache: bool = False,
-) -> dict[str, Any]:
-    """Retrieve manual evidence and return an answer without writing question history."""
-    from .service import answer_question as _answer_question
-
-    return _answer_question(
-        situation_ids, question, database=database,
-        use_llm=use_llm, use_cache=use_cache,
-    )
+def answer_question(question, *, error_code=None, history=None, database=None,
+                    use_llm=True, use_cache=False):
+    from .service import answer_question as answer
+    return answer(question,error_code=error_code,history=history,database=database,
+                  use_llm=use_llm,use_cache=use_cache)
 
 
 __all__ = ["answer_question"]

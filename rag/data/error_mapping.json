@@ -1,0 +1,339 @@
+{
+  "version": "e-code-v1",
+  "notes": "Manual-grounded inspection candidates; no sensor diagnosis. Check IDs are stable. Legacy manual numbers are never equated with current E codes.",
+  "errors": {
+    "E012": {
+      "name": "보정 압력 도달 시간 초과",
+      "definition": "설정 보정 압력 도달을 감시하는 오류입니다. 상세 감시 조건은 진단 첨부 문서에서 확인합니다.",
+      "definitions": [
+        {
+          "doc": "manual82",
+          "page": 78,
+          "quote": "12 Timeout compensation"
+        },
+        {
+          "doc": "diagnostic4",
+          "page": 1,
+          "quote": "compensation pressure is not reached for 1800ms"
+        }
+      ],
+      "coverage_note": "신형 문서의 1800 ms 조건과 구판 오류 12의 2초·5 bar 참고값은 서로 다른 출처입니다. 구판의 케이블·압력 점검은 현 설비 적용 여부를 확인한 보충 후보입니다.",
+      "causes": [
+        {
+          "id": "E012-C1",
+          "name": "보정 설정 압력과 공급 압력의 관계",
+          "why": "진단 문서는 설정 압력이 공급 압력보다 높은 경우에도 이 오류가 발생한다고 설명합니다.",
+          "cite": {
+            "doc": "diagnostic4",
+            "page": 1,
+            "quote": "This error is also output when the set pressure is higher than the supply pressure."
+          },
+          "checks": [
+            {
+              "id": "E012-K1",
+              "text": "현재 보정 설정 압력과 실제 공급 압력을 대조합니다.",
+              "cite": {
+                "doc": "diagnostic4",
+                "page": 1,
+                "quote": "This error is also output when the set pressure is higher than the supply pressure."
+              },
+              "criterion": {
+                "kind": "how",
+                "text": "설정 압력이 공급 압력보다 높은지 확인합니다. 이 조건만으로 전체 정상 여부를 판정하지 않습니다.",
+                "cite": {
+                  "doc": "diagnostic4",
+                  "page": 1,
+                  "quote": "This error is also output when the set pressure is higher than the supply pressure."
+                }
+              }
+            }
+          ],
+          "actions": []
+        },
+        {
+          "id": "E012-C2",
+          "name": "MPYD 케이블과 공급 압력 점검 후보 (구판 보충)",
+          "why": "구판의 보정 압력 시간 초과 행은 MPYD 케이블과 공급 압력 점검을 제시합니다. 신형 오류의 확정 원인이 아닙니다.",
+          "cite": {
+            "doc": "festo",
+            "page": 90,
+            "quote": "Check cable to the MPYD."
+          },
+          "checks": [
+            {
+              "id": "E012-K2",
+              "text": "현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다.",
+              "cite": {
+                "doc": "festo",
+                "page": 90,
+                "quote": "Check cable to the MPYD."
+              },
+              "criterion": null
+            }
+          ],
+          "actions": []
+        }
+      ]
+    },
+    "E016": {
+      "name": "전극 감시 오류",
+      "definition": "전극 위치 감시와 관련된 오류이며, 진단 첨부 문서는 전극 파손 항목으로 설명합니다. 실제 캡 누락·파손 여부는 현장에서 확인해야 합니다.",
+      "definitions": [
+        {
+          "doc": "manual82",
+          "page": 78,
+          "quote": "16 Electrode monitoring"
+        },
+        {
+          "doc": "diagnostic4",
+          "page": 1,
+          "quote": "16 Electrode Broken"
+        }
+      ],
+      "coverage_note": "E016은 신형 문서의 전극 감시 오류입니다. 구판의 16번 프로그램 번호 오류와 다릅니다. 감시 한계는 WinSPAS 설정값이며 고정 수치를 추정하지 않습니다.",
+      "causes": [
+        {
+          "id": "E016-C1",
+          "name": "전극 파손 또는 캡 누락 가능성",
+          "why": "공식 시스템 매뉴얼의 전극 감시 기능은 전극 파손·캡 누락을 감시한다고 설명합니다.",
+          "cite": {
+            "doc": "manual82",
+            "page": 38,
+            "quote": "Protects against electrode breaks/cap loss."
+          },
+          "checks": [
+            {
+              "id": "E016-K1",
+              "text": "전극과 캡의 파손·누락 여부를 현장에서 확인합니다.",
+              "cite": {
+                "doc": "manual82",
+                "page": 38,
+                "quote": "Protects against electrode breaks/cap loss."
+              },
+              "criterion": {
+                "kind": "how",
+                "text": "전극 파손·캡 누락 여부를 확인합니다. 위치 감시값은 별도로 대조합니다.",
+                "cite": {
+                  "doc": "manual82",
+                  "page": 38,
+                  "quote": "Protects against electrode breaks/cap loss."
+                }
+              }
+            },
+            {
+              "id": "E016-K2",
+              "text": "WinSPAS 전극 위치 감시 한계와 가압 시 전극 위치를 대조합니다.",
+              "cite": {
+                "doc": "manual82",
+                "page": 38,
+                "quote": "Report error when"
+              },
+              "criterion": {
+                "kind": "how",
+                "text": "가압 중 설정 한계 미만 위치에서 오류가 생성됩니다. 한계값은 해당 설비의 설정값을 확인합니다.",
+                "cite": {
+                  "doc": "manual82",
+                  "page": 38,
+                  "quote": "during force build-up, an error is generated."
+                }
+              }
+            }
+          ],
+          "actions": []
+        },
+        {
+          "id": "E016-C2",
+          "name": "영점·기준 위치 확인 후보",
+          "why": "이동 보정은 영점과 기준 위치를 정하며, 캡 소모·밀링에 따라 기준 위치가 변할 수 있습니다. 보정 불량을 확정하는 근거는 아닙니다.",
+          "cite": {
+            "doc": "manual82",
+            "page": 53,
+            "quote": "The zero position remains constant until the travel calibration is performed again."
+          },
+          "checks": [
+            {
+              "id": "E016-K3",
+              "text": "이동 보정 영점과 호밍 기준 위치의 의미·설정 상태를 확인합니다.",
+              "cite": {
+                "doc": "manual82",
+                "page": 53,
+                "quote": "All position specifications"
+              },
+              "criterion": null
+            }
+          ],
+          "actions": [
+            {
+              "when": "별도로 이동 보정을 수행하는 경우",
+              "text": "이동 보정은 새 전극 캡으로만 수행합니다. E016 발생만으로 재보정이 필수라고 판단하지 않습니다.",
+              "cite": {
+                "doc": "manual82",
+                "page": 53,
+                "quote": "Carry out a travel calibration with new electrode caps only."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "E028": {
+      "name": "원치 않는 이동",
+      "definition": "목표 위치 도달 후 위치 유지 또는 작업 상태에서 원치 않는 이동을 감시하는 오류입니다.",
+      "definitions": [
+        {
+          "doc": "manual82",
+          "page": 79,
+          "quote": "28 Unintentional movement"
+        },
+        {
+          "doc": "diagnostic4",
+          "page": 2,
+          "quote": "28 Unwanted Movement"
+        }
+      ],
+      "coverage_note": "신형 진단 문서의 10 mm·10초·운전 상태 조건을 함께 확인합니다. 구판 오류 28은 캡 드레싱 오류이므로 이 코드의 정의로 사용하지 않습니다. 제시된 감시 조건을 보편적인 정상 기준으로 확대하지 않습니다.",
+      "causes": [
+        {
+          "id": "E028-C1",
+          "name": "목표 도달 후 위치 유지 편차",
+          "why": "진단 문서는 MC_Position 도달 뒤 HoldPosition 또는 Work 상태에서 발생하는 제어 편차를 설명합니다.",
+          "cite": {
+            "doc": "diagnostic4",
+            "page": 2,
+            "quote": "control difference becomes greater than 10mm"
+          },
+          "checks": [
+            {
+              "id": "E028-K1",
+              "text": "MC_Position 도달 후 HoldPosition·Work 상태의 목표 위치와 실제 위치를 대조합니다.",
+              "cite": {
+                "doc": "diagnostic4",
+                "page": 2,
+                "quote": "control difference becomes greater than 10mm"
+              },
+              "criterion": {
+                "kind": "how",
+                "text": "감시 설명의 10 mm 초과 편차와 운전 상태를 함께 확인합니다. 10 mm 이하만으로 정상이라고 확정하지 않습니다.",
+                "cite": {
+                  "doc": "diagnostic4",
+                  "page": 2,
+                  "quote": "control difference becomes greater than 10mm"
+                }
+              }
+            },
+            {
+              "id": "E028-K2",
+              "text": "다른 압력 공급 오류·체크밸브 전환·동반 오류 여부와 보고 시점을 확인합니다.",
+              "cite": {
+                "doc": "diagnostic4",
+                "page": 2,
+                "quote": "After 10s, the error is reported if no other error is present."
+              },
+              "criterion": {
+                "kind": "how",
+                "text": "압력 공급 오류가 없고 체크밸브가 전환되지 않는 조건이며, 다른 오류가 없을 때 10초 뒤 보고됩니다.",
+                "cite": {
+                  "doc": "diagnostic4",
+                  "page": 2,
+                  "quote": "After 10s, the error is reported if no other error is present."
+                }
+              }
+            }
+          ],
+          "actions": []
+        }
+      ]
+    },
+    "E029": {
+      "name": "드리프트",
+      "definition": "추가 공압 회로가 활성화된 상태의 허용 위치 이동과 드리프트 감시를 확인해야 하는 오류입니다.",
+      "definitions": [
+        {
+          "doc": "manual82",
+          "page": 79,
+          "quote": "29 Drift"
+        },
+        {
+          "doc": "diagnostic4",
+          "page": 2,
+          "quote": "29 Drift"
+        }
+      ],
+      "coverage_note": "드리프트 허용치는 CPX·WinSPAS의 실제 설정을 확인합니다. 절대 드리프트 상태 비트와 시스템 오류를 구분하며, 구판 오류 29의 캡 마모 정의를 적용하지 않습니다. 진단 첨부 문서의 적용 펌웨어는 별도 확인이 필요합니다.",
+      "causes": [
+        {
+          "id": "E029-C1",
+          "name": "누설에 따른 위치 이동 가능성",
+          "why": "시스템 매뉴얼은 누설로 드리프트가 발생할 수 있다고 설명합니다. 코드만으로 누설 부품을 특정할 수 없습니다.",
+          "cite": {
+            "doc": "manual82",
+            "page": 44,
+            "quote": "The drive can drift due to leakage."
+          },
+          "checks": [
+            {
+              "id": "E029-K1",
+              "text": "추가 공압 회로 활성 상태와 실제 드리프트를 설정된 허용치와 대조합니다.",
+              "cite": {
+                "doc": "manual82",
+                "page": 44,
+                "quote": "Drift tolerance Specifies the maximum permitted drift in mm while the additional pneumatic circuit is active."
+              },
+              "criterion": {
+                "kind": "how",
+                "text": "허용 드리프트는 설비에 설정된 mm 값입니다. 문서에 없는 공통 수치를 적용하지 않습니다.",
+                "cite": {
+                  "doc": "manual82",
+                  "page": 44,
+                  "quote": "Drift tolerance Specifies the maximum permitted drift in mm while the additional pneumatic circuit is active."
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "when": "드리프트가 설정 허용치를 넘긴 뒤 재시작할 때",
+              "text": "로봇 이동 전에 드라이브가 지정된 목표 위치에 있도록 상위 제어기에서 확인합니다.",
+              "cite": {
+                "doc": "manual82",
+                "page": 44,
+                "quote": "the higher-order controller must ensure when restarting that the drive is in the specified setpoint position before any robot movement is carried out."
+              }
+            }
+          ]
+        },
+        {
+          "id": "E029-C2",
+          "name": "절대 드리프트 감시와 상태 비트 확인",
+          "why": "진단 첨부 문서는 절대 드리프트의 설정값과 상태 비트 변화를 설명하며 시스템 오류와 구분합니다.",
+          "cite": {
+            "doc": "diagnostic4",
+            "page": 2,
+            "quote": "The limit value for absolute drift is a CPX parameter and can be set via WinSPAS."
+          },
+          "checks": [
+            {
+              "id": "E029-K2",
+              "text": "WinSPAS 절대 드리프트 설정과 목표·실제 위치 비교 상태 비트를 확인합니다.",
+              "cite": {
+                "doc": "diagnostic4",
+                "page": 2,
+                "quote": "The limit value for absolute drift is a CPX parameter and can be set via WinSPAS."
+              },
+              "criterion": {
+                "kind": "how",
+                "text": "절대 드리프트 초과 시 상태 워드 변화와 시스템 오류를 구분합니다. 문서별 비트 정의와 적용 버전을 확인합니다.",
+                "cite": {
+                  "doc": "diagnostic4",
+                  "page": 2,
+                  "quote": "Exceeding the absolute drift will only result in a status word change and not a system error"
+                }
+              }
+            }
+          ],
+          "actions": []
+        }
+      ]
+    }
+  }
+}

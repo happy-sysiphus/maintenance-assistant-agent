@@ -1,8 +1,8 @@
 """RSW 정비 지원 api 서버: 화면(ui) ↔ ML 이상 감지 서버 ↔ RAG 매뉴얼 근거를 잇는다.
 
-주소와 응답 모양은 FE mock(ui/src/mocks/handlers.ts)과 같다 (ui/docs/05 "저장 API", "AI 챗봇 API").
+기존 저장 주소를 유지하고 E 코드 기반 RAG·다문서 인용을 연결한다 (ui/docs/09 답신).
 - ML: 고장 알림(핸드오프)을 받아 케이스로 만든다. ML이 push하거나(POST /api/ml/handoffs), api가 ML /handoffs를 당겨 온다.
-- RAG: 지금은 레포의 매핑 파일로 점검 순서 · 근거 쪽만 채운다 (guidance.py). LLM 답은 RAG 연결 뒤.
+- RAG: 알림에서는 E 코드·고정 점검을 준비하고 상세 조회에서 한국어 JSON 안내를 생성한다.
 - 사람 기록(점검 · 판단 · 조치 · 일지 · 도움 요청 · 사진)은 SQLite에 저장한다 (store.py).
 
     uvicorn main:app --port 9000       # ML 서버는 ML_URL (기본 http://localhost:8000)
@@ -14,19 +14,23 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import httpx
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field
 from fastapi.responses import FileResponse
+from fastapi.concurrency import run_in_threadpool
+
 
 import assistant
 import guidance
+from rag.documents import manuals, manual_path
 import store
 
 ML_URL = os.environ.get("ML_URL", "http://localhost:8000").rstrip("/")
 REPO = Path(__file__).resolve().parent.parent
-MANUALS = {"festo": REPO / "rag" / "data" / "festo_manual.pdf", "rsw": REPO / "rag" / "data" / "rsw_situations.pdf"}
+MANUALS = {doc: manual_path(doc) for doc in manuals()}
 MANUAL_CAUSE = "MANUAL"
 TRACE_MINUTES = 30
 
@@ -180,7 +184,7 @@ def health():
         ml = ml_get("/health")["status"]
     except HTTPException:
         ml = "down"
-    return {"status": "ok", "source": "api", "ml": ml, "rag": "mapping_only"}
+    return {"status": "ok", "source": "api", "ml": ml, "rag": "e_code_hybrid"}
 
 
 @app.get("/api/cases")
@@ -193,7 +197,10 @@ def list_cases():
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str):
-    return load(case_id)
+    enriched = guidance.enrich(load(case_id))
+    latest = load(case_id)  # Preserve records saved while generation was running.
+    latest["guidance"] = enriched["guidance"]
+    return save(latest)
 
 
 @app.put("/api/cases/{case_id}/checks")
@@ -343,23 +350,8 @@ def manual_pdf(doc: str):
 
 @app.get("/api/manuals/festo/search")
 def manual_search(q: str = Query("")):
-    q = q.strip().lower()
-    items = []
-    if q:
-        for s in guidance.all_situations():
-            c = guidance.candidate(s["situation_id"], 0) or {}
-            for e in c.get("evidence", []):
-                if any(q in (v or "").lower() for v in (e["rationale"], e["quote"], s["name"])):
-                    items.append(
-                        {
-                            "page": e["page"],
-                            "title": e["rationale"],
-                            "quote": e["quote"],
-                            "situation_id": s["situation_id"],
-                            "situation_name": s["name"],
-                        }
-                    )
-    return {"items": items}
+    return {"items": guidance.search_manuals(q.strip()) if q.strip() else []}
+
 
 
 @app.get("/api/situations")
@@ -367,10 +359,29 @@ def situations():
     return {"situations": guidance.all_situations()}
 
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str
+
+
+class AssistantAskInput(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"example": {
+        "question": "E029 오류의 의미와 점검 방법을 알려주세요.",
+        "photos": [],
+        "history": [],
+    }})
+    question: str = Field(min_length=1, max_length=2000)
+    photos: list[dict[str, Any]] = Field(default_factory=list)
+    history: list[ChatMessage] = Field(default_factory=list)
+
+
 @app.post("/api/assistant/ask")
-async def ask(request: Request):
-    body = await request.json()
-    return assistant.answer(body.get("question", ""), body.get("photos", []), body.get("history", []))
+async def ask(body: AssistantAskInput):
+    try:
+        return await run_in_threadpool(assistant.answer,body.question,body.photos,
+                                       [message.model_dump() for message in body.history])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 @app.post("/api/assistant/feedback")

@@ -1,0 +1,140 @@
+{
+  "status": "ok",
+  "error_code": "E028",
+  "question": "이 오류의 의미와 근거가 있는 원인 후보, 점검 순서, 정상 기준 및 조치를 알려주세요.",
+  "answer": "오류 E028은 신형 진단 문서 기준으로 ‘Unwanted Movement(목표 도달 후 원치 않는 이동/편차)’입니다. MC_Position에 도달한 뒤 HoldPosition 또는 Work 상태에서 제어 편차가 10mm를 초과하면 감시가 반응하며, 10초 후에도 다른 오류가 없으면 보고됩니다. 이 조건은 정상 판정 기준이 아니라 이 오류의 감시 조건이므로, 10mm 이하라고 해서 일반적인 정상 기준으로 확대 해석하면 안 됩니다 [diagnostic4 p.2]. 구판 문서의 28번은 캡 드레싱/캡 마모와 의미가 달라 E028 정의로 쓰면 안 됩니다 [manual82 p.79].\n\n원인·확인 후보: 목표 도달 후 위치 유지 편차\nMC_Position 도달 뒤 HoldPosition 또는 Work 상태에서 제어 편차가 10mm를 초과하면 감시가 반응하고, 10초 뒤 다른 오류가 없을 때 보고됩니다 [diagnostic4 p.2].\n\n- MC_Position 도달 후 HoldPosition·Work 상태의 목표 위치와 실제 위치를 대조합니다. [diagnostic4 p.2]\n  기준·확인 방법: 감시 설명의 10 mm 초과 편차와 운전 상태를 함께 확인합니다. 10 mm 이하만으로 정상이라고 확정하지 않습니다. [diagnostic4 p.2]\n\n- 다른 압력 공급 오류·체크밸브 전환·동반 오류 여부와 보고 시점을 확인합니다. [diagnostic4 p.2]\n  기준·확인 방법: 압력 공급 오류가 없고 체크밸브가 전환되지 않는 조건이며, 다른 오류가 없을 때 10초 뒤 보고됩니다. [diagnostic4 p.2]\n\n요약: E028은 목표 도달 후 위치 유지 중 발생하는 원치 않는 이동 오류입니다. 점검은 위치 편차, 다른 압력 공급/체크밸브 이상, 동반 오류와 보고 시점을 함께 확인하는 순서로 보시면 됩니다.",
+  "sections": {
+    "interpretation": "오류 E028은 신형 진단 문서 기준으로 ‘Unwanted Movement(목표 도달 후 원치 않는 이동/편차)’입니다. MC_Position에 도달한 뒤 HoldPosition 또는 Work 상태에서 제어 편차가 10mm를 초과하면 감시가 반응하며, 10초 후에도 다른 오류가 없으면 보고됩니다. 이 조건은 정상 판정 기준이 아니라 이 오류의 감시 조건이므로, 10mm 이하라고 해서 일반적인 정상 기준으로 확대 해석하면 안 됩니다 [diagnostic4 p.2]. 구판 문서의 28번은 캡 드레싱/캡 마모와 의미가 달라 E028 정의로 쓰면 안 됩니다 [manual82 p.79].",
+    "summary": "E028은 목표 도달 후 위치 유지 중 발생하는 원치 않는 이동 오류입니다. 점검은 위치 편차, 다른 압력 공급/체크밸브 이상, 동반 오류와 보고 시점을 함께 확인하는 순서로 보시면 됩니다."
+  },
+  "causes": [
+    {
+      "situation_id": "E028",
+      "name": "목표 도달 후 위치 유지 편차",
+      "why": "MC_Position 도달 뒤 HoldPosition 또는 Work 상태에서 제어 편차가 10mm를 초과하면 감시가 반응하고, 10초 뒤 다른 오류가 없을 때 보고됩니다 [diagnostic4 p.2].",
+      "checks": [
+        {
+          "id": "E028-K1",
+          "text": "MC_Position 도달 후 HoldPosition·Work 상태의 목표 위치와 실제 위치를 대조합니다.",
+          "cite": {
+            "doc": "diagnostic4",
+            "page": 2
+          },
+          "criterion": {
+            "text": "감시 설명의 10 mm 초과 편차와 운전 상태를 함께 확인합니다. 10 mm 이하만으로 정상이라고 확정하지 않습니다.",
+            "cite": {
+              "doc": "diagnostic4",
+              "page": 2
+            }
+          }
+        },
+        {
+          "id": "E028-K2",
+          "text": "다른 압력 공급 오류·체크밸브 전환·동반 오류 여부와 보고 시점을 확인합니다.",
+          "cite": {
+            "doc": "diagnostic4",
+            "page": 2
+          },
+          "criterion": {
+            "text": "압력 공급 오류가 없고 체크밸브가 전환되지 않는 조건이며, 다른 오류가 없을 때 10초 뒤 보고됩니다.",
+            "cite": {
+              "doc": "diagnostic4",
+              "page": 2
+            }
+          }
+        }
+      ],
+      "actions": []
+    }
+  ],
+  "evidence": [
+    {
+      "id": "rag:evidence:49bfc5deccaa75b39c61",
+      "doc": "diagnostic4",
+      "page": 2,
+      "quote": "control difference becomes greater than 10mm",
+      "text": "Column 1: 28 | Column 2: Unwanted Movement | Column 3: If, after reaching MC_Position in State HoldPosition or State Work, the control difference becomes greater than 10mm, the error is triggered (error reaction) but not yet reported. There must not be any error in the pressure supply and the check valves must not be switched. After 10s, the error is reported if no other error is present. If another error occurs in the meantime, the monitoring is restarted again. | Column 4: X",
+      "review_needed": false
+    },
+    {
+      "id": "rag:evidence:4ea5baa6b92cecfae128",
+      "doc": "diagnostic4",
+      "page": 2,
+      "quote": "28 Unwanted Movement",
+      "text": ", after reaching MC_Position in State HoldPosition or State Work, the control difference becomes greater than 10mm, the error is triggered (error reaction) but not yet reported. There must not be any 28 Unwanted Movement X error in the pressure supply and the check valves must not be switched. After 10s, the error is reported if no other error is present. If another error occurs in the meantime, the monitoring is restarted again. In addition, there is an absolute drift detection, which is switched off immediately from US2 or air saving mode is actively active. Thus, even in the first 10 seconds in which the relative drift is not measured yet. The limit value for absolute drift is a CPX 29 Drift X parameter and ",
+      "review_needed": false
+    },
+    {
+      "id": "rag:evidence:a186b77fb9225739e32e",
+      "doc": "manual82",
+      "page": 79,
+      "quote": "28 Unintentional movement",
+      "text": "A Technical data No. Error Detection CPX MPYE MPYD Cylinder 23 Short circuit air saving control valve X (output 3) 24 – (not assigned) 25 – (not assigned) 26 Parameterisation X 27 Welding position X 28 Unintentional movement X 29 Drift X 30 Blocking function of main cylinder X 31 – (not assigned) 32 – (not assigned) 33 Drive CAN communication X 34 Drive position sensor X 35 Drive pressure sensor LD (P4) X 36 Drive pressure sensor AD (P2) X 37 Drive voltage X 38 Drive diagnostic memory X 39 Drive parameter memory X 40 – (not assigned) 41 – (not assigned) 42 – (not assigned) 43 Drive valve CAN communication X 44 Drive valve clamping X 45 Drive valve temperature X 46 Drive valve voltage X 47 – (not assigned) 48 – (not",
+      "review_needed": false
+    },
+    {
+      "id": "rag:evidence:8d8aac194b0262a485bf",
+      "doc": "manual82",
+      "page": 79,
+      "quote": "29 Drift",
+      "text": "Detection CPX MPYE MPYD Cylinder 23 Short circuit air saving control valve X (output 3) 24 – (not assigned) 25 – (not assigned) 26 Parameterisation X 27 Welding position X 28 Unintentional movement X 29 Drift X 30 Blocking function of main cylinder X 31 – (not assigned) 32 – (not assigned) 33 Drive CAN communication X 34 Drive position sensor X 35 Drive pressure sensor LD (P4) X 36 Drive pressure sensor AD (P2) X 37 Drive voltage X 38 Drive diagnostic memory X 39 Drive parameter memory X 40 – (not assigned) 41 – (not assigned) 42 – (not assigned) 43 Drive valve CAN communication X 44 Drive valve clamping X 45 Drive valve temperature X 46 Drive valve voltage X 47 – (not assigned) 48 – (not assigned) ",
+      "review_needed": false
+    },
+    {
+      "id": "rag:chunk-cb3c01f7c4665b884849",
+      "doc": "manual82",
+      "page": 58,
+      "quote": "Section 2\n[Table; PDF page 58]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nColumn 1: [Open gun arms] | Column 4: For manual movement of the electrodes.\nColumn 1: [Close gun arms] | Column 4: For manual movement of the electrodes.\nColumn 1: [Error reset] | Column 4: Resets an error.\nColumn 1: [Exter",
+      "text": "Section 2\n[Table; PDF page 58]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nColumn 1: [Open gun arms] | Column 4: For manual movement of the electrodes.\nColumn 1: [Close gun arms] | Column 4: For manual movement of the electrodes.\nColumn 1: [Error reset] | Column 4: Resets an error.\nColumn 1: [External force sensor] | Column 4: Automatically applies the values of an external force sensor.\nColumn 1: [Force build-up] | Column 2: – | Column 4: Positioning of the welding gun onto the force sensor and adjustment of the specified cylinder force.\nColumn 1: [OK] | Column 2: – | Column 4: Applies the force calibration data to the project. When the online mode is active, the calibration data determined is automatically saved in the controller.\nColumn 1: [Cancel] | Column 2: – | Column 4: Cancels the force calibration data. The data is discarded; it is not applied to the project, and calibration data is not transmit- ted to the controller.",
+      "review_needed": true
+    },
+    {
+      "id": "rag:chunk-ab819c8fd447b32abbc8",
+      "doc": "diagnostic4",
+      "page": 1,
+      "quote": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\n[Table; PDF page 1]\nColumn 1: 8 | Column 2: Force Setpoint | Column 3: The nominal force is greater than the maximum cylinder force parameterized in WinSPAS under \"System\" for at least 20 ms | Column 4: X\nColumn 1: 9 | Column 2: Posi",
+      "text": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\n[Table; PDF page 1]\nColumn 1: 8 | Column 2: Force Setpoint | Column 3: The nominal force is greater than the maximum cylinder force parameterized in WinSPAS under \"System\" for at least 20 ms | Column 4: X\nColumn 1: 9 | Column 2: Position Timeout | Column 3: The target position was not reached within 10 seconds. [MC Bit] Control deviation in the position controller smaller than or equal to 3 mm. | Column 4: X\nColumn 1: 10 | Column 2: Force Timeout | Column 3: The target force was not reached within 2 seconds. [MC Bit] Control deviation in the pressure controller less than 600 mbar. | Column 4: X\nColumn 1: 11 | Column 2: Direction of Motion | Column 3: The fault is only monitored in the positioning mode. It is not monitored during force build-up, air shutdown and fault. When a new position specification is received, the actual speed of the drive is saved. When the MPYE opens more than 75%, the direction of the current speed is compared with the stored one. The detection is switched off when a correct direction of movement has been detected and is switched on again after errors [E003] and [E033]. | Column 4: X",
+      "review_needed": false
+    },
+    {
+      "id": "rag:chunk-da2abd08c706dd16a405",
+      "doc": "festo",
+      "page": 38,
+      "quote": "Section 8.10\n[Table; PDF page 38]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nNo.: 5 | Action: Evaluate trace | Comment: Black, cylinder setpoint position Red, cylinder actual position Target: Actual position should follow setpoint position with little space Check at various speeds. Gun should posi",
+      "text": "Section 8.10\n[Table; PDF page 38]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nNo.: 5 | Action: Evaluate trace | Comment: Black, cylinder setpoint position Red, cylinder actual position Target: Actual position should follow setpoint position with little space Check at various speeds. Gun should position itself without oscillation of the gun arms even at slow speed.\nNo.: 6 | Action: Set following error equalization\nNo.: 7 | Action: Actuate download | Comment: Parameters become active after they have been transmitted to the controller.\nNo.: 8 | Action: Go to step 4 | Comment: Change settings until the result is satisfactory.",
+      "review_needed": true
+    },
+    {
+      "id": "rag:chunk-a6bb1273ffe1bf501d14",
+      "doc": "festo",
+      "page": 93,
+      "quote": "Section 10.1.1\n[Table 10.2: Assignment of error bits; PDF page 93]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nError number: - | Error text: Warning friction limit exceeded",
+      "text": "Section 10.1.1\n[Table 10.2: Assignment of error bits; PDF page 93]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nError number: - | Error text: Warning friction limit exceeded",
+      "review_needed": true
+    },
+    {
+      "id": "rag:chunk-a1189e5728936b575572",
+      "doc": "festo",
+      "page": 93,
+      "quote": "Section 10.1.1\n[Table 10.2: Assignment of error bits; PDF page 93]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nError number: 17 | Error text: Overtempe- rature transformer\nError number: 20 | Error text: Short circuit at output 0\nError number: 21 | Error text: Short circuit at output 1\nError number:",
+      "text": "Section 10.1.1\n[Table 10.2: Assignment of error bits; PDF page 93]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nError number: 17 | Error text: Overtempe- rature transformer\nError number: 20 | Error text: Short circuit at output 0\nError number: 21 | Error text: Short circuit at output 1\nError number: 22 | Error text: Short circuit at output 2\nError number: 23 | Error text: Short circuit at output 3\nError number: 26 | Error text: Parameteri- sation error controller\nError number: 28 | Error text: Cap dressing\nError number: 29 | Error text: Cap wear\nError number: 30 | Error text: Milling not OK\nError number: 31 | Error text: Cap loss",
+      "review_needed": true
+    }
+  ],
+  "review_notes": [
+    "신형 진단 문서의 10 mm·10초·운전 상태 조건을 함께 확인합니다. 구판 오류 28은 캡 드레싱 오류이므로 이 코드의 정의로 사용하지 않습니다. 제시된 감시 조건을 보편적인 정상 기준으로 확대하지 않습니다.",
+    "시각 정보·표 구조 원본 확인 필요: festo p.38, festo p.93, manual82 p.58"
+  ],
+  "model": "gpt-5.4-mini",
+  "usage": {
+    "input_tokens": 4057,
+    "output_tokens": 332,
+    "total_tokens": 4389,
+    "embedding_tokens": 72
+  },
+  "api_calls_this_run": 2,
+  "cache_hit": false,
+  "validation_errors": [],
+  "response_version": "e-code-ui-json-v2",
+  "seconds": 5.212
+}

@@ -15,6 +15,7 @@ from collections import Counter
 from pathlib import Path
 
 import pdfplumber
+from ..documents import manuals, manual_path, verify_manuals
 from ..config import load_environment
 from ..paths import MANUAL_PDF, PARSING, PARSED_BLOCKS, PARSED_DOCS, REVIEW_IMAGES, VISION_CACHE
 
@@ -110,7 +111,7 @@ def table_text(table, caption: str, page_no: int, lines: list[dict]) -> str:
     width = max(map(len, rows))
     match = TABLE_CAPTION.match(caption)
     number = match.group(1) if match else ("10.1" if 89 <= page_no <= 91 and width == 5 else "")
-    headers = KNOWN_COLUMNS.get(number)
+    headers = KNOWN_COLUMNS.get(number) if PDF.name == "festo_manual.pdf" else None
     if not headers or len(headers) != width:
         header_lines = [line["text"].strip() for line in lines
                         if 0 <= table.bbox[1] - line["bottom"] <= 30]
@@ -433,7 +434,8 @@ def save_results(rows, blocks, selected, total):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Festo PDF에서 선택 페이지만 위치 기반으로 변환")
+    parser = argparse.ArgumentParser(description="등록된 매뉴얼을 위치·표 근거와 함께 변환")
+    parser.add_argument("--doc", choices=list(manuals()), help="생략하면 네 문서 전체")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--pages", help="PDF 페이지 번호 예: 8,18,27,89-91")
     group.add_argument("--all-pages", action="store_true", help="전체 페이지 변환")
@@ -443,8 +445,10 @@ def main():
                         help="이번 실행에서 허용할 신규 API 호출 수 (기본값: 1, 캐시 재사용 제외)")
     parser.add_argument("--vision-model", default="gpt-4.1-mini", help="이미지 입력 가능 모델")
     args = parser.parse_args()
-    if not PDF.exists():
-        parser.error(f"PDF 파일이 없습니다: {PDF}")
+    global PDF, IMAGES
+    verify_manuals()
+    if args.pages and not args.doc:
+        parser.error("--pages에는 --doc를 함께 지정하세요")
     if args.vision:
         load_environment()
         if not os.getenv("OPENAI_API_KEY"):
@@ -456,28 +460,34 @@ def main():
     elif args.vision_pages:
         parser.error("--vision-pages는 --vision과 함께 사용하세요")
 
-    with pdfplumber.open(PDF) as pdf:
-        selected = list(range(1, len(pdf.pages) + 1)) if args.all_pages else parse_pages(args.pages, len(pdf.pages))
-        vision_pages = parse_pages(args.vision_pages, len(pdf.pages)) if args.vision else []
-        if not set(vision_pages).issubset(selected):
-            parser.error("--vision-pages는 --pages에서 선택한 페이지에 포함돼야 합니다")
-        vision = VisionRunner(args.vision_model, args.max_vision_calls) if args.vision else None
-        rows, blocks, audits = [], [], []
-        for no in selected:
-            print(f"PDF {no}/{len(pdf.pages)}쪽 처리")
-            context = "\n".join((pdf.pages[i].extract_text() or "")
-                                for i in range(max(0, no - 2), min(len(pdf.pages), no + 1))) if no in vision_pages else ""
-            row, page_blocks, audit = convert_page(pdf.pages[no - 1], no, context,
-                                                   vision if no in vision_pages else None,
-                                                   previous_section(pdf, no))
-            rows.append(row)
-            blocks.extend(page_blocks)
-            audits.append(audit)
-    save_results(rows, blocks, selected, len(pdf.pages))
-    print(f"저장: {PARSED_DOCS}")
-    print(f"위치와 추출 상세: {PARSED_BLOCKS}")
-    if vision:
-        print(f"신규 API 호출: {vision.new_calls}/{vision.max_calls}; 로컬 캐시 재사용: {vision.cache_hits}")
+    rows, blocks, audits = [], [], []
+    total = 0
+    docs = {args.doc: manuals()[args.doc]} if args.doc else manuals()
+    for doc_id, document in docs.items():
+        PDF = manual_path(doc_id)
+        IMAGES = REVIEW_IMAGES / doc_id
+        with pdfplumber.open(PDF) as pdf:
+            total += len(pdf.pages)
+            selected = list(range(1, len(pdf.pages) + 1)) if args.all_pages else parse_pages(args.pages, len(pdf.pages))
+            vision_pages = parse_pages(args.vision_pages, len(pdf.pages)) if args.vision else []
+            if not set(vision_pages).issubset(selected):
+                parser.error("--vision-pages는 선택한 페이지에 포함돼야 합니다")
+            vision = VisionRunner(args.vision_model, args.max_vision_calls) if args.vision else None
+            prior_section = None
+            for no in selected:
+                context = "".join(pdf.pages[i].extract_text() or "" for i in range(max(0,no-2),min(len(pdf.pages),no+1))) if no in vision_pages else ""
+                row, page_blocks, audit = convert_page(pdf.pages[no-1], no, context, vision, prior_section)
+                prior_section = (row["metadata"].get("section_ids") or [prior_section])[-1]
+                row["doc_id"] = f"{doc_id}:page:{no}"
+                row["metadata"].update(manual_id=doc_id, source=str(PDF), document_sha256=document["sha256"])
+                row["raw_text"] = pdf.pages[no-1].extract_text() or ""
+                for block in page_blocks:
+                    block["manual_id"] = doc_id
+                    block["source_block_id"] = f"{doc_id}:page:{no}:block:{block['order']}"
+                rows.append(row); blocks.extend(page_blocks); audits.append(audit)
+                print(f"{doc_id} PDF {no}/{len(pdf.pages)}", flush=True)
+    save_results(rows, blocks, list(range(len(rows))), total)
+    print(f"저장: {PARSED_DOCS}; {len(rows)}페이지")
     if any(item["visuals_to_review"] for item in audits):
         print("Review flags are preserved in blocks.jsonl and passed to chunking and answers.")
 

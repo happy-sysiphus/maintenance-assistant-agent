@@ -5,18 +5,20 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import json
 import os
 import sqlite3
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 DB_PATH = Path(os.environ.get("API_DB", Path(__file__).resolve().parent / "state" / "api.db"))
 _lock = threading.Lock()
 
 
-def _conn() -> sqlite3.Connection:
+@contextmanager
+def _conn() -> Iterator[sqlite3.Connection]:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     c = sqlite3.connect(DB_PATH)
     c.execute(
@@ -25,7 +27,11 @@ def _conn() -> sqlite3.Connection:
     )
     # ML이 같은 알림을 다시 보내도(재시도) 한 번만 처리하려고 받은 event_id를 남긴다
     c.execute("CREATE TABLE IF NOT EXISTS events (event_id TEXT PRIMARY KEY, case_id TEXT)")
-    return c
+    try:
+        with c:
+            yield c
+    finally:
+        c.close()
 
 
 def get(case_id: str) -> dict[str, Any] | None:

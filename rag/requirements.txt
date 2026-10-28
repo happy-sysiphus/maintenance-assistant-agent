@@ -1,6 +1,8 @@
 langchain-core==1.4.8
 neo4j==6.2.0
-neo4j-graphrag==1.18.0
 openai==2.44.0
 pdfplumber==0.11.10
 python-dotenv==1.2.2
+truststore>=0.10,<1
+pydantic>=2.10,<3
+httpx>=0.28,<1

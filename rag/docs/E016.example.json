@@ -1,0 +1,158 @@
+{
+  "status": "ok",
+  "error_code": "E016",
+  "question": "이 오류의 의미와 근거가 있는 원인 후보, 점검 순서, 정상 기준 및 조치를 알려주세요.",
+  "answer": "E016은 전극 감시 오류로, 전극 위치가 WinSPAS에 설정된 감시 한계보다 낮아졌을 때 가압(힘 증가) 중 오류가 발생한다는 의미입니다. 문서상 이 오류는 전극 파손이나 캡 누락/소모를 보호하기 위한 감시이며, 경로 보정(path calibration)과 호밍 중에는 감시하지 않습니다 [manual82 p.38][diagnostic4 p.1]. 보정값과 기준 위치는 별도 의미가 있으므로, E016만으로 보정 불량이나 실제 부품 파손을 단정하면 안 됩니다 [manual82 p.53].\n\n원인·확인 후보: 전극 파손 또는 캡 누락 가능성\n공식 시스템 매뉴얼의 전극 감시 기능은 전극 파손·캡 누락을 감시한다고 설명합니다 [manual82 p.38].\n\n- 전극과 캡의 파손·누락 여부를 현장에서 확인합니다. [manual82 p.38]\n  기준·확인 방법: 전극 파손·캡 누락 여부를 확인합니다. 위치 감시값은 별도로 대조합니다. [manual82 p.38]\n\n- WinSPAS 전극 위치 감시 한계와 가압 시 전극 위치를 대조합니다. [manual82 p.38]\n  기준·확인 방법: 가압 중 설정 한계 미만 위치에서 오류가 생성됩니다. 한계값은 해당 설비의 설정값을 확인합니다. [manual82 p.38]\n\n원인·확인 후보: 영점·기준 위치 확인 후보\n이동 보정은 영점과 기준 위치를 정하며, 캡 소모·밀링에 따라 기준 위치가 변할 수 있습니다. 다만 E016만으로 보정 불량을 확정할 근거는 아닙니다 [manual82 p.53].\n\n- 이동 보정 영점과 호밍 기준 위치의 의미·설정 상태를 확인합니다. [manual82 p.53]\n\n- 조치: 별도로 이동 보정을 수행하는 경우: 이동 보정은 새 전극 캡으로만 수행합니다. E016 발생만으로 재보정이 필수라고 판단하지 않습니다. [manual82 p.53]\n\n요약: E016은 전극 감시 한계 미만 위치가 가압 중 감지될 때 발생하는 전극 감시 오류입니다. 전극/캡 상태와 WinSPAS 감시 한계, 기준 위치를 문서 근거에 따라 구분해 확인하세요.",
+  "sections": {
+    "interpretation": "E016은 전극 감시 오류로, 전극 위치가 WinSPAS에 설정된 감시 한계보다 낮아졌을 때 가압(힘 증가) 중 오류가 발생한다는 의미입니다. 문서상 이 오류는 전극 파손이나 캡 누락/소모를 보호하기 위한 감시이며, 경로 보정(path calibration)과 호밍 중에는 감시하지 않습니다 [manual82 p.38][diagnostic4 p.1]. 보정값과 기준 위치는 별도 의미가 있으므로, E016만으로 보정 불량이나 실제 부품 파손을 단정하면 안 됩니다 [manual82 p.53].",
+    "summary": "E016은 전극 감시 한계 미만 위치가 가압 중 감지될 때 발생하는 전극 감시 오류입니다. 전극/캡 상태와 WinSPAS 감시 한계, 기준 위치를 문서 근거에 따라 구분해 확인하세요."
+  },
+  "causes": [
+    {
+      "situation_id": "E016",
+      "name": "전극 파손 또는 캡 누락 가능성",
+      "why": "공식 시스템 매뉴얼의 전극 감시 기능은 전극 파손·캡 누락을 감시한다고 설명합니다 [manual82 p.38].",
+      "checks": [
+        {
+          "id": "E016-K1",
+          "text": "전극과 캡의 파손·누락 여부를 현장에서 확인합니다.",
+          "cite": {
+            "doc": "manual82",
+            "page": 38
+          },
+          "criterion": {
+            "text": "전극 파손·캡 누락 여부를 확인합니다. 위치 감시값은 별도로 대조합니다.",
+            "cite": {
+              "doc": "manual82",
+              "page": 38
+            }
+          }
+        },
+        {
+          "id": "E016-K2",
+          "text": "WinSPAS 전극 위치 감시 한계와 가압 시 전극 위치를 대조합니다.",
+          "cite": {
+            "doc": "manual82",
+            "page": 38
+          },
+          "criterion": {
+            "text": "가압 중 설정 한계 미만 위치에서 오류가 생성됩니다. 한계값은 해당 설비의 설정값을 확인합니다.",
+            "cite": {
+              "doc": "manual82",
+              "page": 38
+            }
+          }
+        }
+      ],
+      "actions": []
+    },
+    {
+      "situation_id": "E016",
+      "name": "영점·기준 위치 확인 후보",
+      "why": "이동 보정은 영점과 기준 위치를 정하며, 캡 소모·밀링에 따라 기준 위치가 변할 수 있습니다. 다만 E016만으로 보정 불량을 확정할 근거는 아닙니다 [manual82 p.53].",
+      "checks": [
+        {
+          "id": "E016-K3",
+          "text": "이동 보정 영점과 호밍 기준 위치의 의미·설정 상태를 확인합니다.",
+          "cite": {
+            "doc": "manual82",
+            "page": 53
+          },
+          "criterion": null
+        }
+      ],
+      "actions": [
+        {
+          "when": "별도로 이동 보정을 수행하는 경우",
+          "text": "이동 보정은 새 전극 캡으로만 수행합니다. E016 발생만으로 재보정이 필수라고 판단하지 않습니다.",
+          "cite": {
+            "doc": "manual82",
+            "page": 53
+          }
+        }
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "rag:evidence:7a113e7e00808c9c7c37",
+      "doc": "diagnostic4",
+      "page": 1,
+      "quote": "16 Electrode Broken",
+      "text": "utomatic force calibration in WinSPAS. Calibration 15 Calibration of Force X line has negative slope The electrode position is smaller than the zero position from the reference travel + the electrode 16 Electrode Broken monitoring limit value written in WinSPAS during the X build-up of force for at least 12ms. The error is not monitored during path calibration and homing. 17 Friction Low The friction measured during reference travel is X",
+      "review_needed": false
+    },
+    {
+      "id": "rag:evidence:186836aa8032f1a808f5",
+      "doc": "manual82",
+      "page": 38,
+      "quote": "during force build-up, an error is generated.",
+      "text": "Column 1: Report error when electrode position is less | Column 2: mm | Column 4: If an electrode position (relative to the refer- ence position) less than this value is reached during force build-up, an error is generated. Protects against electrode breaks/cap loss.",
+      "review_needed": false
+    },
+    {
+      "id": "rag:evidence:49b6eaf34fcadaeddec3",
+      "doc": "manual82",
+      "page": 53,
+      "quote": "Carry out a travel calibration with new electrode caps only.",
+      "text": "6.10.1 Zero position and reference position\nAll position specifications (both fieldbus and in WinSPAS) refer to the gun's electrodes.\nThe closed gun has the position “0 mm”.\nZero position During positioning, every specification is in relation to\nthe zero position. This value changes only during travel cali-\nbration, so that the opening angle of the gun arms remains\nconstant during positioning.\nNote\n• Carry out a travel calibration with new electrode caps only.\nReference position The reference position refers to the opening width (sheet\nthickness) specified for welding and can change when homing\nis carried out (reason: burn-off and milling of the electrode\ncaps; drift of the caps on the shafts, etc.).\nThe position of the drive with the gun arms closed which is determined during travel cali-\nbration is saved as the zero and reference position. The zero position remains constant\nuntil the travel calibration is performed again. The reference position can change each\ntime homing is carried out.",
+      "review_needed": false
+    },
+    {
+      "id": "rag:evidence:c11304d864829c9572ae",
+      "doc": "manual82",
+      "page": 78,
+      "quote": "16 Electrode monitoring",
+      "text": "ation X 7 – (not assigned) 8 Force specification X 9 Position timeout X 10 Force timeout X 11 Direction of motion X 12 Timeout compensation X 13 Parameter X 14 – (not assigned) 15 Force calibration X 16 Electrode monitoring X 17 Friction too low X 18 Friction too high X 19 Sheet thickness X 20 Short circuit at output 0 X 21 Short circuit at output 1 X 22 Short circuit block control valve (output 2) X 78 CPX-WELD-2G-SA 2020-06a",
+      "review_needed": false
+    },
+    {
+      "id": "rag:chunk-794f438ac97d51c997f3",
+      "doc": "diagnostic4",
+      "page": 1,
+      "quote": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\n[Table; PDF page 1]\nColumn 1: 16 | Column 2: Electrode Broken | Column 3: The electrode position is smaller than the zero position from the reference travel + the electrode monitoring limit value written in WinSPAS during the build-u",
+      "text": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\n[Table; PDF page 1]\nColumn 1: 16 | Column 2: Electrode Broken | Column 3: The electrode position is smaller than the zero position from the reference travel + the electrode monitoring limit value written in WinSPAS during the build-up of force for at least 12ms. The error is not monitored during path calibration and homing. | Column 4: X\nColumn 1: 17 | Column 2: Friction Low | Column 3: The friction measured during reference travel is | Column 4: X",
+      "review_needed": false
+    },
+    {
+      "id": "rag:chunk-0bf9d70bdf96ca8f13a2",
+      "doc": "manual82",
+      "page": 38,
+      "quote": "Section 1\nElectrode monitoring\nCommand Button Function",
+      "text": "Section 1\nElectrode monitoring\nCommand Button Function",
+      "review_needed": false
+    },
+    {
+      "id": "rag:chunk-954af0810507c5e97617",
+      "doc": "diagnostic4",
+      "page": 1,
+      "quote": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\nMonitoring",
+      "text": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\nMonitoring",
+      "review_needed": false
+    },
+    {
+      "id": "rag:chunk-8f1a76fa76760e729b1b",
+      "doc": "festo",
+      "page": 29,
+      "quote": "Section 8.5\n[Table; PDF page 29]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nNo.: 7 | Action: Enter electrode stroke | Comment: C-gun: translation = 1.0 Enter electrode distance 10 mm. X-gun: translation = electrode stroke / cylinder stroke Measure electrode distance and enter it.\nNo.: 8 | Action: ",
+      "text": "Section 8.5\n[Table; PDF page 29]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nNo.: 7 | Action: Enter electrode stroke | Comment: C-gun: translation = 1.0 Enter electrode distance 10 mm. X-gun: translation = electrode stroke / cylinder stroke Measure electrode distance and enter it.\nNo.: 8 | Action: Open electrodes to the maximum | Comment: Welding gun opens to the maximum gun opening. The maximum cylinder stroke between the electrode and the maximum opening is displayed.\nNo.: 9 | Action: Enter measured electrode distance | Comment: C-gun: Measure electrode distance and enter it X-gun: Measure electrode distance and enter it. Note: In the left field, the calculated maximum welding gun opening is displayed from translation 1.\nNo.: 10 | Action: Close axis calibration with OK | Comment: The data are transmitted to the controller and stored in the EEPROM.\nNo.: 11 | Action: Check values | Comment: C-gun: Translation 1 and translation 2 should be equal. X-gun: Translation 2 can be somewhat smaller than translation 1. Improper calibration can result in collisions.",
+      "review_needed": true
+    }
+  ],
+  "review_notes": [
+    "E016은 신형 문서의 전극 감시 오류입니다. 구판의 16번 프로그램 번호 오류와 다릅니다. 감시 한계는 WinSPAS 설정값이며 고정 수치를 추정하지 않습니다.",
+    "시각 정보·표 구조 원본 확인 필요: festo p.29"
+  ],
+  "model": "gpt-5.4-mini",
+  "usage": {
+    "input_tokens": 3251,
+    "output_tokens": 454,
+    "total_tokens": 3705,
+    "embedding_tokens": 70
+  },
+  "api_calls_this_run": 2,
+  "cache_hit": false,
+  "validation_errors": [],
+  "response_version": "e-code-ui-json-v2",
+  "seconds": 4.692
+}
