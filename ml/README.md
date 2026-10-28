@@ -265,12 +265,12 @@ U3/
 ├─ eda_out/                1단계 산출물
 ├─ models/                 4단계 산출물 (joblib 번들, 지표 JSON, scores/)
 ├─ results/                실험 지표 JSON: 작업 ID별 폴더 — A-1_B-1/ (비용접·건별 정규화), A-2/ (데이터 분석), B-2/ (절제 실험·윈도우 캐시), B-5/ (성능 점검), B-6/ (논문 프로토콜), B-7/ (물리 피처), B-8/ (건별 알람률), B-9/ (앙상블 탐색), C-4/ (모니터링 검증), D-5/ (증상 임계값) — 각 폴더에 재현 스크립트; */cache/는 git 제외
-├─ .py/                    파이프라인: preprocess.py, train.py, replay.py(API 스트림 재생), rag_mapping.py(핸드오프 매핑), mock_rag.py(가짜 RAG)
+├─ .py/                    파이프라인: preprocess.py, train.py, replay.py(API 스트림 재생), rag_mapping.py(핸드오프 매핑), mock_rag.py(가짜 RAG), hitl_loop.py(D-8 HITL 시연 드라이버, docs/hitl-loop.md)
 │                          실험: eda.py, experiments.py(B-2~B-5), paper_task.py(B-6 논문 프로토콜), physics.py(B-7 물리 피처)
 │                          원본·점검: Benchmark.py, Benchmark_fixed.py, error_check.py·file_check.py
 ├─ main.py                 FastAPI 서빙 · static/trace.html  이상 추적 차트
 ├─ state/                  서빙 상태 (RSW_STATE_DIR): guns/<gun_id>.json 건 판정 상태, outbox/<event_id>.json 핸드오프 (git 제외)
-├─ tests/                  test_pipeline.py(합성 데이터 E2E·서빙 회귀), test_rag_mapping.py(매핑 단위)
+├─ tests/                  test_pipeline.py(합성 데이터 E2E·서빙 회귀), test_rag_mapping.py(매핑 단위), test_sensor_features.py(매분 센서 문서), test_hitl_loop.py(D-8 드라이버, langgraph 없으면 건너뜀)
 ├─ requirements.txt  pyproject.toml  (ruff/black 120자, Benchmark.py·pic code/ 제외)
 ├─ test.md                 현재 모델의 테스트셋 판정·결과
 ├─ history.md              변경·실험 기록(시간순) · techspec.md  앞으로 개발할 것

@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+import field_memory
 from guidance import CODE_TO_SITUATION, all_situations
 
 OTHER_MANUALS = re.compile(r"(milco|abb|fanuc|yaskawa|화낙|야스카와)", re.I)
@@ -70,7 +71,10 @@ def _pick(question: str, history: list[dict[str, Any]], situations: list[dict[st
     return None
 
 
-def answer(question: str, photos: list[Any], history: list[dict[str, Any]]) -> dict[str, Any]:
+def answer(
+    question: str, photos: list[Any], history: list[dict[str, Any]], memory: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """memory는 field_memory.snapshot (현장 기억을 켰을 때만). 있으면 답 끝에 현장 기록 한 줄을 붙인다."""
     other = OTHER_MANUALS.search(question)
     if other:
         return {
@@ -131,6 +135,10 @@ def answer(question: str, photos: list[Any], history: list[dict[str, Any]]) -> d
         blocks.append(
             {"type": "p", "parts": [{"text": f"관련 Festo 오류 번호 후보: {nums}. 점검 후보일 뿐, 그 오류가 실제로 떴다는 뜻은 아닙니다."}]}
         )
+    # 현장 기록은 매뉴얼 근거가 아니라서 cite · evidence에 넣지 않는다
+    note = field_memory.chat_note(s["situation_id"], memory) if memory is not None else None
+    if note:
+        blocks.append({"type": "p", "parts": [{"text": note}]})
     return {
         "status": "retrieval_only",
         "situation_ids": [s["situation_id"]],

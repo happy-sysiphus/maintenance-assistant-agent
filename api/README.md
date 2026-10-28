@@ -22,29 +22,34 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt   # 처음 한
 cd ui && npm run dev            # http://localhost:5173
 
 # 4) 고장 상황 흘려보내기 (ML이 감지 → api가 케이스로 만듦)
-cd ml && python .py/replay.py test/test_0.csv --chunk-s 600     # 약 2분, 알림 12건
+cd ml && python .py/replay.py test/test_0.csv --chunk-s 600     # 약 2분, 알림 12건 (예전 ML 번들 기준. 지금 번들은 6건)
 ```
 
 | 환경 변수 | 기본값 | 뜻 |
 |---|---|---|
 | `ML_URL` | `http://localhost:8000` | ML 서버 주소 |
 | `API_DB` | `api/state/api.db` | SQLite 파일 (깃에 안 올라감). 지우면 처음부터 |
+| `FIELD_MEMORY` | 꺼짐 | `1`이면 현장 기억을 켠다: 안내 후보에 원인 상황(S05~S08)과 운영 원인(S10)을 더하고, 같은 설비 · 코드에서 오알람으로 닫은 기록이 고장 확인보다 많으면 S10을 맨 앞에 둔다(R1). 지난 확정 원인은 참고로만 붙인다(안내 · 챗봇). 자세한 것은 `ml/docs/hitl-loop.md`. 끄면 지금과 같다 |
 
 ## 파일
 
 | 파일 | 하는 일 |
 |---|---|
-| `main.py` | 주소 19개. 모양은 FE mock(`ui/src/mocks/handlers.ts`)과 같다 (`ui/docs/05` "저장 API", "AI 챗봇 API") |
+| `main.py` | 주소 22개 (`/api/memory`는 `FIELD_MEMORY=1`일 때만, openapi에 없음). 모양은 FE mock(`ui/src/mocks/handlers.ts`)과 같다 (`ui/docs/05` "저장 API", "AI 챗봇 API") |
 | `store.py` | SQLite 저장. 케이스 한 건 = JSON 한 줄. 같은 `event_id`는 한 번만 처리 |
 | `guidance.py` | 고장 코드 → 상황 ID → 점검 순서 · 근거 쪽. **RAG를 붙일 자리** |
 | `check_criteria.json` | 점검 항목별 정상 기준 · 확인 방법 (FE 초안: 매뉴얼 · 정의서 원문에 적힌 것만, RAG 확인 전). `guidance.py`가 점검 항목에 붙인다 |
 | `assistant.py` | AI 챗봇 답 (임시, 매핑에서 근거만 골라 조립) |
+| `field_memory.py` | 현장 기억 (`FIELD_MEMORY=1`일 때만): 닫힌 케이스의 라벨(오알람 / 고장 확인) · 집계 · 후보 순서 R1 · 참고 문장 |
+| `cause_links.json` | 원인 → 고장 연결 4개 (정의서 p.4-5, 매뉴얼 기반): S05→S01, S07→S02, S06→S03, S08→S03 |
+| `tests/` | pytest(`requirements.txt`의 dev / test 줄): 현장 기억 · `/api/memory` · 플래그를 끄면 그대로인지. `test_driver_contract.py`는 D-8 드라이버(`ml/.py/hitl_loop.py`)를 이 api에 서버 없이 붙여 본다(langgraph · pandas가 없으면 건너뜀). `cd api; py -3.11 -m pytest tests -q` |
 
 ## 흐름
 
 ```
 ML 서버 ──(고장 알림: GET /handoffs 를 api가 5초마다 당겨 옴, 또는 ML이 POST /api/ml/handoffs 로 push)──▶ api
 api ── 케이스 생성: event = 알림 그대로, score_trace = ML trace 30분, guidance = guidance.py
+       (FIELD_MEMORY=1이면 guidance = field_memory.py: 닫힌 케이스의 사람 기록을 다시 읽음 · GET /api/memory)
 화면 ◀── GET /api/cases, /api/cases/{id}, /api/guns(ML /guns + 열린 케이스) …
 화면 ──▶ 점검 · 판단 · 조치 · 일지 · 도움 요청 · 사진 저장 (SQLite. ML · RAG에는 보내지 않음)
 ```
@@ -55,7 +60,9 @@ ML push로 받으려면 ML 서버를 `RSW_RAG_URL=http://localhost:9000/api/ml/h
 
 - **고장 코드 → 상황 ID 표** (`guidance.CODE_TO_SITUATION`): E012→S01, E016→S02, E028→S03, E029→S04. ML 핸드오프 v1.2부터 상황 ID가 오지 않아서 api가 바꾼다. RAG 입력 방식이 정해지면 고친다 (`ui/docs/07` 요청 1).
 - **원인 후보는 현상 하나**: 코드의 상황(S01~S04) 하나와 그 점검 순서만 준다. 원인 상황(S05~S09)을 고르는 근거가 지금은 없다. 코드 없는 알림(모델 신호만)은 `no_evidence` → 화면은 수동 모드.
+  - `FIELD_MEMORY=1`이면: 현상 + 정의서 p.4-5의 연결 원인(S05~S08) + S10을 준다 (매뉴얼 기반, `cause_links.json`). 순서를 바꾸는 규칙은 R1 하나다: 같은 설비 · 같은 코드에서 사람이 오알람으로 닫은 기록이 고장 확인보다 많으면 S10을 맨 앞에 둔다. 지난 확정 원인은 참고로만 붙인다.
 - **반복 알림 묶기**: 같은 설비 · 같은 코드(코드 없음끼리도)로 아직 끝나지 않은 케이스가 있으면 새 케이스 대신 `repeats`에 쌓는다. test_0은 알림 12건 → 케이스 3건.
+  - 12건 · 3건은 예전 ML 번들 기준이다. 지금 번들은 test_0에서 알림 6건이고, 아무것도 닫지 않으면 케이스 2건이다.
 - **긴급도**: ML은 critical일 때만 알림을 보내므로 케이스 `severity`는 모두 `critical`.
 - **점검 항목 정상 기준**: RAG에 항목별 기준이 없어 `check_criteria.json` 초안을 쓴다. 항목과 쪽을 짝지은 건 FE 판단이다 (`ui/docs/07` 요청 3).
 - **오알람**: `POST /api/cases/{id}/close`에 `false_alarm`. 작업함 · 열린 케이스 묶기에서 빠지고 이력에 남는다.
@@ -64,7 +71,9 @@ ML push로 받으려면 ML 서버를 `RSW_RAG_URL=http://localhost:9000/api/ml/h
 ## 아직 없는 것
 
 - RAG `answer_question` 호출 (Neo4j · OpenAI 키 필요), 원인 후보 여러 개, 한국어 조치 문장
+  - 원인 후보 여러 개는 `FIELD_MEMORY=1`일 때만 있다.
 - 자동 테스트 (10/23 수동으로 저장 주소 전부 확인)
+  - 10/28: 현장 기억 부분은 `tests/`에 생겼다. 나머지 저장 주소는 아직 수동 확인뿐이다.
 - 사진은 DB에 data URL 글자로 저장 (데모 규모용, 나중에 파일 저장으로)
 - ML trace는 최근 6시간만 있어서, 알림을 늦게 당겨 오면 그래프(`score_trace`)가 비어 있다 → push로 받으면 해결
 - 화면에 반복 횟수(`repeat_count`) 표시

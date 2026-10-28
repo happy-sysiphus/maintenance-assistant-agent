@@ -11,7 +11,9 @@
 from __future__ import annotations
 
 import os
+import threading
 import time
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 
 import assistant
+import field_memory
 import guidance
 import store
 
@@ -29,6 +32,8 @@ REPO = Path(__file__).resolve().parent.parent
 MANUALS = {"festo": REPO / "rag" / "data" / "festo_manual.pdf", "rsw": REPO / "rag" / "data" / "rsw_situations.pdf"}
 MANUAL_CAUSE = "MANUAL"
 TRACE_MINUTES = 30
+# 현장 기억을 켜면 ingest 전체(seen → put)를 한 번에 하나씩 (store._lock을 다시 잡으면 교착)
+_INGEST_LOCK = threading.Lock()
 
 app = FastAPI(title="RSW 정비 지원 api")
 
@@ -74,31 +79,36 @@ def score_trace(gun_id: str, detected_at: str) -> list[dict[str, Any]]:
 
 def ingest(handoff: dict[str, Any]) -> str:
     """알림 하나를 케이스로. 같은 설비 · 같은 코드의 열린 케이스가 있으면 새 줄 대신 '반복'으로 묶는다."""
-    eid = handoff["event_id"]
-    if store.seen(eid):
-        return "duplicate"
-    code = handoff["trigger"].get("rule_code")
-    same = store.open_case(handoff["gun_id"], code)
-    if same:
-        same.setdefault("repeats", []).append({"event_id": eid, "detected_at": handoff["detected_at"]})
-        store.put(same)
-        store.mark_seen(eid, same["case_id"])
-        return "repeat"
-    d = {
-        "case_id": store.next_id(),
-        "status": "new",
-        # 알림은 ML이 critical일 때만 보낸다 (ml/README 5.10.2)
-        "severity": "critical",
-        "assignee": None,
-        "event": handoff,
-        "score_trace": score_trace(handoff["gun_id"], handoff["detected_at"]),
-        "guidance": guidance.guidance_for(handoff),
-        "records": {"checks": {}, "judgments": [], "actions": [], "results": [], "field": [], "handovers": []},
-        "repeats": [],
-    }
-    store.put(d)
-    store.mark_seen(eid, d["case_id"])
-    return "new"
+    with _INGEST_LOCK if field_memory.enabled() else nullcontext():
+        eid = handoff["event_id"]
+        if store.seen(eid):
+            return "duplicate"
+        code = handoff["trigger"].get("rule_code")
+        same = store.open_case(handoff["gun_id"], code)
+        if same:
+            same.setdefault("repeats", []).append({"event_id": eid, "detected_at": handoff["detected_at"]})
+            store.put(same)
+            store.mark_seen(eid, same["case_id"])
+            return "repeat"
+        d = {
+            "case_id": store.next_id(),
+            "status": "new",
+            # 알림은 ML이 critical일 때만 보낸다 (ml/README 5.10.2)
+            "severity": "critical",
+            "assignee": None,
+            "event": handoff,
+            "score_trace": score_trace(handoff["gun_id"], handoff["detected_at"]),
+            "guidance": (
+                field_memory.guidance_for(handoff, store.all_cases())
+                if field_memory.enabled()
+                else guidance.guidance_for(handoff)
+            ),
+            "records": {"checks": {}, "judgments": [], "actions": [], "results": [], "field": [], "handovers": []},
+            "repeats": [],
+        }
+        store.put(d)
+        store.mark_seen(eid, d["case_id"])
+        return "new"
 
 
 _last_sync = 0.0
@@ -180,7 +190,10 @@ def health():
         ml = ml_get("/health")["status"]
     except HTTPException:
         ml = "down"
-    return {"status": "ok", "source": "api", "ml": ml, "rag": "mapping_only"}
+    out = {"status": "ok", "source": "api", "ml": ml, "rag": "mapping_only"}
+    if field_memory.enabled():
+        out["memory"] = "on"
+    return out
 
 
 @app.get("/api/cases")
@@ -193,7 +206,9 @@ def list_cases():
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str):
-    return load(case_id)
+    d = load(case_id)
+    # 현장 기억은 볼 때마다 새로 센다 (DB에는 저장하지 않는다)
+    return field_memory.annotate(d, store.all_cases()) if field_memory.enabled() else d
 
 
 @app.put("/api/cases/{case_id}/checks")
@@ -247,7 +262,14 @@ def close(case_id: str, body: dict[str, Any]):
     d = load(case_id)
     if body["outcome"] == "resolved" and not (d["records"].get("log") or {}).get("approved_at"):
         raise HTTPException(409, "log not approved")
-    d["records"]["closure"] = {"outcome": body["outcome"], "at": now()}
+    closure = {"outcome": body["outcome"], "at": now()}
+    if field_memory.enabled():
+        # 오알람 이유 · 메모 (빈 문자열은 남기지 않는다)
+        for k in ("reason", "note"):
+            v = body.get(k)
+            if isinstance(v, str) and v.strip():
+                closure[k] = v
+    d["records"]["closure"] = closure
     d["status"] = body["outcome"]
     return save(d)
 
@@ -317,6 +339,14 @@ def history():
     return {"items": items}
 
 
+@app.get("/api/memory", include_in_schema=False)
+def memory_summary():
+    """현장 기억 요약 (FIELD_MEMORY=1일 때만, 끄면 없는 주소처럼 404)."""
+    if not field_memory.enabled():
+        raise HTTPException(404, "Not Found")
+    return {"enabled": True, **field_memory.snapshot(store.all_cases())}
+
+
 # ---- 설비 · 매뉴얼 · 챗봇 ----
 
 
@@ -370,7 +400,8 @@ def situations():
 @app.post("/api/assistant/ask")
 async def ask(request: Request):
     body = await request.json()
-    return assistant.answer(body.get("question", ""), body.get("photos", []), body.get("history", []))
+    memory = field_memory.snapshot(store.all_cases()) if field_memory.enabled() else None
+    return assistant.answer(body.get("question", ""), body.get("photos", []), body.get("history", []), memory)
 
 
 @app.post("/api/assistant/feedback")

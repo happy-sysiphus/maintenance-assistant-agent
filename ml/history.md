@@ -41,6 +41,7 @@
 | | D-5 | 증상 규칙 임계값 | HO-5 |
 | | D-6 | 매분 센서 문서(sensor-features v3 → v4) · 핸드오프 v1.2 | — |
 | | D-7 | c4·c18의 의미 확인(Festo 13번 비트 짝)과 이름표 정정 | — |
+| | D-8 | HITL 피드백 루프 시연(현장 기억 · LangGraph 드라이버) | — |
 
 핸드오프의 증상 ID `P1`~`P9`(`rag_mapping.SYMPTOM_RULES`)는 작업 ID가 아니라 RAG 계약의 값이다.
 
@@ -72,6 +73,7 @@
 | 10-08 | 증상 규칙을 활용정리 8절 원문 조건으로 복원(설정값 그대로일 때만 P1·P2·P5, c5 정상일 때만 P3; P5·P6에 S02), 핸드오프 v1.1(FE 요청 3·4·5: `error_timeline`·`sensor_trend`·Z·`sensor_name_ko`, caveats 수치 갱신, `docs/fe-requests-reply.md`) |
 | 10-08 | A-3 결측(32절): 결측은 고장 신호가 아님(고장 직전이 평소 상위 5%를 넘은 건 2/64), 채우기 방식 3종의 CV AUROC 차이 0.005 < 폴드 SD 0.04~0.05 — 60초 채움 유지 |
 | 10-26 | D-7·C-7(35절, 10-12 분석): c4·c18 = Festo 13번 비트 짝(c4 Force reached, c18 Close gun) → `SENSOR_KO`·trace 차트 이름표 정정, 핸드오프 NaN 전송 실패와 미완결 분 발화 코드 누락 수정 |
+| 10-28 | D-8 HITL 피드백 루프 시연(36절): api 현장 기억(`FIELD_MEMORY=1`일 때만, R1 = 오알람이 많으면 S10 먼저, 지난 확정 원인은 참고) + LangGraph 드라이버 `.py/hitl_loop.py`(알림마다 멈추고 사람이 닫으면 이어 감). ML 서빙은 그대로 |
 
 ## 지표 추이 (같은 테스트 8건 / 검증 14건)
 
@@ -1226,3 +1228,37 @@ CV 차이(최대 0.005)가 폴드 SD(0.04~0.05)의 10분의 1이고, 테스트 �
   - 실데이터 예: test_3 고장 이벤트는 창 끝이 09:25:59, E029 발화가 09:26:09다. 다시 만든 `docs/rag_handoff.example.json`의 타임라인은 E016(09:23:36~09:25:33)과 발화 코드 E029(09:26:09)를 모두 담는다. 이전 예시는 손으로 채운 타임라인(E029 09:25:44~09:25:59)이라 이 버그가 가려져 있었다.
 
 예시 JSON 4개를 `docs/make_examples.py`로 다시 만들었다. 33·34절에서 "실데이터 예시 재실행 대기"로 남겨 둔 `sensor_features.example.json`도 함께 실데이터(test_3 고장 이벤트의 분)로 바뀌었다.
+
+### 36. D-8 HITL 피드백 루프 시연 — 현장 기억 · LangGraph 드라이버 (2026-10-28)
+
+**왜**: 사람이 케이스를 닫은 기록(오알람 · 확정 원인)이 다음 안내로 돌아오지 않았다(`docs/hitl-loop.md` ①).
+- api는 기록을 저장만 했다(`api/store.py:3`). 안내는 케이스를 만들 때 한 번, 코드의 현상 하나였다(`api/guidance.py:119`).
+- 그래서 같은 설비의 E029 오알람을 다섯 번 닫아도 다섯 번째 안내가 첫 번째와 같았다.
+
+**결정(사용자)**:
+- api만 바꾼다. `FIELD_MEMORY=1`일 때만 켜지고, 끄면 api는 예전과 같다. ML은 그대로 사실만 보낸다(33절).
+- 순서를 바꾸는 규칙은 R1 하나다: 같은 설비 · 같은 규칙 코드에서 오알람이 고장 확인보다 많으면 S10을 맨 앞에 둔다. 나머지 순서는 그대로다.
+  - 규칙 코드가 없는 알림(모델 신호만)에는 R1과 오알람 문장을 쓰지 않는다.
+- 지난 확정 원인은 참고로만 붙인다. 확률로 말하지 않고, 매뉴얼 근거(cite)로 내보내지 않는다.
+- S10으로 해결한 케이스는 오알람으로 센다. `unresolved` · `handed_over`는 라벨이 없다.
+- 원인 → 고장 연결은 정의서 p.4-5의 4개(S05→S01, S07→S02, S06→S03, S08→S03)만 쓴다. 매뉴얼 기반 추정이다.
+- 시연은 사람만 닫는다. 시뮬레이션 작업자는 없다.
+
+**만든 것**:
+- api: `field_memory.py`(라벨 · 집계 · R1 · 참고 문장), `cause_links.json`, `main.py`·`assistant.py`의 훅.
+  - 훅: ingest 안내(`guidance.memory`, 후보 `basis`·`evidence_level`·`field`), GET 케이스 `field_memory`, close `reason`·`note`, `GET /api/memory`, health `memory`, 챗봇 참고 문단, ingest 전체 lock.
+- ML: `.py/hitl_loop.py`(LangGraph 드라이버), `tests/test_hitl_loop.py`, `requirements.txt` 선택 줄에 langgraph, `.gitignore`에 `results/D-8/runs/`. 서빙 코드(`main.py`)는 바꾸지 않았다.
+  - 드라이버: 재생 스레드가 알림마다 멈춘다 → 그래프가 `interrupt()`로 사람을 기다린다 → 케이스가 닫히면 `/api/memory`를 다시 읽고 이어 간다. `--dry-run`은 api 없이 핸드오프 건수만 센다.
+  - 데이터 기준 라벨(파일 끝 1시간 안 = `pre_failure`)은 닫힌 뒤에만 붙인다. 답을 아는 값이라 성능이 아니다.
+- 문서: `docs/hitl-loop.md`(①~⑥: 끊긴 곳, 바뀌는 것, 시연법 · 작업자 카드, FE 요청, RAG 연동 제안, 한계), `api/README.md`, `api/store.py` docstring.
+
+**확인**: pytest 개수는 `py -3.11 -m pytest --collect-only -q`로 셌다.
+- ml 74개(40 → 74, `test_hitl_loop.py` 34개 추가. langgraph가 없으면 이 34개는 건너뛴다).
+- api 38개(`api/tests/`: `test_field_memory.py` 29 · `test_memory_api.py` 6 · `test_driver_contract.py` 3). 플래그를 끄면 health · `/api/memory`(404) · close 본문 · guidance · 저장 JSON이 같은지 본다.
+- `test_driver_contract.py`는 드라이버를 진짜 api(TestClient, 임시 DB, `FIELD_MEMORY=1`)에 한 프로세스 안에서 붙인다. `docs/hitl-loop.md` ③의 두 시나리오(test_0, test_5 → test_4)와 도움 요청 흡수를 본다. 서버 · 소켓 · 실제 CSV는 쓰지 않는다.
+
+**리허설 결과**
+
+- 드라이런(ML만, api 없음): test_0 6건(E029 ×5, E012 ×1), test_5 2건(E029, E028)을 셌다. test_4는 3건 중 2건(E029 ×2)까지 세고 PC 메모리(8 GB)가 모자라 멈췄다.
+- 드라이버 ↔ api 계약은 `api/tests/test_driver_contract.py`가 한 프로세스 안에서 확인한다(`docs/hitl-loop.md` ③ 표의 두 시나리오).
+- 실제 서버로 하는 리허설(test_0, test_5 → test_4, 플래그 끔)과 화면 확인은 아직 하지 않았다.

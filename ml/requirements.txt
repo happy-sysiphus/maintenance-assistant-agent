@@ -10,7 +10,7 @@ fastapi>=0.121
 pydantic>=2.13
 uvicorn[standard]>=0.38
 httpx>=0.28               # RAG handoff push (RSW_RAG_URL); also fastapi TestClient
-# optional, not installed by default: torch (experiments.py lstm_ae60), darts (Benchmark*.py, the paper's code)
+# optional, not installed by default: torch (experiments.py lstm_ae60), darts (Benchmark*.py, the paper's code), langgraph>=1.0 (D-8 .py/hitl_loop.py)
 # dev / test
 pytest>=9
 ruff
