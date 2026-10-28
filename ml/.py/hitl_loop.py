@@ -5,10 +5,17 @@ Feeder 스레드가 replay.replay_file()로 파일을 시작 시각 순으로 �
 ("alert", seq, gun, event)를 큐에 넣은 뒤 release(seq)가 올 때까지 기다린다. 큐를 읽는 쪽(LangGraph 그래프)은
 api 케이스가 닫히면 release()로 재생을 풀어 준다. 두 쪽은 HTTP로만 연결되고, 이 파일은 api 모듈을 import하지 않는다.
 
-    cd ml && RSW_STATE_DIR=state/d8-<run> uvicorn main:app --port 8000              # ML (RSW_RAG_URL 없이, 새 폴더)
-    cd api && FIELD_MEMORY=1 API_DB=state/d8-<run>.db uvicorn main:app --port 9000  # api (현장 기억, 새 DB)
+    cd ml && RSW_STATE_DIR=state/d8-<run> uvicorn main:app --port 8000   # ML (RSW_RAG_URL 없이, 새 폴더)
+    cd api && FIELD_MEMORY=1 API_DB=state/d8-<run>.db ../.venv/Scripts/python.exe -m uvicorn main:app --port 9000
     py -3.11 .py/hitl_loop.py test/test_0.csv              # ml/에서: 알림마다 멈춤, 화면에서 닫으면 이어 감
     py -3.11 .py/hitl_loop.py test/test_0.csv --dry-run    # api 없이 끝까지 재생하고 gun별 핸드오프 건수만
+
+api는 rag를 import하므로 RAG 의존성(neo4j 등)이 있는 인터프리터로 켠다: 저장소 .venv, 또는
+`pip install -r api/requirements.txt` 뒤의 python. 현장 기억(FIELD_MEMORY=1)과 새 DB(API_DB)로 켠다.
+드라이버는 py -3.11(langgraph, pandas)로 돌린다. rag/.env가 없으면 안내 카드는 매핑에서 오고 RAG 글은 오류로
+보이지만, 루프(멈춤 → 사람이 닫음 → 다음 알림의 안내 문장)는 그대로 돈다.
+안내 카드(E 코드 하나)는 api가 정한 그대로 보여 주고, 현장 기억은 GET 케이스의 field_memory(문장)로만 읽는다.
+GET /api/cases/{id}는 RAG를 부를 수 있어(키가 있으면 수 초) 닫힘은 GET /api/history로 기다린다.
 
 산출물은 results/D-8/runs/<시각>/: loop_view.html(2초마다 새로고침되는 현황), loop_log.jsonl, summary.md, workflow.mmd.
 """
@@ -49,7 +56,7 @@ CHUNK_S = 600
 # train.py:114 RULE_EVAL_WINDOW_S의 사본: 규칙 trigger를 고장 전 이 시간 안이면 적중으로 센다.
 # 모델 스택을 피하려고 train을 import하지 않는다(replay.MAX_CHUNK처럼).
 RULE_EVAL_WINDOW_S = 3600
-# api 케이스가 닫혔는지 다시 조회하는 간격(초)
+# api 케이스가 닫혔는지 GET /api/history로 다시 조회하는 간격(초)
 POLL_S = 2.0
 # 알림 대기 중 stop()을 확인하는 간격(초)
 _WAIT_S = 0.5
@@ -182,7 +189,7 @@ def _row(h: dict[str, Any], status: str, case_id: str | None = None, folded_into
     trig = h.get("trigger") or {}
     return {"event_id": h["event_id"], "case_id": case_id, "gun_id": h["gun_id"], "code": trig.get("rule_code"),
             "source": trig.get("source"), "data_time": trig.get("rule_trigger_time") or h["detected_at"],
-            "status": status, "folded_into": folded_into, "order": None, "baseline": None, "applied": None,
+            "status": status, "folded_into": folded_into, "order": None, "applied": None,
             "note_ko": None, "closure": None, "human_label": None, "data_label": None, "ttf_s": None, "agree": None,
             "memory_delta": None, "warn": None}
 
@@ -260,14 +267,15 @@ def build_graph(deps: Deps):
         return {"seen": state["seen"] + [h["event_id"] for h in new], "alerts": alerts, "queue": queue_}
 
     def guide(state: LoopState) -> dict:
-        # 케이스 안내의 후보 순서와 현장 기억(guidance.memory, 플래그가 꺼져 있으면 없음)
+        # 안내 카드(guidance.candidates, api가 정한 그대로)와 현장 기억 문장(최상위 field_memory, 플래그가 꺼져 있으면 없음).
+        # 이 GET이 케이스의 첫 상세 조회라 api가 여기서 RAG 답을 만든다(수 초 걸릴 수 있음)
         alerts, row = _current(state)
-        g = _json(api.get(f"/api/cases/{row['case_id']}")).get("guidance") or {}
-        mem = g.get("memory")
+        case = _json(api.get(f"/api/cases/{row['case_id']}"))
+        g = case.get("guidance") or {}
+        fm = case.get("field_memory") or {}
         row["order"] = [c["situation_id"] for c in g.get("candidates", [])]
-        row["baseline"] = mem["baseline"] if mem else None
-        row["applied"] = mem["applied"] if mem else []
-        row["note_ko"] = mem.get("note_ko") if mem else None
+        row["applied"] = list(fm.get("applied") or [])
+        row["note_ko"] = fm.get("note_ko")
         return {"alerts": alerts}
 
     def operator(state: LoopState) -> dict:
@@ -285,7 +293,7 @@ def build_graph(deps: Deps):
         row["status"] = "closed"
         row["closure"] = state["resume"]["closure"]
         row["human_label"] = mem.get("labels", {}).get(row["case_id"])
-        row["memory_delta"] = {k: _changed(mem.get(k, []), old.get(k, [])) for k in ("alarms", "past_causes")}
+        row["memory_delta"] = {k: _changed(mem.get(k, []), old.get(k, [])) for k in ("alarms", "checks")}
         if (row["closure"] or {}).get("outcome") == "handed_over":  # 라벨 없이 열린 채 남는다
             row["warn"] = (f"{row['case_id']}를 도움 요청으로 넘겼습니다. 이 케이스는 열린 채 남아 같은 설비·코드의 "
                            f"다음 알림을 반복으로 묶습니다. 다음 알림 전에 작업함에서 열어 '오알람으로 닫기'로 닫으세요.")
@@ -372,23 +380,37 @@ def startup_check(ml: Any, api: Any) -> list[str]:
     return problems
 
 
+def _get_or_none(api: Any, path: str) -> Any:
+    """GET path의 JSON. api가 잠깐 안 닿거나(타임아웃 포함) 5xx면 None, 4xx는 그대로 올린다."""
+    try:
+        return _json(api.get(path))
+    except httpx.TransportError:
+        return None
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code < 500:
+            raise
+        return None
+
+
 def wait_for_closure(api: Any, case_id: str, poll_s: float, stop: threading.Event | None = None) -> dict:
-    """케이스가 닫힐 때까지 poll_s 간격으로 조회한다. stop이 서면 closure None으로 돌아온다.
-    api가 잠깐 안 닿거나 5xx면 다음 조회까지 기다린다(4xx는 그대로 올린다)."""
+    """케이스가 닫힐 때까지 GET /api/history를 poll_s 간격으로 조회하고, 닫힌 뒤 케이스 상세를 한 번 읽는다
+    (judgments·results). 상세 GET은 RAG를 부를 수 있어 닫힘 확인에 쓰지 않는다.
+    stop이 서면 그때까지 본 closure(없으면 None)로 돌아온다. 안 닿거나 5xx면 다음 조회까지 기다린다."""
+    closure = None
     while True:
-        try:
-            r: dict | None = _json(api.get(f"/api/cases/{case_id}"))["records"]
-        except httpx.TransportError:
-            r = None
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code < 500:
-                raise
-            r = None
-        stopped = stop is not None and stop.is_set()
-        if stopped or (r is not None and r.get("closure")):
-            r = r or {}
-            return {"case_id": case_id, "closure": r.get("closure"), "judgments": r.get("judgments", []),
-                    "results": r.get("results", [])}
+        if closure is None:
+            h = _get_or_none(api, "/api/history")
+            if h is not None:
+                closure = next((i["closure"] for i in h.get("items", [])
+                                if i.get("case_id") == case_id and i.get("closure")), None)
+        if closure is not None:
+            d = _get_or_none(api, f"/api/cases/{case_id}")
+            if d is not None:
+                r = d.get("records") or {}
+                return {"case_id": case_id, "closure": closure, "judgments": r.get("judgments", []),
+                        "results": r.get("results", [])}
+        if stop is not None and stop.is_set():
+            return {"case_id": case_id, "closure": closure, "judgments": [], "results": []}
         if stop is None:
             time.sleep(poll_s)
         else:
@@ -439,9 +461,10 @@ _CLOSURE_KO = {"false_alarm": "오알람으로 닫음", "resolved": "해결 종�
 _HUMAN_KO = {"false_alarm": "오알람", "real": "고장 확인"}
 _DATA_KO = {"pre_failure": "고장 직전(1시간 안)", "far": "먼 알림"}
 # 상태 칸은 5번째(_html_table의 글자색)
-_COLS = ["데이터 시각", "설비", "코드", "출처", "상태", "케이스", "후보 순서", "기본 순서", "기억 반영", "닫힘",
+_COLS = ["데이터 시각", "설비", "코드", "출처", "상태", "케이스", "안내 카드", "기억 반영", "닫힘",
          "사람 라벨", "데이터 라벨", "일치", "안내 문장", "기억 변화"]
 _MEM_COLS = ["설비|코드", "오알람", "고장 확인", "케이스"]
+_CHECK_COLS = ["점검 항목", "이상", "정상"]
 
 
 def running_node(node: str, state: dict) -> str | None:
@@ -472,18 +495,13 @@ def write_atomic(path: str, text: str, retries: int = 5) -> None:
             time.sleep(0.2)
 
 
-def _causes_text(p: dict) -> str:
-    """지난 확정 원인 한 항목의 원인들: "이름(S08) 1건, …"."""
-    return ", ".join(f"{c.get('name', c['situation_id'])}({c['situation_id']}) {c['confirmed']}건"
-                     for c in p.get("causes", []))
-
-
 def _delta_text(delta: dict | None) -> str:
     """learn이 남긴 기억 변화(memory_delta)를 한 줄로. 바뀐 것이 없으면 "—"."""
     delta = delta or {}
     parts = [f"{a['key']} 오알람 {a.get('false_alarm', 0)} · 고장 확인 {a.get('real', 0)}"
              for a in delta.get("alarms", [])]
-    parts += [f"{p['situation_id']} 확정 원인 {_causes_text(p)}" for p in delta.get("past_causes", [])]
+    parts += [f"{c['check_id']} 이상 {c.get('abnormal', 0)} · 정상 {c.get('normal', 0)}"
+              for c in delta.get("checks", [])]
     return "; ".join(parts) or "—"
 
 
@@ -497,19 +515,18 @@ def _cells(r: dict) -> list[str]:
     outcome = (r["closure"] or {}).get("outcome")
     data = _DATA_KO.get(r["data_label"], r["data_label"]) if closed and r["data_label"] else "—"
     return [r["data_time"] or "—", r["gun_id"], r["code"] or "—", r["source"] or "—", status, r["case_id"] or "—",
-            " → ".join(r["order"] or []) or "—", " → ".join(r["baseline"] or []) or "—",
-            ", ".join(r["applied"] or []) or "—", _CLOSURE_KO.get(outcome, outcome) if outcome else "—",
+            " → ".join(r["order"] or []) or "—", ", ".join(r["applied"] or []) or "—", _CLOSURE_KO.get(outcome, outcome) if outcome else "—",
             _HUMAN_KO.get(r["human_label"], r["human_label"]) if r["human_label"] else "—", data, agree,
             r["note_ko"] or "—", _delta_text(r["memory_delta"])]
 
 
 def _memory_rows(mem: dict | None) -> tuple[list[list[str]], list[list[str]]]:
-    """기억 표 두 개의 행: 알람(설비|코드, 오알람, 고장 확인, 케이스)과 지난 확정 원인(현상, 코드, 원인)."""
+    """기억 표 두 개의 행: 알람(설비|코드, 오알람, 고장 확인, 케이스)과 점검 기록(점검 항목, 이상, 정상)."""
     mem = mem or {}
     alarms = [[a["key"], str(a.get("false_alarm", 0)), str(a.get("real", 0)), ", ".join(a.get("case_ids", []))]
               for a in mem.get("alarms", [])]
-    causes = [[p["situation_id"], p.get("code") or "—", _causes_text(p)] for p in mem.get("past_causes", [])]
-    return alarms, causes
+    checks = [[c["check_id"], str(c.get("abnormal", 0)), str(c.get("normal", 0))] for c in mem.get("checks", [])]
+    return alarms, checks
 
 
 def _warns(state: dict) -> list[str]:
@@ -546,7 +563,7 @@ def render_view(state: dict, current: str | None, waiting: dict | None, ui_url: 
         # 링크는 이름 붙은 탭 하나(d8-ui)를 다시 쓴다: 현황 탭은 그대로 열려 있다
         status = (f'<p class="status" style="color:{AMBER}">⏸ 사람 확인 대기 · '
                   f'<a href="{e(f"{ui_url}/cases/{cid}")}" target="d8-ui">{e(cid)}</a>'
-                  f' · 후보 순서 {e(" → ".join(waiting.get("order") or []) or "—")}</p>')
+                  f' · 안내 카드 {e(" → ".join(waiting.get("order") or []) or "—")}</p>')
         if waiting.get("note_ko"):
             status += f'<p class="note">{e(waiting["note_ko"])}</p>'
     else:
@@ -556,7 +573,7 @@ def render_view(state: dict, current: str | None, waiting: dict | None, ui_url: 
         status += f'<pre style="color:{RED}">{e(state["error"])}</pre>'
     alerts = state.get("alerts", [])
     marks = [AMBER if r.get("warn") else {"waiting": AMBER, "missing": RED}.get(r["status"]) for r in alerts]
-    alarms, causes = _memory_rows(state.get("memory"))
+    alarms, checks = _memory_rows(state.get("memory"))
     return f"""<!doctype html>
 <html lang="ko"><head>
 <meta charset="utf-8">
@@ -578,7 +595,7 @@ th {{ color: {GRAY}; }}
 {_html_table(_COLS, [_cells(r) for r in alerts], marks)}
 <h3>현장 기억</h3>
 {_html_table(_MEM_COLS, alarms)}
-{_html_table(["현상", "코드", "지난 확정 원인"], causes)}
+{_html_table(_CHECK_COLS, checks)}
 <p class="footer">{e(FOOTER)}</p>
 </body></html>
 """
@@ -593,7 +610,7 @@ def _md_table(head: list[str], rows: list[list[str]]) -> str:
 
 def render_summary(state: dict) -> str:
     """summary.md: 알림 표, 경고(있을 때만), 현장 기억, 고정 문구."""
-    alarms, causes = _memory_rows(state.get("memory"))
+    alarms, checks = _memory_rows(state.get("memory"))
     parts = ["# D-8 HITL 루프 요약", ""]
     if state.get("error"):
         parts += ["재생이 오류로 끝났습니다:", "", "```", state["error"].rstrip(), "```", ""]
@@ -601,7 +618,7 @@ def render_summary(state: dict) -> str:
     if _warns(state):
         parts += ["## 경고", ""] + [f"- ⚠ {w}" for w in _warns(state)] + [""]
     parts += ["## 현장 기억", "", _md_table(_MEM_COLS, alarms), "",
-              _md_table(["현상", "코드", "지난 확정 원인"], causes), "", f"_{FOOTER}_", ""]
+              _md_table(_CHECK_COLS, checks), "", f"_{FOOTER}_", ""]
     return "\n".join(parts)
 
 
@@ -664,7 +681,8 @@ def main() -> None:
         raise SystemExit('langgraph가 필요합니다: py -3.11 -m pip install "langgraph>=1.0"')
     ui = args.ui.rstrip("/")
 
-    with httpx.Client(base_url=args.ml, timeout=60) as ml, httpx.Client(base_url=args.api, timeout=60) as api:
+    # api 첫 상세 조회는 RAG 답을 만든다(OpenAI 최대 90초 + Neo4j 연결 15초). 그래서 api만 120초로 기다린다
+    with httpx.Client(base_url=args.ml, timeout=60) as ml, httpx.Client(base_url=args.api, timeout=120) as api:
         # 점검이 끝나기 전에는 산출물 폴더를 만들지 않는다
         problems = startup_check(ml, api)
         if problems:
@@ -695,7 +713,7 @@ def main() -> None:
                     print(f"  ⚠ {r['warn']}", flush=True)
             if waiting:
                 order = " → ".join(waiting.get("order") or []) or "—"
-                print(f"  ⏸ {waiting['case_id']} 사람 확인 대기 · 후보 순서 {order}: {waiting['url']}", flush=True)
+                print(f"  ⏸ {waiting['case_id']} 사람 확인 대기 · 안내 카드 {order}: {waiting['url']}", flush=True)
                 if waiting.get("note_ko"):
                     print(f"      {waiting['note_ko']}", flush=True)
             times = [r["data_time"] for r in state.get("alerts", []) if r["data_time"]]

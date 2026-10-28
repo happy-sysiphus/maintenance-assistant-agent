@@ -169,19 +169,28 @@ class FakeML:
         return FakeResponse(200, [{"handoff": h, "delivery": "pull_only"} for h in self.outbox])
 
 
-class FakeAPI:
-    """api 대역: 메모리 안에서 ingest(같은 설비·코드의 열린 케이스면 반복으로 묶기), 닫기, labels·alarms 계산."""
+def r1_note(gun, code, fa, real):
+    """api/field_memory.py의 R1 문장(브리프 그대로)."""
+    return (f"같은 설비·코드({gun} {code})에서 사람이 오알람으로 닫은 기록 {fa}건 · 고장 확인 {real}건 "
+            f"→ 오알람(운영 원인)인지부터 확인. 아니면 카드의 점검 순서대로.")
 
-    def __init__(self, ml, memory_on=True, empty_syncs=0, ml_status="ok"):
+
+class FakeAPI:
+    """api 대역: 메모리 안에서 ingest(같은 설비·코드의 열린 케이스면 반복으로 묶기), 닫기, labels·alarms·checks 계산.
+    안내는 E 코드 카드 하나(candidates[0].situation_id = 코드), 현장 기억은 GET 케이스의 최상위 field_memory.
+    닫기는 사람이 화면에서 하는 것처럼 /api/history를 polls번째 조회할 때 일어난다."""
+
+    def __init__(self, ml, memory_on=True, empty_syncs=0, ml_status="ok", annotate=True):
         self.ml = ml
         self.memory_on = memory_on
+        self.annotate = annotate  # False면 GET 케이스에 field_memory가 없다(플래그 꺼진 api처럼)
         self.ml_status = ml_status  # /api/health의 ml (api가 본 ML 상태)
         self.empty_syncs = empty_syncs  # 처음 이만큼은 sync가 {}를 돌려준다(ML을 아직 못 읽은 것처럼)
         self.cases = {}
         self.seen = set()
-        self.closing = {}  # case_id -> [남은 조회 수, outcome]
+        self.closing = {}  # case_id -> [남은 history 조회 수, outcome, records 추가분]
         self.sync_calls = 0
-        self.paths = []  # 조회한 주소 (시작 점검 순서 확인용)
+        self.paths = []  # 조회한 주소 (시작 점검 순서·상세 조회 횟수 확인용)
 
     def ingest(self, h):
         if h["event_id"] in self.seen:
@@ -195,14 +204,12 @@ class FakeAPI:
                 d["repeats"].append({"event_id": h["event_id"], "detected_at": h["detected_at"]})
                 return "repeat"
         cid = f"CASE-{len(self.cases) + 1:04d}"
+        card = code or "E029"
         self.cases[cid] = {
             "case_id": cid, "status": "new", "event": h, "repeats": [],
-            "guidance": {"status": "retrieval_only",
-                         "candidates": [{"situation_id": s} for s in ("S01", "S05", "S10")],
-                         "memory": {"alarm_key": f"{h['gun_id']}|{code}", "alarm": {"false_alarm": 0, "real": 0},
-                                    "applied": [], "baseline": ["S01", "S05", "S10"], "past_causes": [],
-                                    "note_ko": None}},
-            "records": {"judgments": [], "results": []}}
+            "guidance": {"status": "ok", "candidates": [
+                {"situation_id": card, "checks": [{"id": f"{card}-K1"}, {"id": f"{card}-K2"}], "causes": []}]},
+            "records": {"judgments": [], "results": [], "checks": []}}
         return "new"
 
     def sync(self):
@@ -212,29 +219,55 @@ class FakeAPI:
             counts[k] = counts.get(k, 0) + 1
         return counts
 
-    def close_after(self, case_id, outcome, polls=2):
-        """닫기 대역: 이 케이스 상세를 polls번째 조회할 때 닫힌다."""
-        self.closing[case_id] = [polls, outcome]
+    def close_after(self, case_id, outcome, polls=2, **records):
+        """닫기 대역: /api/history를 polls번째 조회할 때 닫힌다. records(checks·judgments·results)도 그때 들어간다."""
+        self.closing[case_id] = [polls, outcome, records]
 
     def _summary(self, d):
         return {"case_id": d["case_id"], "status": d["status"], "event": d["event"],
                 "repeat_count": len(d["repeats"])}
 
+    @staticmethod
+    def _key(d):
+        return f"{d['event']['gun_id']}|{d['event']['trigger']['rule_code'] or ''}"
+
+    @staticmethod
+    def _label(d):
+        return {"false_alarm": "false_alarm", "resolved": "real"}.get((d["records"].get("closure") or {}).get("outcome"))
+
     def _memory(self):
-        labels, alarms = {}, {}
+        labels, alarms, checks = {}, {}, {}
         for d in self.cases.values():
-            outcome = (d["records"].get("closure") or {}).get("outcome")
-            label = {"false_alarm": "false_alarm", "resolved": "real"}.get(outcome)
+            if not d["records"].get("closure"):
+                continue
+            for c in d["records"].get("checks", []):
+                n = checks.setdefault(c["check_id"], {"check_id": c["check_id"], "abnormal": 0, "normal": 0})
+                n[c["result"]] += 1
+            label = self._label(d)
             if label is None:
                 continue
             labels[d["case_id"]] = label
-            key = f"{d['event']['gun_id']}|{d['event']['trigger']['rule_code']}"
-            a = alarms.setdefault(key, {"key": key, "false_alarm": 0, "real": 0, "case_ids": []})
+            key = self._key(d)
+            a = alarms.setdefault(key, {"key": key, "gun_id": d["event"]["gun_id"],
+                                        "code": d["event"]["trigger"]["rule_code"], "false_alarm": 0, "real": 0,
+                                        "case_ids": []})
             a[label] += 1
             a["case_ids"].append(d["case_id"])
         return {"enabled": True, "labeled": len(labels), "labels": labels,
-                "alarms": [alarms[k] for k in sorted(alarms)], "past_causes": [], "checks": [],
+                "alarms": [alarms[k] for k in sorted(alarms)], "checks": [checks[k] for k in sorted(checks)],
                 "manual_causes": [], "missed_checks": []}
+
+    def _field_memory(self, d):
+        """api/field_memory.py annotate의 대역: 같은 설비·코드의 사람 라벨(자기 제외)과 R1 문장만."""
+        code = d["event"]["trigger"]["rule_code"]
+        n = {"false_alarm": 0, "real": 0}
+        for o in self.cases.values():
+            if o is not d and self._key(o) == self._key(d) and self._label(o):
+                n[self._label(o)] += 1
+        r1 = bool(code) and n["false_alarm"] > n["real"]
+        return {"alarm_key": self._key(d), "alarm": n, "applied": ["R1"] if r1 else [],
+                "note_ko": r1_note(d["event"]["gun_id"], code, n["false_alarm"], n["real"]) if r1 else None,
+                "checks": {}, "labeled": len(self._memory()["labels"])}
 
     def get(self, path, params=None):
         self.paths.append(path)
@@ -245,20 +278,23 @@ class FakeAPI:
             return FakeResponse(200, {"cases": [self._summary(d) for d in self.cases.values()
                                                 if d["status"] not in ("resolved", "false_alarm")]})
         if path == "/api/history":
+            for cid, c in list(self.closing.items()):
+                c[0] -= 1
+                if c[0] == 0:
+                    del self.closing[cid]
+                    d = self.cases[cid]
+                    d["status"] = c[1]
+                    d["records"].update(c[2])
+                    d["records"]["closure"] = {"outcome": c[1], "at": "2026-10-28T00:00:00Z"}
             return FakeResponse(200, {"items": [{**self._summary(d), "closure": d["records"]["closure"]}
                                                 for d in self.cases.values() if d["records"].get("closure")]})
         if path == "/api/memory":
             return FakeResponse(200, self._memory()) if self.memory_on else FakeResponse(404, {})
-        cid = path.rsplit("/", 1)[1]
-        d = self.cases[cid]
-        if cid in self.closing:
-            c = self.closing[cid]
-            c[0] -= 1
-            if c[0] == 0:
-                del self.closing[cid]
-                d["status"] = c[1]
-                d["records"]["closure"] = {"outcome": c[1], "at": "2026-10-28T00:00:00Z"}
-        return FakeResponse(200, d)
+        d = self.cases[path.rsplit("/", 1)[1]]
+        out = dict(d)
+        if self.memory_on and self.annotate:
+            out["field_memory"] = self._field_memory(d)
+        return FakeResponse(200, out)
 
     def post(self, path, json=None):
         assert path == "/api/ml/sync", path
@@ -298,7 +334,8 @@ class ScriptFeeder:
 
 
 class Recorder:
-    """on_update 대역: 노드 순서와 그때의 state를 남기고, 중단이 오면 케이스 닫기를 예약한다."""
+    """on_update 대역: 노드 순서와 그때의 state를 남기고, 중단이 오면 케이스 닫기를 예약한다.
+    outcomes[case_id]는 outcome 문자열이나 (outcome, records 추가분) 쌍."""
 
     def __init__(self, api, outcomes=None):
         self.api = api
@@ -308,7 +345,9 @@ class Recorder:
     def __call__(self, node, update, state):
         self.calls.append((node, update, state))
         if node == "__interrupt__":
-            self.api.close_after(update["case_id"], self.outcomes.get(update["case_id"], "false_alarm"))
+            o = self.outcomes.get(update["case_id"], "false_alarm")
+            outcome, records = o if isinstance(o, tuple) else (o, {})
+            self.api.close_after(update["case_id"], outcome, **records)
 
     @property
     def nodes(self):
@@ -335,16 +374,52 @@ def test_loop_waits_and_resumes():
                          "learn", "evaluate", "advance", "report"]
     assert final["resume"]["closure"]["outcome"] == "false_alarm"  # state에는 남는다
     assert rec.calls[3][1] == {"case_id": "CASE-0001", "url": "http://ui/cases/CASE-0001", "gun_id": "test_0",
-                               "code": "E029", "order": ["S01", "S05", "S10"], "note_ko": None}
+                               "code": "E029", "order": ["E029"], "note_ko": None}
     row = final["alerts"][0]
     assert row["status"] == "closed" and row["human_label"] == "false_alarm"
     assert row["case_id"] == "CASE-0001" and row["closure"]["outcome"] == "false_alarm"
-    assert row["baseline"] == ["S01", "S05", "S10"] and row["applied"] == []
-    assert row["memory_delta"]["alarms"][0]["key"] == "test_0|E029"
+    assert row["order"] == ["E029"] and row["applied"] == [] and "baseline" not in row
+    assert row["memory_delta"] == {"alarms": [{"key": "test_0|E029", "gun_id": "test_0", "code": "E029",
+                                               "false_alarm": 1, "real": 0, "case_ids": ["CASE-0001"]}],
+                                   "checks": []}
     assert final["files"]["test_0"] == {"path": "x/test_0.csv", "start": "2021-09-04T00:00:00Z", "end": END_ISO}
     assert final["done"] is True and final["error"] is None and final["queue"] == []
     assert feeder.started and feeder.stopped and feeder.released == [1]
-    assert api.closing == {}  # 두 번째 조회에서 닫혔다
+    assert api.closing == {}  # 두 번째 history 조회에서 닫혔다
+    # 상세는 guide에서 한 번, 닫힌 뒤 한 번만: 닫힘은 /api/history로 기다린다(상세 GET은 RAG를 부른다)
+    assert api.paths.count("/api/cases/CASE-0001") == 2
+
+
+def test_second_alert_gets_note():
+    # 사람이 오알람으로 닫으면 같은 설비·코드의 다음 알림에 R1 문장이 붙는다(카드는 그대로)
+    script = [(FILE_ITEM, []), (("alert", 1, "test_0", {}), [handoff("h1")]),
+              (("alert", 2, "test_0", {}), [handoff("h2", t="2021-09-05T05:00:00Z")]), (("end",), [])]
+    deps, api, feeder, rec = make_run(script)
+    final = hl.run_loop(deps, rec, poll_s=0)
+    waits = [c[1] for c in rec.calls if c[0] == "__interrupt__"]
+    assert [w["order"] for w in waits] == [["E029"], ["E029"]]
+    assert waits[0]["note_ko"] is None and waits[1]["note_ko"] == r1_note("test_0", "E029", 1, 0)
+    first, second = final["alerts"]
+    assert first["applied"] == [] and second["applied"] == ["R1"]
+    assert second["memory_delta"]["alarms"][0]["false_alarm"] == 2
+
+
+def test_checks_memory_delta():
+    deps, api, feeder, rec = make_run(
+        [(FILE_ITEM, []), (("alert", 1, "test_0", {}), [handoff("h1", code="E012")]), (("end",), [])],
+        outcomes={"CASE-0001": ("resolved", {"checks": [{"check_id": "E012-K1", "result": "abnormal"}]})})
+    final = hl.run_loop(deps, rec, poll_s=0)
+    row = final["alerts"][0]
+    assert row["order"] == ["E012"] and row["human_label"] == "real"
+    assert row["memory_delta"]["checks"] == [{"check_id": "E012-K1", "abnormal": 1, "normal": 0}]
+    assert final["memory"]["checks"] == [{"check_id": "E012-K1", "abnormal": 1, "normal": 0}]
+
+
+def test_guide_without_field_memory():
+    deps, api, feeder, rec = make_run(ALERT_H1, annotate=False)
+    final = hl.run_loop(deps, rec, poll_s=0)
+    row = final["alerts"][0]
+    assert row["order"] == ["E029"] and row["applied"] == [] and row["note_ko"] is None
 
 
 def test_folded_alert_continues():
@@ -418,15 +493,31 @@ def test_error_item_ends_run():
 def test_wait_for_closure_polls():
     api = FakeAPI(FakeML())
     api.ingest(handoff("h1"))
-    api.close_after("CASE-0001", "resolved", polls=3)
+    judged = [{"situation_id": "E029", "answer": "yes"}]
+    results = [{"outcome": "resolved"}]
+    api.close_after("CASE-0001", "resolved", polls=3, judgments=judged, results=results)
     out = hl.wait_for_closure(api, "CASE-0001", poll_s=0)
-    assert out["case_id"] == "CASE-0001" and out["closure"]["outcome"] == "resolved"
-    assert out["judgments"] == [] and out["results"] == []
+    assert out == {"case_id": "CASE-0001", "closure": {"outcome": "resolved", "at": "2026-10-28T00:00:00Z"},
+                   "judgments": judged, "results": results}
     assert api.closing == {}
+    # 닫힘은 /api/history로만 기다리고, 상세(GET 때마다 RAG를 부를 수 있다)는 닫힌 뒤 한 번만 읽는다
+    assert api.paths == ["/api/history"] * 3 + ["/api/cases/CASE-0001"]
     api.ingest(handoff("h2", code="E012"))
+    api.paths = []
     stop = threading.Event()
     stop.set()
     assert hl.wait_for_closure(api, "CASE-0002", poll_s=0, stop=stop)["closure"] is None  # 멈추면 닫힘 없이 돌아온다
+    assert api.paths == ["/api/history"]
+
+
+def test_wait_for_closure_ignores_other_closed_cases():
+    api = FakeAPI(FakeML())
+    api.ingest(handoff("h1"))
+    api.ingest(handoff("h2", code="E012"))
+    api.close_after("CASE-0001", "false_alarm", polls=1)
+    api.close_after("CASE-0002", "resolved", polls=3)
+    assert hl.wait_for_closure(api, "CASE-0002", poll_s=0)["closure"]["outcome"] == "resolved"
+    assert api.paths == ["/api/history"] * 3 + ["/api/cases/CASE-0002"]
 
 
 CLEAN_HEALTH = {"guns_tracked": 0, "rag_url": None, "outbox": {"pending": 0, "delivered": 0, "failed": 0, "pull_only": 0}}
@@ -474,7 +565,7 @@ def test_startup_check_api_not_empty(closure_status):
     api.ingest(handoff("h0"))
     if closure_status == "false_alarm":  # 닫힌 케이스는 history에만 있다
         api.close_after("CASE-0001", "false_alarm", polls=1)
-        api.get("/api/cases/CASE-0001")
+        api.get("/api/history")
         api.paths = []
     problems = hl.startup_check(ml, api)
     assert len(problems) == 1
@@ -501,21 +592,27 @@ def test_startup_check_unreachable():
 def test_wait_for_closure_rides_out_api_errors():
     api = FakeAPI(FakeML())
     api.ingest(handoff("h1"))
-    api.close_after("CASE-0001", "false_alarm", polls=1)
-    errors = [httpx.ConnectError("refused"), httpx.Response(503, request=httpx.Request("GET", "http://api/x"))]
+    api.close_after("CASE-0001", "false_alarm", polls=1, judgments=[{"situation_id": "E029", "answer": "no"}])
+    errors = {"/api/history": [httpx.ConnectError("refused"),
+                               httpx.Response(503, request=httpx.Request("GET", "http://api/x"))],
+              "/api/cases/CASE-0001": [httpx.ReadTimeout("slow RAG"),
+                                       httpx.Response(502, request=httpx.Request("GET", "http://api/x"))]}
     get = api.get
 
     def flaky(path, params=None):
-        if errors:
-            e = errors.pop(0)
+        if errors.get(path):
+            e = errors[path].pop(0)
             if isinstance(e, Exception):
                 raise e
             return e
         return get(path, params)
 
     api.get = flaky
-    assert hl.wait_for_closure(api, "CASE-0001", poll_s=0)["closure"]["outcome"] == "false_alarm"
-    assert errors == []
+    out = hl.wait_for_closure(api, "CASE-0001", poll_s=0)
+    assert out["closure"]["outcome"] == "false_alarm" and out["judgments"] == [{"situation_id": "E029", "answer": "no"}]
+    assert errors == {"/api/history": [], "/api/cases/CASE-0001": []}
+    # 닫힘을 본 뒤에는 history를 다시 부르지 않고 상세만 다시 시도한다
+    assert api.paths == ["/api/history", "/api/cases/CASE-0001"]
     api.get = lambda path, params=None: httpx.Response(404, request=httpx.Request("GET", "http://api/x"))
     with pytest.raises(httpx.HTTPStatusError):  # 4xx는 그대로 올린다
         hl.wait_for_closure(api, "CASE-0001", poll_s=0)
@@ -550,21 +647,19 @@ FOOTER = "재생 데이터 시연 · 현장 아님 · 데이터 기준 라벨은
 def view_state():
     """닫힌 행 하나(CASE-0001)와 사람 확인을 기다리는 행 하나(CASE-0002)."""
     closed = hl._row(handoff("h1"), "closed", case_id="CASE-0001")
-    closed.update(order=["S10", "S01", "S05"], baseline=["S01", "S05", "S10"], applied=["R1"],
-                  note_ko="R1 · 오알람 1건", human_label="false_alarm", data_label="far", ttf_s=25200.0, agree=True,
-                  closure={"outcome": "false_alarm"},
-                  memory_delta={"alarms": [{"key": "test_0|E029", "false_alarm": 1, "real": 0,
-                                            "case_ids": ["CASE-0001"]}],
-                                "past_causes": [{"situation_id": "S01", "code": "E012",
-                                                 "causes": [{"situation_id": "S05", "name": "<전극>",
-                                                             "confirmed": 2}]}]})
+    closed.update(order=["E029"], applied=["R1"], note_ko="R1 · 오알람 1건 <참고>", human_label="false_alarm",
+                  data_label="far", ttf_s=25200.0, agree=True, closure={"outcome": "false_alarm"},
+                  memory_delta={"alarms": [{"key": "test_0|E029", "gun_id": "test_0", "code": "E029",
+                                            "false_alarm": 1, "real": 0, "case_ids": ["CASE-0001"]}],
+                                "checks": [{"check_id": "E029-K1<", "abnormal": 0, "normal": 1}]})
     waiting = hl._row(handoff("h2", t="2021-09-04T11:30:00Z"), "waiting", case_id="CASE-0002")
-    waiting["order"] = ["S10", "S01", "S05"]
+    waiting["order"] = ["E029"]
     waiting["data_label"] = "pre_failure"  # 닫히기 전에는 값이 있어도 보이지 않아야 한다
     memory = {"labeled": 1, "labels": {"CASE-0001": "false_alarm"},
-              "alarms": [{"key": "test_0|E029", "false_alarm": 1, "real": 0, "case_ids": ["CASE-0001"]}],
-              "past_causes": [{"situation_id": "S01", "code": "E029",
-                               "causes": [{"situation_id": "S05", "name": "<전극>", "confirmed": 2}]}]}
+              "alarms": [{"key": "test_0|E029", "gun_id": "test_0", "code": "E029", "false_alarm": 1, "real": 0,
+                          "case_ids": ["CASE-0001"]}],
+              "checks": [{"check_id": "E012-K1", "abnormal": 1, "normal": 0},
+                         {"check_id": "E029-K1<", "abnormal": 0, "normal": 1}]}
     return {"files": {}, "seen": ["h1", "h2"], "queue": ["h2"], "alerts": [closed, waiting], "memory": memory,
             "seq": 2, "resume": None, "done": False, "error": None}
 
@@ -580,26 +675,34 @@ def test_write_atomic_utf8(tmp_path):
 def test_view_utf8_korean(tmp_path):
     state = view_state()
     waiting = {"case_id": "CASE-0002", "url": "http://localhost:5173/cases/CASE-0002", "gun_id": "test_0",
-               "code": "E029", "order": ["S10", "S01", "S05"], "note_ko": None}
-    waiting["note_ko"] = "오알람으로 닫은 기록 1건 <참고>"
+               "code": "E029", "order": ["E029"], "note_ko": None}
+    waiting["note_ko"] = "같은 설비·코드(test_0 E029)에서 사람이 오알람으로 닫은 기록 1건 <참고> & 확인"
     html = hl.render_view(state, "operator", waiting, "http://localhost:5173", "2021-09-04T11:30:00Z")
     assert '<meta charset="utf-8">' in html and '<meta http-equiv="refresh" content="2">' in html
     assert "⏸ 사람 확인 대기" in html and "CASE-0002" in html
     assert '<a href="http://localhost:5173/cases/CASE-0002" target="d8-ui">' in html  # 링크는 탭 하나를 다시 쓴다
-    assert "후보 순서 S10 → S01 → S05" in html and "오알람으로 닫은 기록 1건 &lt;참고&gt;" in html
+    assert "· 안내 카드 E029</p>" in html and "후보 순서" not in html
+    # 안내 문장은 대기 줄 아래에 escape해서
+    assert ('<p class="note">같은 설비·코드(test_0 E029)에서 사람이 오알람으로 닫은 기록 1건 &lt;참고&gt; &amp; 확인</p>'
+            in html)
     assert html.count("<a ") == 1  # 행마다 링크는 없다
     assert FOOTER in html
     assert "#2563eb" in html  # 현재 노드
-    assert "&lt;전극&gt;" in html and "<전극>" not in html  # 동적 문자열은 escape
-    cells = {c[5]: c for c in (re.findall(r"<td[^>]*>(.*?)</td>", r) for r in html.split("<tr>")) if len(c) == 15}
-    assert cells["CASE-0002"][11] == "—" and "pre_failure" not in html and "고장 직전" not in html  # 대기 행은 —
-    assert cells["CASE-0001"][11] == "먼 알림" and cells["CASE-0001"][10] == "오알람"
-    assert cells["CASE-0001"][9] == "오알람으로 닫음"
-    assert cells["CASE-0001"][7] == "S01 → S05 → S10"  # 기본 순서
-    assert cells["CASE-0001"][13] == "R1 · 오알람 1건"  # 안내 문장
-    assert cells["CASE-0001"][14] == "test_0|E029 오알람 1 · 고장 확인 0; S01 확정 원인 &lt;전극&gt;(S05) 2건"
-    assert cells["CASE-0002"][7] == cells["CASE-0002"][13] == cells["CASE-0002"][14] == "—"
+    assert "&lt;참고&gt;" in html and "<참고>" not in html and "E029-K1<" not in html  # 동적 문자열은 escape
+    cells = {c[5]: c for c in (re.findall(r"<td[^>]*>(.*?)</td>", r) for r in html.split("<tr>")) if len(c) == 14}
+    assert cells["CASE-0002"][10] == "—" and "pre_failure" not in html and "고장 직전" not in html  # 대기 행은 —
+    assert cells["CASE-0001"][10] == "먼 알림" and cells["CASE-0001"][9] == "오알람"
+    assert cells["CASE-0001"][8] == "오알람으로 닫음"
+    assert cells["CASE-0001"][6] == cells["CASE-0002"][6] == "E029"  # 안내 카드
+    assert cells["CASE-0001"][7] == "R1"  # 기억 반영
+    assert cells["CASE-0001"][12] == "R1 · 오알람 1건 &lt;참고&gt;"  # 안내 문장
+    assert cells["CASE-0001"][13] == "test_0|E029 오알람 1 · 고장 확인 0; E029-K1&lt; 이상 0 · 정상 1"
+    assert cells["CASE-0002"][7] == cells["CASE-0002"][12] == cells["CASE-0002"][13] == "—"
     assert "<th>오알람</th><th>고장 확인</th>" in html and "오경보" not in html
+    assert "<th>점검 항목</th><th>이상</th><th>정상</th>" in html
+    assert "<tr><td>E012-K1</td><td>1</td><td>0</td></tr>" in html
+    assert "<tr><td>E029-K1&lt;</td><td>0</td><td>1</td></tr>" in html
+    assert "지난 확정 원인" not in html and "기본 순서" not in html
     p = tmp_path / "loop_view.html"
     hl.write_atomic(str(p), html)
     assert p.read_text(encoding="utf-8") == html
@@ -642,12 +745,24 @@ def test_view_highlights_running_node():
 
 def test_summary_has_rows_and_footer():
     md = hl.render_summary(view_state())
-    cells = {c[5]: c for c in (ln.strip("| ").split(" | ") for ln in md.splitlines()) if len(c) == 15}
-    assert cells["CASE-0001"][9:12] == ["오알람으로 닫음", "오알람", "먼 알림"]
-    assert cells["CASE-0002"][11] == "—" and "pre_failure" not in md
+    cells = {c[5]: c for c in (ln.strip("| ").split(" | ") for ln in md.splitlines()) if len(c) == 14}
+    assert cells["CASE-0001"][6:11] == ["E029", "R1", "오알람으로 닫음", "오알람", "먼 알림"]
+    assert cells["CASE-0002"][10] == "—" and "pre_failure" not in md
+    assert "| " + " | ".join(hl._COLS) + " |" in md
     assert "| 설비\\|코드 | 오알람 | 고장 확인 | 케이스 |" in md
     assert r"| test_0\|E029 | 1 | 0 | CASE-0001 |" in md  # 기억 (칸 안의 |는 escape)
+    assert "| 점검 항목 | 이상 | 정상 |" in md and "| E012-K1 | 1 | 0 |" in md
     assert FOOTER in md
+
+
+def test_columns():
+    assert hl._COLS == ["데이터 시각", "설비", "코드", "출처", "상태", "케이스", "안내 카드", "기억 반영", "닫힘",
+                        "사람 라벨", "데이터 라벨", "일치", "안내 문장", "기억 변화"]
+    assert hl._COLS[4] == "상태"  # _html_table이 글자색을 칠하는 칸
+    assert hl._MEM_COLS == ["설비|코드", "오알람", "고장 확인", "케이스"]
+    assert hl._CHECK_COLS == ["점검 항목", "이상", "정상"]
+    row = hl._row(handoff("h1"), "waiting", case_id="CASE-0001")
+    assert "baseline" not in row and len(hl._cells(row)) == len(hl._COLS)
 
 
 class DryFeeder:
@@ -738,7 +853,7 @@ def run_main(tmp_path, monkeypatch, fake_run_loop, problems=()):
 def interrupted_state():
     state = view_state()
     return state, {"case_id": "CASE-0002", "url": "http://ui/cases/CASE-0002", "gun_id": "test_0", "code": "E029",
-                   "order": ["S10", "S04"], "note_ko": "오알람으로 닫은 기록 1건"}
+                   "order": ["E029"], "note_ko": "오알람으로 닫은 기록 1건"}
 
 
 def test_main_startup_failure_writes_nothing(tmp_path, monkeypatch):
@@ -763,7 +878,7 @@ def test_main_normal_end(tmp_path, monkeypatch, capsys):
     hl.main()
     console = capsys.readouterr().out
     assert seen["ui"] == "http://ui" and "UI http://ui\n" in console  # 끝의 /를 뗀다
-    assert "  ⏸ CASE-0002 사람 확인 대기 · 후보 순서 S10 → S04: http://ui/cases/CASE-0002" in console
+    assert "  ⏸ CASE-0002 사람 확인 대기 · 안내 카드 E029: http://ui/cases/CASE-0002" in console
     assert "\n      오알람으로 닫은 기록 1건\n" in console
     log = (out / "loop_log.jsonl").read_text(encoding="utf-8")
     assert "old run" not in log and log.count("\n") == 1  # 시작할 때 비운다

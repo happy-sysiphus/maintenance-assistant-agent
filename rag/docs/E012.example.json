@@ -1,0 +1,133 @@
+{
+  "status": "ok",
+  "error_code": "E012",
+  "question": "이 오류의 의미와 근거가 있는 원인 후보, 점검 순서, 정상 기준 및 조치를 알려주세요.",
+  "answer": "오류 E012는 문서상 보정/평형 압력이 지정 시간 내에 도달하지 못한 경우의 타임아웃으로 해석됩니다. 근거 문서에서는 “Timeout compensation/Counterbalance Timeout/Timeout equalizer”로 표기되며, 설정 압력이 공급 압력보다 높을 때도 이 오류가 발생할 수 있다고 설명합니다[manual82 p.78][diagnostic4 p.1]. 다만 이 오류만으로 센서나 부품 고장을 확정할 수는 없고, 보정 설정값과 공급 조건, 그리고 현 장비에 적용되는 배선/케이블 조건을 함께 확인해야 합니다[diagnostic4 p.1][festo p.90].\n\n원인·확인 후보: 보정 설정 압력과 공급 압력의 관계\n진단 문서는 설정 압력이 공급 압력보다 높은 경우에도 이 오류가 발생한다고 명시합니다[diagnostic4 p.1].\n\n- 현재 보정 설정 압력과 실제 공급 압력을 대조합니다. [diagnostic4 p.1]\n  기준·확인 방법: 설정 압력이 공급 압력보다 높은지 확인합니다. 이 조건만으로 전체 정상 여부를 판정하지 않습니다. [diagnostic4 p.1]\n\n- 현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다. [festo p.90]\n\n원인·확인 후보: 보정 압력이 지정 시간 내에 도달하지 못함\n신형 문서는 지정된 보정 압력이 1800ms 내에 도달하지 않으면 오류가 출력된다고 설명합니다[diagnostic4 p.1].\n\n요약: E012는 보정 압력이 제한 시간 내에 도달하지 못한 타임아웃 오류입니다. 설정 압력이 공급 압력보다 높은지, 공급 압력이 충분한지, 그리고 적용 대상 장비의 케이블 상태를 우선 확인하세요.",
+  "sections": {
+    "interpretation": "오류 E012는 문서상 보정/평형 압력이 지정 시간 내에 도달하지 못한 경우의 타임아웃으로 해석됩니다. 근거 문서에서는 “Timeout compensation/Counterbalance Timeout/Timeout equalizer”로 표기되며, 설정 압력이 공급 압력보다 높을 때도 이 오류가 발생할 수 있다고 설명합니다[manual82 p.78][diagnostic4 p.1]. 다만 이 오류만으로 센서나 부품 고장을 확정할 수는 없고, 보정 설정값과 공급 조건, 그리고 현 장비에 적용되는 배선/케이블 조건을 함께 확인해야 합니다[diagnostic4 p.1][festo p.90].",
+    "summary": "E012는 보정 압력이 제한 시간 내에 도달하지 못한 타임아웃 오류입니다. 설정 압력이 공급 압력보다 높은지, 공급 압력이 충분한지, 그리고 적용 대상 장비의 케이블 상태를 우선 확인하세요."
+  },
+  "causes": [
+    {
+      "situation_id": "E012",
+      "name": "보정 설정 압력과 공급 압력의 관계",
+      "why": "진단 문서는 설정 압력이 공급 압력보다 높은 경우에도 이 오류가 발생한다고 명시합니다[diagnostic4 p.1].",
+      "checks": [
+        {
+          "id": "E012-K1",
+          "text": "현재 보정 설정 압력과 실제 공급 압력을 대조합니다.",
+          "cite": {
+            "doc": "diagnostic4",
+            "page": 1
+          },
+          "criterion": {
+            "text": "설정 압력이 공급 압력보다 높은지 확인합니다. 이 조건만으로 전체 정상 여부를 판정하지 않습니다.",
+            "cite": {
+              "doc": "diagnostic4",
+              "page": 1
+            }
+          }
+        },
+        {
+          "id": "E012-K2",
+          "text": "현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다.",
+          "cite": {
+            "doc": "festo",
+            "page": 90
+          },
+          "criterion": null
+        }
+      ],
+      "actions": []
+    },
+    {
+      "situation_id": "E012",
+      "name": "보정 압력이 지정 시간 내에 도달하지 못함",
+      "why": "신형 문서는 지정된 보정 압력이 1800ms 내에 도달하지 않으면 오류가 출력된다고 설명합니다[diagnostic4 p.1].",
+      "checks": [],
+      "actions": []
+    }
+  ],
+  "evidence": [
+    {
+      "id": "rag:evidence:1e09156ded7e9dba64e2",
+      "doc": "diagnostic4",
+      "page": 1,
+      "quote": "This error is also output when the set pressure is higher than the supply pressure.",
+      "text": "Column 1: 12 | Column 2: Counterbalance Timeout | Column 3: The error is monitored in active as well as inactive compensation. The error is output if the specified compensation pressure is not reached for 1800ms (tolerance + -600mbar). If compensation is activated, the pressure must be reached for a certain time (+ -600mbar for > = 10ms). If this is reached, an OK flag is set internally. This monitoring was additionally introduced because the force build-up time is typically shorter than 1800ms. Balance must be active for at least 300ms. If the force buildup is shorter, no error is output. This error is also output when the set pressure is higher than the supply pressure. | Column 4: X",
+      "review_needed": false
+    },
+    {
+      "id": "rag:evidence:b066a2f60fee01b52994",
+      "doc": "festo",
+      "page": 90,
+      "quote": "Check cable to the MPYD.",
+      "text": "Error number: 12 | Error text: Timeout equalizer | Ready signal: 1 | Description: Equalizer pressure was not reached within 2 seconds. | Error elimination: Check cable to the MPYD. Check supply pressure at least 5 bar.",
+      "review_needed": false
+    },
+    {
+      "id": "rag:evidence:4491a1a18b75c33a0854",
+      "doc": "manual82",
+      "page": 78,
+      "quote": "12 Timeout compensation",
+      "text": "Compressed air supply X 4 Max. cylinder force X 5 Memory error X 6 Position specification X 7 – (not assigned) 8 Force specification X 9 Position timeout X 10 Force timeout X 11 Direction of motion X 12 Timeout compensation X 13 Parameter X 14 – (not assigned) 15 Force calibration X 16 Electrode monitoring X 17 Friction too low X 18 Friction too high X 19 Sheet thickness X 20 Short circuit at output 0 X 21 Short circuit at output 1 X 22 Short circuit block control valve (output 2) X 78 CPX-WELD-2G-SA 2020-06a",
+      "review_needed": false
+    },
+    {
+      "id": "rag:chunk-b925b7f01eb883ae1a6c",
+      "doc": "manual82",
+      "page": 74,
+      "quote": "2 [E3.00 ... 3.15] 3 Pressure in compensating cylinder\nSetpoint value, compensating\npressure\nFigure 7-6 Compensation",
+      "text": "2 [E3.00 ... 3.15] 3 Pressure in compensating cylinder\nSetpoint value, compensating\npressure\nFigure 7-6 Compensation",
+      "review_needed": false
+    },
+    {
+      "id": "rag:chunk-41595a9080e753733167",
+      "doc": "diagnostic4",
+      "page": 1,
+      "quote": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\n[Table; PDF page 1]\nColumn 1: 12 | Column 2: Counterbalance Timeout | Column 3: The error is monitored in active as well as inactive compensation. The error is output if the specified compensation pressure is not reached for 1800ms (",
+      "text": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\n[Table; PDF page 1]\nColumn 1: 12 | Column 2: Counterbalance Timeout | Column 3: The error is monitored in active as well as inactive compensation. The error is output if the specified compensation pressure is not reached for 1800ms (tolerance + -600mbar). If compensation is activated, the pressure must be reached for a certain time (+ -600mbar for > = 10ms). If this is reached, an OK flag is set internally. This monitoring was additionally introduced because the force build-up time is typically shorter than 1800ms. Balance must be active for at least 300ms. If the force buildup is shorter, no error is output. This error is also output when the set pressure is higher than the supply pressure. | Column 4: X\nColumn 1: 13 | Column 2: Parameters | Column 3: Checksum at initialization is 0. FRAM is completely empty. Servicing. | Column 4: X\nColumn 1: 14 | Column 2: - (not taken)\nColumn 1: 15 | Column 2: Calibration of Force | Column 3: Automatic force calibration in WinSPAS. Calibration line has negative slope | Column 4: X",
+      "review_needed": false
+    },
+    {
+      "id": "rag:chunk-a1d22af5460f2d4f3c36",
+      "doc": "manual82",
+      "page": 38,
+      "quote": "1 bar or greater. Teaching of the compensation is therefore not affected.\n[Table; PDF page 38]\nColumn 1: Rise of pressure | Column 2: bar | Column 4: When the compensating pressure is changed in a negative direction (P < P ): setpoint actual Activated pressure: P = P – P compensation setpoint rise\nC",
+      "text": "1 bar or greater. Teaching of the compensation is therefore not affected.\n[Table; PDF page 38]\nColumn 1: Rise of pressure | Column 2: bar | Column 4: When the compensating pressure is changed in a negative direction (P < P ): setpoint actual Activated pressure: P = P – P compensation setpoint rise\nColumn 1: Duration of rise of pressure | Column 2: ms | Column 4: Time for which the pressure overshoot is in ef- fect.\nColumn 1: Pressure reduction | Column 2: bar | Column 4: When the compensating pressure is changed in a positive direction (P > P ): setpoint actual Set pressure: P = P + P compensation setpoint reduction\nColumn 1: Duration of pressure reduction | Column 2: ms | Column 4: Time for which the pressure reduction is in ef- fect.",
+      "review_needed": false
+    },
+    {
+      "id": "rag:chunk-950fc01c926dcf026c78",
+      "doc": "festo",
+      "page": 41,
+      "quote": "Section 8.11\n[Table; PDF page 41]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nNo.: 1 | Action: Open System menu\nNo.: 2 | Action: Adjust parameter for rise of pressure\nNo.: 3 | Action: Actuate download\nNo.: 4 | Action: 1 Rise of pressure [bar] 2 Duration of rise of pressure [ms]\nNo.: 5 | Action: 1 R",
+      "text": "Section 8.11\n[Table; PDF page 41]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nNo.: 1 | Action: Open System menu\nNo.: 2 | Action: Adjust parameter for rise of pressure\nNo.: 3 | Action: Actuate download\nNo.: 4 | Action: 1 Rise of pressure [bar] 2 Duration of rise of pressure [ms]\nNo.: 5 | Action: 1 Rise of pressure [bar] 2 Duration of rise of pressure [ms] | Comment: Adjust values until the stuck electrode moves to the component. Typical values: Rise of pressure: 0.5-1.5 bar Duration: 50 – 150 ms\nNo.: 6 | Action: Actuate force build-up\nNo.: 7 | Action: Adapt settings | Comment: Repeat step 2 until an optimal result is achieved.",
+      "review_needed": true
+    },
+    {
+      "id": "rag:chunk-9e0b7bd5b32f973e6801",
+      "doc": "festo",
+      "page": 92,
+      "quote": "10.1.1 Assignment of error bits on fieldbus\n[Table 10.2: Assignment of error bits; PDF page 92]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nError number: 1 | Error text: Measure- ment system error\nError number: 3 | Error text: No pressure supply\nError number: 4 | Error text: Maximum force exceeded\n",
+      "text": "10.1.1 Assignment of error bits on fieldbus\n[Table 10.2: Assignment of error bits; PDF page 92]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nError number: 1 | Error text: Measure- ment system error\nError number: 3 | Error text: No pressure supply\nError number: 4 | Error text: Maximum force exceeded\nError number: 5 | Error text: Internal error\nError number: 6 | Error text: Position not reachable\nError number: 7 | Error text: Pressure sensor in main cylinder faulty\nError number: 8 | Error text: Incorrect force specification\nError number: 9 | Error text: Timeout positioning\nError number: 10 | Error text: Force timeout\nError number: 11 | Error text: Diagnostics function\nError number: 12 | Error text: Timeout equalizer\nError number: 13 | Error text: Parameter error\nError number: 14 | Error text: Friction force malfunction exceeded\nError number: 16 | Error text: Incorrect program number",
+      "review_needed": true
+    }
+  ],
+  "review_notes": [
+    "신형 문서의 1800 ms 조건과 구판 오류 12의 2초·5 bar 참고값은 서로 다른 출처입니다. 구판의 케이블·압력 점검은 현 설비 적용 여부를 확인한 보충 후보입니다.",
+    "시각 정보·표 구조 원본 확인 필요: festo p.41, festo p.92"
+  ],
+  "model": "gpt-5.4-mini",
+  "usage": {
+    "input_tokens": 3649,
+    "output_tokens": 384,
+    "total_tokens": 4033,
+    "embedding_tokens": 80
+  },
+  "api_calls_this_run": 2,
+  "cache_hit": false,
+  "validation_errors": [],
+  "response_version": "e-code-ui-json-v2",
+  "seconds": 11.75
+}

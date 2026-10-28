@@ -29,7 +29,7 @@ ID는 영역 + 번호(A 데이터·전처리, B 모델·평가, C 서빙, D RAG 
 | D-3 | 핸드오프 v1.1 — 맥락 확장 (**일부 완료 2026-10-08**: `error_timeline` 30분·`sensor_trend`·Z; 남음: 1h 코드 이력·`recent_events`·`rule_repeat_suppressed`·`detector.reliability`) | 품질 | D-2(필드 이름 합의) | 소~중 |
 | D-6 | 매분 센서 문서 sensor-features-v4(측정값 10·상태 3·설정값 4) + 핸드오프 v1.2(상황·증상 매핑 삭제) (**완료 2026-10-21**, `history.md` 33·34절; 남음: 실데이터 예시 재생성, RAG 쪽 v4 합의) | 필수 | RAG 쪽 스키마 합의 | 중 |
 | D-4 | RAG 응답 검증 | 품질 | RAG 응답 계약 확정 | 소 |
-| D-8 | HITL 피드백 루프 시연 (**시연 구현 2026-10-28**, `history.md` 36절; 남음: FE 표시(`docs/hitl-loop.md` ④) · RAG 합의(⑤), 실제 서버 리허설) | 품질 | FE·RAG 담당 합의 | 소~중 |
+| D-8 | HITL 피드백 루프 시연 (**시연 구현 2026-10-28**, `history.md` 36절; RAG E 코드 전환 뒤 현장 기억은 참고 문장만, RAG 카드는 그대로; 남음: FE 표시(`docs/hitl-loop.md` ④) · RAG 합의(⑤), 실제 서버 리허설) | 품질 | FE·RAG 담당 합의 | 소~중 |
 
 우선순위: 필수 = 운영 투입 전에 반드시, 품질 = 운영 품질, 개선 = 성능·정확도 개선.
 

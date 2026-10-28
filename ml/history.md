@@ -73,7 +73,7 @@
 | 10-08 | 증상 규칙을 활용정리 8절 원문 조건으로 복원(설정값 그대로일 때만 P1·P2·P5, c5 정상일 때만 P3; P5·P6에 S02), 핸드오프 v1.1(FE 요청 3·4·5: `error_timeline`·`sensor_trend`·Z·`sensor_name_ko`, caveats 수치 갱신, `docs/fe-requests-reply.md`) |
 | 10-08 | A-3 결측(32절): 결측은 고장 신호가 아님(고장 직전이 평소 상위 5%를 넘은 건 2/64), 채우기 방식 3종의 CV AUROC 차이 0.005 < 폴드 SD 0.04~0.05 — 60초 채움 유지 |
 | 10-26 | D-7·C-7(35절, 10-12 분석): c4·c18 = Festo 13번 비트 짝(c4 Force reached, c18 Close gun) → `SENSOR_KO`·trace 차트 이름표 정정, 핸드오프 NaN 전송 실패와 미완결 분 발화 코드 누락 수정 |
-| 10-28 | D-8 HITL 피드백 루프 시연(36절): api 현장 기억(`FIELD_MEMORY=1`일 때만, R1 = 오알람이 많으면 S10 먼저, 지난 확정 원인은 참고) + LangGraph 드라이버 `.py/hitl_loop.py`(알림마다 멈추고 사람이 닫으면 이어 감). ML 서빙은 그대로 |
+| 10-28 | D-8 HITL 피드백 루프 시연(36절): api 현장 기억(`FIELD_MEMORY=1`일 때만) + LangGraph 드라이버 `.py/hitl_loop.py`(알림마다 멈추고 사람이 닫으면 이어 감). 같은 날 RAG E 코드 전환(`ed7a890`)을 합치며 현장 기억을 참고 문장으로 바꿈(R1 = 오알람이 많으면 "오알람인지부터 확인" 문장, RAG 카드는 그대로). ML 서빙은 그대로 |
 
 ## 지표 추이 (같은 테스트 8건 / 검증 14건)
 
@@ -1231,6 +1231,8 @@ CV 차이(최대 0.005)가 폴드 SD(0.04~0.05)의 10분의 1이고, 테스트 �
 
 ### 36. D-8 HITL 피드백 루프 시연 — 현장 기억 · LangGraph 드라이버 (2026-10-28)
 
+> 지금 설계는 이 절 끝의 **RAG E 코드 전환 뒤 (같은 날)**이다. 바로 아래(S10 먼저, S05→S01 연결, api 38개)는 전환 전 기록이다.
+
 **왜**: 사람이 케이스를 닫은 기록(오알람 · 확정 원인)이 다음 안내로 돌아오지 않았다(`docs/hitl-loop.md` ①).
 - api는 기록을 저장만 했다(`api/store.py:3`). 안내는 케이스를 만들 때 한 번, 코드의 현상 하나였다(`api/guidance.py:119`).
 - 그래서 같은 설비의 E029 오알람을 다섯 번 닫아도 다섯 번째 안내가 첫 번째와 같았다.
@@ -1262,3 +1264,42 @@ CV 차이(최대 0.005)가 폴드 SD(0.04~0.05)의 10분의 1이고, 테스트 �
 - 드라이런(ML만, api 없음): test_0 6건(E029 ×5, E012 ×1), test_5 2건(E029, E028)을 셌다. test_4는 3건 중 2건(E029 ×2)까지 세고 PC 메모리(8 GB)가 모자라 멈췄다.
 - 드라이버 ↔ api 계약은 `api/tests/test_driver_contract.py`가 한 프로세스 안에서 확인한다(`docs/hitl-loop.md` ③ 표의 두 시나리오).
 - 실제 서버로 하는 리허설(test_0, test_5 → test_4, 플래그 끔)과 화면 확인은 아직 하지 않았다.
+
+**RAG E 코드 전환 뒤 (같은 날)**
+
+**왜**: `git pull`로 RAG 담당 커밋 `ed7a890`(E 코드 하이브리드 RAG + api 연동)이 들어왔다. 병합 중 api 파일 4개(`main.py`, `assistant.py`, `README.md`, `requirements.txt`)가 충돌했다.
+- RAG가 S01~S10을 버리고 E012 · E016 · E028 · E029로 바꿨다. 카드는 E 코드 하나에 하나다. 점검 id는 `E0xx-Kn`이다.
+- RAG 답은 케이스의 첫 상세 조회(`GET /api/cases/{id}`)에서 만든다. 챗봇도 실제 RAG를 부른다. api가 `rag`를 import한다(neo4j 등 RAG 의존성 필요).
+- `guidance.CODE_TO_SITUATION` · `SITUATIONS`, `rag/data/situation_mapping.json`, `rsw_situations.pdf`, `api/check_criteria.json`이 없어졌다.
+- 그래서 위 설계(S10 먼저, 원인 연결 S05→S01 등, 후보 `evidence_level`)는 기댈 곳이 없어졌다.
+
+**결정(사용자, 1안: 문장만, 순서 · 카드는 그대로)**:
+- RAG 카드는 RAG 담당 판이 만든 그대로 둔다. 내용도 순서도 바꾸지 않는다.
+- 현장 기억은 참고 문장만 만든다.
+  - 같은 설비 · 같은 규칙 코드에서 오알람이 고장 확인보다 많으면: "… → 오알람(운영 원인)인지부터 확인. 아니면 카드의 점검 순서대로."(R1)
+  - 이 카드 점검 항목(`E0xx-Kn`)의 지난 이상 · 정상 수는 참고로 붙인다.
+- 고리는 그대로다: 사람이 닫는다 → 기억이 바뀐다 → 다음 알림의 문장이 바뀐다.
+- 충돌은 RAG 담당 판을 바탕으로 풀었다. D-8 훅은 `FIELD_MEMORY=1` 뒤에만 다시 붙였다. 끄면 api는 RAG 담당 판과 같다.
+
+**바뀐 것**:
+- api `field_memory.py`(다시 씀)
+  - 라벨: "오알람으로 닫기" → 오알람, "해결 종료"(`MANUAL` 포함) → 고장 확인. S10 규칙은 없앴다(화면이 S10을 기록할 수 없다).
+  - GET 케이스 응답 사본에 `field_memory`(`applied`, `note_ko`, `checks` 등)를 붙인다. 저장하지 않는다.
+  - 없앤 것: 후보 순서 바꾸기, `guidance.memory`, 후보 `basis` · `evidence_level` · `field`, 지난 확정 원인, `baseline`. `api/cause_links.json`은 지웠다.
+- api `main.py`: 충돌을 풀고 훅을 다시 붙였다. ingest lock, health `memory`, GET 케이스 `field_memory`, close `reason` · `note`, `GET /api/memory`, 챗봇에 `memory=`.
+- api `assistant.py`: 답의 E 코드에 기록이 있으면 답 끝에 현장 기록 문단 하나. RAG 오류 응답에도 `error_code`가 남아 문단이 붙는다.
+- api `requirements.txt`(양쪽 합침 + pytest), `README.md`(D-8 절), `tests/`(가짜 `answer_question`으로 OpenAI · Neo4j에 닿지 않음).
+- 드라이버 `.py/hitl_loop.py`
+  - 안내 카드는 `guidance.candidates`, 문장은 최상위 `field_memory`에서 읽는다.
+  - 닫힘은 `GET /api/history`로 기다린다. 상세 GET은 RAG를 부를 수 있어서다. 닫힌 뒤 상세를 한 번 읽는다.
+  - 현황 칸 "후보 순서 · 기본 순서" → "안내 카드". 기억 표의 지난 확정 원인 표를 점검 항목 표(점검 항목 · 이상 · 정상)로 바꿨다.
+  - api는 RAG 의존성이 있는 Python(저장소 `.venv`)으로 켠다. 드라이버는 `py -3.11`이다.
+- 문서: `docs/hitl-loop.md` 다시 씀. `docs/sensor_features_for_rag.md`의 D-8 줄은 지웠다(S05~S08 · S10을 더는 쓰지 않는다).
+
+**확인**:
+- api, 저장소 `.venv`: 42 passed, 1 skipped. 건너뛴 1개는 `test_driver_contract.py`다(langgraph · pandas 없음).
+- api, `py -3.11` + neo4j 대역(세션 전용, 저장소 밖): 45 passed. `test_field_memory.py` 29 · `test_memory_api.py` 13 · `test_driver_contract.py` 3.
+- `rag/tests`(`.venv`): 22 OK. `FIELD_MEMORY=1`로도 22 OK.
+- ml 전체(`py -3.11`): 79 passed. `test_hitl_loop.py`가 39개다(34 → 39).
+- ruff: api 파일 통과. ml은 예전부터 있던 E402 1건(`tests/test_sensor_features.py:14`)만.
+- 계약 테스트의 기대값은 `docs/hitl-loop.md` ③ 표에 있다. 실제 서버 리허설과 화면 확인은 아직이다.

@@ -1,23 +1,25 @@
 """케이스 저장소: SQLite 파일 하나. 케이스 한 건을 FE `CaseDetail` 모양 JSON으로 통째로 저장한다.
 
 데모 규모(케이스 수십 개)라 표 하나로 충분하다. 사람 기록(records)은 ML · RAG에 보내지 않는다.
-FIELD_MEMORY=1이면 api 안에서만 이 기록을 다시 읽어 안내에 참고한다(field_memory.py). 그때도 ML · rag/에는 보내지 않는다.
+FIELD_MEMORY=1이면 api 안에서만 이 기록을 다시 읽어 케이스 조회에 참고 문장을 붙인다(field_memory.py, 안내 카드는 그대로). 그때도 ML · rag/에는 보내지 않는다.
 """
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import json
 import os
 import sqlite3
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 DB_PATH = Path(os.environ.get("API_DB", Path(__file__).resolve().parent / "state" / "api.db"))
 _lock = threading.Lock()
 
 
-def _conn() -> sqlite3.Connection:
+@contextmanager
+def _conn() -> Iterator[sqlite3.Connection]:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     c = sqlite3.connect(DB_PATH)
     c.execute(
@@ -26,7 +28,11 @@ def _conn() -> sqlite3.Connection:
     )
     # ML이 같은 알림을 다시 보내도(재시도) 한 번만 처리하려고 받은 event_id를 남긴다
     c.execute("CREATE TABLE IF NOT EXISTS events (event_id TEXT PRIMARY KEY, case_id TEXT)")
-    return c
+    try:
+        with c:
+            yield c
+    finally:
+        c.close()
 
 
 def get(case_id: str) -> dict[str, Any] | None:

@@ -1,8 +1,8 @@
 """RSW 정비 지원 api 서버: 화면(ui) ↔ ML 이상 감지 서버 ↔ RAG 매뉴얼 근거를 잇는다.
 
-주소와 응답 모양은 FE mock(ui/src/mocks/handlers.ts)과 같다 (ui/docs/05 "저장 API", "AI 챗봇 API").
+기존 저장 주소를 유지하고 E 코드 기반 RAG·다문서 인용을 연결한다 (ui/docs/09 답신).
 - ML: 고장 알림(핸드오프)을 받아 케이스로 만든다. ML이 push하거나(POST /api/ml/handoffs), api가 ML /handoffs를 당겨 온다.
-- RAG: 지금은 레포의 매핑 파일로 점검 순서 · 근거 쪽만 채운다 (guidance.py). LLM 답은 RAG 연결 뒤.
+- RAG: 알림에서는 E 코드·고정 점검을 준비하고 상세 조회에서 한국어 JSON 안내를 생성한다.
 - 사람 기록(점검 · 판단 · 조치 · 일지 · 도움 요청 · 사진)은 SQLite에 저장한다 (store.py).
 
     uvicorn main:app --port 9000       # ML 서버는 ML_URL (기본 http://localhost:8000)
@@ -16,20 +16,24 @@ import time
 from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import httpx
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field
 from fastapi.responses import FileResponse
+from fastapi.concurrency import run_in_threadpool
+
 
 import assistant
 import field_memory
 import guidance
+from rag.documents import manuals, manual_path
 import store
 
 ML_URL = os.environ.get("ML_URL", "http://localhost:8000").rstrip("/")
 REPO = Path(__file__).resolve().parent.parent
-MANUALS = {"festo": REPO / "rag" / "data" / "festo_manual.pdf", "rsw": REPO / "rag" / "data" / "rsw_situations.pdf"}
+MANUALS = {doc: manual_path(doc) for doc in manuals()}
 MANUAL_CAUSE = "MANUAL"
 TRACE_MINUTES = 30
 # 현장 기억을 켜면 ingest 전체(seen → put)를 한 번에 하나씩 (store._lock을 다시 잡으면 교착)
@@ -98,11 +102,7 @@ def ingest(handoff: dict[str, Any]) -> str:
             "assignee": None,
             "event": handoff,
             "score_trace": score_trace(handoff["gun_id"], handoff["detected_at"]),
-            "guidance": (
-                field_memory.guidance_for(handoff, store.all_cases())
-                if field_memory.enabled()
-                else guidance.guidance_for(handoff)
-            ),
+            "guidance": guidance.guidance_for(handoff),
             "records": {"checks": {}, "judgments": [], "actions": [], "results": [], "field": [], "handovers": []},
             "repeats": [],
         }
@@ -190,7 +190,7 @@ def health():
         ml = ml_get("/health")["status"]
     except HTTPException:
         ml = "down"
-    out = {"status": "ok", "source": "api", "ml": ml, "rag": "mapping_only"}
+    out = {"status": "ok", "source": "api", "ml": ml, "rag": "e_code_hybrid"}
     if field_memory.enabled():
         out["memory"] = "on"
     return out
@@ -206,9 +206,12 @@ def list_cases():
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str):
-    d = load(case_id)
-    # 현장 기억은 볼 때마다 새로 센다 (DB에는 저장하지 않는다)
-    return field_memory.annotate(d, store.all_cases()) if field_memory.enabled() else d
+    enriched = guidance.enrich(load(case_id))
+    latest = load(case_id)  # Preserve records saved while generation was running.
+    latest["guidance"] = enriched["guidance"]
+    out = save(latest)
+    # 현장 기억은 볼 때마다 새로 세어 사본에만 붙인다 (DB에는 저장하지 않는다. 카드는 그대로)
+    return field_memory.annotate(out, store.all_cases()) if field_memory.enabled() else out
 
 
 @app.put("/api/cases/{case_id}/checks")
@@ -373,23 +376,8 @@ def manual_pdf(doc: str):
 
 @app.get("/api/manuals/festo/search")
 def manual_search(q: str = Query("")):
-    q = q.strip().lower()
-    items = []
-    if q:
-        for s in guidance.all_situations():
-            c = guidance.candidate(s["situation_id"], 0) or {}
-            for e in c.get("evidence", []):
-                if any(q in (v or "").lower() for v in (e["rationale"], e["quote"], s["name"])):
-                    items.append(
-                        {
-                            "page": e["page"],
-                            "title": e["rationale"],
-                            "quote": e["quote"],
-                            "situation_id": s["situation_id"],
-                            "situation_name": s["name"],
-                        }
-                    )
-    return {"items": items}
+    return {"items": guidance.search_manuals(q.strip()) if q.strip() else []}
+
 
 
 @app.get("/api/situations")
@@ -397,11 +385,33 @@ def situations():
     return {"situations": guidance.all_situations()}
 
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str
+
+
+class AssistantAskInput(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"example": {
+        "question": "E029 오류의 의미와 점검 방법을 알려주세요.",
+        "photos": [],
+        "history": [],
+    }})
+    question: str = Field(min_length=1, max_length=2000)
+    photos: list[dict[str, Any]] = Field(default_factory=list)
+    history: list[ChatMessage] = Field(default_factory=list)
+
+
 @app.post("/api/assistant/ask")
-async def ask(request: Request):
-    body = await request.json()
-    memory = field_memory.snapshot(store.all_cases()) if field_memory.enabled() else None
-    return assistant.answer(body.get("question", ""), body.get("photos", []), body.get("history", []), memory)
+async def ask(body: AssistantAskInput):
+    # 현장 기억(FIELD_MEMORY=1)이면 요약을 memory=로 넘긴다. 끄면 인자는 그대로 셋
+    extra: dict[str, Any] = {}
+    if field_memory.enabled():
+        extra["memory"] = await run_in_threadpool(lambda: field_memory.snapshot(store.all_cases()))
+    try:
+        return await run_in_threadpool(assistant.answer,body.question,body.photos,
+                                       [message.model_dump() for message in body.history],**extra)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 @app.post("/api/assistant/feedback")

@@ -16,5 +16,7 @@ venv/
 !data/
 data/*
 !data/festo_manual.pdf
-!data/rsw_situations.pdf
-!data/situation_mapping.json
+!data/error_mapping.json
+!data/manuals.json
+!data/manuals/
+!data/manuals/*.pdf

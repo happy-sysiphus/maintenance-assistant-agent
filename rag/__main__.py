@@ -9,6 +9,7 @@ COMMANDS = {
     "chunk": "rag.pipeline.chunk",
     "ingest": "rag.pipeline.ingest",
     "build": "rag.pipeline.build",
+    "index": "rag.pipeline.index",
     "ask": "rag.service",
 }
 
@@ -18,7 +19,7 @@ def main() -> int:
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8")
     if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help"}:
-        print("Usage: python -m rag {parse,chunk,ingest,build,ask} [options]")
+        print("Usage: python -m rag {parse,chunk,ingest,build,index,ask} [options]")
         print("명령별 옵션: python -m rag <command> --help")
         return 0
     command = sys.argv.pop(1)

@@ -10,6 +10,7 @@ from pathlib import Path
 from ..paths import CHUNKS, PARSED_BLOCKS, PARSED_DOCS
 
 from langchain_core.documents import Document
+from ..documents import manuals
 
 
 INPUT_PATH = PARSED_DOCS
@@ -66,7 +67,7 @@ def load_parsed_documents(input_path: Path) -> list[Document]:
                 continue
             row = json.loads(line)
             metadata = dict(row.get("metadata", {}))
-            if metadata.get("manual_id") != "festo":
+            if metadata.get("manual_id") not in manuals():
                 raise ValueError(f"{line_no}행은 Festo 매뉴얼 파싱 결과가 아닙니다.")
             metadata["parent_doc_id"] = row["doc_id"]
             docs.append(Document(page_content=row["page_content"], metadata=metadata))
@@ -84,7 +85,7 @@ def filter_review_blocks(docs: list[Document], blocks_path: Path) -> None:
     if not blocks_path.exists():
         raise FileNotFoundError(f"블록별 검토 상태가 없습니다: {blocks_path}. python -m rag parse를 다시 실행하세요.")
 
-    by_page: dict[int, list[dict]] = {}
+    by_page: dict[tuple, list[dict]] = {}
     with blocks_path.open("r", encoding="utf-8") as stream:
         for line_no, line in enumerate(stream, start=1):
             if not line.strip():
@@ -104,15 +105,17 @@ def filter_review_blocks(docs: list[Document], blocks_path: Path) -> None:
                 raise ValueError(f"{blocks_path}:{line_no}: extractable_text is not a content prefix")
             if block["review_needed"] and not (block.get("review_type") and block.get("review_reason")):
                 raise ValueError(f"{blocks_path}:{line_no}: review type or reason is missing")
-            by_page.setdefault(page_no, []).append(block)
+            by_page.setdefault((block["manual_id"], page_no), []).append(block)
 
-    doc_pages = {doc.metadata["page_number"] for doc in docs}
-    if set(by_page) != doc_pages or len(doc_pages) != len(docs):
+    doc_pages = {(doc.metadata["manual_id"], doc.metadata["page_number"]) for doc in docs}
+    if (not set(by_page).issubset(doc_pages) or len(doc_pages) != len(docs)
+            or any((d.metadata["manual_id"],d.metadata["page_number"]) not in by_page
+                   and d.page_content.strip() for d in docs)):
         raise ValueError("pages.jsonl과 blocks.jsonl의 페이지가 다릅니다. python -m rag parse를 다시 실행하세요.")
 
     for doc in docs:
         page_no = doc.metadata["page_number"]
-        blocks = sorted(by_page[page_no], key=lambda block: block["order"])
+        blocks = sorted(by_page.get((doc.metadata["manual_id"], page_no), []), key=lambda block: block["order"])
         if [block["order"] for block in blocks] != list(range(len(blocks))):
             raise ValueError(f"PDF {page_no}쪽 블록 순서가 중복되거나 누락됐습니다.")
         if "\n".join(block["content"] for block in blocks) != doc.page_content:

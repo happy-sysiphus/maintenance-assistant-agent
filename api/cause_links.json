@@ -1,7 +1,0 @@
-{
-  "version": "rsw-p4-5",
-  "source": {"doc": "rsw", "pages": [4, 5]},
-  "note": "\"P2 → E01\"은 방치하면 E01로 이어질 수 있다는 매뉴얼 기반 추정이며 데이터로 확인된 관계가 아니다. (RSW 정의서 p.5)",
-  "edges": [{"from": "S05", "to": "S01"}, {"from": "S07", "to": "S02"}, {"from": "S06", "to": "S03"}, {"from": "S08", "to": "S03"}],
-  "alarm_truth": "S10"
-}
