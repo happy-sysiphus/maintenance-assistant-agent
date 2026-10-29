@@ -2186,7 +2186,7 @@
     {
      "feature": "c4_mean",
      "sensor": "c4",
-     "sensor_name_ko": "힘 형성 시간",
+     "sensor_name_ko": "힘 도달 신호",
      "statistic": "mean",
      "points": [
       {

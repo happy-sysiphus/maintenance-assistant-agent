@@ -1,8 +1,10 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { BackIcon, DocIcon } from '../../components/Icons'
+import { DocButton } from '../../components/ManualPanel'
 import { DotTag } from '../../components/Tag'
 import { btn, card } from '../../components/ui'
+import { MANUAL_SHORT, type ManualDoc } from '../../lib/api'
 import { candidateState, checkCounts, latestJudgment, signalLabel } from '../../lib/caseFlow'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
@@ -72,7 +74,7 @@ export function StepPanel({
   item?: { no: number; title: string; criterion?: CheckCriterion }
   /** 맨 위에 붙일 구역 (판단: 원인 목록). 같은 카드 안에 나눔선으로 이어 붙인다 */
   top?: ReactNode
-  onOpenDoc?: (page: number, doc: 'festo' | 'rsw') => void
+  onOpenDoc?: (page: number, doc: ManualDoc) => void
 }) {
   const crit = item?.criterion
   return (
@@ -101,7 +103,7 @@ export function StepPanel({
                     className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-field bg-white text-sm font-medium text-primary-ink transition-colors hover:bg-primary-soft"
                   >
                     <DocIcon size={16} />
-                    {crit.doc === 'rsw' ? '상황 정의서' : '매뉴얼'} {crit.page}쪽 열기
+                    {MANUAL_SHORT[crit.doc]} {crit.page}쪽 열기
                   </button>
                 )}
               </div>
@@ -149,13 +151,37 @@ export function RecordToggle({ d, extra }: { d: CaseDetail; extra?: ReactNode })
 }
 
 /** 조치 단계의 오른쪽 패널 (와이어프레임 V2Action 10/23): 매뉴얼 조치는 참고용 */
-export function ManualActionPanel({ cand, onOpen }: { cand: Candidate | null; onOpen?: (page: number) => void }) {
+export function ManualActionPanel({ cand, onOpen }: { cand: Candidate | null; onOpen?: (page: number, doc: ManualDoc) => void }) {
   const diag = cand?.diagnostics.find((x) => x.manual)
   const manual = diag?.manual
+  const actions = cand?.actions ?? []
   return (
     <aside className={sideCard} aria-label="매뉴얼 조치">
       <SideLabel>매뉴얼 조치 (참고)</SideLabel>
-      {manual && diag ? (
+      {actions.length > 0 ? (
+        // RAG 조치 (10/28): 언제 하는지 + 무엇을 + 근거 쪽. 오류가 떴다고 꼭 하라는 뜻은 아니다
+        actions.map((a, i) => {
+          const doc = a.cite && a.cite.doc in MANUAL_SHORT ? (a.cite.doc as ManualDoc) : null
+          return (
+            <div key={i} className="flex flex-col gap-1.5">
+              <span className="text-xs text-sub">{a.when}</span>
+              <p className="text-base leading-relaxed font-semibold">{a.text}</p>
+              {onOpen && a.cite && doc && (
+                <button
+                  type="button"
+                  onClick={() => onOpen(a.cite!.page, doc)}
+                  className="mt-1 inline-flex min-h-10 items-center self-start rounded-lg border border-field bg-white px-3 text-sm font-medium text-primary-ink hover:bg-canvas"
+                >
+                  원문 보기{' '}
+                  <span className="ml-1 font-normal text-sub">
+                    {MANUAL_SHORT[doc]} {a.cite.page}쪽
+                  </span>
+                </button>
+              )}
+            </div>
+          )
+        })
+      ) : manual && diag ? (
         <>
           <b className="font-semibold">
             Festo 오류 {diag.number} · {manual.name}
@@ -166,7 +192,7 @@ export function ManualActionPanel({ cand, onOpen }: { cand: Candidate | null; on
           {onOpen && (
             <button
               type="button"
-              onClick={() => onOpen(manual.page)}
+              onClick={() => onOpen(manual.page, 'festo')}
               className="inline-flex min-h-10 items-center self-start rounded-lg border border-field bg-white px-3 text-sm font-medium text-primary-ink hover:bg-canvas"
             >
               원문 보기 <span className="ml-1 font-normal text-sub">{manual.page}쪽</span>
@@ -174,9 +200,42 @@ export function ManualActionPanel({ cand, onOpen }: { cand: Candidate | null; on
           )}
         </>
       ) : (
-        <p className="text-sm text-sub">원문을 확인한 매뉴얼 조치가 없습니다.</p>
+        <NoActionHelp cand={cand} onOpen={onOpen} />
       )}
     </aside>
+  )
+}
+
+/**
+ * 매뉴얼에 조치가 없을 때 (RAG actions=[], 예: E012 · E028): 한 줄로 끝내지 않고 근거 쪽을 이어서 보여준다 (10/29).
+ * 점검에서 "이상"인 항목도 넣어 봤으나 길어서 뺐다
+ */
+function NoActionHelp({ cand, onOpen }: { cand: Candidate | null; onOpen?: (page: number, doc: ManualDoc) => void }) {
+  const evidence = cand?.evidence ?? []
+  return (
+    <>
+      <p className="text-sm text-sub">{cand ? '매뉴얼에 이 원인의 조치 내용은 없어요.' : '원문을 확인한 매뉴얼 조치가 없습니다.'}</p>
+      {onOpen && evidence.length > 0 && (
+        <>
+          <SideDivider />
+          <SideLabel>매뉴얼 근거</SideLabel>
+          <div className="flex flex-wrap gap-2">
+            {evidence.map((e) => {
+              const doc = e.doc ?? 'festo'
+              return (
+                <DocButton
+                  key={`${doc}:${e.page}`}
+                  page={e.page}
+                  label={`${MANUAL_SHORT[doc]} ${e.page}쪽`}
+                  on={false}
+                  onOpen={(p) => onOpen(p, doc)}
+                />
+              )
+            })}
+          </div>
+        </>
+      )}
+    </>
   )
 }
 
@@ -210,18 +269,16 @@ export function CaseFacts({ d }: { d: CaseDetail }) {
   )
 }
 
-const STATE_TAG = {
-  current: <DotTag color="blue">확인 중</DotTag>,
-  excluded: <DotTag color="gray">제외</DotTag>,
-  waiting: <DotTag color="gray">대기</DotTag>,
-}
 
-export function CauseList({ d }: { d: CaseDetail }) {
+/** 원인 목록. viewing을 주면(점검 · 판단 화면) 그 원인을 파랗게 가리킨다. 없으면 아직 제외되지 않은 첫 원인 */
+export function CauseList({ d, viewing }: { d: CaseDetail; viewing?: string }) {
   if (d.guidance.candidates.length === 0) return <p className="text-sm text-sub">매뉴얼 안내가 있는 원인이 없습니다.</p>
   return (
     <>
       {d.guidance.candidates.map((c, i) => {
-        const st = candidateState(d, c.situation_id)
+        const auto = candidateState(d, c.situation_id)
+        // 보고 있는 원인은 판단을 막 저장해도(아니에요) 화면을 떠나기 전까지 "확인 중"으로 둔다
+        const st = viewing === undefined ? auto : c.situation_id === viewing ? 'current' : auto === 'current' ? 'waiting' : auto
         const n = checkCounts(c, d.records.checks)
         const j = latestJudgment(d, c.situation_id)
         return (
@@ -235,12 +292,16 @@ export function CauseList({ d }: { d: CaseDetail }) {
               {i + 1}
             </span>
             <div className="min-w-0 grow">
+              {/* 의심하는 이유(RAG why)는 길어서 여기엔 두지 않고 점검 화면 머리에서 보여준다 (10/29) */}
               <b className={`font-semibold ${st === 'excluded' ? 'text-sub' : ''}`}>{c.name}</b>
-              <div className="text-sm text-sub">
-                {j?.verdict === 'no' ? `아니에요 · ${formatKst(j.at)?.slice(11)}` : `점검 ${n.total}개${n.done ? ` 중 ${n.done}개 확인` : ''}`}
-              </div>
+              {/* 상태 글자(확인 중 · 대기)는 두지 않는다: 지금 원인은 파란 테두리, 제외는 회색 이름 + 아래 한 줄 (10/29).
+                  회색 줄은 알아야 할 때만: 제외된 이유, 점검 항목이 없는 원인 */}
+              {(st === 'excluded' || n.total === 0) && (
+                <div className="text-sm text-sub">
+                  {j?.verdict === 'no' ? `아니에요 · ${formatKst(j.at)?.slice(11)}` : st === 'excluded' ? '제외' : '점검 항목 없음'}
+                </div>
+              )}
             </div>
-            {STATE_TAG[st]}
           </div>
         )
       })}

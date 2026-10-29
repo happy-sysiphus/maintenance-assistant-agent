@@ -2,6 +2,7 @@
 // 원인 후보는 ML이 준 순서(rank)대로 하나씩 본다. 마지막 판단이 "아니에요"이거나,
 // 마지막 판단 뒤에 결과에서 "다음 원인"을 고른 후보는 제외된다. 다시 판단하면 되살아난다.
 import { MANUAL_CAUSE, type Candidate, type CaseDetail, type CheckRecord, type Judgment } from '../types/case'
+import { MANUAL_SHORT, type ManualDoc } from './api'
 
 export type CandidateState = 'current' | 'excluded' | 'waiting'
 
@@ -50,9 +51,12 @@ export function checkCounts(c: Candidate, checks: Record<string, CheckRecord>) {
   return counts
 }
 
-/** 매뉴얼 원문을 확인한 조치 문구 (없으면 null) */
-export function manualAction(c: Candidate) {
-  return c.diagnostics.find((x) => x.manual)?.manual ?? null
+/** 매뉴얼 원문을 확인한 조치 문구 (없으면 null). RAG 조치(10/28)가 있으면 그것, 없으면 옛 Festo 오류 번호 조치 */
+export function manualAction(c: Candidate): { text: string; page: number | null; doc: ManualDoc } | null {
+  const a = c.actions?.[0]
+  if (a) return { text: a.text, page: a.cite?.page ?? null, doc: a.cite && a.cite.doc in MANUAL_SHORT ? (a.cite.doc as ManualDoc) : 'manual82' }
+  const m = c.diagnostics.find((x) => x.manual)?.manual
+  return m ? { text: m.text, page: m.page, doc: 'festo' } : null
 }
 
 /** 화면에 보이는 신호 이름: 센서 이름 + 통계 (std = 1분 안의 흔들림, mean = 평균) */

@@ -3,6 +3,7 @@
 // event 안의 필드 이름은 ML 핸드오프 v1.1(ml/docs/rag_handoff.example.json)을 그대로 따른다.
 // guidance는 RAG 매핑(rag/data/situation_mapping.json)에서 온다.
 // api 서버가 아직 없으므로 FE 제안이다. 확정되면 여기를 고친다.
+import type { ManualDoc } from '../lib/api'
 
 /** 경보 수준. ML의 severity 값 중 케이스가 되는 것 */
 export type Severity = 'critical' | 'warning'
@@ -125,7 +126,7 @@ export interface CheckCriterion {
   text: string
   /** 원문 그대로 (영어 · 정의서 한국어) */
   quote: string
-  doc: 'festo' | 'rsw'
+  doc: ManualDoc
   page: number
 }
 
@@ -144,12 +145,43 @@ export interface Candidate {
     rationale: string | null
     manual?: { name: string; page: number; text: string }
   }[]
-  evidence: { page: number; quote: string | null; rationale: string | null }[]
+  /** doc이 없으면(옛 mock) 구판 Festo 매뉴얼 쪽이다 */
+  evidence: { doc?: ManualDoc; page: number; quote: string | null; rationale: string | null }[]
+  /** 이 원인을 의심하는 이유 한두 줄 (RAG causes[].why, lib/guidance.ts가 채움) */
+  why?: string
+  /** 매뉴얼 조치. 근거가 없으면 빈 배열 (RAG causes[].actions) */
+  actions?: RagAction[]
+}
+
+/** RAG 인용 위치 (docs/09 3절). doc은 문서 4종 중 하나 */
+export interface RagCite {
+  doc: string
+  page: number
+  quote?: string
+}
+
+export interface RagAction {
+  /** 이 조치를 하는 조건 (예: "별도로 이동 보정을 수행하는 경우") */
+  when: string
+  text: string
+  cite?: RagCite
+}
+
+/** RAG 원인 후보 하나. 화면은 lib/guidance.ts에서 원인 카드(Candidate) 하나로 푼다 */
+export interface RagCause {
+  situation_id: string | null
+  name: string
+  why: string
+  checks: { id: string; text: string; cite?: RagCite }[]
+  actions?: RagAction[]
 }
 
 export interface Guidance {
   status: GuidanceStatus
   candidates: Candidate[]
+  /** 10/28 RAG: 고장 코드 해석 · 요약. 옛 api · mock에는 없다 */
+  sections?: { interpretation: string; summary: string }
+  causes?: RagCause[]
 }
 
 // ---- 사람이 입력하는 기록 (api가 저장, ML · RAG에는 보내지 않음) ----
@@ -333,6 +365,8 @@ export interface GunsResponse {
 
 /** 매뉴얼 근거 쪽 검색 결과 (RAG 매핑의 근거 쪽에서 찾음, 매뉴얼 전문 검색 아님) */
 export interface ManualHit {
+  /** 10/28부터 api가 문서를 같이 준다. 없으면(옛 mock) 구판 Festo 매뉴얼 */
+  doc?: ManualDoc
   page: number
   title: string
   quote: string | null

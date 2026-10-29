@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CameraIcon, ChatIcon, DocIcon, PlusIcon, SendIcon } from '../components/Icons'
 import { ManualPanel } from '../components/ManualPanel'
 import { btn } from '../components/ui'
-import { apiGet, apiSend, MANUAL_NAME } from '../lib/api'
+import { apiGet, apiSend, MANUAL_NAME, MANUAL_SHORT } from '../lib/api'
 import { addPhotos, MAX_PHOTOS } from '../lib/photo'
 import type { AnswerPart, AskInput, AssistantAnswer, Cite, SituationsResponse } from '../types/assistant'
 import type { Photo } from '../types/case'
@@ -138,7 +138,7 @@ export default function AssistantPage() {
           ))}
         </ol>
         <div className="grow" />
-        <p className="px-3 text-xs leading-relaxed text-sub">연결된 문서: Festo 서보 공압 매뉴얼 · RSW 상황 정의서</p>
+        <p className="px-3 text-xs leading-relaxed text-sub">연결된 문서: {Object.values(MANUAL_NAME).join(' · ')}</p>
       </aside>
 
       <div className="flex min-w-0 grow flex-col">
@@ -337,7 +337,7 @@ function Part({ part, onCite }: { part: AnswerPart; onCite: (c: Cite) => void })
         className="mx-0.5 inline-flex items-center rounded-md bg-primary-soft px-1.5 align-[1px] text-xs font-semibold text-primary-ink hover:underline"
         title={`${MANUAL_NAME[c.doc]} ${c.page}쪽 열기`}
       >
-        {c.doc === 'rsw' ? 'RSW' : 'Festo'} {c.page}쪽
+        {MANUAL_SHORT[c.doc] ?? c.doc} {c.page}쪽
       </button>
     )
   }

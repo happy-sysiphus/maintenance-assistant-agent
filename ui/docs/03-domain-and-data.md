@@ -59,7 +59,7 @@
 | c1 | Electrode cap offset | 전극 캡 오프셋 |
 | c2 | Electrode force | 전극 힘 |
 | c3 | Electrode position | 전극 위치 |
-| c4 | Force build-up | 힘 형성 시간 |
+| c4 | Force build-up | 힘 도달 신호 (0/1 비트, 10/26 ML 정정: 전 "힘 형성 시간") |
 | c5 | Balance pressure | 보정(밸런스) 압력 |
 | c6 | Friction | 마찰 |
 | c7 | Maximum aperture | 최대 열림 폭 |
@@ -73,7 +73,7 @@
 | c15 | Setpoint electrode position | 전극 위치 설정값 |
 | c16 | Setpoint sheet thickness | 판 두께 설정값 |
 | c17 | Setpoint velocity | 속도 설정값 |
-| c18 | Setpoint force build-up | 힘 형성 설정값 |
+| c18 | Setpoint force build-up | 건 닫기·힘 형성 명령 (0/1 비트, 10/26 ML 정정: 전 "힘 형성 설정값") |
 | c19 | Offset value in robot | (한국어 없음, 모델에서 제외) |
 
 - **단위는 어디에도 없다.** 화면에 단위를 지어 붙이지 않는다.

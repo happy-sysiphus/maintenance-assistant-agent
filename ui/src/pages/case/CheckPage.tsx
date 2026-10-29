@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { DocButton, ManualPanel } from '../../components/ManualPanel'
 import { ResultSeg } from '../../components/ResultSeg'
-import { BackIcon, CameraIcon } from '../../components/Icons'
+import { CameraIcon } from '../../components/Icons'
 import { btn, btnLarge, btnPrimary, card, input } from '../../components/ui'
+import { docFromParam, MANUAL_NAME, MANUAL_SHORT, type ManualDoc } from '../../lib/api'
 import { checkCounts, pickCandidate } from '../../lib/caseFlow'
 import { addPhotos, MAX_PHOTOS } from '../../lib/photo'
 import { useCaseMutation } from '../../lib/useCase'
 import type { CheckRecord } from '../../types/case'
 import { useCaseDetail } from './context'
-import { BackLink, StepPanel, Steps, TwoColumns } from './parts'
+import { BackLink, CauseList, SideLabel, StepPanel, Steps, TwoColumns } from './parts'
 
 // 점검 (wireframe/boards/V2Check.dc.html)
 // 항목마다 정상 / 이상 / 건너뜀. "이상"이면 메모 칸이 열린다 (측정값 · 단위 · 기준값 칸은 두지 않음, 10/8 결정)
@@ -34,16 +35,26 @@ export default function CheckPage() {
   // 앞 원인 (원인 2부터): "이전"은 그 원인의 판단 화면으로, 머리글에서 그 원인의 점검으로 바로 갈 수 있다
   const prev = index > 1 ? d.guidance.candidates[index - 2] : null
   const counts = checkCounts(cand, checks)
+  // 점검 항목이 없는 원인(RAG 근거만)은 할 일이 근거를 읽는 것뿐이라 첫 근거 PDF를 처음부터 열어 둔다 (10/29).
+  // 닫으면 ?manual=0 으로 닫힌 채 둔다
+  const firstEvidence = cand.checks.length === 0 ? cand.evidence[0] : undefined
+  if (firstEvidence && !params.has('manual')) {
+    const next = new URLSearchParams(params)
+    next.set('manual', String(firstEvidence.page))
+    next.set('doc', firstEvidence.doc ?? 'festo')
+    return <Navigate to={`?${next}`} replace />
+  }
   const openPage = Number(params.get('manual')) || null
-  // 어느 문서를 열지 (기본 Festo 매뉴얼, 항목 기준이 상황 정의서에 있으면 rsw)
-  const openDoc = params.get('doc') === 'rsw' ? 'rsw' : 'festo'
-  const setPage = (page: number | null, doc: 'festo' | 'rsw' = 'festo') =>
+  // 어느 문서를 열지 (?doc=, 기본 신형 시스템 매뉴얼). 근거 · 기준마다 문서가 다르다 (10/28 RAG, 4종)
+  const openDoc = docFromParam(params.get('doc'))
+  const setPage = (page: number | null, doc: ManualDoc = openDoc) =>
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev)
         if (page) next.set('manual', String(page))
+        else if (firstEvidence) next.set('manual', '0')
         else next.delete('manual')
-        if (page && doc === 'rsw') next.set('doc', 'rsw')
+        if (page) next.set('doc', doc)
         else next.delete('doc')
         return next
       },
@@ -55,9 +66,14 @@ export default function CheckPage() {
   const activeId = pickedHere ?? cand.checks.find((c) => !checks[c.id])?.id ?? cand.checks[0]?.id
   const activeIndex = cand.checks.findIndex((c) => c.id === activeId)
   const active = activeIndex >= 0 ? cand.checks[activeIndex] : undefined
-  // 근거 쪽: 같은 쪽이 여러 번 나오면 설명을 합친다
-  const pages = new Map<number, string[]>()
-  for (const e of cand.evidence) pages.set(e.page, [...(pages.get(e.page) ?? []), e.rationale ?? ''].filter(Boolean))
+  // 근거 쪽: 같은 문서의 같은 쪽이 여러 번 나오면 설명을 합친다
+  const pages = new Map<string, { doc: ManualDoc; page: number; why: string[] }>()
+  for (const e of cand.evidence) {
+    const doc = e.doc ?? 'festo'
+    const key = `${doc}:${e.page}`
+    const why = [...(pages.get(key)?.why ?? []), e.rationale ?? ''].filter(Boolean)
+    pages.set(key, { doc, page: e.page, why })
+  }
 
   const set = (id: string, patch: Partial<CheckRecord>) =>
     setChecks((prev) => ({ ...prev, [id]: { ...(prev[id] ?? { result: 'skipped' }), ...patch } }))
@@ -80,6 +96,17 @@ export default function CheckPage() {
             <StepPanel
               d={d}
               cand={cand}
+              // 점검 항목이 없는 원인이면 오른쪽에 보여줄 기준이 없으므로 원인 목록을 대신 둔다.
+              // 항목이 있으면 기준이 주인공이라 목록은 두지 않는다 (몇 번째 원인인지는 왼쪽 머리에)
+              top={
+                total > 1 &&
+                cand.checks.length === 0 && (
+                  <>
+                    <SideLabel>원인 목록</SideLabel>
+                    <CauseList d={d} viewing={cand.situation_id} />
+                  </>
+                )
+              }
               item={active && { no: activeIndex + 1, title: active.title, criterion: active.criterion }}
               onOpenDoc={setPage}
             />
@@ -89,26 +116,30 @@ export default function CheckPage() {
         <section className={`${card} overflow-hidden`}>
           <div className="flex items-center gap-3 border-b border-line-soft px-[22px] py-4">
             <span className="text-xs font-medium text-sub">
-              원인 {index} / {total}
+              원인 {index}
             </span>
-            <b className="grow text-base font-semibold">{cand.name}</b>
-            {prev && (
-              <Link
-                to={`?cause=${prev.situation_id}`}
-                className="inline-flex min-h-8 items-center gap-1 text-sm font-medium text-primary-ink hover:underline"
-              >
-                <BackIcon size={14} />
-                원인 {index - 1} 점검 보기
-              </Link>
-            )}
+            {/* 의심하는 이유(RAG why)는 길고 근거 쪽과 겹쳐서 보여주지 않는다 (10/29) */}
+            <b className="min-w-0 grow text-xl font-semibold tracking-[-0.015em]">{cand.name}</b>
+            {/* 앞 원인으로는 맨 위 "‹ 이전"(앞 원인의 판단)으로 간다 — 머리의 "원인 N 점검 보기"는 겹쳐서 뺐다 (10/29) */}
           </div>
           {pages.size > 0 && (
             <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-[22px] py-3">
               <span className="mr-1 text-xs font-medium text-sub">매뉴얼 근거</span>
-              {[...pages].map(([page, why]) => (
-                <DocButton key={page} page={page} label={`${page}쪽`} title={why.join(' · ')} on={openPage === page} onOpen={(p) => setPage(p)} />
+              {[...pages].map(([key, { doc, page, why }]) => (
+                <DocButton
+                  key={key}
+                  page={page}
+                  label={`${MANUAL_SHORT[doc]} ${page}쪽`}
+                  title={[MANUAL_NAME[doc], ...why].join(' · ')}
+                  on={openPage === page && openDoc === doc}
+                  onOpen={(p) => setPage(p, doc)}
+                />
               ))}
             </div>
+          )}
+          {/* RAG 원인 중에는 점검 항목 없이 근거만 있는 것도 있다 (예: E012 원인 2 · 3) */}
+          {cand.checks.length === 0 && (
+            <p className="px-[22px] py-5 text-sm text-sub">매뉴얼에 이 원인의 점검 항목이 없어요. 오른쪽 매뉴얼에서 확인하고 다음을 눌러 판단하세요.</p>
           )}
           <ol>
             {cand.checks.map((item, i) => {
@@ -127,7 +158,7 @@ export default function CheckPage() {
                     <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-fill text-xs font-semibold text-sub">
                       {i + 1}
                     </span>
-                    <span className="min-w-0 grow text-base font-semibold tracking-[-0.015em]">{item.title}</span>
+                    <span className="min-w-0 grow text-base">{item.title}</span>
                     {/* 결과를 고른 항목에만 사진을 붙인다 (사진만 붙여서 '건너뜀'으로 기록되지 않게) */}
                     {rec && (rec.photos?.length ?? 0) < MAX_PHOTOS && (
                       <label
@@ -199,7 +230,7 @@ export default function CheckPage() {
           <button type="button" className={btn} disabled={save.isPending} onClick={() => submit(false)}>
             {save.isSuccess && !save.isPending ? '저장됨' : '임시 저장'}
           </button>
-          <button type="button" className={`${btnPrimary} ${btnLarge}`} disabled={save.isPending || counts.done === 0} onClick={() => submit(true)}>
+          <button type="button" className={`${btnPrimary} ${btnLarge}`} disabled={save.isPending || (counts.total > 0 && counts.done === 0)} onClick={() => submit(true)}>
             다음
           </button>
         </div>

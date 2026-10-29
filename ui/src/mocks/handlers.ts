@@ -179,8 +179,8 @@ function mockAnswer(s: Situation, input: AskInput): AssistantAnswer {
     parts: [
       { text: '상황 정의서의 ' },
       { text: s.name, bold: true },
-      { text: ' 점검 순서는 다음과 같습니다 ' },
-      { cite: { doc: 'rsw', page: s.check_source_page } },
+      // RSW 상황 정의서 PDF는 10/28 RAG에서 빠져 쪽 칩을 달지 않는다 (mock을 새 RAG 모양으로 바꾸기 전 임시)
+      { text: ' 점검 순서는 다음과 같습니다.' },
     ],
   })
   blocks.push({ type: 'ol', items: s.check_sequence })
@@ -205,7 +205,6 @@ function mockAnswer(s: Situation, input: AskInput): AssistantAnswer {
     blocks,
     caution: s.coverage_note,
     evidence: [
-      { doc: 'rsw', page: s.check_source_page, title: `${s.name} 정의 · 점검 순서` },
       ...s.evidence.map((e) => ({ doc: 'festo' as const, page: e.page, title: e.rationale ?? 'Festo 매뉴얼' })),
     ],
   }

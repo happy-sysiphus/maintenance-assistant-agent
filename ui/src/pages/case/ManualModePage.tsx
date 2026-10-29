@@ -6,7 +6,7 @@ import { SearchIcon } from '../../components/Icons'
 import { DocButton, ManualPanel } from '../../components/ManualPanel'
 import { ResultSeg } from '../../components/ResultSeg'
 import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../components/ui'
-import { apiGet } from '../../lib/api'
+import { apiGet, docFromParam, MANUAL_NAME, type ManualDoc } from '../../lib/api'
 import { useCaseMutation } from '../../lib/useCase'
 import type { ManualCheck, ManualHit } from '../../types/case'
 import { useCaseDetail } from './context'
@@ -40,12 +40,15 @@ export default function ManualModePage() {
   const values = useWatch({ control, name: 'checks' })
 
   const openPage = Number(params.get('manual')) || null
-  const setPage = (page: number | null) =>
+  const openDoc = docFromParam(params.get('doc'))
+  const setPage = (page: number | null, doc: ManualDoc = openDoc) =>
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev)
         if (page) next.set('manual', String(page))
         else next.delete('manual')
+        if (page) next.set('doc', doc)
+        else next.delete('doc')
         return next
       },
       { replace: true },
@@ -73,9 +76,9 @@ export default function ManualModePage() {
         wide={openPage !== null}
         side={
           openPage ? (
-            <ManualPanel page={openPage} onPage={setPage} onClose={() => setPage(null)} />
+            <ManualPanel page={openPage} doc={openDoc} onPage={(p) => setPage(p)} onClose={() => setPage(null)} />
           ) : (
-            <ManualSearch openPage={openPage} onOpen={setPage} />
+            <ManualSearch onOpen={setPage} />
           )
         }
       >
@@ -141,8 +144,8 @@ export default function ManualModePage() {
   )
 }
 
-/** 매뉴얼에서 직접 찾기: RAG 매핑의 근거 쪽(설명 · 인용 · 원인 이름)에서 찾는다. 매뉴얼 전문 검색은 아직 없다 */
-function ManualSearch({ openPage, onOpen }: { openPage: number | null; onOpen: (page: number) => void }) {
+/** 매뉴얼에서 직접 찾기: api가 문서 4종에서 키워드로 찾는다 (10/28). 검색 중에는 PDF가 닫혀 있다 */
+function ManualSearch({ onOpen }: { onOpen: (page: number, doc: ManualDoc) => void }) {
   const [text, setText] = useState('')
   const [q, setQ] = useState('')
   const { data, isFetching, isError } = useQuery({
@@ -177,20 +180,23 @@ function ManualSearch({ openPage, onOpen }: { openPage: number | null; onOpen: (
       {isError && <p className="text-sm text-alarm">찾지 못했습니다. 다시 시도해 주세요.</p>}
       {q && !isFetching && !isError && items.length === 0 && <p className="text-sm text-sub">"{q}"에 맞는 근거 쪽이 없습니다.</p>}
       <ul className="flex flex-col gap-2">
-        {items.map((i) => (
-          <li key={`${i.page}-${i.situation_id}-${i.title}`} className="flex items-center gap-3 rounded-lg border border-line px-3.5 py-3">
-            <div className="min-w-0 grow">
-              <b className="font-semibold">{i.title}</b>
-              <div className="truncate text-xs text-sub" title={i.quote ?? undefined}>
-                {i.situation_name ?? i.situation_id} · Festo 매뉴얼
+        {items.map((i) => {
+          const doc = i.doc ?? 'festo'
+          return (
+            <li key={`${doc}-${i.page}-${i.situation_id}-${i.title}`} className="flex items-center gap-3 rounded-lg border border-line px-3.5 py-3">
+              <div className="min-w-0 grow">
+                <b className="font-semibold">{i.title}</b>
+                <div className="truncate text-xs text-sub" title={i.quote ?? undefined}>
+                  {i.situation_name ?? i.situation_id} · {MANUAL_NAME[doc]}
+                </div>
               </div>
-            </div>
-            <DocButton page={i.page} label={`${i.page}쪽`} on={openPage === i.page} onOpen={onOpen} />
-          </li>
-        ))}
+              <DocButton page={i.page} label={`${i.page}쪽`} on={false} onOpen={(p) => onOpen(p, doc)} />
+            </li>
+          )
+        })}
       </ul>
       <div className="h-px bg-line-soft" />
-      <button type="button" className={`${btnQuiet} self-start`} onClick={() => onOpen(1)}>
+      <button type="button" className={`${btnQuiet} self-start`} onClick={() => onOpen(1, 'manual82')}>
         매뉴얼 처음부터 보기
       </button>
     </aside>

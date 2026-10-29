@@ -35,12 +35,27 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return (await res.json()) as T
 }
 
-/** 근거 문서: festo = Festo 서보 공압 매뉴얼, rsw = 팀의 RSW 상황 정의서 (RAG가 인용하는 두 문서) */
-export type ManualDoc = 'festo' | 'rsw'
-export const MANUAL_NAME: Record<ManualDoc, string> = { festo: 'Festo 매뉴얼', rsw: 'RSW 상황 정의서' }
+/**
+ * 근거 문서 4종 (rag/data/manuals.json, 10/28 RAG 답변 docs/09 5절). 모두 영어 원문.
+ * manual82 = 신형 시스템 매뉴얼(기본), diagnostic4 = 오류 번호표, whitepaper11 = 예지보전 백서, festo = 구판 매뉴얼(보충)
+ */
+export type ManualDoc = 'manual82' | 'diagnostic4' | 'whitepaper11' | 'festo'
+export const MANUAL_NAME: Record<ManualDoc, string> = {
+  manual82: 'Festo 시스템 매뉴얼',
+  diagnostic4: 'Festo 오류 번호표',
+  whitepaper11: 'Festo 예지보전 백서',
+  festo: 'Festo 매뉴얼 (구판)',
+}
+/** 쪽 칩 · 버튼처럼 좁은 자리에 쓰는 짧은 이름 */
+export const MANUAL_SHORT: Record<ManualDoc, string> = { manual82: '매뉴얼', diagnostic4: '오류표', whitepaper11: '백서', festo: '구판' }
 
-/** 매뉴얼 PDF 주소. page는 PDF 파일의 쪽 순서(1부터)이고 RAG의 page_number와 같다 */
-export function manualUrl(page: number, doc: ManualDoc = 'festo') {
+/** 주소의 ?doc= 값을 문서로. 없거나 모르는 값이면 기본 문서(manual82) */
+export function docFromParam(value: string | null): ManualDoc {
+  return value && value in MANUAL_NAME ? (value as ManualDoc) : 'manual82'
+}
+
+/** 매뉴얼 PDF 주소. page는 PDF 파일의 쪽 순서(1부터)이고 RAG의 page와 같다 */
+export function manualUrl(page: number, doc: ManualDoc = 'manual82') {
   return `${BASE_URL}/manuals/${doc}.pdf#page=${page}`
 }
 

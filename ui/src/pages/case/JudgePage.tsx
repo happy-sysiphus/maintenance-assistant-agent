@@ -1,6 +1,8 @@
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
+import { DocButton } from '../../components/ManualPanel'
 import { DotTag } from '../../components/Tag'
 import { bigChoice, btnQuiet, card } from '../../components/ui'
+import { MANUAL_NAME, MANUAL_SHORT } from '../../lib/api'
 import { checkCounts, nextCandidate, pickCandidate } from '../../lib/caseFlow'
 import { josa } from '../../lib/josa'
 import { useCaseMutation } from '../../lib/useCase'
@@ -54,7 +56,7 @@ export default function JudgePage() {
               d.guidance.candidates.length > 1 && (
                 <>
                   <SideLabel>원인 목록</SideLabel>
-                  <CauseList d={d} />
+                  <CauseList d={d} viewing={cand.situation_id} />
                 </>
               )
             }
@@ -64,10 +66,29 @@ export default function JudgePage() {
         <section className={`${card} flex flex-col gap-[22px] p-[30px]`}>
           <div>
             <span className="text-xs font-medium text-sub">
-              원인 {index} / {d.guidance.candidates.length}
+              원인 {index}
             </span>
             <h2 className="mt-3 text-[22px] leading-snug font-medium tracking-[-0.015em]">{josa(cand.name, '이', '가')} 맞나요?</h2>
           </div>
+          {cand.checks.length === 0 ? (
+            // 점검 항목이 없는 원인(RAG 근거만): 빈 점검 결과 대신 근거 쪽. 누르면 점검 화면에서 그 쪽 PDF가 열린다
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-head px-3.5 py-2.5">
+              <span className="mr-1 text-xs font-medium text-sub">매뉴얼 근거</span>
+              {cand.evidence.map((e) => {
+                const doc = e.doc ?? 'festo'
+                return (
+                  <DocButton
+                    key={`${doc}:${e.page}`}
+                    page={e.page}
+                    label={`${MANUAL_SHORT[doc]} ${e.page}쪽`}
+                    title={MANUAL_NAME[doc]}
+                    on={false}
+                    onOpen={(p) => navigate(`../check?cause=${cand.situation_id}&manual=${p}&doc=${doc}`)}
+                  />
+                )
+              })}
+            </div>
+          ) : (
           <div className="overflow-hidden rounded-lg border border-line">
             <div className="flex items-center gap-3 bg-head py-1.5 pr-1.5 pl-3.5">
               <span className="text-xs font-medium text-sub">점검 결과</span>
@@ -92,6 +113,7 @@ export default function JudgePage() {
               )
             })}
           </div>
+          )}
           <div className="grid grid-cols-3 gap-3.5">
             <button type="button" className={bigChoice} disabled={judge.isPending} onClick={() => choose('yes')}>
               <b className="text-lg font-semibold">맞아요</b>
@@ -99,7 +121,7 @@ export default function JudgePage() {
             </button>
             <button type="button" className={bigChoice} disabled={judge.isPending} onClick={() => choose('no')}>
               <b className="text-lg font-semibold">아니에요</b>
-              <span className="text-sm text-sub">{next ? `다음 원인: ${next.name}` : '남은 원인이 없습니다'}</span>
+              <span className="text-sm text-sub">{next ? '다음 원인으로 가기' : '남은 원인이 없습니다'}</span>
             </button>
             <button type="button" className={bigChoice} disabled={judge.isPending} onClick={() => choose('unsure')}>
               <b className="text-lg font-semibold">잘 모르겠어요</b>
@@ -107,7 +129,7 @@ export default function JudgePage() {
             </button>
           </div>
           {judge.isError && <p className="text-sm text-alarm">저장하지 못했습니다. 다시 눌러 주세요.</p>}
-          {counts.done === 0 && (
+          {counts.total > 0 && counts.done === 0 && (
             <p className="text-sm text-sub">
               <DotTag color="gray">점검한 항목이 없습니다</DotTag>
             </p>

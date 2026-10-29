@@ -2,6 +2,7 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { ManualPanel } from '../../components/ManualPanel'
 import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../components/ui'
+import { docFromParam, MANUAL_SHORT, type ManualDoc } from '../../lib/api'
 import { activeCause, latestJudgment, manualAction } from '../../lib/caseFlow'
 import { useCaseMutation } from '../../lib/useCase'
 import { ACTION_KINDS, type ActionInput, type ActionKind } from '../../types/case'
@@ -37,12 +38,15 @@ export default function ActionPage() {
   const cand = cause?.candidate ?? null
   const [params, setParams] = useSearchParams()
   const openPage = Number(params.get('manual')) || null
-  const setPage = (page: number | null) =>
+  const openDoc = docFromParam(params.get('doc'))
+  const setPage = (page: number | null, doc: ManualDoc = openDoc) =>
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev)
         if (page) next.set('manual', String(page))
         else next.delete('manual')
+        if (page) next.set('doc', doc)
+        else next.delete('doc')
         return next
       },
       { replace: true },
@@ -82,7 +86,7 @@ export default function ActionPage() {
         wide={openPage !== null}
         side={
           openPage ? (
-            <ManualPanel page={openPage} onPage={setPage} onClose={() => setPage(null)} />
+            <ManualPanel page={openPage} doc={openDoc} onPage={(p) => setPage(p)} onClose={() => setPage(null)} />
           ) : (
             <ManualActionPanel cand={cand} onOpen={setPage} />
           )
@@ -95,7 +99,9 @@ export default function ActionPage() {
               <button
                 type="button"
                 className={btn}
-                onClick={() => setValue('did', `${manual.text} (Festo ${manual.page}쪽, 초안 — 실제로 한 일로 고치세요)`)}
+                onClick={() =>
+                  setValue('did', `${manual.text} (${MANUAL_SHORT[manual.doc]}${manual.page ? ` ${manual.page}쪽` : ''}, 초안 — 실제로 한 일로 고치세요)`)
+                }
               >
                 매뉴얼 조치 불러오기
               </button>

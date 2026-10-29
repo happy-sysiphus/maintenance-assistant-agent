@@ -47,7 +47,7 @@ export function DocButton({
 
 export function ManualPanel({
   page,
-  doc = 'festo',
+  doc = 'manual82',
   onPage,
   onClose,
 }: {
@@ -62,7 +62,7 @@ export function ManualPanel({
       <div className="flex items-center gap-2 border-b border-line bg-white px-4 py-3">
         <b className="text-base font-semibold">{MANUAL_NAME[doc]}</b>
         <span className="text-sm text-sub">
-          {page}쪽{doc === 'festo' ? ' · 영어 원문' : ''}
+          {page}쪽 · 영어 원문
         </span>
         <div className="grow" />
         <button type="button" className={small} aria-label="이전 쪽" disabled={page <= 1} onClick={() => onPage(page - 1)}>

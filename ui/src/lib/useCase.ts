@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'react-router'
 import type { CaseDetail } from '../types/case'
 import { apiGet, apiSend } from './api'
+import { expandCauses } from './guidance'
 
 export function useCaseId() {
   const { caseId } = useParams()
@@ -9,7 +10,8 @@ export function useCaseId() {
 }
 
 export function useCaseQuery(id: string) {
-  return useQuery({ queryKey: ['case', id], queryFn: () => apiGet<CaseDetail>(`/cases/${id}`) })
+  // RAG 원인 목록(causes)을 원인 카드로 푼다. 캐시에는 서버 응답 그대로 둔다
+  return useQuery({ queryKey: ['case', id], queryFn: () => apiGet<CaseDetail>(`/cases/${id}`), select: expandCauses })
 }
 
 /** 주소의 :caseId 케이스 */

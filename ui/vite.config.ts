@@ -6,9 +6,12 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 
 // 매뉴얼 PDF는 api 서버가 내려줄 파일이다 (docs/05). api가 생기기 전, mock 개발 중에만
 // 레포의 rag/data/ 원본을 개발 서버가 그대로 내려준다. ui/로 복사하지 않고 빌드에도 넣지 않는다.
+// 문서 4종 (rag/data/manuals.json, 10/28). RSW 상황 정의서는 빠졌다.
 const MANUALS: Record<string, string> = {
   'festo.pdf': fileURLToPath(new URL('../rag/data/festo_manual.pdf', import.meta.url)),
-  'rsw.pdf': fileURLToPath(new URL('../rag/data/rsw_situations.pdf', import.meta.url)),
+  'manual82.pdf': fileURLToPath(new URL('../rag/data/manuals/festo_cpx_weld_2g_sa_manual_2020_en.pdf', import.meta.url)),
+  'diagnostic4.pdf': fileURLToPath(new URL('../rag/data/manuals/festo_bmw_2gen_error_messages_en.pdf', import.meta.url)),
+  'whitepaper11.pdf': fileURLToPath(new URL('../rag/data/manuals/4459_documentation.pdf', import.meta.url)),
 }
 
 function devManuals(): Plugin {

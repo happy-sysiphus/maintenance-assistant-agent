@@ -25,7 +25,7 @@ export default function App() {
   const [params] = useSearchParams()
   const narrow = useNarrow()
   const section = useLocation().pathname.split('/')[1]
-  const compact = AUTO_COMPACT && (narrow || params.has('manual'))
+  const compact = AUTO_COMPACT && (narrow || Number(params.get('manual')) > 0)
 
   const items: { to: string; label: string; icon: (size: number) => ReactNode; on?: boolean }[] = [
     { to: '/', label: '작업함', icon: (s) => <InboxIcon size={s} />, on: inCase },

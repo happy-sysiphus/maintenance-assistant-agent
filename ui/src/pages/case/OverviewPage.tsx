@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { SignalChart } from '../../components/SignalChart'
 import { btnLarge, btnPrimary, card } from '../../components/ui'
 import { checkCounts, currentCandidate, signalLabel } from '../../lib/caseFlow'
+import { firstSentence, stripCites } from '../../lib/guidance'
 import { useCaseDetail } from './context'
 import { BackLink, CaseFacts, CauseList, FalseAlarmButton } from './parts'
 
@@ -16,6 +17,7 @@ export default function OverviewPage() {
   const current = currentCandidate(d)
   const started = Object.keys(d.records.checks).length > 0 || d.records.judgments.length > 0
   const noGuide = d.guidance.candidates.length === 0
+  const summary = d.guidance.sections?.summary ? firstSentence(stripCites(d.guidance.sections.summary)) : null
 
   return (
     <>
@@ -29,6 +31,8 @@ export default function OverviewPage() {
             <div className="grow" />
             <span className="text-sm text-sub">최근 30분</span>
           </div>
+          {/* 이 고장이 무엇인지 한 줄 (RAG 요약의 첫 문장) */}
+          {summary && <p className="-mt-1.5 text-sm leading-relaxed text-ink-2">{summary}</p>}
           <SignalChart trends={trends} selected={selected} score={d.score_trace} codes={d.event.error_timeline} />
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs font-medium text-sub">신호</span>
@@ -70,6 +74,12 @@ export default function OverviewPage() {
 
         <section className={`${card} flex flex-col gap-3.5 p-[22px]`}>
           <span className="text-xs font-medium text-sub">확인할 원인</span>
+          {/* RAG 안내 생성 실패: api는 기본 점검 항목(매핑)만 남긴다. 다시 열면 다시 만든다 */}
+          {!noGuide && (d.guidance.status === 'error' || d.guidance.status === 'needs_citation_review') && (
+            <p role="status" className="rounded-lg border border-warn-dot/30 bg-warn-soft px-3.5 py-3 text-sm text-warn">
+              매뉴얼 안내를 만들지 못해 기본 점검 항목만 보여줘요. 잠시 뒤 새로고침하면 다시 만들어요.
+            </p>
+          )}
           {noGuide ? (
             <p className="text-sm text-sub">이 고장에 맞는 매뉴얼 안내를 찾지 못했습니다. 직접 점검한 내용을 기록하거나 도움을 요청하세요.</p>
           ) : (

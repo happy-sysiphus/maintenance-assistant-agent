@@ -1,6 +1,6 @@
 // 공통 상태 표시 (wireframe/boards/V2States.dc.html 기준).
 // 원칙: 화면 틀은 먼저 보이고, 실패해도 입력한 내용은 지우지 않는다.
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 /** 불러오는 중: 글자 대신 회색 줄 */
 export function LoadingRows({ rows = 3, label = '불러오는 중' }: { rows?: number; label?: string }) {
@@ -16,6 +16,16 @@ export function LoadingRows({ rows = 3, label = '불러오는 중' }: { rows?: n
       ))}
     </div>
   )
+}
+
+/** 오래 걸리는 불러오기에서 몇 초 뒤에만 보이는 안내 한 줄 (빨리 끝나면 깜빡이지 않게) */
+export function SlowNote({ after = 3000, children }: { after?: number; children: ReactNode }) {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), after)
+    return () => clearTimeout(t)
+  }, [after])
+  return show ? <p className="px-5 pb-5 text-sm text-sub">{children}</p> : null
 }
 
 export function ErrorState({ onRetry }: { onRetry?: () => void }) {

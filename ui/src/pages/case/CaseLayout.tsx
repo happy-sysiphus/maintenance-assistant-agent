@@ -1,6 +1,6 @@
-import { Link, Outlet, useLocation, useSearchParams } from 'react-router'
+import { Link, Outlet, useLocation } from 'react-router'
 import { BackIcon } from '../../components/Icons'
-import { ErrorState, LoadingRows } from '../../components/StateViews'
+import { ErrorState, LoadingRows, SlowNote } from '../../components/StateViews'
 import { StatusTag } from '../../components/Tag'
 import { TopBar } from '../../components/TopBar'
 import { btn, card, page } from '../../components/ui'
@@ -9,9 +9,9 @@ import { useCase } from '../../lib/useCase'
 // 케이스 화면 공통 틀: 상단 바(뒤로 · 설비 · 상태 · 현장 확인 입력 · 도움 요청) + 본문
 export default function CaseLayout() {
   const { data, isPending, isError, refetch } = useCase()
-  // 매뉴얼 PDF가 열리면(?manual=쪽) 최대 폭을 풀어 PDF를 크게 보여준다
-  const [params] = useSearchParams()
-  const wide = params.has('manual')
+  // 매뉴얼 PDF가 열려도 최대 폭은 그대로 둔다 (10/29): 폭을 풀면 단계를 넘길 때마다 화면 비율이 바뀌었다.
+  // PDF 칸만 380 → 540px로 넓어진다 (TwoColumns wide). 더 크게는 PDF의 "새 창"
+  const wide = false
   const { pathname } = useLocation()
 
   return (
@@ -40,6 +40,8 @@ export default function CaseLayout() {
         {isPending ? (
           <section className={card}>
             <LoadingRows label="고장 정보를 불러오는 중" />
+            {/* 처음 여는 케이스는 api가 매뉴얼 근거로 안내를 만든다 (RAG, 5초~1분). 한 번 만들면 빠르다 */}
+            <SlowNote>매뉴얼에서 이 고장의 안내를 만드는 중이에요. 처음 열 때는 1분 가까이 걸릴 수 있어요.</SlowNote>
           </section>
         ) : isError ? (
           <section className={card}>
