@@ -1,13 +1,15 @@
 """
-Stand-in for the ontology / RAG service, so the ML side can test both push paths before the real one exists.
+Stand-in receiver for ML's two push paths (tests). The real handoff receiver is FE's api (POST /api/ml/handoffs,
+which acknowledges with {"result": "new" | "repeat" | "duplicate"}); the per-minute document is not sent in
+operation - RAG declined it and ML does not send it (history.md 37).
 
-  POST /diagnose         critical-event handoff (schema rag_handoff v1.2 - main.RagHandoff), answered with the report
-                         shape the real service is expected to return (sections that need the manual are placeholders)
+  POST /diagnose         critical-event handoff (schema rag_handoff v1.2 - main.RagHandoff), answered with an old
+                         report shape that no real receiver uses (docs/rag_response.example.json)
   POST /sensor-features  the per-minute sensor document (sensor-features-v4 - .py/sensor_features.py), 204
   GET  /received         handoffs received, newest last          GET /received-sensors  sensor documents, newest last
 
 Every arrival is printed as one console line and appended to results/rag_received/<gun_id>.jsonl (handoffs) or
-results/rag_received/<gun_id>_sensors.jsonl (sensor documents), so you can see exactly what the RAG side gets.
+results/rag_received/<gun_id>_sensors.jsonl (sensor documents), so you can see exactly what a receiver gets.
 
     uvicorn mock_rag:app --app-dir .py --port 8001                       # from the ml folder
     set RSW_RAG_URL=http://127.0.0.1:8001/diagnose                       # Windows cmd (bash: export ...)
@@ -15,8 +17,8 @@ results/rag_received/<gun_id>_sensors.jsonl (sensor documents), so you can see e
     uvicorn main:app                                                     # another window, ml folder
     python .py/replay.py test/test_0.csv --start-hours 150 --chunk-s 60 --speed 60
 
-The real service only has to keep the two POST paths and drop a known event_id / (gun_id, observed_at) it already has
-(main.py retries; handoffs carry Idempotency-Key: <event_id>, sensor documents Idempotency-Key: <gun_id>|<observed_at>).
+A real receiver has to drop a known event_id / (gun_id, observed_at) it already has (main.py retries; handoffs
+carry Idempotency-Key: <event_id>, sensor documents Idempotency-Key: <gun_id>|<observed_at>).
 """
 from __future__ import annotations
 

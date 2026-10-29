@@ -43,7 +43,7 @@
 | | D-7 | c4·c18의 의미 확인(Festo 13번 비트 짝)과 이름표 정정 | — |
 | | D-8 | HITL 피드백 루프 시연(현장 기억 · LangGraph 드라이버) | — |
 
-핸드오프의 증상 ID `P1`~`P9`(`rag_mapping.SYMPTOM_RULES`)는 작업 ID가 아니라 RAG 계약의 값이다.
+핸드오프의 증상 ID `P1`~`P9`(`rag_mapping.SYMPTOMS`)는 작업 ID가 아니라 RAG 계약의 값이었다(v1.2에서 삭제, 33절).
 
 ## 연표
 
@@ -74,6 +74,7 @@
 | 10-08 | A-3 결측(32절): 결측은 고장 신호가 아님(고장 직전이 평소 상위 5%를 넘은 건 2/64), 채우기 방식 3종의 CV AUROC 차이 0.005 < 폴드 SD 0.04~0.05 — 60초 채움 유지 |
 | 10-26 | D-7·C-7(35절, 10-12 분석): c4·c18 = Festo 13번 비트 짝(c4 Force reached, c18 Close gun) → `SENSOR_KO`·trace 차트 이름표 정정, 핸드오프 NaN 전송 실패와 미완결 분 발화 코드 누락 수정 |
 | 10-28 | D-8 HITL 피드백 루프 시연(36절): api 현장 기억(`FIELD_MEMORY=1`일 때만) + LangGraph 드라이버 `.py/hitl_loop.py`(알림마다 멈추고 사람이 닫으면 이어 감). 같은 날 RAG E 코드 전환(`ed7a890`)을 합치며 현장 기억을 참고 문장으로 바꿈(R1 = 오알람이 많으면 "오알람인지부터 확인" 문장, RAG 카드는 그대로). ML 서빙은 그대로 |
+| 10-29 | RAG 결정 수용(37절): RAG(`ed7a890`)는 종료 코드 E012·E016·E028·E029만 쓴다. 고장 유형·상황 ID·매분 센서 문서는 쓰지 않는다. 사용자가 모두 받아들였고, ML도 매분 센서 문서를 보내지 않기로 했다. 계약은 그대로이고, 문서와 핸드오프 `caveats` 문구 둘(다섯째 센서 문서 안내, 넷째 센서 소견의 '평소' 기준)을 고쳤다(D-2 닫음, D-4 뺌, D-6 끝) |
 
 ## 지표 추이 (같은 테스트 8건 / 검증 14건)
 
@@ -1303,3 +1304,109 @@ CV 차이(최대 0.005)가 폴드 SD(0.04~0.05)의 10분의 1이고, 테스트 �
 - ml 전체(`py -3.11`): 79 passed. `test_hitl_loop.py`가 39개다(34 → 39).
 - ruff: api 파일 통과. ml은 예전부터 있던 E402 1건(`tests/test_sensor_features.py:14`)만.
 - 계약 테스트의 기대값은 `docs/hitl-loop.md` ③ 표에 있다. 실제 서버 리허설과 화면 확인은 아직이다.
+
+### 37. RAG 결정 수용 — 종료 코드만 쓰고, 매분 센서 문서는 보내지 않는다 (2026-10-28 RAG 답 수용, 10-29 '보내지 않음' 결정·문서 반영)
+
+**왜**: RAG 담당이 `ed7a890`(10-28)과 답변을 보냈다.
+- 답변은 `ui/docs/09-rag-development-reply.md`와, ML이 물은 3가지에 대한 답이다.
+  - 매분 센서 문서를 받을 수 있나
+  - 코드 → 상황 대응표와 `answer_question()`
+  - Neo4j 구조·실행 환경·예시 JSON
+- `docs/sensor_features_for_rag.md` 6절과 techspec D-2·D-4·D-6이 기다리던 답이다.
+- 사용자가 모두 받아들였다(10-28).
+
+**RAG의 답**:
+- RAG 입력은 종료 코드 E012·E016·E028·E029 하나다(`answer_question(question, error_code=…)`).
+  - 상황 ID S01~S10, 고장 유형 E01~E04, 매분 센서 문서(v4)는 쓰지 않는다.
+  - E01~E04나 S01을 넣으면 검색 전에 `no_evidence`가 돌아온다.
+- 센서: 넣어 봤지만 센서 의미와 매뉴얼 내용이 정확히 맞지 않아 답 품질이 낮았다.
+  - 그래서 센서 수신 코드와 그래프 센서 노드가 없다.
+  - 센서 문맥이 꼭 필요하면 쓰임새와 범위를 따로 논의한다. RAG 담당은 이를 추가 개발로 남겼다.
+- 코드 → 상황 대응표는 어디에도 두지 않는다.
+  - 코드별 정의·원인·점검·기준·조치·인용은 `rag/data/error_mapping.json`에 있다. 점검은 고정 id 9개다(`E012-K1` 등).
+  - 기준은 확인 방법이거나 빈 값이고, 숫자 기준은 없다.
+  - 정의서(`rsw_situations.pdf`, `situation_mapping.json`)와 api의 `check_criteria.json`은 지웠다.
+- api가 `trigger.rule_code`를, 없으면 `fault_class.terminal_code`를 꺼내 RAG에 넘긴다. `fault_class.code`만으로는 코드를 추정하지 않는다.
+- 안내 답은 케이스 상세를 처음 열 때(`GET /api/cases/{id}`) 만들어 api에 저장한다.
+  - 핸드오프 수신은 LLM을 기다리지 않는다.
+  - 답의 `situation_id` 칸에는 E 코드가 들어간다.
+- 그래프와 검색 인덱스는 공용 Neo4j Aura에 있다. 접속 정보와 OpenAI 키는 RAG 담당이 따로 준다(`rag/.env`, git 제외).
+
+**ML에 미치는 것**: 계약은 바뀌지 않는다. 응답 값에서는 핸드오프 `caveats`의 문구 둘만 바뀐다(아래 10-29 결정과 넷째 문구 정정). 나머지는 주석·docstring과 `/openapi.json` 설명 문구다.
+- 받는 곳은 api다(`POST /api/ml/handoffs`). 10-23 FE 초안에서 정했고 10-26 ML 답장에서 맞췄다.
+  - api는 200 `{"result": "new" | "repeat" | "duplicate"}`로 답한다.
+  - 새 4xx 경로가 없다. ML의 거절 규칙에 영향이 없다.
+- api가 꼭 읽는 칸: `event_id`, `trigger`, `gun_id`, `detected_at`.
+  - 빠지면 500이 나고, ML이 다시 보낸다.
+  - `fault_class`가 있으면 `code`와 `name_ko`도 읽는다.
+  - RAG까지 가는 ML 값은 종료 코드 하나다.
+- 모델 알림이라도 `fault_class`가 있으면(`basis` = `latest_error_code`) 그 코드의 안내가 붙는다.
+  - api가 `basis`를 읽지 않기 때문이다.
+  - 그래서 readme 5.10.2의 `rule_trigger` / `latest_error_code` 구분은 화면에서 사라진다. 이건 api 쪽 일이다.
+- 오프라인 확인(병합 트리):
+  - `docs/rag_handoff.example.json`을 api에 넣으면 200 `new`, 다시 넣으면 `duplicate`가 온다.
+  - 상세 조회에 E029 카드(`E029-K1`·`E029-K2`)가 붙는다.
+  - `rag/tests` 22개가 통과한다.
+- 실제 서버로 ML → api → RAG → UI 전체를 돌려 본 사람은 아직 없다.
+
+**10-29 결정 — ML도 매분 센서 문서를 보내지 않는다**(사용자): RAG 뜻을 그대로 따른다.
+- push(`RSW_RAG_SENSOR_URL`)는 운영에서 설정하지 않는다. 코드는 남긴다. 설정이 없으면 원래 꺼져 있다.
+- 문서 자체는 계약이라 계속 나온다(`/predict`의 `sensor_features[]`, `GET /guns/{id}/sensor-features`).
+- 센서 문맥이 다시 필요해지면 쓰임새와 범위부터 RAG 담당과 따로 논의한다.
+- 핸드오프 `caveats`의 다섯째 문구를 바꿨다. FE가 화면에 그대로 보여 줄 문구라고 한 칸이다(`ui/docs/05-fe-api-requests.md`). 지금 `ui/src`에는 타입만 있고 그리는 화면은 아직 없다.
+  - 전: "센서 해석(상황·원인)은 하지 않음 - 센서 편차는 매분 sensor-features 문서(v4)로 따로 전달"
+  - 후: "센서 해석(상황·원인)은 하지 않음 - 센서 소견은 평소와 다른 값일 뿐 원인 판단이 아님"
+  - `docs/rag_handoff.example.json`의 같은 줄도 고쳤다. 다른 칸은 그대로다.
+
+**10-29 넷째 문구 정정**(사용자 요청): 독립 검토가 찾은, 원래부터 틀린 문구다.
+- 전: "센서 방향(높음/낮음)은 이 gun의 워밍업 평균 대비 z-score 기준"
+- 후: "센서 소견의 '평소' - 워밍업을 마친 gun(context.gun_norm=gun)은 그 gun의 워밍업 평균, 워밍업 중이거나 자기 기준이 없는 gun(warming_up/global)은 학습 데이터 전체라 gun 사이의 원래 차이도 섞임; 흔들림, c10(작동 허용 신호), 최근 10분 용접 가동률·에러 상태 비율은 늘 학습 데이터 전체 기준"
+- 왜 틀렸나: 소견은 창 값에서 번들의 정상 기준값(`feature_reference`, 학습 정상 창의 중앙값)을 뺀 것이다. 값을 그 gun의 워밍업 평균에 맞추는 것(번들 `gun_norm.mode` = center, `train.gun_norm_columns`)은 워밍업을 마친 gun의 센서·용접 수 평균에만 한다.
+  - 워밍업 중(`warming_up`, 처음 6시간)과 자기 기준이 없는 gun(`global`, 워밍업의 정상 용접 행이 600개 미만)은 맞추지 않는다. 종료 코드 규칙은 워밍업 중에도 핸드오프를 만든다. `DELETE /guns/{id}` 뒤의 재발도 워밍업 중에 온다.
+  - 흔들림(std)은 평균을 빼도 그대로라 늘 학습 데이터 전체 기준이다.
+  - 최근 10분 용접 가동률(`weld_duty_10min`)·에러 상태 비율(`error_share_10min`)과 c10은 맞추는 대상이 아니다(원래 단위). 이 PC에 저장된 핸드오프의 소견에도 자주 나온다.
+- 같은 내용으로 고친 곳: `main.py`의 `/openapi.json` 설명(`SensorFinding.direction`·`deviation_z`, `mean_dev`), `rag_mapping.py` 주석, `docs/sensor_features.schema.json`의 `value_space` 설명, readme 5.10.5 한 줄, `docs/rag_handoff.example.json`의 같은 줄.
+- FE mock(`ui/src/mocks/fixtures/case-details.json`)에는 옛 문구가 남아 있다(FE 담당 파일).
+
+**닫은 것**:
+- **D-2 닫음.** 주소와 응답은 FE api 초안(10-23)과 ML 답장(10-26)으로 이미 정해졌다. `ed7a890`이 "v1.2 그대로, 종료 코드만, 상황 ID 없음"을 더했다. 어댑터는 필요 없다.
+- **D-4 뺌.** RAG 답은 ML로 오지 않는다.
+  - readme 5.10.6의 7칸 리포트 계약(`POST /diagnose`)은 아무도 구현하지 않아 지웠다.
+  - 가짜 RAG(`.py/mock_rag.py`)와 `docs/rag_response.example.json`은 비슷한 옛 리포트 모양(6칸)으로 남는다(push 시험용).
+- **D-6 끝.** "RAG 쪽 v4 합의"는 RAG가 쓰지 않기로 해서 닫았다. 실데이터 예시 재생성은 10-26(35절)에 이미 했다.
+- **33절 남은 것**:
+  - ③ 설정값 칸 RAG 합의: 해당 없음
+  - ④ RAG의 E 코드 조회: 완료
+  - ⑤ UI 타입 `HandoffEvent.situation_ids`: 아직 FE 쪽에 남아 있다
+
+**문서 정정**: ML 코드 동작은 그대로다(10-29의 `caveats` 문구만 바뀜).
+- readme
+  - 3절
+  - 5.10: 역할 표와 잇는 키(5.10.1), push 주소(5.10.3), 5.10.6, 미리보기 기대값 E02 → E04(5.10.7), 5.10.8
+  - 5.11
+- techspec: 경계, D-2·D-4·D-6 삭제, D-3(선행 조건, 현재 상태, 필드 이유)
+- 받는 쪽을 '온톨로지'로 쓴 문구: readme 3절·5.7, `MEMORY.md` §4·§5, `main.py` 스키마 설명
+- `MEMORY.md` §1·§5·§7
+- `docs/sensor_features_for_rag.md`: 보내지 않음 표시, 1·2·3절, 예시가 실데이터임, 6절에 답
+- `docs/fe-api-draft-reply.md` 2절, `CLAUDE.md`, `test.md` 5절
+- 설명 주석: `rag_mapping.py`·`mock_rag.py`·`main.py`
+- 10-29 '보내지 않음'으로 다시 고친 곳(독립 검토 반영 포함):
+  - readme 5.10(v1.2 설명, 5.10.1 ②)·5.11, 파일 트리의 예시 목록, 운영 모니터링 문구('RAG로 넘긴' → '핸드오프로 넘긴'), `test.md` 기준표('RAG로 넘어가는' → '핸드오프가 되는')
+  - `docs/sensor_features_for_rag.md`(제목, 맨 위 안내, 1·2·6절), `docs/sensor_features.schema.json` 제목, `docs/fe-api-draft-reply.md`(10-26 문장에 취소선), `CLAUDE.md`, `MEMORY.md` §5
+  - `main.py`: `RAG_SENSOR_URL` 주석, import 주석, `/openapi.json`에 나오는 설명(`SensorFeaturesDoc`, `AnomalyResult.sensor_features`, `DayStats.critical_events`, `GET /guns/{id}/sensor-features`)
+  - `.py/sensor_features.py`·`rag_mapping.py`·`mock_rag.py`·`tests/test_sensor_features.py`의 설명, `static/trace.html`의 '온톨로지 단계' 문구
+  - 원래부터 틀렸던 것도 고쳤다: 센서 push 재시도는 4xx 중 408·429를 다시 보낸다(readme 5.11, 설명서 2절). 서버를 끄면 큐에 남은 문서는 GET으로도 되살릴 수 없다(trace 고리도 재시작 때 비워짐). readme 파일 트리는 `make_examples.py`가 만들지 않는 `rag_response`를 재생성 대상으로 적고 있었다.
+
+**알아 둘 것(다른 담당)**:
+- **이름이 두 개 보인다.** 같은 알림에 ML `fault_class.name_ko`와 RAG 카드 이름이 같이 나온다.
+  - E012: "보정 압력 도달 지연" / "보정 압력 도달 시간 초과"
+  - E016: "전극 파손" / "전극 감시 오류"
+  - ML의 `name_en`·정의는 논문(readme 1.5)을 옮긴 것이고, `name_ko`는 ML의 번역이다. 값은 바꾸지 않았다.
+- **RAG 버전 확인이 줄바꿈에 민감하다.** RAG는 `rag/data/manuals.json`·`error_mapping.json`의 바이트 해시(`rag/documents.py`의 `fingerprint`)로 Aura 그래프 버전을 맞춘다.
+  - 이 PC는 `core.autocrlf=true`라 두 파일이 CRLF다.
+  - Aura를 LF 파일로 만들었다면 이 PC의 모든 안내가 `error`가 된다.
+  - 아직 확인하지 않았다. RAG 담당과 `fingerprint()` 값을 비교하면 된다.
+- **UI가 인용 문서를 잘못 다룬다.** UI는 인용 문서를 festo·rsw 둘만 안다.
+  - 케이스 점검 화면은 manual82 인용을 festo.pdf로 연다.
+  - 챗봇은 그 인용에 "Festo" 이름표를 단다.
+  - FE 할 일이다(`ui/docs/09` 끝의 "UI 담당자가 반영할 것" 2번).

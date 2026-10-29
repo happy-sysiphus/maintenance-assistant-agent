@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ML -> RAG per-minute sensor document",
+  "title": "ML per-minute sensor document",
   "description": "sensor-features-v4 (2026-10-21). Three groups: measurements (c1 c2 c3 c5 c6 x mean/std, all 10, z + raw, sorted by |z|), states (c4 c10 c18 on-share), setpoints (c13..c16 mean/std raw + z). Produced by ml/.py/sensor_features.py every scored minute. ML sends measured facts only - no situation / symptom mapping, no model score.",
   "type": "object",
   "properties": {
@@ -22,7 +22,7 @@
     },
     "value_space": {
       "const": "ml_handoff_z",
-      "description": "every z: round(window_feature - model_feature_reference, 3) in the model's scaled, gun-centred space - not a universal standard-normal z-score"
+      "description": "every z: round(window_feature - model_feature_reference, 3) in the model's input space (gun-centred only when gun_norm is gun) - not a universal standard-normal z-score"
     },
     "reference_id": {
       "type": [

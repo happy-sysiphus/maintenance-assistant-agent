@@ -25,7 +25,8 @@
 ## 2. 핸드오프 push를 api가 받아도 되나 → 네
 
 - v1.2부터 핸드오프는 RAG로 보내지 않는다(`sensor_features_for_rag.md`). 그래서 받는 곳이 api여도 계약상 문제가 없다.
-  - RAG에는 매분 센서 문서(`RSW_RAG_SENSOR_URL`)만 지금처럼 간다.
+  - ~~RAG에는 매분 센서 문서(`RSW_RAG_SENSOR_URL`)만 지금처럼 간다.~~ (10-26 당시)
+  - **(10-29 갱신)** RAG는 매분 문서도 쓰지 않기로 했고, ML도 보내지 않는다. RAG가 받는 것은 api가 핸드오프에서 꺼낸 종료 코드뿐이다(`ui/docs/09-rag-development-reply.md` 18~23줄, `history.md` 37절).
 - 설정: `RSW_RAG_URL=http://127.0.0.1:9000/api/ml/handoffs`.
   - 이름에 RAG가 들어 있지만 "핸드오프 push 주소"라는 뜻이다.
   - Windows에서는 `localhost`가 IPv6(::1)부터 시도해 매번 늦어질 수 있어 `127.0.0.1`을 권장한다.

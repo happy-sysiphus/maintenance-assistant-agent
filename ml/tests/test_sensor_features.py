@@ -1,5 +1,5 @@
 """
-Unit tests of .py/sensor_features.py (ML -> RAG per-minute sensor document, sensor-features-v4, D-6).
+Unit tests of .py/sensor_features.py (per-minute sensor document, sensor-features-v4, D-6).
 Pure Python + jsonschema: no model, no server, < 1 s. The API side (/predict field, GET, push) is in test_pipeline.py.
 """
 import json
