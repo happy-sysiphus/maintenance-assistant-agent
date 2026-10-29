@@ -19,10 +19,10 @@
 
 - `api/store.py:3`: 사람 기록(records)은 ML · RAG에 보내지 않는다. 저장만 하고, 다시 읽는 곳이 없었다.
 - `ui/src/types/case.ts:155`: FE 타입 주석도 같다("api가 저장, ML · RAG에는 보내지 않음").
-- `api/main.py:105`: 케이스를 만들 때 안내는 코드의 매핑 카드다(`guidance.guidance_for`, `api/guidance.py:69-77`).
+- `api/main.py:107`: 케이스를 만들 때 안내는 코드의 매핑 카드다(`guidance.guidance_for`, `api/guidance.py:69-77`).
 - `api/guidance.py:80-96`: 첫 상세 조회(`GET /api/cases/{id}`)에서 RAG 답으로 카드를 채운다. 입력은 E 코드와 고정 질문뿐이다. 지난 케이스는 보지 않는다.
 - `api/guidance.py:62-66`: 카드는 E 코드 하나에 하나다(`candidates[0].situation_id` = E 코드). 점검 id는 `E0xx-Kn`이다.
-- `api/main.py:417-419`: 챗봇 피드백은 `{"ok": true}`만 돌려준다. 저장하지 않는다.
+- `api/main.py:431-433`: 챗봇 피드백은 `{"ok": true}`만 돌려준다. 저장하지 않는다.
 
 그래서 같은 설비의 같은 오알람을 다섯 번 닫아도, 다섯 번째 안내가 첫 번째와 같았다.
 
@@ -32,13 +32,13 @@
 
 - `FIELD_MEMORY=1`이면 켜진다. 부를 때마다 환경 변수를 읽는다(`api/field_memory.py:21-22`의 `enabled()`).
 - 끄면 아래가 모두 RAG 담당 판과 같다(`api/tests/test_memory_api.py`의 flag-off 테스트).
-  - `/api/health` 키, `/api/memory`(404, openapi에도 없음), close 본문(다른 키는 무시), 저장된 guidance(= `guidance.guidance_for(handoff)`), 챗봇 응답(인자 셋 그대로).
+  - `/api/health` 키, `/api/memory`(어떤 메서드 · 끝 슬래시든 없는 주소와 같은 404, openapi에도 없음), close 본문(다른 키는 무시), 저장된 guidance(= `guidance.guidance_for(handoff)`), 챗봇 응답(인자 셋 그대로).
 - 파일: `api/field_memory.py`(라벨 · 집계 · 참고 문장). 훅은 `api/main.py`·`api/assistant.py`에 있다.
 
 ### 카드는 그대로
 
 - 카드(guidance)의 내용 · 순서는 바꾸지 않는다. 현장 기억은 카드에 끼어들지 않는다.
-- 참고 문장은 GET 케이스 응답의 최상위 `field_memory`에만 붙는다. DB에는 저장하지 않는다(`api/main.py:213-214`).
+- 참고 문장은 GET 케이스 응답의 최상위 `field_memory`에만 붙는다. DB에는 저장하지 않는다(`api/main.py:215-216`).
 - 확률로 말하지 않는다. "참고"를 붙인다. 매뉴얼 근거(cite · evidence)로 내보내지 않는다.
 
 ### 라벨 (닫힌 케이스만, `api/field_memory.py:44-51`)
@@ -72,16 +72,16 @@
 | 어디 | 필드 | 뜻 |
 |---|---|---|
 | `GET /api/cases/{id}` | `field_memory` | `alarm_key`, `alarm`(오알람 · 고장 확인 수), `applied`(`["R1"]` 또는 `[]`), `note_ko`, `checks`(이 카드 점검 id별 지난 이상 · 정상 수, 카드 순서), `labeled`. 자기 자신을 뺀 집계 |
-| `POST /api/cases/{id}/close` 본문 | `reason`, `note` | 빈 문자열이 아니면 closure에 남긴다(`api/main.py:269-274`) |
-| `GET /api/memory` | 전체 요약 | `enabled`, `labeled`, `labels`, `alarms[{key, gun_id, code, false_alarm, real, case_ids}]`, `checks[{check_id, abnormal, normal}]`, `manual_causes`, `missed_checks`(일지의 놓친 점검 글). 끄면 404, openapi에 없음(`api/main.py:345-350`) |
-| `GET /api/health` | `memory: "on"` | 켰을 때만(`api/main.py:194-195`) |
+| `POST /api/cases/{id}/close` 본문 | `reason`, `note` | 빈 문자열이 아니면 closure에 남긴다(`api/main.py:271-276`) |
+| `GET /api/memory` | 전체 요약 | `enabled`, `labeled`, `labels`, `alarms[{key, gun_id, code, false_alarm, real, case_ids}]`, `checks[{check_id, abnormal, normal}]`, `manual_causes`, `missed_checks`(일지의 놓친 점검 글). 끄면 어떤 메서드 · 끝 슬래시든 없는 주소와 같은 404, openapi에 없음(`api/main.py:347-364`) |
+| `GET /api/health` | `memory: "on"` | 켰을 때만(`api/main.py:196-197`) |
 
-- `field_memory`는 케이스를 열 때마다 새로 센다. RAG 카드 생성(enrich) 뒤에 붙인다(`api/main.py:207-214`).
+- `field_memory`는 케이스를 열 때마다 새로 센다. RAG 카드 생성(enrich) 뒤에 붙인다(`api/main.py:209-216`).
 - 그래서 이미 열린 케이스도 다시 열면 문장이 바뀔 수 있다. 카드는 그대로다.
 
 ### 챗봇
 
-- `POST /api/assistant/ask`: 켜면 api가 `field_memory.snapshot`을 `memory=`로 넘긴다(`api/main.py:407-409`).
+- `POST /api/assistant/ask`: 켜면 api가 `field_memory.snapshot`을 `memory=`로 넘긴다(`api/main.py:421-423`).
 - 답의 E 코드(`error_code`)에 기록이 있으면 답 끝에 문단 하나를 붙인다(`api/assistant.py:36-39`, `chat_note` `api/field_memory.py:168-183`).
   - 예: "현장 기록(사람 판정, 매뉴얼 근거 아님): E029 알림 — test_0 오알람으로 닫음 N · 고장 확인 M / 지난 점검: … (참고)". 시연에서 설비 이름은 파일 이름이다.
   - E 코드는 RAG가 질문에서 고른다(`rag/service.py:74`의 `select_code`). 오류 응답에도 `error_code`가 남는다(`rag/service.py:112-113`, `:186-188`). 그래서 RAG 키가 없어도 문단은 붙는다.
@@ -90,10 +90,10 @@
 
 ### ingest 잠금
 
-- 켜면 ingest 전체(seen → put)를 lock 하나로 감싼다(`api/main.py:39-40`, `:86`).
+- 켜면 ingest 전체(seen → put)를 lock 하나로 감싼다(`api/main.py:41-42`, `:88`).
 - push와 5초 당기기가 겹쳐도 같은 알림으로 케이스가 둘 생기지 않는다.
 - 끄면 RAG 담당 판 그대로 잠그지 않는다(④ 요청 9).
-- 카드는 켜도 꺼도 `guidance.guidance_for(handoff)`다(`api/main.py:105`).
+- 카드는 켜도 꺼도 `guidance.guidance_for(handoff)`다(`api/main.py:107`).
 
 ## ③ 시연법
 
@@ -133,12 +133,12 @@ cd ml && py -3.11 .py/hitl_loop.py test/test_5.csv test/test_4.csv
 - 옵션: `--api`(기본 `http://127.0.0.1:9000`), `--ml`(기본 `http://127.0.0.1:8000`), `--ui`(케이스 링크용), `--out`(산출물 폴더).
 - `--dry-run`: api 없이 멈추지 않고 끝까지 재생한다. 설비별 핸드오프 건수만 출력한다.
   - 출력 예: `test_0: 6 (rule E029 x5, rule E012 x1)`. 기대 건수는 test_0 6 · test_5 2 · test_4 3이다.
-  - ML은 새 `RSW_STATE_DIR`로 켠 뒤에 돌린다. 재생의 `reset`(`DELETE /guns/{id}`, `ml/main.py:1905-1917`)은 설비 상태만 지우고 outbox는 그대로 둔다. 그래서 앞 실행의 핸드오프가 건수에 섞인다.
+  - ML은 새 `RSW_STATE_DIR`로 켠 뒤에 돌린다. 재생의 `reset`(`DELETE /guns/{id}`, `ml/main.py:1916-1928`)은 설비 상태만 지우고 outbox는 그대로 둔다. 그래서 앞 실행의 핸드오프가 건수에 섞인다.
   - 드라이런 뒤 실제 실행 전에는 ML을 또 다른 새 폴더로 다시 켠다. 드라이런이 outbox를 채웠기 때문이다.
 - 시작 점검(`startup_check`)이 아래를 차례로 확인하고, 하나라도 어긋나면 멈춘다. 산출물 폴더는 점검을 통과한 뒤에 만든다.
   - ML `/health`: 추적 중인 설비 0, outbox 비어 있음, `rag_url` 없음.
   - api `/api/health`: `memory`가 `on`, `ml`이 `ok`(아니면 api의 `ML_URL`을 확인한다).
-  - api 케이스 · 이력 비어 있음. ML에 문제가 없을 때만 본다. `GET /api/cases`가 ML outbox를 api로 당겨 오기 때문이다(`api/main.py:199-201`).
+  - api 케이스 · 이력 비어 있음. ML에 문제가 없을 때만 본다. `GET /api/cases`가 ML outbox를 api로 당겨 오기 때문이다(`api/main.py:201-203`).
   - 서버가 꺼져 있으면 그 서버 주소와 "먼저 그 서버를 켜세요"를 보인다.
   - 고치는 법: ML이 깨끗하지 않으면 새 `RSW_STATE_DIR` 폴더(예: `state/d8-<새 이름>`)로 ML을, api가 비어 있지 않으면 새 `API_DB` 파일(예: `state/d8-<새 이름>.db`)로 api를 다시 켠다.
 - 산출물: `ml/results/D-8/runs/<YYYYmmdd-HHMMSS>/`(git 제외)
@@ -203,7 +203,7 @@ E029 (오알람)
   - 진행 중에는 닫힌 케이스를 열지 않는다
 ```
 
-- 도움 요청 흡수: `api/main.py:299-306`(status `handed_over`), `api/store.py:70-74`(resolved · unresolved · false_alarm이 아니면 묶음).
+- 도움 요청 흡수: `api/main.py:301-308`(status `handed_over`), `api/store.py:70-74`(resolved · unresolved · false_alarm이 아니면 묶음).
 - 되돌리는 길: 작업함 "도움 요청" 칸(`ui/src/pages/InboxPage.tsx:36`), 개요의 "오알람으로 닫기"(`ui/src/pages/case/OverviewPage.tsx:92`).
 - 카드 없는 안내의 개요 버튼: `ui/src/pages/case/OverviewPage.tsx:78-92`.
 - 화면은 아직 S 기반 후보 화면이다. E 코드 카드 하나로 바꾸는 것은 UI 담당 몫이다(`ui/docs/09-rag-development-reply.md` "검증 및 UI에 남은 변경").
@@ -216,7 +216,7 @@ E029 (오알람)
 - 챗봇에 "E029 알림 진짜야?"라고 물으면 답 끝에 "현장 기록(사람 판정, 매뉴얼 근거 아님): E029 알림 — test_0 오알람으로 닫음 N · 고장 확인 0" 문단이 붙는다. 닫을 때마다 N이 는다.
 - `loop_view.html`이 알림마다 ⏸로 멈추고, 닫으면 이어 간다.
 
-아래 기대값은 `api/tests/test_driver_contract.py`가 한 프로세스 안에서 확인한다(가짜 RAG, 실제 서버 아님).
+아래 기대값은 `api/tests/test_driver_contract.py`가 한 프로세스 안에서 확인한다(가짜 RAG, 실제 서버 아님). 10-29에는 실제 서버(ML · api, RAG 키 없음)에 대본 작업자를 붙여 두 시나리오를 끝까지 돌렸다. 결과는 두 표와 같았다(`ml/history.md` 36절).
 
 **test_0** (파일 끝 2021-09-11T02:56:08Z)
 
@@ -259,6 +259,10 @@ E029 (오알람)
 7. **주석 · mock · 타입**: `ui/src/types/case.ts:155` 주석("ML · RAG에는 보내지 않음")에 "api 현장 기억은 읽는다"를 더한다. `handlers.ts`·`case.ts`에 `field_memory`를 맞춘다(`ui/docs/05-fe-api-requests.md:278`의 약속).
 8. **08 수치** (`ui/docs/08-api-draft.md:10`): "알림 13건 → 케이스 4건"(test_0 · test_3)은 10/23 확인 수치다. 지금 번들은 test_0에서만 알림 6건이다(아무것도 닫지 않으면 케이스 2건). 바뀐 번들로 다시 센다.
 9. **ingest 경쟁 상태**: 플래그를 끄면 ingest lock이 없다. push와 당기기를 함께 쓰면 케이스가 둘 생길 수 있다(`ml/docs/fe-api-draft-reply.md` 2절). 플래그 없이도 lock을 쓸지 api 담당이 정한다.
+10. **상세 조회 저장 경쟁** (api 담당): `GET /api/cases/{id}`는 RAG 보강 → 케이스 다시 읽기 → 저장 순서다(`api/main.py:210-214`, RAG 담당 판). 다시 읽은 뒤 저장하기 전에 들어온 쓰기(닫기 등)는 이 저장에 덮어써진다. 플래그와 상관없다.
+    - 리허설에서 대본 작업자가 드라이버의 상세 조회와 같은 순간에 닫자 닫기가 사라졌다(`ml/history.md` 36절). 화면도 케이스를 열 때와 창으로 돌아올 때마다 상세를 다시 읽는다(react-query 기본값, `ui/src/lib/useCase.ts:11-13`).
+    - 기록 저장 주소도 모두 읽기 → 고치기 → 저장이고 케이스 단위 lock이 없다.
+    - 조회는 guidance만 저장하거나 바뀐 것이 없으면 저장하지 않기, 쓰기는 케이스별 lock 같은 방법을 api 담당이 정한다.
 
 예전 요청 중 "S10 출구"와 "후보별 근거 수준(`evidence_level`)"은 뺐다. 카드가 E 코드 하나라 S10 후보도, 후보별 근거 수준도 없다.
 
@@ -292,12 +296,12 @@ E029 (오알람)
 - **집계 키가 설비 × 코드다.** 다른 설비의 같은 코드는 따로 센다(t4의 첫 E029는 R1이 없다). 코드 없는 알림은 R1을 쓰지 않는다. 점검 기록은 설비를 가리지 않는다.
 - **원인 정답이 없다.** 데이터에 원인 라벨이 없다. "고장 확인"은 사람이 해결 종료했다는 뜻이지 검증됐다는 뜻이 아니다.
 - **마지막 closure가 이긴다.** 닫힌 케이스를 다시 닫으면 closure를 덮어쓴다. 라벨도 바뀐다.
-- **데모 규모의 경쟁 상태.** 집계는 부를 때마다 케이스 전체를 다시 읽는다(수십 건 규모). lock은 ingest만 감싼다. 닫기와 새 알림이 동시에 오면, 방금 닫은 기록이 새 문장에 빠질 수 있다. 다시 열면 새로 센다.
+- **데모 규모의 경쟁 상태.** 집계는 부를 때마다 케이스 전체를 다시 읽는다(수십 건 규모). lock은 ingest만 감싼다. 닫기와 새 알림이 동시에 오면, 방금 닫은 기록이 새 문장에 빠질 수 있다. 다시 열면 새로 센다. 상세 조회의 저장이 같은 순간의 닫기를 덮는 경쟁도 있다(④ 10). 사람이 누르는 속도로는 드물다.
 
 ### 현장 이야기: 사람 기억이 24시간 규칙을 0~1초 차로 메운다
 
 - test_0의 E029는 09-06·07·08·10일 19:30(데이터 시각, UTC)에 뜬다. 한국 시각으로는 다음 날 새벽 04:30이다.
 - 하루 간격이면 간격이 86,400초 또는 86,401초다.
-- ML의 반복 규칙은 "직전 발화 뒤 `rule_repeat_s`(24시간) **미만**"이다(`ml/main.py:795-796`). 86,400초는 미만이 아니다. 그래서 매번 새 critical 알림이 된다(`ml/docs/fe-api-draft-reply.md` 3절).
+- ML의 반복 규칙은 "직전 발화 뒤 `rule_repeat_s`(24시간) **미만**"이다(`ml/main.py:806-807`). 86,400초는 미만이 아니다. 그래서 매번 새 critical 알림이 된다(`ml/docs/fe-api-draft-reply.md` 3절).
 - ML은 이 규칙을 바꾸지 않는다. 사람이 "오알람"으로 닫은 기억이 다음 날 같은 시각의 알림에 "오알람(운영 원인)인지부터 확인" 문장을 붙인다.
 - 시연의 수치는 재생 데이터에서 이 고리가 도는 모습이다. 성능으로 읽지 않는다.

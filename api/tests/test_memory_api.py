@@ -135,6 +135,7 @@ def test_flag_on_memory_endpoint(api, make_handoff, monkeypatch):
     assert "past_causes" not in body
     assert api.get("/api/health").json()["memory"] == "on"
     assert "/api/memory" not in api.get("/openapi.json").json()["paths"]
+    assert api.post("/api/memory").status_code == 405  # 켜면 보통 GET 주소
 
 
 def test_flag_on_ingest_repeat_and_duplicate(api, make_handoff, monkeypatch):
@@ -213,6 +214,19 @@ def test_flag_off_health_memory_and_openapi(api, monkeypatch):
     assert r.status_code == 404
     assert r.json() == {"detail": "Not Found"}
     assert "/api/memory" not in api.get("/openapi.json").json()["paths"]
+
+
+def test_flag_off_memory_like_unknown_route(api, monkeypatch):
+    """끄면 /api/memory는 없는 주소와 같다: 다른 메서드는 405가 아니고 끝 슬래시는 307이 아니라 404."""
+    monkeypatch.delenv("FIELD_MEMORY", raising=False)
+    for method in ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"):
+        for slash in ("", "/"):
+            got = api.request(method, "/api/memory" + slash, follow_redirects=False)
+            ref = api.request(method, "/api/no-such-route" + slash, follow_redirects=False)
+            assert got.status_code == ref.status_code == 404, (method, slash)
+            assert got.content == ref.content, (method, slash)
+            assert got.headers.get("content-type") == ref.headers.get("content-type"), (method, slash)
+            assert "allow" not in got.headers, (method, slash)
 
 
 def test_flag_off_case_unchanged(api, make_handoff, monkeypatch):

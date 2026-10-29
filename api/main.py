@@ -23,6 +23,8 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
+from fastapi.routing import APIRoute
+from starlette.routing import Match
 
 
 import assistant
@@ -342,12 +344,24 @@ def history():
     return {"items": items}
 
 
-@app.get("/api/memory", include_in_schema=False)
+class _MemoryRoute(APIRoute):
+    """FIELD_MEMORY를 끄면 라우터가 이 주소를 못 본다 (다른 메서드 405 · 끝 슬래시 307 없이, 없는 주소처럼 404)."""
+
+    def matches(self, scope):
+        if not field_memory.enabled():
+            return Match.NONE, {}
+        return super().matches(scope)
+
+
 def memory_summary():
     """현장 기억 요약 (FIELD_MEMORY=1일 때만, 끄면 없는 주소처럼 404)."""
     if not field_memory.enabled():
         raise HTTPException(404, "Not Found")
     return {"enabled": True, **field_memory.snapshot(store.all_cases())}
+
+
+app.router.add_api_route("/api/memory", memory_summary, methods=["GET"], include_in_schema=False,
+                         route_class_override=_MemoryRoute)
 
 
 # ---- 설비 · 매뉴얼 · 챗봇 ----

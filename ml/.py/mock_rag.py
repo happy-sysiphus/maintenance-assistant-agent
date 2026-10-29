@@ -1,24 +1,22 @@
 """
-Stand-in receiver for ML's two push paths (tests). The real handoff receiver is FE's api (POST /api/ml/handoffs,
-which acknowledges with {"result": "new" | "repeat" | "duplicate"}); the per-minute document is not sent in
-operation - RAG declined it and ML does not send it (history.md 37).
+Stand-in receiver for ML's handoff push (tests). The real receiver is FE's api (POST /api/ml/handoffs, which
+acknowledges with {"result": "new" | "repeat" | "duplicate"}). The per-minute sensor document is pushed nowhere -
+RAG declined it and the push was removed (history.md 37).
 
   POST /diagnose         critical-event handoff (schema rag_handoff v1.2 - main.RagHandoff), answered with an old
                          report shape that no real receiver uses (docs/rag_response.example.json)
-  POST /sensor-features  the per-minute sensor document (sensor-features-v4 - .py/sensor_features.py), 204
-  GET  /received         handoffs received, newest last          GET /received-sensors  sensor documents, newest last
+  GET  /received         handoffs received, newest last
 
-Every arrival is printed as one console line and appended to results/rag_received/<gun_id>.jsonl (handoffs) or
-results/rag_received/<gun_id>_sensors.jsonl (sensor documents), so you can see exactly what a receiver gets.
+Every arrival is printed as one console line and appended to results/rag_received/<gun_id>.jsonl, so you can see
+exactly what a receiver gets.
 
     uvicorn mock_rag:app --app-dir .py --port 8001                       # from the ml folder
     set RSW_RAG_URL=http://127.0.0.1:8001/diagnose                       # Windows cmd (bash: export ...)
-    set RSW_RAG_SENSOR_URL=http://127.0.0.1:8001/sensor-features
     uvicorn main:app                                                     # another window, ml folder
     python .py/replay.py test/test_0.csv --start-hours 150 --chunk-s 60 --speed 60
 
-A real receiver has to drop a known event_id / (gun_id, observed_at) it already has (main.py retries; handoffs
-carry Idempotency-Key: <event_id>, sensor documents Idempotency-Key: <gun_id>|<observed_at>).
+A real receiver has to drop a known event_id it already has (main.py retries; handoffs carry
+Idempotency-Key: <event_id>).
 """
 from __future__ import annotations
 
@@ -27,15 +25,13 @@ import os
 from collections import deque
 from typing import Any
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "results", "rag_received")  # RSW_MOCK_RAG_OUT overrides (tests write to a temp folder)
 app = FastAPI(title="mock RAG (RSW)", version="0.3.0")
 RECEIVED: deque[dict[str, Any]] = deque(maxlen=200)
-SENSORS: deque[dict[str, Any]] = deque(maxlen=2000)
 ANSWERED: dict[str, dict[str, Any]] = {}  # event_id -> response (duplicates are not processed twice)
-SEEN_SENSORS: set[tuple[str, str]] = set()
 TODO = "[mock] RAG가 매뉴얼에서 채울 항목"
 
 
@@ -74,20 +70,6 @@ async def diagnose(handoff: dict[str, Any]) -> dict[str, Any]:
     return ANSWERED[eid]
 
 
-@app.post("/sensor-features", status_code=204)
-async def sensor_features(doc: dict[str, Any]) -> Response:
-    key = (str(doc.get("gun_id")), str(doc.get("observed_at")))
-    if key not in SEEN_SENSORS:
-        SEEN_SENSORS.add(key)
-        SENSORS.append(doc)
-        top = " ".join(f"{m['feature']}={m['z']:+.2f}" for m in doc.get("measurements", [])[:4] if m["z"] is not None)
-        states = " ".join(f"{s['signal']}={s['on_share']:.0%}" for s in doc.get("states", []) if s["on_share"] is not None)
-        print(f"[sensor] {key[0]} {key[1]} code={doc.get('error_code')} norm={doc.get('gun_norm')} {top} | {states}",
-              flush=True)
-        _log(f"{key[0]}_sensors", doc)
-    return Response(status_code=204)
-
-
 @app.get("/received")
 async def received(limit: int = 20, full: bool = False) -> list[dict[str, Any]]:
     docs = list(RECEIVED)[-limit:]
@@ -95,8 +77,3 @@ async def received(limit: int = 20, full: bool = False) -> list[dict[str, Any]]:
         return docs
     return [{"event_id": h.get("event_id"), "gun_id": h.get("gun_id"), "detected_at": h.get("detected_at"),
              "summary_ko": h.get("summary_ko"), "fault_class": (h.get("fault_class") or {}).get("code")} for h in docs]
-
-
-@app.get("/received-sensors")
-async def received_sensors(limit: int = 20) -> list[dict[str, Any]]:
-    return list(SENSORS)[-limit:]

@@ -17,7 +17,6 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, ".py"))
 os.environ["RSW_STATE_DIR"] = tempfile.mkdtemp(prefix="rsw_examples_")
 os.environ.pop("RSW_RAG_URL", None)
-os.environ.pop("RSW_RAG_SENSOR_URL", None)
 import main  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from replay import replay_file  # noqa: E402

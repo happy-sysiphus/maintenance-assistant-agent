@@ -823,7 +823,7 @@ JSON Schema는 서버의 `/docs`·`/openapi.json`.
 
 #### 5.11 매분 센서 문서 (sensor-features-v4, D-6)
 
-2026-10-21 결정(WORK_LOG D-004, `history.md` 33·34절): 예지보전이 안 되므로(B-14) ML은 해석하지 않은 측정 사실만 매분 문서로 낸다(상황·증상 매핑, 모델 점수 없음). **보내지 않는다.** RAG가 쓰지 않고(센서 의미와 매뉴얼 내용이 정확히 맞지 않아 답 품질이 낮았다), ML도 보내지 않기로 했다(`history.md` 37절). 문서 자체는 계약이라 `/predict` 응답과 GET으로 계속 나온다(아래 '전달'). 코드 `.py/sensor_features.py`(순수 Python), 스키마 `docs/sensor_features.schema.json`, 예시 `docs/sensor_features.example.json`(실데이터 test_3, `python docs/make_examples.py`로 다시 만든다), 설명서 `docs/sensor_features_for_rag.md`(6절에 RAG 답).
+2026-10-21 결정(WORK_LOG D-004, `history.md` 33·34절): 예지보전이 안 되므로(B-14) ML은 해석하지 않은 측정 사실만 매분 문서로 낸다(상황·증상 매핑, 모델 점수 없음). **보내지 않는다.** RAG가 쓰지 않고(센서 의미와 매뉴얼 내용이 정확히 맞지 않아 답 품질이 낮았다), ML도 보내지 않기로 했다(`history.md` 37절). 보내는 코드(push)도 지웠다. 문서 자체는 계약이라 `/predict` 응답과 GET으로 계속 나온다(아래 '전달'). 코드 `.py/sensor_features.py`(순수 Python), 스키마 `docs/sensor_features.schema.json`, 예시 `docs/sensor_features.example.json`(실데이터 test_3, `python docs/make_examples.py`로 다시 만든다), 설명서 `docs/sensor_features_for_rag.md`(6절에 RAG 답).
 
 센서 분류는 실데이터로 정했다(`results/D-6/pair_check.py`, 원본 값 종류 세기): c4·c10·c18은 값이 0/1(on/off) 두 가지뿐인 상태 신호, c7·c8·c9·c17은 건 안에서 상수, c13~c16은 용접점마다 바뀌는 설정값(1분에 여러 번), c2↔c14·c3↔c15는 같은 물리량(누르는 순간 c2 = c14, 대기 중 c3 ≈ c15), c5↔c13은 짝이 아님.
 
@@ -838,6 +838,6 @@ JSON Schema는 서버의 `/docs`·`/openapi.json`.
 | `setpoints[]` | 설정값 c13~c16의 `mean`·`std`(원래 값)와 `mean_z`·`std_z`. 용접점마다 바뀌므로 std > 0이 정상, 설정 z는 "평소와 다른 프로그램 조합"이지 고장 신호가 아님 |
 | (보내지 않음) | c7·c8·c9·c17(건 안 상수), c11·c12·c19(카운터) |
 
-전달: `/predict` 응답의 `sensor_features[]`(그 요청에서 처음 채점된 분마다 하나), `GET /guns/{id}/sensor-features?minutes=N`(최근 N분, 최대 360), `RSW_RAG_SENSOR_URL` 설정 시 매분 POST(운영에서는 설정하지 않는다; 헤더 `Idempotency-Key: <gun_id>|<observed_at>`, 실패하면 10초 뒤 재시도, 4xx(408·429 제외)는 버림, 큐 최대 1440개 — 서버를 끄면 큐에 남은 것은 사라짐, `GET /health`의 `sensor_queue`·`sensor_pushed`). 가짜 받는 쪽(`.py/mock_rag.py`)의 `POST /sensor-features`가 받은 것을 콘솔 한 줄 + `results/rag_received/<gun>_sensors.jsonl`로 남긴다.
+전달: `/predict` 응답의 `sensor_features[]`(그 요청에서 처음 채점된 분마다 하나), `GET /guns/{id}/sensor-features?minutes=N`(최근 N분, 최대 360). 이 둘뿐이다. 매분 POST(`RSW_RAG_SENSOR_URL`)는 2026-10-29에 지웠다. 이 값이 남아 있으면 서버가 켜질 때 "무시한다"는 경고만 남긴다.
 
 실데이터 예시 만들기: `python results/D-6/sensor_examples.py`(기본 10개: test_0·test_3 × 끝 5·30·180·1440분 전 + 종료 코드가 처음 뜬 분, 요약표에 상위 4개 측정값·상태 비율·설정값 평균±흔들림). 파일·시점은 `--files … --before-end …`, `--at 파일=시각`, `--plan plan.csv`로 바꾼다. 결과 `results/D-6/examples/summary.md`.

@@ -2,7 +2,7 @@
 
 2026-10-21 · ML
 
-> **2026-10-29: 보내지 않는다.** RAG는 이 문서를 쓰지 않기로 했고(10-28, `ui/docs/09-rag-development-reply.md` 18~23줄; 답은 6절), ML도 보내지 않기로 했다(사용자 결정, `history.md` 37절). 센서를 넣어 봤지만 센서 의미와 매뉴얼 내용이 정확히 맞지 않아 답 품질이 낮았다는 이유다. 센서 문맥이 필요해지면 쓰임새와 범위부터 따로 논의한다. push(`RSW_RAG_SENSOR_URL`)는 운영에서 설정하지 않는다. 문서 자체는 계약이라 `/predict`의 `sensor_features[]`와 `GET /guns/{id}/sensor-features`로 계속 나온다. 2절(받는 방법)과 3절의 "RAG에서" 칸은 처음 설계 때의 안내다(2절 push 행 표시와 3절 `fault_class` 행만 지금 기준).
+> **2026-10-29: 보내지 않는다.** RAG는 이 문서를 쓰지 않기로 했고(10-28, `ui/docs/09-rag-development-reply.md` 18~23줄; 답은 6절), ML도 보내지 않기로 했다(사용자 결정, `history.md` 37절). 센서를 넣어 봤지만 센서 의미와 매뉴얼 내용이 정확히 맞지 않아 답 품질이 낮았다는 이유다. 센서 문맥이 필요해지면 쓰임새와 범위부터 따로 논의한다. 보내는 코드(push, `RSW_RAG_SENSOR_URL`)도 10-29에 지웠다. 문서 자체는 계약이라 `/predict`의 `sensor_features[]`와 `GET /guns/{id}/sensor-features`로 계속 나온다(2절). 3절의 "RAG에서" 칸은 처음 설계 때의 안내다(`fault_class` 행만 지금 기준).
 
 RAG 쪽이 이 문서만 보고 받는 쪽을 만들 수 있게 정리했다. 스키마: `ml/docs/sensor_features.schema.json`, 예시: `ml/docs/sensor_features.example.json`, 만드는 코드: `ml/.py/sensor_features.py`(순수 Python이라 RAG 쪽에서 그대로 import해 형식 확인에 써도 된다).
 
@@ -17,10 +17,10 @@ RAG 쪽이 이 문서만 보고 받는 쪽을 만들 수 있게 정리했다. �
 
 | 방법 | 내용 |
 |---|---|
-| push (운영에서 쓰지 않음) | ML 서버를 `RSW_RAG_SENSOR_URL=http://<RAG 주소>/sensor-features`로 켜면 1분마다 POST. 헤더 `Idempotency-Key: <gun_id>|<observed_at>` |
-| 재전송 | 실패하면 10초 뒤 다시 보냄 → 같은 `gun_id`+`observed_at`이 두 번 올 수 있으니 두 번째는 버릴 것. 4xx(408·429 제외)로 답하면 형식 문제로 보고 다시 안 보냄 |
+| `/predict` 응답 | `sensor_features[]`: 그 요청에서 처음 채점된 분마다 하나 |
 | pull | `GET /guns/{gun_id}/sensor-features?minutes=60` (최근 최대 360분) |
-| 시험용 | `ml/.py/mock_rag.py`가 받는 쪽 흉내(받은 문서를 콘솔과 파일로 남김) |
+
+1분마다 POST하던 push(`RSW_RAG_SENSOR_URL`)와 가짜 받는 쪽(`mock_rag.py`의 `/sensor-features`)은 2026-10-29에 지웠다.
 
 데이터가 끊긴 1분은 문서가 오지 않는다(결측은 고장 신호가 아니었음).
 
