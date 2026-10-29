@@ -1,5 +1,6 @@
 """
-ML -> RAG per-minute sensor document (schema sensor-features-v4, docs/sensor_features.schema.json).
+ML per-minute sensor document (schema sensor-features-v4, docs/sensor_features.schema.json). Pushed nowhere (RAG
+declined it and the push was removed, history.md 37); /predict and GET /guns/{id}/sensor-features still serve it.
 
 Decided 2026-10-21 (techspec D-6, WORK_LOG D-004; history.md 33-34). ML sends measured facts, never interpretations
 (no situation / symptom mapping, no model score). Every scored minute, three groups:
@@ -16,7 +17,7 @@ Decided 2026-10-21 (techspec D-6, WORK_LOG D-004; history.md 33-34). ML sends me
 Plus error_code (the minute's last non-zero controller code), fault_class (E01..E04 when it is a terminal code - the
 data mapping of readme 5.3.4) and gun_norm ("warming_up" in the gun's first hours: z against the global reference).
 
-Pure Python (no numpy / pandas / pydantic) so the RAG side can import it to read or test the format.
+Pure Python (no numpy / pandas / pydantic).
 """
 from __future__ import annotations
 

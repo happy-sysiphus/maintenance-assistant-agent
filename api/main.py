@@ -11,7 +11,9 @@
 from __future__ import annotations
 
 import os
+import threading
 import time
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Literal
@@ -21,9 +23,12 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
+from fastapi.routing import APIRoute
+from starlette.routing import Match
 
 
 import assistant
+import field_memory
 import guidance
 from rag.documents import manuals, manual_path
 import store
@@ -33,6 +38,8 @@ REPO = Path(__file__).resolve().parent.parent
 MANUALS = {doc: manual_path(doc) for doc in manuals()}
 MANUAL_CAUSE = "MANUAL"
 TRACE_MINUTES = 30
+# 현장 기억을 켜면 ingest 전체(seen → put)를 한 번에 하나씩 (store._lock을 다시 잡으면 교착)
+_INGEST_LOCK = threading.Lock()
 
 app = FastAPI(title="RSW 정비 지원 api")
 
@@ -78,31 +85,32 @@ def score_trace(gun_id: str, detected_at: str) -> list[dict[str, Any]]:
 
 def ingest(handoff: dict[str, Any]) -> str:
     """알림 하나를 케이스로. 같은 설비 · 같은 코드의 열린 케이스가 있으면 새 줄 대신 '반복'으로 묶는다."""
-    eid = handoff["event_id"]
-    if store.seen(eid):
-        return "duplicate"
-    code = handoff["trigger"].get("rule_code")
-    same = store.open_case(handoff["gun_id"], code)
-    if same:
-        same.setdefault("repeats", []).append({"event_id": eid, "detected_at": handoff["detected_at"]})
-        store.put(same)
-        store.mark_seen(eid, same["case_id"])
-        return "repeat"
-    d = {
-        "case_id": store.next_id(),
-        "status": "new",
-        # 알림은 ML이 critical일 때만 보낸다 (ml/README 5.10.2)
-        "severity": "critical",
-        "assignee": None,
-        "event": handoff,
-        "score_trace": score_trace(handoff["gun_id"], handoff["detected_at"]),
-        "guidance": guidance.guidance_for(handoff),
-        "records": {"checks": {}, "judgments": [], "actions": [], "results": [], "field": [], "handovers": []},
-        "repeats": [],
-    }
-    store.put(d)
-    store.mark_seen(eid, d["case_id"])
-    return "new"
+    with _INGEST_LOCK if field_memory.enabled() else nullcontext():
+        eid = handoff["event_id"]
+        if store.seen(eid):
+            return "duplicate"
+        code = handoff["trigger"].get("rule_code")
+        same = store.open_case(handoff["gun_id"], code)
+        if same:
+            same.setdefault("repeats", []).append({"event_id": eid, "detected_at": handoff["detected_at"]})
+            store.put(same)
+            store.mark_seen(eid, same["case_id"])
+            return "repeat"
+        d = {
+            "case_id": store.next_id(),
+            "status": "new",
+            # 알림은 ML이 critical일 때만 보낸다 (ml/README 5.10.2)
+            "severity": "critical",
+            "assignee": None,
+            "event": handoff,
+            "score_trace": score_trace(handoff["gun_id"], handoff["detected_at"]),
+            "guidance": guidance.guidance_for(handoff),
+            "records": {"checks": {}, "judgments": [], "actions": [], "results": [], "field": [], "handovers": []},
+            "repeats": [],
+        }
+        store.put(d)
+        store.mark_seen(eid, d["case_id"])
+        return "new"
 
 
 _last_sync = 0.0
@@ -184,7 +192,10 @@ def health():
         ml = ml_get("/health")["status"]
     except HTTPException:
         ml = "down"
-    return {"status": "ok", "source": "api", "ml": ml, "rag": "e_code_hybrid"}
+    out = {"status": "ok", "source": "api", "ml": ml, "rag": "e_code_hybrid"}
+    if field_memory.enabled():
+        out["memory"] = "on"
+    return out
 
 
 @app.get("/api/cases")
@@ -200,7 +211,9 @@ def get_case(case_id: str):
     enriched = guidance.enrich(load(case_id))
     latest = load(case_id)  # Preserve records saved while generation was running.
     latest["guidance"] = enriched["guidance"]
-    return save(latest)
+    out = save(latest)
+    # 현장 기억은 볼 때마다 새로 세어 사본에만 붙인다 (DB에는 저장하지 않는다. 카드는 그대로)
+    return field_memory.annotate(out, store.all_cases()) if field_memory.enabled() else out
 
 
 @app.put("/api/cases/{case_id}/checks")
@@ -254,7 +267,14 @@ def close(case_id: str, body: dict[str, Any]):
     d = load(case_id)
     if body["outcome"] == "resolved" and not (d["records"].get("log") or {}).get("approved_at"):
         raise HTTPException(409, "log not approved")
-    d["records"]["closure"] = {"outcome": body["outcome"], "at": now()}
+    closure = {"outcome": body["outcome"], "at": now()}
+    if field_memory.enabled():
+        # 오알람 이유 · 메모 (빈 문자열은 남기지 않는다)
+        for k in ("reason", "note"):
+            v = body.get(k)
+            if isinstance(v, str) and v.strip():
+                closure[k] = v
+    d["records"]["closure"] = closure
     d["status"] = body["outcome"]
     return save(d)
 
@@ -331,6 +351,26 @@ def history():
     return {"items": items}
 
 
+class _MemoryRoute(APIRoute):
+    """FIELD_MEMORY를 끄면 라우터가 이 주소를 못 본다 (다른 메서드 405 · 끝 슬래시 307 없이, 없는 주소처럼 404)."""
+
+    def matches(self, scope):
+        if not field_memory.enabled():
+            return Match.NONE, {}
+        return super().matches(scope)
+
+
+def memory_summary():
+    """현장 기억 요약 (FIELD_MEMORY=1일 때만, 끄면 없는 주소처럼 404)."""
+    if not field_memory.enabled():
+        raise HTTPException(404, "Not Found")
+    return {"enabled": True, **field_memory.snapshot(store.all_cases())}
+
+
+app.router.add_api_route("/api/memory", memory_summary, methods=["GET"], include_in_schema=False,
+                         route_class_override=_MemoryRoute)
+
+
 # ---- 설비 · 매뉴얼 · 챗봇 ----
 
 
@@ -384,9 +424,13 @@ class AssistantAskInput(BaseModel):
 
 @app.post("/api/assistant/ask")
 async def ask(body: AssistantAskInput):
+    # 현장 기억(FIELD_MEMORY=1)이면 요약을 memory=로 넘긴다. 끄면 인자는 그대로 셋
+    extra: dict[str, Any] = {}
+    if field_memory.enabled():
+        extra["memory"] = await run_in_threadpool(lambda: field_memory.snapshot(store.all_cases()))
     try:
         return await run_in_threadpool(assistant.answer,body.question,body.photos,
-                                       [message.model_dump() for message in body.history])
+                                       [message.model_dump() for message in body.history],**extra)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 

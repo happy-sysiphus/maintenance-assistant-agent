@@ -10,6 +10,7 @@ temporary directory - never train/, preprocessed/ or models/.
 """
 import importlib
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -86,7 +87,6 @@ def isolated_state(tmp_path, monkeypatch):
     monkeypatch.setenv("RSW_STATE_DIR", str(tmp_path / "state"))
     monkeypatch.setenv("RSW_MOCK_RAG_OUT", str(tmp_path / "rag_received"))
     monkeypatch.delenv("RSW_RAG_URL", raising=False)
-    monkeypatch.delenv("RSW_RAG_SENSOR_URL", raising=False)
 
 
 def run(*args):
@@ -1072,25 +1072,20 @@ def test_10_rule_per_code_and_profile(workspace, monkeypatch):
         assert client.get("/guns/OLD/stats").status_code == 200 and client.get("/stats").status_code == 200
 
 
-def test_11_sensor_features_per_minute(workspace, monkeypatch):
+def test_11_sensor_features_per_minute(workspace, monkeypatch, caplog):
     """D-6: every scored minute yields one sensor-features-v4 document (schema-valid; all 10 measurement features sorted
     by |z| with z + raw value; on-share of the 0/1 states; setpoint mean / std raw + z; the minute's controller code +
-    fault class), in the /predict response, from GET /guns/{id}/sensor-features, and pushed to RSW_RAG_SENSOR_URL
-    exactly once each."""
-    import httpx
+    fault class), in the /predict response and from GET /guns/{id}/sensor-features. ML pushes it nowhere: a leftover
+    RSW_RAG_SENSOR_URL only logs a warning (the push was removed, history.md 37)."""
     import jsonschema
-    import mock_rag
 
     monkeypatch.setenv("RSW_RAG_SENSOR_URL", "http://rag.test/sensor-features")
-    monkeypatch.setenv("RSW_OUTBOX_POLL_S", "0.02")
+    caplog.set_level(logging.WARNING, logger="rsw-api")
     main = load_main(workspace)
     from fastapi.testclient import TestClient
 
     schema = json.load(open(os.path.join(ROOT, "docs", "sensor_features.schema.json"), encoding="utf-8"))
-    mock_rag.SENSORS.clear()
-    mock_rag.SEEN_SENSORS.clear()
     raw = pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
-    main.app.state.rag_transport = httpx.ASGITransport(app=mock_rag.app)
     docs = []
     with TestClient(main.app) as client:
         d = main.app.state.detector
@@ -1100,8 +1095,8 @@ def test_11_sensor_features_per_minute(workspace, monkeypatch):
                 docs += r.json()["sensor_features"]
         got = client.get("/guns/SF/sensor-features", params={"minutes": 5}).json()
         assert got == docs[-5:], "GET serves the same documents"
-        assert wait_for(lambda: len(mock_rag.SENSORS) == len(docs))
-        assert client.get("/health").json()["sensor_pushed"] == len(docs)
+        assert not {"rag_sensor_url", "sensor_queue", "sensor_pushed"} & set(client.get("/health").json())
+    assert "RSW_RAG_SENSOR_URL is ignored" in caplog.text
     times = [x["observed_at"] for x in docs]
     assert times == sorted(set(times)) and len(docs) == len(main.app.state.guns["SF"].trace), "one per scored minute"
     for x in docs:
@@ -1132,5 +1127,4 @@ def test_11_sensor_features_per_minute(workspace, monkeypatch):
     assert any(x["error_code"] == "E003" and x["fault_class"] is None for x in docs)
     assert docs[-1]["error_code"] == "E029" and docs[-1]["fault_class"] == "E04"
     assert docs[0]["gun_norm"] == "warming_up" and docs[-1]["gun_norm"] == "gun"
-    assert [m["observed_at"] for m in mock_rag.SENSORS] == times, "pushed in order, each exactly once"
     os.environ.pop("RSW_MODEL_PATH")

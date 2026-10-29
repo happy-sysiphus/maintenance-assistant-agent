@@ -41,3 +41,6 @@ venv/
 # B-15 time-series foundation models (separate env, experiment cache)
 .venv-tsfm/
 results/B-15/cache/
+
+# D-8 HITL 루프 실행 산출물 (py -3.11 .py/hitl_loop.py)
+results/D-8/runs/

@@ -1,6 +1,6 @@
 # techspec.md — 남은 개발 명세 (ML 파트 + RAG 핸드오프)
 
-이 문서는 **앞으로 만들 것**만 담는다. 지금 구현된 상태는 `readme.md`(5.6 학습·평가, 5.7 API, 5.10 핸드오프 v1.0), 성능은 `test.md`, 결정 근거는 `MEMORY.md`, 경과는 `history.md`에 있다. 항목을 끝내면 여기서 지우고 결과를 그쪽 문서에 반영한다.
+이 문서는 **앞으로 만들 것**만 담는다. 지금 구현된 상태는 `readme.md`(5.6 학습·평가, 5.7 API, 5.10 핸드오프 v1.2), 성능은 `test.md`, 결정 근거는 `MEMORY.md`, 경과는 `history.md`에 있다. 항목을 끝내면 여기서 지우고 결과를 그쪽 문서에 반영한다.
 
 ## 방향 (2026-10-06)
 
@@ -10,11 +10,11 @@
 
 | 포함 | 제외 (다른 담당) |
 |---|---|
-| 이상탐지 모델·학습·평가(`.py/train.py`, `.py/experiments.py`) | 온톨로지(원인·점검·매뉴얼 조회) |
+| 이상탐지 모델·학습·평가(`.py/train.py`, `.py/experiments.py`) | api(케이스)·RAG(원인·점검·매뉴얼 조회) |
 | 종료 코드 규칙과 서빙의 ML 로직(`main.py`의 스코어링·규칙·건별 상태) | RAG 검색, LLM 리포트, Slack 알림 |
-| RAG로 넘기는 핸드오프 문서(`RagHandoff`, `.py/rag_mapping.py`)와 전달(outbox·push) | 배포·인증·인프라 일반 |
+| 하류(api)로 넘기는 핸드오프 문서(`RagHandoff`, `.py/rag_mapping.py`)와 전달(outbox·push) | 배포·인증·인프라 일반 |
 
-경계: ML은 **① 이상 감지 + ② 증상 번역(상황 ID)**까지 하고 `RagHandoff`를 넘긴다. RAG가 돌려주는 응답은 받아서 보관만 한다(5.10.6 계약).
+경계: ML은 **① 이상 감지 + ② 사실(종료 코드·고장 유형·센서 소견)**까지 하고 `RagHandoff`를 api(`POST /api/ml/handoffs`)에 넘긴다. api가 종료 코드로 RAG를 부르고 답을 저장한다. ML이 받는 것은 api의 접수 응답(`{"result": …}`)뿐이다(readme 5.10.6).
 
 ## 1. 한눈에 보기
 
@@ -25,10 +25,8 @@ ID는 영역 + 번호(A 데이터·전처리, B 모델·평가, C 서빙, D RAG 
 | B-8 | 설정값 전환 창의 오탐(해법 미발견) | 개선 | — | 중~대 |
 | B-9 | 모델 교체 게이트(공통 규칙, 앙상블 교체 완료) | — | — | — |
 | C-3 | 건 프로파일 **실데이터 입력**(기능은 구현됨, `history.md` 30절) | 품질 | 건별 고장 유형 정보(현장) | 소 |
-| D-2 | 온톨로지 입력 형식 연동 | **필수** | 온톨로지 담당의 입력 형식·주소 | 소~중 |
-| D-3 | 핸드오프 v1.1 — 맥락 확장 (**일부 완료 2026-10-08**: `error_timeline` 30분·`sensor_trend`·Z; 남음: 1h 코드 이력·`recent_events`·`rule_repeat_suppressed`·`detector.reliability`) | 품질 | D-2(필드 이름 합의) | 소~중 |
-| D-6 | 매분 센서 문서 sensor-features-v4(측정값 10·상태 3·설정값 4) + 핸드오프 v1.2(상황·증상 매핑 삭제) (**완료 2026-10-21**, `history.md` 33·34절; 남음: 실데이터 예시 재생성, RAG 쪽 v4 합의) | 필수 | RAG 쪽 스키마 합의 | 중 |
-| D-4 | RAG 응답 검증 | 품질 | RAG 응답 계약 확정 | 소 |
+| D-3 | 핸드오프 v1.1 — 맥락 확장 (**일부 완료 2026-10-08**: `error_timeline` 30분·`sensor_trend`·Z; 남음: 1h 코드 이력·`recent_events`·`rule_repeat_suppressed`·`detector.reliability`) | 품질 | — | 소~중 |
+| D-8 | HITL 피드백 루프 시연 (**시연 구현 2026-10-28**, `history.md` 36절; RAG E 코드 전환 뒤 현장 기억은 참고 문장만, RAG 카드는 그대로; 실제 서버 리허설 2026-10-29 통과; 남음: FE · api 요청(`docs/hitl-loop.md` ④) · RAG 합의(⑤) · 화면 시연) | 품질 | FE·RAG 담당 합의 | 소~중 |
 
 우선순위: 필수 = 운영 투입 전에 반드시, 품질 = 운영 품질, 개선 = 성능·정확도 개선.
 
@@ -65,34 +63,24 @@ ID는 영역 + 번호(A 데이터·전처리, B 모델·평가, C 서빙, D RAG 
 
 ## 3. RAG 핸드오프
 
-### D-2 온톨로지 입력 형식 연동 (필수)
-
-- **현재**: 온톨로지·RAG 쪽 입력 형식과 주소가 미정(readme 5.10.8-1). `RagHandoff` v1.0을 그대로 POST한다.
-- **할 일**: 온톨로지 담당과 (1) 받는 주소·메서드, (2) 필드 이름·필수 여부, (3) 상황 ID 체계(S01~S10) 고정 여부, (4) 응답 형식을 합의한다. 이름만 다르면 **어댑터**(`rag_mapping.to_ontology(handoff) -> dict`)를 두고 `RagHandoff` 자체는 바꾸지 않는다. 의미가 다르면 v2.0 협의.
-- **완료 기준**: 합의 문서의 예시 입력이 `docs/`에 들어가고, 어댑터 출력이 그 예시와 키·타입이 같다는 단위 테스트, 실제 온톨로지 엔드포인트에 `docs/rag_handoff.example.json`이 200으로 들어간다.
+받는 쪽 합의는 끝났다(2026-10-28, `history.md` 37절). 받는 곳은 api이고, 필드는 v1.2 그대로다. RAG 입력은 api가 꺼낸 종료 코드다. 그래서 D-2(입력 형식 연동)는 닫았고, D-4(RAG 응답 검증)는 RAG 답이 ML로 오지 않아 뺐다.
 
 ### D-3 핸드오프 v1.1 — 맥락 확장 (품질)
 
 - **2026-10-08 일부 구현(FE 요청 3)**: `error_timeline`은 버퍼(약 30분) 범위, `sensor_trend`는 trace ring에서 30분을 복사한다(1분 링버퍼 없이). 아래 표의 나머지 셋과 1h 코드 이력은 남았다.
-- **현재(구현 전)**: 핸드오프는 이벤트 윈도우 하나의 요약(센서 편차, 고장 유형, 증상, 상황 ID)만 담는다. readme 3절의 "이상 감지 시점 앞뒤의 센서 수치·로그를 모아 컨텍스트 구성"은 부분 구현이다.
+- **현재**: 핸드오프는 이벤트 윈도우의 요약(센서 편차, 종료 코드, 고장 유형)에 위의 `error_timeline`·`sensor_trend`를 더해 담는다. readme 3절의 "이상 감지 시점 앞뒤의 센서 수치·로그를 모아 컨텍스트 구성"은 부분 구현이다.
 - **추가 필드(전부 선택·추가만 — 1.x 호환 규칙)**
 
 | 필드 | 내용 | 이유 |
 |---|---|---|
 | `error_timeline[]` | 최근 1h의 에러 코드 에피소드 `{code, start, end, duration_s, class_hint}` | 종료 코드 전후의 잔고장(E003 등)이 원인 분석 단서. 진짜 발화의 21%가 직전 1h에 다른 코드를 동반했다(오트리거는 7%) |
-| `sensor_trend[]` | 기여 상위 센서의 최근 30분 1분 평균 시계열(z) | LLM 리포트가 "언제부터 어떻게" 변했는지 말할 수 있게. **데이터는 `GET /guns/{id}/trace`의 `points[].deviation`으로 이미 있다(2026-09-28) — 핸드오프에 30분 분량을 복사하면 된다** |
-| `recent_events[]` | 같은 건의 최근 24h 핸드오프 `{event_id, detected_at, situation_ids[0]}` | 반복 고장·연쇄 판단 |
+| `sensor_trend[]` | 기여 상위 센서의 최근 30분 1분 평균 시계열(z) | 화면(api·UI)이 "언제부터 어떻게" 변했는지 보여 줄 수 있게. **데이터는 `GET /guns/{id}/trace`의 `points[].deviation`으로 이미 있다(2026-09-28) — 핸드오프에 30분 분량을 복사하면 된다** |
+| `recent_events[]` | 같은 건의 최근 24h 핸드오프 `{event_id, detected_at, trigger.rule_code}` | 반복 고장·연쇄 판단 |
 | `trigger.rule_repeat_suppressed` | 같은 요청에 강등된 반복 발화가 있었는지 | 지금은 반복 발화가 핸드오프에서 사라진다(규칙 근거에서 제외) |
-| `detector.reliability` | `{auroc_pre_rule, rule_lead_min_median, rule_false_per_day}` — 번들 지표 | RAG가 신뢰도 문구를 수치에 맞게 쓰도록(현재 `caveats`는 고정 문구) |
+| `detector.reliability` | `{auroc_pre_rule, rule_lead_min_median, rule_false_per_day}` — 번들 지표 | api·UI가 신뢰도를 수치로 보여 주도록(RAG는 핸드오프를 읽지 않는다. 현재 `caveats`는 고정 문구) |
 
 - **설계**: `error_timeline`·`sensor_trend`는 30분 버퍼로 부족하다 → 건 상태에 1분 요약 링버퍼(60~120개)를 둔다(건 상태 파일에 함께 저장). `schema_version` "1.1".
 - **완료 기준**: `tests/test_rag_mapping.py::test_schema_keys_match_main` 갱신, v1.0 소비자(필드 무시)가 깨지지 않음을 예시 JSON으로 확인, 실데이터 재생 이벤트 9건의 `error_timeline`에 종료 코드 에피소드가 들어 있다.
-
-### D-4 RAG 응답 검증 (품질)
-
-- **현재**: push 응답이 JSON이면 `rag_response`에 그대로 저장한다. 형식 검증이 없다.
-- **설계**: 5.10.6 계약을 Pydantic `RagResponse{event_id, status, generator, report{7 keys}}`로 정의. 검증 실패는 `delivery="delivered"` + `delivery_detail="invalid response: ..."`(전달은 됐고 응답만 틀림), `event_id` 불일치도 실패로 기록. 스키마는 `/openapi.json`에 노출해 RAG 쪽이 맞춰 볼 수 있게 한다.
-- **완료 기준**: 가짜 RAG 응답은 통과, 키가 빠진 응답·다른 `event_id`는 `delivery_detail`에 사유가 남는 단위 테스트.
 
 ## 4. 공통 규칙
 
@@ -105,4 +93,3 @@ ID는 영역 + 번호(A 데이터·전처리, B 모델·평가, C 서빙, D RAG 
 | 질문 | 선택지 | 권장 |
 |---|---|---|
 | 건별 고장 유형 정보를 받을 수 있나 (C-3) | 받는다 / 없음 | 받을 수 있으면 품질 우선순위, 없으면 보류 |
-| 온톨로지가 받을 형식 (D-2) | v1.0 그대로 / 어댑터 / v2.0 | 어댑터 |

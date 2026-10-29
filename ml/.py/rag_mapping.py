@@ -1,21 +1,21 @@
 """
-ML -> RAG handoff mapping: turns one /predict result (AnomalyResult as a dict) into the document the
-ontology / RAG stage receives on a critical event (schema `rag_handoff` v1.2).
+ML -> downstream handoff mapping: turns one /predict result (AnomalyResult as a dict) into the document FE's api
+receives on a critical event (POST /api/ml/handoffs; schema `rag_handoff` v1.2).
 
 Scope (2026-10-21, D-003 / D-004 decided):
     ML (this module)   what is unusual: trigger, terminal code and fault class (E01..E04, from the data: the code a
                        failure file shows in its last 10 min), contributing sensors in words
-    ontology / RAG     what it means: situations, causes, check procedures, manual sections, the written report
+    api + RAG          what it means: the api takes the terminal code and asks RAG for causes, checks and actions
 v1.2 drops the symptom rules (P1..P9) and every situation id (S01..S10): both were the MVP situation definition
-doc's mapping, which the data could not confirm (history.md 33). The RAG side receives the controller code
-(`fault_class.terminal_code`, `trigger.rule_code`) and the fault class (`fault_class.code`) as they are, plus the
-per-minute sensor document (.py/sensor_features.py, sensor-features-v4).
+doc's mapping, which the data could not confirm (history.md 33). Since 2026-10-28 (history.md 37) the api passes
+only the terminal code to RAG (`trigger.rule_code`, else `fault_class.terminal_code`). RAG uses neither the fault
+class (`fault_class.code`) nor the per-minute sensor document (.py/sensor_features.py), which ML does not send.
 
 2026-10-26 (D-7, history.md 35): c4 / c18 are the Festo fieldbus bit-13 pair - c18 the robot's "Close gun" (build up
 force) command, c4 the gun's "Force reached" answer (manual A.2 p.100, Table 9.38 p.74); both 0/1, so their window
 mean is the share of the minute the bit was on (wording "켜진 비율"), not a time or a set value.
 
-Pure Python (no pandas / pydantic / fastapi) so the ontology side can import it as-is. main.py validates the
+Pure Python (no pandas / pydantic / fastapi). main.py validates the
 output with pydantic (RagHandoff); tests/test_rag_mapping.py keeps the keys of both in sync.
 """
 from __future__ import annotations
@@ -27,7 +27,7 @@ SCHEMA_VERSION = "1.2"  # 1.1 (2026-10-08): + error_timeline, sensor_trend, time
 # situation_ids, fault_class.situation_id (no situation-doc mapping in ML)
 
 # a contributing feature counts as a finding when it explains at least MIN_SHARE of the positive contributions
-# AND its (gun-centred, z-scored) value is at least MIN_DEV away from the normal reference. Calibrated on the 132
+# AND its value (model units, see CAVEATS) is at least MIN_DEV away from the normal reference. Calibrated on the 132
 # real events of the 80 files' last 12 h (D-5, history.md §19, results/D-5/symptom_sweep.json): the old 0.05 / 1.0 left
 # 62 % of the events without any finding (median 0); 0.03 / 0.5 gives a median of 1 (mean 1.6), 25 % without
 MIN_SHARE = 0.03
@@ -68,13 +68,19 @@ FAULT_CLASSES: dict[str, dict[str, str]] = {
 }
 CODE_TO_CLASS = {v["terminal_code"]: k for k, v in FAULT_CLASSES.items()}
 
+# caveat 4: a finding's "평소" is the bundle's feature_reference (median of the normal training windows). Sensor and
+# weld-count means are first centred on the gun's warm-up mean only once the warm-up has fixed it (gun_norm "gun"),
+# not in the warm-up or without a gun normal ("warming_up" / "global"). Centring (mode center) leaves a window std as
+# it is, and weld_duty_10min / error_share_10min / c10 are never centred (train.gun_norm_columns).
 CAVEATS = [
     "고장 유형(E01~E04)은 종료 코드(E012/E016/E028/E029)를 데이터 집계로 연결한 것 - 매뉴얼·논문이 정한 대응이 아님",
     "모델 단독 성능이 약함(테스트 AUROC 0.71, 종료 코드 이전 구간 0.67; 고장으로 이어진 지속 알람 2/8건, 둘 다 종료 코드가 "
     "뜬 마지막 10분 안) - 고장 유형 근거는 주로 종료 코드 규칙",
     "종료 코드 규칙은 다른 클래스 건에서도 뜬 적 있음(주로 E029, 테스트 critical 오트리거 0.18회/일/건)",
-    "센서 방향(높음/낮음)은 이 gun의 워밍업 평균 대비 z-score 기준",
-    "센서 해석(상황·원인)은 하지 않음 - 센서 편차는 매분 sensor-features 문서(v4)로 따로 전달",
+    "센서 소견의 '평소' - 워밍업을 마친 gun(context.gun_norm=gun)은 그 gun의 워밍업 평균, 워밍업 중이거나 자기 기준이 "
+    "없는 gun(warming_up/global)은 학습 데이터 전체라 gun 사이의 원래 차이도 섞임; 흔들림, c10(작동 허용 신호), "
+    "최근 10분 용접 가동률·에러 상태 비율은 늘 학습 데이터 전체 기준",
+    "센서 해석(상황·원인)은 하지 않음 - 센서 소견은 평소와 다른 값일 뿐 원인 판단이 아님",
 ]
 
 

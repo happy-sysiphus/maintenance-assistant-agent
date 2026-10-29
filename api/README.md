@@ -61,6 +61,31 @@ ManualDoc와 문서 이름표를 네 종류로 확장하고, guidance.causes의 
 저장소 루트에서 python -B -m unittest discover -s rag/tests -v.
 API 의존성 파일은 RAG 의존성도 포함합니다. 테스트 DB는 임시 디렉터리를 사용합니다.
 
+## 현장 기억 (D-8, FIELD_MEMORY=1)
+
+`FIELD_MEMORY=1`로 켜면 닫힌 케이스의 사람 판정을 다시 읽어 참고 문장을 붙입니다. 끄면 위 동작과 같습니다.
+RAG 안내 카드의 내용과 순서는 바꾸지 않습니다. 문장은 참고용이고 매뉴얼 근거가 아닙니다.
+라벨은 "오알람으로 닫기" = 오알람, "해결 종료" = 고장 확인입니다. 미해결·도움 요청은 세지 않습니다.
+
+- GET /api/cases/{id}: 응답에 field_memory(applied·note_ko·checks 등)를 붙입니다. DB에는 저장하지 않습니다.
+  - 같은 설비·코드에서 오알람으로 닫은 기록이 고장 확인보다 많으면 "오알람(운영 원인)인지부터 확인" 문장을 씁니다(R1).
+  - 이 카드 점검 항목(E0xx-Kn)의 지난 이상·정상 횟수를 함께 적습니다. 지금 보는 케이스는 빼고 셉니다.
+- GET /api/memory: 사람 라벨, 설비·코드별 오알람·고장 확인 수, 점검 항목별 수. 켰을 때만 있고 /docs에는 없습니다.
+- 챗봇: 답 끝에 현장 기록 문단 하나를 붙입니다. evidence·caution·인용에는 넣지 않습니다.
+- 닫기: 오알람 이유(reason)·메모(note)를 closure에 남깁니다.
+- 알림 수신: 한 번에 하나씩 처리합니다.
+
+코드는 field_memory.py, 테스트는 tests/입니다. 루프 전체 설명은 ml/docs/hitl-loop.md에 있습니다.
+
+```powershell
+cd api
+..\.venv\Scripts\python.exe -m pytest tests -q -p no:cacheprovider   # 저장소 .venv
+py -3.11 -m pytest tests -q -p no:cacheprovider                     # langgraph·pandas가 있는 Python
+```
+
+저장소 .venv에는 langgraph·pandas가 없어 test_driver_contract.py는 건너뜁니다.
+두 번째 줄은 그 Python에 requirements.txt(RAG 의존성 포함)를 설치한 뒤 실행합니다. 드라이버 계약 테스트까지 돕니다.
+
 ## 브라우저에서 직접 질문하기
 
 API 실행 후 http://127.0.0.1:9000/docs 에서 POST /api/assistant/ask를 펼칩니다.

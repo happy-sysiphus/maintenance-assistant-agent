@@ -1,6 +1,7 @@
 """케이스 저장소: SQLite 파일 하나. 케이스 한 건을 FE `CaseDetail` 모양 JSON으로 통째로 저장한다.
 
 데모 규모(케이스 수십 개)라 표 하나로 충분하다. 사람 기록(records)은 ML · RAG에 보내지 않는다.
+FIELD_MEMORY=1이면 api 안에서만 이 기록을 다시 읽어 케이스 조회에 참고 문장을 붙인다(field_memory.py, 안내 카드는 그대로). 그때도 ML · rag/에는 보내지 않는다.
 """
 
 from __future__ import annotations

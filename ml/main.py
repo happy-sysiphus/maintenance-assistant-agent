@@ -3,7 +3,7 @@ RSW welding-gun anomaly detection — real-time inference API.
 
 Loads models/baseline_<model>.joblib (written by .py/train.py), keeps a per-gun rolling
 buffer of raw 1 Hz sensor readings, applies the same preprocessing as .py/preprocess.py
-online, scores the latest complete window and returns a JSON document for the ontology / RAG stage.
+online, scores the latest complete window and returns a JSON document (critical events also carry a handoff).
 
     uvicorn main:app --reload
     RSW_MODEL_PATH=models/baseline_iforest.joblib uvicorn main:app     # the IsolationForest alone
@@ -21,13 +21,14 @@ Endpoints
     GET  /guns/{gun_id}/stats     daily counters of one gun (windows, alarms, rule triggers, ...) + drift warnings
     GET  /stats                   the same summed per gun, every gun
     GET  /handoffs/{event_id}     one handoff document + its delivery status
-    POST /handoffs/preview        AnomalyResult JSON -> handoff document (no state; for the RAG side's tests)
+    POST /handoffs/preview        AnomalyResult JSON -> handoff document (no state; for the receiver's tests)
 
-ML -> RAG handoff (.py/rag_mapping.py, schema v1.2): the first request of every critical episode (and every
+ML -> downstream handoff (.py/rag_mapping.py, schema v1.2): the first request of every critical episode (and every
 terminal-code rule trigger) carries `handoff` - sensor findings in words, the terminal code and fault class (E01..E04).
-No situation ids since v1.2. Causes, checks and manual sections are the ontology's job. Every handoff
-is kept in the outbox (GET /handoffs); with RSW_RAG_URL set a background worker POSTs it there, retrying with
-backoff (header Idempotency-Key = event_id - the receiver drops duplicates).
+No situation ids since v1.2. FE's api receives it and asks RAG for causes, checks and manual sections with the
+terminal code only (history.md 37). Every handoff is kept in the outbox (GET /handoffs); with RSW_RAG_URL set (the
+api: http://127.0.0.1:9000/api/ml/handoffs) a background worker POSTs it there, retrying with backoff (header
+Idempotency-Key = event_id - the receiver drops duplicates).
 
 State survives a restart (RSW_STATE_DIR, default ./state; "" = memory only): every gun's judgement state
 (warm-up result, gun threshold, alarm run, rule cooldown / repeat history, carry) is written after each request to
@@ -77,8 +78,8 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, ".py"))  # train.py / preprocess.py live there
 import train as trainlib  # noqa: E402  (also makes PCADetector importable for pca bundles)
 from preprocess import BINARY_COL, ROLL, SENSOR_COLS, TERMINAL_TO_CLASS, VALUE_COLS, fill_gaps  # noqa: E402
-import rag_mapping  # noqa: E402  (ML -> RAG handoff; pure Python, shared with the RAG side)
-import sensor_features  # noqa: E402  (ML -> RAG per-minute sensor z document, sensor-features-v4; pure Python)
+import rag_mapping  # noqa: E402  (ML -> downstream handoff; pure Python)
+import sensor_features  # noqa: E402  (per-minute sensor z document, sensor-features-v4; pure Python)
 
 TRACE_HTML = os.path.join(PROJECT_ROOT, "static", "trace.html")
 # default: the IsolationForest + LightGBM ensemble (B-9, history.md §18); models/baseline_iforest.joblib is the fallback
@@ -99,7 +100,7 @@ TRACE_TOP_FEATURES = 4  # sensors a trace charts by default: the focus window's 
 HANDOFF_TREND_MIN = 30  # minutes of sensor trend a handoff carries (techspec D-3)
 # not charted by default: time of day is not a sensor, and the error share is the code strip of the chart itself
 TRACE_SKIP = {"hour_sin", "hour_cos", "error_share_10min"}
-# push target for handoffs (e.g. http://127.0.0.1:8001/diagnose); unset = pull only (GET /handoffs)
+# push target for handoffs (FE's api: http://127.0.0.1:9000/api/ml/handoffs); unset = pull only (GET /handoffs)
 RAG_URL = os.environ.get("RSW_RAG_URL")
 RAG_TIMEOUT_S = float(os.environ.get("RSW_RAG_TIMEOUT_S", "10"))
 OUTBOX_MAX = 1000  # handoffs kept in memory when nothing is persisted (RSW_STATE_DIR="")
@@ -107,12 +108,6 @@ STATE_DIR = os.path.join(PROJECT_ROOT, "state")  # default RSW_STATE_DIR
 RAG_BACKOFF_S = (10.0, 30.0, 120.0, 600.0)  # wait before retry 1, 2, 3, 4+ (RSW_RAG_BACKOFF_S="10,30,120,600")
 RAG_MAX_ATTEMPTS = 5  # then delivery="failed" (retried once more after a restart)
 OUTBOX_POLL_S = 1.0  # how often the push worker looks for due handoffs
-# D-6 per-minute sensor document (.py/sensor_features.py) push target, e.g. http://127.0.0.1:8001/sensor-features;
-# unset = pull only (response field `sensor_features`, GET /guns/{id}/sensor-features). Not persisted: a document still
-# queued when the server stops is lost (the RAG side can pull the last hours from GET).
-RAG_SENSOR_URL = os.environ.get("RSW_RAG_SENSOR_URL")
-SENSOR_QUEUE_MAX = 1440  # documents waiting for the push (one gun-day); the oldest is dropped beyond
-SENSOR_RETRY_S = 10.0  # wait after a failed push before the next try
 OUTBOX_RETENTION_DAYS = 30.0  # delivered / pull-only / rejected handoffs are deleted after this
 # C-4 operations monitoring: daily counters per gun (data time, UTC day of the window end), kept STATS_DAYS days
 STATS_DAYS = 31
@@ -227,8 +222,9 @@ class WindowContext(BaseModel):
         None, description="known_code_class_hint is in the gun's profile (C-3); None = no profile or no hint. False: the "
                           "handoff does not use the hint as the fault class")
     mean_dev: dict[str, float] | None = Field(
-        None, description="window mean - normal reference per c-sensor (gun-centred z-score) - lets the handoff check "
-                          "that a setpoint stayed at its usual level (rag_mapping steady / normal, guide §8)")
+        None, description="window mean - normal reference per c-sensor (model input units, gun-centred only when "
+                          "gun_norm is gun). The v1.1 symptom rules read it; nothing in ML has since handoff v1.2 "
+                          "dropped them (history.md 33) - kept so the field does not disappear")
 
 
 class ModelInfo(BaseModel):
@@ -262,16 +258,21 @@ class ModelInfo(BaseModel):
 
 
 # ------------------------------------------------------------ ML -> RAG handoff (rag_mapping.build_handoff)
-# scope (v1.2): what is unusual - trigger, terminal code + fault class, contributing sensors. Situations, causes, check
-# procedures and manual sections belong to the ontology / RAG stage and are NOT in this document.
+# scope (v1.2): what is unusual - trigger, terminal code + fault class, contributing sensors. Causes, check procedures
+# and manual sections come from RAG (FE's api asks it with the terminal code) and are NOT in this document.
 class SensorFinding(BaseModel):
     sensor: str
     sensor_name: str
     sensor_name_ko: str
     group: str = Field(description="compensation | force | position | friction | electrode | io | setpoint | activity")
     statistic: Literal["mean", "std"]
-    direction: Literal["high", "low", "unstable"] = Field(description="vs this gun's normal; unstable = window std up")
-    deviation_z: float = Field(description="value - reference in the model's z-scored, gun-centred space")
+    direction: Literal["high", "low", "unstable"] = Field(
+        description="high / low = window mean above / below the normal reference (see deviation_z); unstable = window "
+                    "std up")
+    deviation_z: float = Field(
+        description="value - reference (median of the normal training windows) in the model's input units: global "
+                    "sigma for the scaled sensors and weld counts, whose means are gun-centred only when "
+                    "context.gun_norm is gun; raw and never centred for weld_duty_10min / error_share_10min / c10")
     share: float = Field(ge=0, le=1, description="share of the anomaly score this feature explains")
     text_ko: str = Field(description="e.g. '보정(밸런스) 압력(c5) 평소보다 낮음'")
 
@@ -336,8 +337,9 @@ class SensorTrend(BaseModel):
 
 
 class RagHandoff(BaseModel):
-    """What the ontology / RAG stage receives for one critical event (schema_version 1.2 = 1.1 - symptoms,
-    situation_ids, fault_class.situation_id; 1.1 = 1.0 + error_timeline, sensor_trend; every time is UTC with "Z")."""
+    """What the downstream (FE's api, POST /api/ml/handoffs) receives for one critical event (schema_version 1.2 =
+    1.1 - symptoms, situation_ids, fault_class.situation_id; 1.1 = 1.0 + error_timeline, sensor_trend; every time is
+    UTC with "Z")."""
     schema_version: str
     event_id: str
     gun_id: str
@@ -363,7 +365,8 @@ class HandoffRecord(BaseModel):
         description="pull_only: no RSW_RAG_URL; pending: queued / retrying; delivered: 2xx; failed: rejected (4xx) or "
                     "out of attempts")
     delivery_detail: str | None = None
-    rag_response: dict[str, Any] | None = Field(None, description="body the RAG endpoint returned on push")
+    rag_response: dict[str, Any] | None = Field(
+        None, description="body the receiver returned on push (FE's api acknowledges with {result: new | repeat | duplicate})")
     attempts: int = Field(0, description="push attempts so far")
     last_attempt_at: datetime | None = None
     next_attempt_at: datetime | None = Field(None, description="when the worker pushes it next (pending only)")
@@ -389,7 +392,7 @@ class SensorSetpoint(BaseModel):
 
 
 class SensorFeaturesDoc(BaseModel):
-    """ML -> RAG per-minute sensor document, schema sensor-features-v4 (docs/sensor_features.schema.json)."""
+    """ML per-minute sensor document, schema sensor-features-v4 (docs/sensor_features.schema.json)."""
     schema_version: Literal["sensor-features-v4"]
     gun_id: str
     observed_at: str = Field(description="window end, ISO 8601 UTC with Z")
@@ -407,7 +410,7 @@ class SensorFeaturesDoc(BaseModel):
 
 
 class AnomalyResult(BaseModel):
-    """Document handed to the ontology / root-cause stage."""
+    """Result of one /predict request - the contract with downstream consumers (critical events also carry a handoff)."""
     model_config = ConfigDict(json_schema_extra={"example": {
         "gun_id": "G17", "status": "ok", "window_start": "2021-09-05T02:22:21", "window_end": "2021-09-05T02:23:20",
         "n_samples": 60, "history_s": 1800, "is_anomaly": True, "anomaly_score": 0.61, "threshold": 0.54,
@@ -493,7 +496,8 @@ class AnomalyResult(BaseModel):
                                      "behaves as designed (e.g. normal alarm rate > 3 % for 3 days) - see GET /stats")
     sensor_features: list[SensorFeaturesDoc] = Field(
         default_factory=list, description="D-6: the per-minute sensor document of every minute first scored in this "
-                                          "request, oldest first (also pushed to RSW_RAG_SENSOR_URL)")
+                                          "request, oldest first (ML pushes it nowhere - this field and GET "
+                                          "/guns/{id}/sensor-features are the only ways out)")
 
 
 class WarmingUp(BaseModel):
@@ -604,7 +608,7 @@ class DayStats(BaseModel):
     rule_triggers: int = Field(0, description="terminal-code rule triggers, repeats included")
     rule_repeats: int = Field(0, description="of which repeats (warning, no handoff)")
     rule_out_of_profile: int = Field(0, description="of which outside the gun's profile (warning, no handoff; C-3)")
-    critical_events: int = Field(0, description="events handed to the RAG (critical episode start or rule trigger)")
+    critical_events: int = Field(0, description="events handed off downstream (critical episode start or rule trigger)")
     normal_alarm_rate: float | None = Field(None, description="normal_alarms / normal")
     normal_alarm_rate_after_warmup: float | None = None
 
@@ -1365,14 +1369,10 @@ async def lifespan(app: FastAPI):
     app.state.outbox_poll_s = float(os.environ.get("RSW_OUTBOX_POLL_S", OUTBOX_POLL_S))
     if not hasattr(app.state, "rag_transport"):
         app.state.rag_transport = None  # httpx transport override (tests route the push to an in-process mock)
-    app.state.sensor_url = os.environ.get("RSW_RAG_SENSOR_URL", RAG_SENSOR_URL or "") or None
-    app.state.sensor_queue = deque(maxlen=SENSOR_QUEUE_MAX)
-    app.state.sensor_lock = threading.Lock()
-    app.state.sensor_pushed = 0
-    app.state.sensor_retry_s = float(os.environ.get("RSW_SENSOR_RETRY_S", SENSOR_RETRY_S))
+    if os.environ.get("RSW_RAG_SENSOR_URL"):  # the D-6 per-minute push was removed (history.md 37)
+        log.warning("RSW_RAG_SENSOR_URL is ignored: ML no longer pushes the per-minute sensor document - it is in "
+                    "the /predict response (sensor_features) and at GET /guns/{id}/sensor-features")
     workers = [asyncio.create_task(outbox_worker(app))] if app.state.rag_url else []
-    if app.state.sensor_url:
-        workers.append(asyncio.create_task(sensor_worker(app)))
     try:
         yield
     finally:
@@ -1405,8 +1405,6 @@ async def health(request: Request) -> dict[str, Any]:
     ob = request.app.state.outbox.all()
     return {"status": "ok", "model_path": d.path, "model": d.info.model_dump(), "guns_tracked": len(request.app.state.guns),
             "max_chunk": MAX_CHUNK, "state_dir": request.app.state.state_dir, "rag_url": request.app.state.rag_url,
-            "rag_sensor_url": request.app.state.sensor_url, "sensor_queue": len(request.app.state.sensor_queue),
-            "sensor_pushed": request.app.state.sensor_pushed,
             "outbox": {k: sum(r.delivery == k for r in ob) for k in ("pending", "delivered", "failed", "pull_only")}}
 
 
@@ -1512,9 +1510,7 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
                 log.warning("gun %s drift: %s", req.gun_id, reason)
         g.drift = drift
     result.drift_warning = drift
-    docs = [sensor_doc(d, req.gun_id, p) for p in new_minutes]
-    result.sensor_features = [SensorFeaturesDoc.model_validate(x) for x in docs]
-    queue_sensor_docs(request, docs)
+    result.sensor_features = [SensorFeaturesDoc.model_validate(sensor_doc(d, req.gun_id, p)) for p in new_minutes]
     return result
 
 
@@ -1629,13 +1625,6 @@ def sensor_doc(d: Detector, gun_id: str, p: dict[str, Any]) -> dict[str, Any]:
                                      p.get("gun_norm") or "global", f"{d.info.name}@{d.info.created}")
 
 
-def queue_sensor_docs(request: Request, docs: list[dict[str, Any]]) -> None:
-    """Hand the new minutes to the push worker (RSW_RAG_SENSOR_URL set); the queue drops its oldest beyond the cap."""
-    if request.app.state.sensor_url and docs:
-        with request.app.state.sensor_lock:
-            request.app.state.sensor_queue.extend(docs)
-
-
 def attach_handoff(request: Request, result: AnomalyResult, g: "GunState | None" = None) -> None:
     """ML -> RAG handoff (same events replay.py prints) into the outbox; the push worker delivers it when
     RSW_RAG_URL is set. A mapping error is logged and leaves the response without a handoff: the scored state is
@@ -1675,41 +1664,6 @@ async def outbox_worker(app: FastAPI) -> None:
         except Exception:
             log.exception("outbox worker")
         await asyncio.sleep(app.state.outbox_poll_s)
-
-
-async def sensor_worker(app: FastAPI) -> None:
-    """D-6: POST the per-minute sensor documents oldest first (Idempotency-Key = gun_id|observed_at). On a failure the
-    document stays at the head and the worker waits RSW_SENSOR_RETRY_S; a 4xx other than 408 / 429 drops it (a contract
-    problem - retrying cannot help). Never dies on an error."""
-    import httpx  # only needed when pushing
-
-    async with httpx.AsyncClient(timeout=RAG_TIMEOUT_S, transport=app.state.rag_transport) as client:
-        while True:
-            with app.state.sensor_lock:
-                doc = app.state.sensor_queue[0] if app.state.sensor_queue else None
-            if doc is None:
-                await asyncio.sleep(app.state.outbox_poll_s)
-                continue
-            wait = 0.0
-            try:
-                r = await client.post(app.state.sensor_url, json=doc,
-                                      headers={"Idempotency-Key": f"{doc['gun_id']}|{doc['observed_at']}"})
-                ok = 200 <= r.status_code < 300
-                drop = ok or (400 <= r.status_code < 500 and r.status_code not in (408, 429))
-                if not ok:
-                    log.warning("sensor push %s %s: HTTP %s %s", doc["gun_id"], doc["observed_at"], r.status_code,
-                                r.text[:200])
-                    wait = 0.0 if drop else app.state.sensor_retry_s
-            except Exception as e:  # network errors must not break anything; the document stays queued
-                log.warning("sensor push %s %s: %s", doc["gun_id"], doc["observed_at"], e)
-                drop, ok, wait = False, False, app.state.sensor_retry_s
-            if drop:
-                with app.state.sensor_lock:
-                    if app.state.sensor_queue and app.state.sensor_queue[0] is doc:
-                        app.state.sensor_queue.popleft()
-                app.state.sensor_pushed += int(ok)
-            if wait:
-                await asyncio.sleep(wait)
 
 
 async def push_handoff(app: FastAPI, rec: HandoffRecord) -> None:
@@ -1873,7 +1827,7 @@ def build_trace(d: Detector, gun_id: str, g: GunState, minutes: int, features: l
 async def gun_sensor_features(gun_id: str, request: Request,
                               minutes: int = Query(60, ge=1, le=TRACE_WINDOWS)) -> list[dict[str, Any]]:
     """D-6: the per-minute sensor documents of the last `minutes` scored minutes, oldest first (pull path; the same
-    documents /predict returns and RSW_RAG_SENSOR_URL receives)."""
+    documents /predict returns; ML pushes them nowhere)."""
     g = gun_state(request, gun_id)
     d: Detector = request.app.state.detector
     with g.lock:
