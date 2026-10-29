@@ -299,7 +299,14 @@ def cause_name(d: dict[str, Any]) -> str | None:
         (j["situation_id"] for j in reversed(r["judgments"]) if j["verdict"] == "yes"), None
     )
     c = next((c for c in d["guidance"]["candidates"] if c["situation_id"] == sid), None)
-    return c["name"] if c else manual
+    if c:
+        return c["name"]
+    # 화면은 RAG 원인 목록(guidance.causes)을 원인 카드로 풀어 "E016-2"(코드-원인 번호)로 판단을 남긴다 (ui/src/lib/guidance.ts)
+    code, _, n = (sid or "").rpartition("-")
+    causes = d["guidance"].get("causes") or []
+    if code and n.isdigit() and 1 <= int(n) <= len(causes):
+        return causes[int(n) - 1]["name"]
+    return manual
 
 
 @app.get("/api/history")
