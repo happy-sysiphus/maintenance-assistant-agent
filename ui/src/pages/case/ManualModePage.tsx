@@ -68,7 +68,10 @@ export default function ManualModePage() {
     <>
       <BackLink />
       <div className="flex items-center gap-3 rounded-lg border border-warn-dot/30 bg-warn-soft px-[18px] py-3.5 text-warn">
-        <b className="font-semibold">이 고장에 맞는 매뉴얼 안내를 찾지 못했습니다.</b>
+        {/* 안내가 아예 없을 때와, 안내의 원인을 모두 "아니에요"로 넘겼을 때를 구분한다 */}
+        <b className="font-semibold">
+          {d.guidance.candidates.length ? '매뉴얼 안내의 원인이 모두 맞지 않았습니다.' : '이 고장에 맞는 매뉴얼 안내를 찾지 못했습니다.'}
+        </b>
         <span className="grow">직접 점검한 내용을 기록하거나 도움을 요청하세요.</span>
       </div>
 
@@ -153,7 +156,8 @@ function ManualSearch({ onOpen }: { onOpen: (page: number, doc: ManualDoc) => vo
     queryFn: () => apiGet<{ items: ManualHit[] }>(`/manuals/festo/search?q=${encodeURIComponent(q)}`),
     enabled: q !== '',
   })
-  const items = data?.items ?? []
+  // 같은 문서의 같은 쪽은 한 줄만 (api 검색이 한 쪽의 여러 조각을 따로 준다)
+  const items = (data?.items ?? []).filter((i, n, all) => all.findIndex((x) => (x.doc ?? 'festo') === (i.doc ?? 'festo') && x.page === i.page) === n)
 
   return (
     <aside className={sideCard} aria-label="매뉴얼에서 직접 찾기">
@@ -183,13 +187,25 @@ function ManualSearch({ onOpen }: { onOpen: (page: number, doc: ManualDoc) => vo
         {items.map((i) => {
           const doc = i.doc ?? 'festo'
           return (
-            <li key={`${doc}-${i.page}-${i.situation_id}-${i.title}`} className="flex items-center gap-3 rounded-lg border border-line px-3.5 py-3">
-              <div className="min-w-0 grow">
-                <b className="font-semibold">{i.title}</b>
-                <div className="truncate text-xs text-sub" title={i.quote ?? undefined}>
-                  {i.situation_name ?? i.situation_id} · {MANUAL_NAME[doc]}
+            <li key={`${doc}-${i.page}`} className="flex items-center gap-3 rounded-lg border border-line px-3.5 py-3">
+              {i.doc ? (
+                // 10/28 api: title은 문서의 영어 제목이라 문서 이름표 + 찾은 원문 한 줄을 보여준다
+                <div className="min-w-0 grow">
+                  <b className="font-semibold">{MANUAL_NAME[doc]}</b>
+                  {i.quote && (
+                    <p className="line-clamp-2 text-xs text-sub" title={i.quote}>
+                      {i.quote}
+                    </p>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="min-w-0 grow">
+                  <b className="font-semibold">{i.title}</b>
+                  <div className="truncate text-xs text-sub" title={i.quote ?? undefined}>
+                    {i.situation_name ?? i.situation_id} · {MANUAL_NAME[doc]}
+                  </div>
+                </div>
+              )}
               <DocButton page={i.page} label={`${i.page}쪽`} on={false} onOpen={(p) => onOpen(p, doc)} />
             </li>
           )

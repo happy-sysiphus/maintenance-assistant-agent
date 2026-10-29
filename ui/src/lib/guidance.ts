@@ -55,6 +55,13 @@ function expand(g: Guidance): Guidance {
   return { ...g, candidates }
 }
 
+/** 매뉴얼에 점검 · 조치가 없는 원인에서 챗봇으로 넘길 주소 (질문을 채워 둔다). 원인 카드 id는 "E012-2" 꼴 */
+export function askAboutCause(c: Candidate, what: '확인' | '조치') {
+  const code = c.situation_id.split('-')[0]
+  const q = `${code}에서 '${c.name}' 원인은 ${what === '확인' ? '어떻게 확인하나요?' : '어떻게 조치하나요?'}`
+  return `/assistant?q=${encodeURIComponent(q)}`
+}
+
 /** useQuery의 select로 쓴다: 서버 응답(캐시)은 그대로 두고 화면에 줄 모양만 바꾼다 */
 export function expandCauses(d: CaseDetail): CaseDetail {
   return { ...d, guidance: expand(d.guidance) }

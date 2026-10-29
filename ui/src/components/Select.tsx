@@ -114,8 +114,10 @@ export function Select({
                 onPointerEnter={() => setActive(i)}
                 // 버튼에서 포커스가 빠지지 않게 mousedown 기본 동작을 막고 고른다
                 onMouseDown={(e) => e.preventDefault()}
-                // <label> 안에 있을 때 클릭이 label까지 올라가면 상자가 다시 열려서 막는다
+                // <label> 안에 있을 때 클릭이 label까지 올라가면 상자가 다시 열려서 막는다.
+                // 전파만 막으면 label의 기본 동작(안의 버튼을 다시 누름)은 남아서 preventDefault도 한다 (10/29)
                 onClick={(e) => {
+                  e.preventDefault()
                   e.stopPropagation()
                   pick(o.value)
                 }}

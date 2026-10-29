@@ -6,6 +6,7 @@ import { DotTag } from '../../components/Tag'
 import { btn, card } from '../../components/ui'
 import { MANUAL_SHORT, type ManualDoc } from '../../lib/api'
 import { candidateState, checkCounts, latestJudgment, signalLabel } from '../../lib/caseFlow'
+import { askAboutCause } from '../../lib/guidance'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
 import type { Candidate, CaseDetail, CheckCriterion, Closure } from '../../types/case'
@@ -215,6 +216,12 @@ function NoActionHelp({ cand, onOpen }: { cand: Candidate | null; onOpen?: (page
   return (
     <>
       <p className="text-sm text-sub">{cand ? '매뉴얼에 이 원인의 조치 내용은 없어요.' : '원문을 확인한 매뉴얼 조치가 없습니다.'}</p>
+      {/* RAG 원인 카드(E012-2 꼴)일 때만: 챗봇은 매뉴얼 4종 전체에서 찾는다 */}
+      {cand?.why !== undefined && (
+        <Link to={askAboutCause(cand, '조치')} className="self-start text-sm font-medium text-primary-ink hover:underline">
+          AI 챗봇에게 물어보기
+        </Link>
+      )}
       {onOpen && evidence.length > 0 && (
         <>
           <SideDivider />

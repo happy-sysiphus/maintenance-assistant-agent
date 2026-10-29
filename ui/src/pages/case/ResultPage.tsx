@@ -76,7 +76,7 @@ export default function ResultPage() {
         <section className={`${card} flex flex-col gap-[22px] p-[30px]`}>
           <div>
             <span className="text-xs font-medium text-sub">
-              {cand ? `원인 ${d.guidance.candidates.indexOf(cand) + 1} / ${d.guidance.candidates.length}` : `직접 찾은 원인 · ${cause.name}`}
+              {cand ? `원인 ${d.guidance.candidates.indexOf(cand) + 1}` : `직접 찾은 원인 · ${cause.name}`}
             </span>
             <h2 className="mt-3 text-[22px] leading-snug font-medium tracking-[-0.015em]">해결됐나요?</h2>
           </div>

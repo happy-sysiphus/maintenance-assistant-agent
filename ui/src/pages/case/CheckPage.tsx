@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { DocButton, ManualPanel } from '../../components/ManualPanel'
 import { ResultSeg } from '../../components/ResultSeg'
 import { CameraIcon } from '../../components/Icons'
 import { btn, btnLarge, btnPrimary, card, input } from '../../components/ui'
 import { docFromParam, MANUAL_NAME, MANUAL_SHORT, type ManualDoc } from '../../lib/api'
 import { checkCounts, pickCandidate } from '../../lib/caseFlow'
+import { askAboutCause } from '../../lib/guidance'
 import { addPhotos, MAX_PHOTOS } from '../../lib/photo'
 import { useCaseMutation } from '../../lib/useCase'
 import type { CheckRecord } from '../../types/case'
@@ -139,7 +140,13 @@ export default function CheckPage() {
           )}
           {/* RAG 원인 중에는 점검 항목 없이 근거만 있는 것도 있다 (예: E012 원인 2 · 3) */}
           {cand.checks.length === 0 && (
-            <p className="px-[22px] py-5 text-sm text-sub">매뉴얼에 이 원인의 점검 항목이 없어요. 오른쪽 매뉴얼에서 확인하고 다음을 눌러 판단하세요.</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-[22px] py-5 text-sm">
+              <p className="text-sub">매뉴얼에 이 원인의 점검 항목이 없어요. 오른쪽 매뉴얼에서 확인하고 다음을 눌러 판단하세요.</p>
+              {/* 더 물어볼 곳: 챗봇은 매뉴얼 4종 전체에서 찾는다 (질문만 채워 두고 보내기는 사람이) */}
+              <Link to={askAboutCause(cand, '확인')} className="font-medium text-primary-ink hover:underline">
+                AI 챗봇에게 물어보기
+              </Link>
+            </div>
           )}
           <ol>
             {cand.checks.map((item, i) => {

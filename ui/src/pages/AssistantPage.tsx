@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { CameraIcon, ChatIcon, DocIcon, PlusIcon, SendIcon } from '../components/Icons'
 import { ManualPanel } from '../components/ManualPanel'
 import { btn } from '../components/ui'
@@ -38,8 +39,11 @@ export default function AssistantPage() {
   const { data } = useQuery({ queryKey: ['situations'], queryFn: () => apiGet<SituationsResponse>('/situations') })
   const situations = data?.situations ?? []
   const [convs, setConvs] = useState<Conversation[]>(saved)
-  const [activeId, setActiveId] = useState<string | null>(saved[0]?.id ?? null)
-  const [draft, setDraft] = useState('')
+  // 케이스 화면의 "AI 챗봇에게 물어보기"는 ?q=질문 으로 온다: 새 대화에 질문을 채워 둔다 (보내기는 사람이)
+  const [params] = useSearchParams()
+  const preset = params.get('q') ?? ''
+  const [activeId, setActiveId] = useState<string | null>(preset ? null : (saved[0]?.id ?? null))
+  const [draft, setDraft] = useState(preset)
   const [photos, setPhotos] = useState<Photo[]>([])
   const [pdf, setPdf] = useState<Cite | null>(null)
   const bottom = useRef<HTMLDivElement>(null)

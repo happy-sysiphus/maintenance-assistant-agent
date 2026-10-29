@@ -1,5 +1,4 @@
 import { Link } from 'react-router'
-import { DotTag } from '../../components/Tag'
 import { bigChoice, card } from '../../components/ui'
 import { checkCounts } from '../../lib/caseFlow'
 import { useCaseDetail } from './context'
@@ -37,11 +36,9 @@ export default function NoCausePage() {
                   <span className="flex size-6 items-center justify-center rounded-full bg-fill text-xs font-semibold text-sub">{i + 1}</span>
                   <div className="grow">
                     <b className="font-semibold">{c.name}</b>
-                    <div className="text-sm text-sub">
-                      점검 {k.total}개 중 {k.done}개 확인
-                    </div>
+                    {/* 원인 카드와 같게 상태 글자(제외)는 두지 않는다 (10/29) */}
+                    <div className="text-sm text-sub">{k.total ? `점검 ${k.total}개 중 ${k.done}개 확인` : '점검 항목 없음'}</div>
                   </div>
-                  <DotTag color="gray">제외</DotTag>
                 </div>
               )
             })}
