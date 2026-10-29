@@ -1,4 +1,19 @@
-# 04. 팀 레포 진행 상태 (2026-10-02 커밋 기준, 10-23 갱신 추가)
+# 04. 팀 레포 진행 상태 (2026-10-02 커밋 기준, 10-23 · 10-29 갱신 추가)
+
+## 10-29 갱신 (main `c0773e6`)
+
+| 폴더 | 10/23 이후 | 누가 |
+|---|---|---|
+| `ml/` | 10/26 c4 · c18 이름표, 핸드오프 NaN 전송 · 타임라인 버그(C-7 · D-7), FE 답 `ml/docs/fe-api-draft-reply.md`. 모델은 드라이브의 **10/06 번들**(`created 2026-10-06T10:17:47`) | 근영 |
+| `rag/` | 10/28 **E 코드 기반 하이브리드 검색**(Neo4j Aura + OpenAI), `error_mapping.json`, 매뉴얼 4종, RAGAS 평가. `situation_mapping.json` · `rsw_situations.pdf` 삭제 → `09-rag-development-reply.md` | 동열 |
+| `api/` | 10/28 동열이 RAG 연결로 다시 씀(`check_criteria.json` 삭제). 10/29 FE가 이력 원인 이름 수정 | 동열 · 한혜원 |
+| `ui/` | 10/29 새 RAG에 맞춤(원인 카드 · PDF 4종 · 조치 · 로딩) | 한혜원 |
+| `develop-loop` 브랜치 | 10/28~29 현장 기억(HITL, `FIELD_MEMORY=1`) · ingest lock · 매분 센서 push 삭제. **main에 안 합쳐짐** → `ml/docs/hitl-loop.md` (④절이 FE 요청) | 근영 |
+
+- 화면에 주는 것: 케이스 상세 `guidance`에 `sections`(요약 · 해석) · `causes[]`(이름 · why · 점검 · 조치) · `review_notes`. 화면은 `causes[]`를 원인 카드로 풀고(`src/lib/guidance.ts`), `review_notes` · `interpretation`은 아직 안 씀.
+- 실행 준비: `rag/.env`(동열에게 받음), `api/.venv`에 `pip install -r api/requirements.txt`, ML은 scikit-learn 1.7.0 · lightgbm 4.6.0.
+- **맥 주의**: Aura 그래프 버전은 `rag/data/manuals.json` · `error_mapping.json`을 CRLF로 계산했다. 맥(LF)에서는 "KG와 로컬 문서·매핑 버전이 다릅니다"가 난다 → 두 파일을 CRLF로 바꾸고 `git update-index --skip-worktree`로 둠. 두 파일이 바뀐 pull 전에는 `--no-skip-worktree`로 풀 것.
+- 남은 api 문제(api 담당 몫): push와 당겨 오기가 겹치면 케이스 중복(`develop-loop`는 플래그 켤 때만 lock), 상세 조회 저장이 동시에 들어온 닫기를 덮어쓸 수 있음(`hitl-loop.md` ④-10).
 
 ## 10-23 갱신 (main `a6a1a95`)
 

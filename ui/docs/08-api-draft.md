@@ -2,6 +2,8 @@
 
 2026-10-23 · FE 담당 (한혜원)
 
+> **10-29 상태: 답을 모두 받았다.** ML → [`ml/docs/fe-api-draft-reply.md`](../../ml/docs/fe-api-draft-reply.md) (최신 모델 = 10/06, push 받기 OK, E029 반복 묶기 OK, "재발 없음" 판정법). RAG → [`09-rag-development-reply.md`](09-rag-development-reply.md) (E 코드 직접 조회, api가 RAG 호출). api는 10/28 동열이 RAG 연결로 다시 썼고 `api/README.md`도 새로 썼다. 아래 "situation_mapping 직접 읽기" · "알림 13건 → 케이스 4건"은 10/23 기록이다(지금 모델은 test_0 알림 6건).
+
 ## 먼저
 
 **api 담당이 정해지지 않아서, FE가 데모용 api 초안을 `api/`에 올렸습니다.** 다른 의견이 있으면 말해 주세요. 담당이 정해지면 넘기거나 같이 고치겠습니다.
