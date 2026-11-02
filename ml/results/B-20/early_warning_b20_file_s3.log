@@ -1,0 +1,53 @@
+cv 64 guns 416 gun-days, test 8 guns; 31 thresholds
+
+watch rule alone (non-terminal code active): CV {'fa_per_day': 0.31495957818390674, 'recall': 0.171875, 'chance': 0.11510416666666667, 'excess': 0.056770833333333326, 'chance_near': 0.046875, 'recall_0_60': 0.203125, 'chance_0_60': 0.11770833333333333, 'events': 64, 'ci': [-0.005742187500000006, 0.12187500000000001]}
+  test {'fa_per_day': 0.0186799501867995, 'recall': 0.125, 'chance': 0.0, 'excess': 0.125, 'chance_near': 0.0, 'recall_0_60': 0.125, 'chance_0_60': 0.0, 'events': 8}
+
+CV curves (recall = alarm 10-60 min before the terminal code; chance = same at -1..-6 days):
+  model_k1        q0.500: fa 81.07 rec 0.80 ch 0.78  q0.650: fa 95.92 rec 0.73 ch 0.72  q0.800: fa 81.75 rec 0.67 ch 0.65  q0.950: fa 26.42 rec 0.42 ch 0.42  q0.980: fa 11.65 rec 0.28 ch 0.22  q0.999: fa 1.17 rec 0.02 ch 0.02
+  model_k3        q0.500: fa 38.67 rec 0.72 ch 0.72  q0.650: fa 33.80 rec 0.62 ch 0.59  q0.800: fa 19.56 rec 0.47 ch 0.43  q0.950: fa 3.55 rec 0.17 ch 0.14  q0.980: fa 0.96 rec 0.06 ch 0.04  q0.999: fa 0.01 rec 0.00 ch 0.00
+  model_k10       q0.500: fa 14.89 rec 0.55 ch 0.57  q0.650: fa 9.13 rec 0.41 ch 0.37  q0.800: fa 3.66 rec 0.23 ch 0.23  q0.950: fa 0.69 rec 0.08 ch 0.05  q0.980: fa 0.25 rec 0.02 ch 0.01  q0.999: fa 0.00 rec 0.00 ch 0.00
+  model_ng_k1     q0.500: fa 80.16 rec 0.91 ch 0.81  q0.650: fa 95.75 rec 0.84 ch 0.76  q0.800: fa 82.26 rec 0.81 ch 0.69  q0.950: fa 27.51 rec 0.58 ch 0.47  q0.980: fa 12.84 rec 0.44 ch 0.30  q0.999: fa 1.42 rec 0.03 ch 0.03
+  model_ng_k3     q0.500: fa 38.42 rec 0.86 ch 0.76  q0.650: fa 34.30 rec 0.77 ch 0.64  q0.800: fa 20.25 rec 0.64 ch 0.48  q0.950: fa 4.11 rec 0.34 ch 0.21  q0.980: fa 1.36 rec 0.17 ch 0.08  q0.999: fa 0.04 rec 0.00 ch 0.00
+  model_quiet_k1  q0.500: fa 81.10 rec 0.70 ch 0.68  q0.650: fa 95.93 rec 0.64 ch 0.62  q0.800: fa 81.74 rec 0.58 ch 0.55  q0.950: fa 26.31 rec 0.33 ch 0.33  q0.980: fa 11.47 rec 0.23 ch 0.18  q0.999: fa 1.05 rec 0.02 ch 0.02
+  model_quiet_k3  q0.500: fa 38.68 rec 0.62 ch 0.62  q0.650: fa 33.79 rec 0.52 ch 0.49  q0.800: fa 19.55 rec 0.38 ch 0.34  q0.950: fa 3.50 rec 0.11 ch 0.08  q0.980: fa 0.91 rec 0.03 ch 0.03  q0.999: fa 0.01 rec 0.00 ch 0.00
+  model_watch_k1  q0.500: fa 81.10 rec 0.84 ch 0.79  q0.650: fa 95.94 rec 0.78 ch 0.74  q0.800: fa 81.77 rec 0.72 ch 0.66  q0.950: fa 26.40 rec 0.48 ch 0.45  q0.980: fa 11.61 rec 0.39 ch 0.30  q0.999: fa 1.36 rec 0.19 ch 0.14
+  model_watch_k3  q0.500: fa 38.69 rec 0.77 ch 0.73  q0.650: fa 33.82 rec 0.67 ch 0.61  q0.800: fa 19.59 rec 0.52 ch 0.45  q0.950: fa 3.58 rec 0.27 ch 0.20  q0.980: fa 1.01 rec 0.20 ch 0.14  q0.999: fa 0.30 rec 0.16 ch 0.12
+  stop_k3         q0.500: fa 1.36 rec 0.41 ch 0.20
+  stop_k10        q0.500: fa 0.87 rec 0.38 ch 0.19
+  stop_k30        q0.500: fa 0.65 rec 0.33 ch 0.17
+
+per budget: best CV excess -> test check (same threshold)
+budget  config           q      | CV fa  recall chance excess [95% CI]        | test fa recall chance
+  0.5   model_watch_k3  0.997  | 0.40  0.172  0.118  +0.054 [-0.010, +0.119] | 0.04  0.125  0.000  -
+        near chance (T-2..6 h) 0.047;  by class recall/chance: E01 0.28/0.18  E02 0.00/0.04  E03 0.33/0.19  E04 0.00/0.03
+  1.0   model_ng_k3     0.985  | 0.94  0.141  0.061  +0.080 [+0.007, +0.161] | 0.37  0.125  0.000  BEYOND
+        near chance (T-2..6 h) 0.052;  by class recall/chance: E01 0.28/0.07  E02 0.10/0.11  E03 0.06/0.06  E04 0.11/0.03
+  2.0   model_ng_k3     0.975  | 1.83  0.250  0.100  +0.150 [+0.056, +0.252] | 0.54  0.125  0.000  BEYOND
+        near chance (T-2..6 h) 0.118;  by class recall/chance: E01 0.33/0.12  E02 0.20/0.14  E03 0.28/0.12  E04 0.17/0.04
+  3.0   model_ng_k3     0.970  | 2.14  0.281  0.116  +0.166 [+0.072, +0.267] | 0.54  0.125  0.000  BEYOND
+        near chance (T-2..6 h) 0.118;  by class recall/chance: E01 0.39/0.15  E02 0.20/0.16  E03 0.33/0.14  E04 0.17/0.04
+  5.0   model_ng_k3     0.970  | 2.14  0.281  0.116  +0.166 [+0.072, +0.267] | 0.54  0.125  0.000  BEYOND
+        near chance (T-2..6 h) 0.118;  by class recall/chance: E01 0.39/0.15  E02 0.20/0.16  E03 0.33/0.14  E04 0.17/0.04
+ 10.0   model_ng_k1     0.985  | 9.48  0.391  0.216  +0.175 [+0.061, +0.284] | 5.02  0.375  0.062  BEYOND
+        near chance (T-2..6 h) 0.210;  by class recall/chance: E01 0.39/0.13  E02 0.40/0.27  E03 0.33/0.30  E04 0.44/0.19
+ 20.0   model_ng_k1     0.975  | 15.64  0.531  0.348  +0.183 [+0.066, +0.297] | 8.70  0.500  0.208  BEYOND
+        near chance (T-2..6 h) 0.320;  by class recall/chance: E01 0.50/0.30  E02 0.80/0.46  E03 0.44/0.40  E04 0.50/0.29
+ 24.0   model_ng_k1     0.975  | 15.64  0.531  0.348  +0.183 [+0.066, +0.297] | 8.70  0.500  0.208  BEYOND
+        near chance (T-2..6 h) 0.320;  by class recall/chance: E01 0.50/0.30  E02 0.80/0.46  E03 0.44/0.40  E04 0.50/0.29
+
+nested: select config + threshold on 3 folds, score the held-out fold (pooled over the 4 folds)
+  0.5  fa 0.30  recall 0.062  chance 0.049  near 0.031  excess +0.013 [-0.010, +0.047]  ['model_watch_k3@q0.997', 'model_k10@q0.975', 'model_k10@q0.975', 'model_watch_k3@q0.997']
+  1.0  fa 0.94  recall 0.141  chance 0.100  near 0.048  excess +0.041 [-0.026, +0.112]  ['model_ng_k3@q0.985', 'model_watch_k3@q0.985', 'model_ng_k3@q0.985', 'model_ng_k3@q0.985']
+  2.0  fa 1.96  recall 0.203  chance 0.134  near 0.107  excess +0.069 [-0.010, +0.146]  ['model_ng_k3@q0.970', 'model_watch_k3@q0.985', 'model_ng_k3@q0.975', 'model_ng_k3@q0.975']
+  3.0  fa 2.14  recall 0.281  chance 0.116  near 0.118  excess +0.166 [+0.072, +0.267]  ['model_ng_k3@q0.970', 'model_ng_k3@q0.970', 'model_ng_k3@q0.970', 'model_ng_k3@q0.970']
+  5.0  fa 2.14  recall 0.281  chance 0.116  near 0.118  excess +0.166 [+0.072, +0.267]  ['model_ng_k3@q0.970', 'model_ng_k3@q0.970', 'model_ng_k3@q0.970', 'model_ng_k3@q0.970']
+ 10.0  fa 5.76  recall 0.312  chance 0.202  near 0.169  excess +0.111 [+0.012, +0.207]  ['model_ng_k1@q0.985', 'model_ng_k3@q0.925', 'model_ng_k3@q0.970', 'model_ng_k3@q0.970']
+ 20.0  fa 12.32  recall 0.469  chance 0.335  near 0.305  excess +0.134 [+0.031, +0.233]  ['model_ng_k1@q0.985', 'model_ng_k3@q0.850', 'model_ng_k1@q0.975', 'model_ng_k3@q0.850']
+ 24.0  fa 20.00  recall 0.547  chance 0.423  near 0.428  excess +0.123 [+0.017, +0.226]  ['model_ng_k3@q0.725', 'model_ng_k3@q0.825', 'model_ng_k1@q0.975', 'model_ng_k3@q0.850']
+
+exploratory stop rule (non-welding share > 0.5 for k minutes):
+  stop_k3  fa 1.36  recall 0.406  chance 0.202  near 0.223  excess +0.204 [+0.105, +0.311]  | test fa 0.75 recall 0.000 chance 0.042
+  stop_k10 fa 0.87  recall 0.375  chance 0.191  near 0.207  excess +0.184 [+0.086, +0.285]  | test fa 0.58 recall 0.000 chance 0.042
+  stop_k30 fa 0.65  recall 0.328  chance 0.165  near 0.174  excess +0.163 [+0.075, +0.258]  | test fa 0.52 recall 0.000 chance 0.042
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-20\early_warning_b20_file_s3.json (36s)

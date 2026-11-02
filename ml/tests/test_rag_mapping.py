@@ -1,5 +1,6 @@
 """
-Unit tests of .py/rag_mapping.py (ML -> RAG handoff v1.2: no symptoms, no situation ids). Pure Python: no model, no server, < 1 s.
+Unit tests of .py/rag_mapping.py (ML -> RAG handoff v1.3: no symptoms, no situation ids; event_type critical /
+early_warning). Pure Python: no model, no server, < 1 s.
 The API side (handoff on /predict, /handoffs endpoints, replay) is covered in test_pipeline.py.
 """
 import copy
@@ -106,8 +107,8 @@ def test_schema_keys_match_main():
     r = copy.deepcopy(BASE)
     r["contributing_features"] = [feat("c5", "mean", -3.1)]
     h = rm.build_handoff(r)
-    assert set(h) == {"schema_version", "event_id", "gun_id", "detected_at", "window_start", "trigger", "summary_ko",
-                      "sensor_findings", "fault_class", "context", "detector", "caveats"}
+    assert set(h) == {"schema_version", "event_type", "event_id", "gun_id", "detected_at", "window_start", "trigger",
+                      "summary_ko", "sensor_findings", "fault_class", "context", "detector", "caveats", "early_warning"}
     assert set(h["sensor_findings"][0]) == {"sensor", "sensor_name", "sensor_name_ko", "group", "statistic",
                                             "direction", "deviation_z", "share", "text_ko"}
     assert set(h["fault_class"]) == {"code", "name_en", "name_ko", "terminal_code", "definition", "basis"}
@@ -141,7 +142,7 @@ def test_handoff_times_are_utc_with_z():
     r = copy.deepcopy(BASE)
     r["contributing_features"] = [feat("c5", "mean", -3.1)]
     h = rm.build_handoff(r)
-    assert h["schema_version"] == "1.2"
+    assert h["schema_version"] == "1.3"
     assert h["detected_at"] == "2021-09-05T02:23:20Z" and h["window_start"] == "2021-09-05T02:22:21Z"
     assert h["trigger"]["rule_trigger_time"] == "2021-09-05T02:23:00Z"
     assert rm.utc_iso("2021-09-05T02:23:20Z") == "2021-09-05T02:23:20Z"
@@ -153,3 +154,29 @@ def test_caveats_carry_current_test_numbers():
     """FE note: the caveats are shown on screen - they must match models/baseline_ensemble_test_metrics.json."""
     text = " ".join(rm.CAVEATS)
     assert "0.64" not in text and "0/8" not in text and "0.71" in text and "2/8" in text
+
+
+EW = {"since": "2021-09-05T02:20:00Z", "onset_at": "2021-09-05T02:20:59Z", "active_min": 4, "rule": "model_ng_k1",
+      "sustain_windows": 1, "threshold": 0.95, "quantile": 0.975, "score": 0.97, "horizon_min": [10, 60],
+      "expected": None, "candidate_fault_classes": ["E01"], "candidate_terminal_codes": ["E012"], "note_ko": "x"}
+
+
+def test_ew_handoff_has_no_class():
+    """C-8: an early warning is told apart by event_type and trigger.source, and carries no terminal code and no
+    fault class even when the request saw a code (the api keys cases and RAG on rule_code / fault_class)."""
+    r = copy.deepcopy(BASE)  # a rule-triggered result: the early-warning document must still not carry the code
+    r["context"]["known_code_class_hint"] = "E01"
+    h = rm.build_handoff(r, "ev1", early_warning=EW)
+    assert h["event_type"] == "early_warning" and h["trigger"]["source"] == "early_warning"
+    assert h["trigger"]["rule_code"] is None and h["trigger"]["rule_trigger_time"] is None
+    assert h["fault_class"] is None and h["early_warning"] == EW
+    assert h["summary_ko"].startswith(rm.EARLY_WARNING_NOTE_KO)
+    assert rm.build_handoff(r)["event_type"] == "critical" and rm.build_handoff(r)["early_warning"] is None
+
+
+def test_ew_caveats():
+    """The early-warning caveats replace the critical ones and carry B-20's numbers (train.EW_EVIDENCE)."""
+    h = rm.build_handoff(copy.deepcopy(BASE), early_warning=EW)
+    text = " ".join(h["caveats"])
+    assert h["caveats"] == rm.CAVEATS_EARLY_WARNING and "49%" in text and "34%" in text and "4/8" in text
+    assert "0.71" not in text

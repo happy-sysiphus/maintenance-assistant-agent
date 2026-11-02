@@ -1,6 +1,6 @@
 {
   "bundle": "C:\\Users\\a0106\\Desktop\\maintenance-assistant-agent\\ml\\models\\baseline_ensemble.joblib",
-  "created": "2026-10-06T10:17:47",
+  "created": "2026-11-01T18:46:47",
   "threshold": 0.9457997090865815,
   "window": 60,
   "sustain": 3,
@@ -251,6 +251,86 @@
         "rule_repeats": 0
       }
     },
+    "early_warning": {
+      "rule": "model_ng_k1",
+      "threshold": 0.9464368224143982,
+      "events": 8,
+      "recall": 0.5,
+      "chance": 0.20833333333333331,
+      "excess": 0.2916666666666667,
+      "excess_ci": [
+        -0.20833333333333331,
+        0.7291666666666667
+      ],
+      "false_alarms_per_gun_day": 8.331257783312576,
+      "handoff_onsets_per_gun_day": 4.48318804483188,
+      "per_file": {
+        "test_0": {
+          "hit": 0.0,
+          "chance": 0.6666666666666666,
+          "false_alarms": 94,
+          "handoff_onsets": 49,
+          "days": 6.686805555555556,
+          "active_share_normal": 0.0381140305327656
+        },
+        "test_1": {
+          "hit": 0.0,
+          "chance": 0.5,
+          "false_alarms": 132,
+          "handoff_onsets": 60,
+          "days": 6.707638888888889,
+          "active_share_normal": 0.015840149083756083
+        },
+        "test_2": {
+          "hit": 1.0,
+          "chance": 0.0,
+          "false_alarms": 17,
+          "handoff_onsets": 11,
+          "days": 6.707638888888889,
+          "active_share_normal": 0.002277668495703489
+        },
+        "test_3": {
+          "hit": 1.0,
+          "chance": 0.16666666666666666,
+          "false_alarms": 29,
+          "handoff_onsets": 20,
+          "days": 6.709722222222222,
+          "active_share_normal": 0.004657420823845995
+        },
+        "test_4": {
+          "hit": 1.0,
+          "chance": 0.0,
+          "false_alarms": 22,
+          "handoff_onsets": 14,
+          "days": 6.707638888888889,
+          "active_share_normal": 0.004969458536080339
+        },
+        "test_5": {
+          "hit": 1.0,
+          "chance": 0.0,
+          "false_alarms": 14,
+          "handoff_onsets": 4,
+          "days": 6.6194444444444445,
+          "active_share_normal": 0.014477549307595467
+        },
+        "test_6": {
+          "hit": 0.0,
+          "chance": 0.3333333333333333,
+          "false_alarms": 66,
+          "handoff_onsets": 43,
+          "days": 6.707638888888889,
+          "active_share_normal": 0.0071435966456154885
+        },
+        "test_7": {
+          "hit": 0.0,
+          "chance": 0.0,
+          "false_alarms": 72,
+          "handoff_onsets": 39,
+          "days": 6.686805555555556,
+          "active_share_normal": 0.008412088482708484
+        }
+      }
+    },
     "files": [
       "test_0.parquet",
       "test_1.parquet",
@@ -273,5 +353,5 @@
     },
     "class_source": "inferred by preprocess.py from the terminal code in the last 10 min"
   },
-  "evaluated": "2026-10-06T21:29:27"
+  "evaluated": "2026-11-01T19:30:53"
 }

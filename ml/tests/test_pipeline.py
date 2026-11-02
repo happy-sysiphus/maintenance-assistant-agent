@@ -395,7 +395,8 @@ def test_4_api_matches_offline(workspace):
         assert r.json()["rule_code"] == "E029" and r.json()["rule_class_hint"] == "E04"
         # ML -> RAG handoff rides on the rule trigger and lands in the outbox (pull; no RSW_RAG_URL in tests)
         ho = r.json()["handoff"]
-        assert ho is not None and ho["schema_version"] == "1.2" and ho["gun_id"] == "G2"
+        assert ho is not None and ho["schema_version"] == "1.3" and ho["gun_id"] == "G2"
+        assert ho["event_type"] == "critical" and ho["early_warning"] is None
         # v1.1 (FE requests 3-5): UTC times with Z, controller code runs, sensor trend, Korean names
         assert ho["detected_at"].endswith("Z") and ho["window_start"].endswith("Z")
         assert ho["trigger"]["rule_trigger_time"].endswith("Z")
@@ -1128,3 +1129,235 @@ def test_11_sensor_features_per_minute(workspace, monkeypatch, caplog):
     assert docs[-1]["error_code"] == "E029" and docs[-1]["fault_class"] == "E04"
     assert docs[0]["gun_norm"] == "warming_up" and docs[-1]["gun_norm"] == "gun"
     os.environ.pop("RSW_MODEL_PATH")
+
+
+# ------------------------------------------------------------------ C-8 early warning
+def stream_chunks(client, gun, data, step=60):
+    """POST data in step-row chunks; the 200 responses, oldest first."""
+    out = []
+    for a in range(0, len(data), step):
+        r = client.post("/predict", json={"gun_id": gun, "readings": data.iloc[a:a + step].to_dict("records")})
+        if r.status_code == 200:
+            out.append(r.json())
+    return out
+
+
+def test_12_ew_step_matches_b18():
+    """C-8: the shared early-warning state machine (train.early_warning_flags window by window - what main.py runs)
+    equals B-18's vectorised run logic: sustain consecutive condition windows of one gun without a gap."""
+    from train import early_warning_flags
+
+    rng = np.random.default_rng(3)
+    t = pd.date_range("2021-09-01", periods=400, freq="60s")
+    t = t.delete(np.sort(rng.choice(np.arange(10, 390), 25, replace=False)))  # gaps
+    w = pd.DataFrame({"file": np.where(np.arange(len(t)) < 200, "a", "b"), "non_welding": rng.random(len(t)),
+                      "error_active": 0.0, "terminal_any": 0.0,
+                      "warmup": (rng.random(len(t)) < 0.1).astype(float)}, index=t)
+    s = rng.random(len(t))
+    g = w["file"].to_numpy()
+    brk = np.r_[True, (g[1:] != g[:-1]) | (np.diff(t.asi8) != 60 * 10**9)]
+    idx = np.arange(len(t))
+    for kind in ("model_ng", "model"):
+        c = (s >= 0.4) & (w["warmup"].to_numpy() == 0)
+        if kind == "model":
+            c &= w["non_welding"].to_numpy() <= 0.5
+        start = c & (brk | ~np.r_[False, c[:-1]])
+        pos = idx - np.maximum.accumulate(np.where(start, idx, -1))
+        for k in (1, 3):
+            act, ons = early_warning_flags(w, s, {"enabled": True, "kind": kind, "threshold": 0.4, "sustain": k})
+            assert (act == (c & (pos >= k - 1))).all() and (ons == (c & (pos == k - 1))).all()
+            assert ons.sum() >= 3, "the random condition must start several episodes"
+
+
+def test_13_ew_metrics_zones():
+    """C-8 event-level metrics (B-18 definitions) on a hand-built 7-day gun: T = the first own terminal code of the last
+    15 min; hit 10-60 min before T; chance at T - 1..6 days; false alarms = episode starts > 60 min before T."""
+    from train import early_warning_metrics
+
+    n = 7 * 1440
+    t = pd.date_range("2021-09-01", periods=n, freq="60s")
+    ttf = (n - 1 - np.arange(n)) * 60.0
+    term = (ttf <= 240).astype(float)
+    w = pd.DataFrame({"file": "E01_0", "class": "E01", "ttf_s": ttf, "error_active": term, "terminal_any": term,
+                      "non_welding": 0.0, "warmup": 0.0, "term_1": term, "term_2": 0.0, "term_3": 0.0, "term_4": 0.0},
+                     index=t)
+    lead = ttf - 240
+    s = np.zeros(n)
+    s[(lead >= 1200) & (lead <= 1800)] = 1  # in the real zone (10-60 min before T)
+    s[(lead >= 86400 + 1200) & (lead <= 86400 + 1500)] = 1  # in day 1's chance zone -> also a false alarm
+    s[np.argmin(np.abs(lead - 3 * 86400))] = 1  # one more false alarm, outside every zone
+    m = early_warning_metrics(w, s, {"enabled": True, "kind": "model_ng", "threshold": 0.9, "sustain": 1,
+                                     "cooldown_s": 3600, "rule": "model_ng_k1"})
+    days = (lead > 3600).sum() / 1440
+    assert m["events"] == 1 and m["recall"] == 1.0 and m["chance"] == pytest.approx(1 / 6)
+    assert m["excess"] == pytest.approx(5 / 6)
+    assert m["false_alarms_per_gun_day"] == pytest.approx(2 / days)
+    assert m["handoff_onsets_per_gun_day"] == pytest.approx(2 / days)
+    assert m["per_file"]["E01_0"]["false_alarms"] == 2
+
+
+def test_14_train_bundle_early_warning(workspace):
+    """C-8 in train.py: the early-warning threshold comes from gun-held-out scores (CV out-of-fold with --cv, else the
+    val files), the bundle carries the block, every split gets event-level metrics; --no-early-warning turns it off."""
+    import train
+
+    m3 = json.load(open(workspace["models"] / "baseline_iforest_metrics.json", encoding="utf-8"))  # test_3: no --cv
+    ew = m3["early_warning"]
+    assert ew["enabled"] and ew["rule"] == train.EW_DEFAULT["rule"] and ew["quantile"] == train.EW_DEFAULT["q"]
+    assert ew["calibration"]["source"] == "val_files"
+    assert ew["calibration"]["fallback"] is True, "2 h files have no window a day before the failure"
+    kind, k = train.EW_RULES[ew["rule"]]
+    assert ew["kind"] == kind and ew["sustain"] == k and ew["cooldown_s"] == 3600 and ew["horizon_min"] == [10, 60]
+    assert ew["evidence"] is None, "B-20 measured the ensemble, not the IsolationForest"
+    assert 0 <= ew["val_exceed_rate"] <= 1
+    for split in ("val", "test"):
+        e = m3["metrics"][split]["early_warning"]
+        assert {"recall", "chance", "excess", "false_alarms_per_gun_day", "handoff_onsets_per_gun_day",
+                "per_file"} <= set(e) and e["threshold"] == ew["threshold"]
+    scores = pd.read_csv(workspace["models"] / "scores" / "test_0_iforest.csv", index_col=0)
+    assert "early_warning" in scores.columns
+
+    out = run(os.path.join(PY, "train.py"), "--data-dir", workspace["pre"], "--val-frac", "0.5", "--cv", "2",
+              "--no-test", "--warmup-hours", "0.5", "--model-dir", workspace["ws"] / "models_cv", "--model", "iforest")
+    assert f"early warning: {train.EW_DEFAULT['rule']}" in out
+    m = json.load(open(workspace["ws"] / "models_cv" / "baseline_iforest_metrics.json", encoding="utf-8"))
+    cal = m["early_warning"]["calibration"]
+    assert cal["source"] == "cv2_out_of_fold" and cal["n_windows"] > ew["calibration"]["n_windows"], "8 guns vs 4"
+    assert m["metrics"]["cv"]["early_warning"]["events"] >= 1 and "early_warning" in m["metrics"]["val"]
+
+    run(os.path.join(PY, "train.py"), "--data-dir", workspace["pre"], "--val-frac", "0.5", "--no-test",
+        "--warmup-hours", "0.5", "--no-early-warning", "--model-dir", workspace["ws"] / "models_noew", "--model", "iforest")
+    m = json.load(open(workspace["ws"] / "models_noew" / "baseline_iforest_metrics.json", encoding="utf-8"))
+    assert m["early_warning"] is None and "early_warning" not in m["metrics"]["val"]
+
+
+def test_15_api_ew_matches_offline(workspace, monkeypatch):
+    """C-8 online = offline: main.py's early_warning per window equals train.early_warning_flags on the same file
+    (score_frame), with the threshold at the median score so that the warning switches often."""
+    from train import load_bundle, score_frame
+
+    b = load_bundle(str(workspace["models"] / "baseline_iforest.joblib"))
+    pre = pd.read_parquet(workspace["pre"] / "test" / "test_0.parquet")
+    thr = float(np.median(score_frame(b, pre)["score"]))
+    b["early_warning"] = {**b["early_warning"], "threshold": thr}
+    off = score_frame(b, pre)
+    monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))
+    sys.path.insert(0, ROOT)
+    main = importlib.reload(importlib.import_module("main"))
+    from fastapi.testclient import TestClient
+
+    raw = pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
+    with TestClient(main.app) as client:
+        main.app.state.detector.early_warning["threshold"] = thr
+        stream_chunks(client, "EWO", raw)
+        pts = client.get("/guns/EWO/trace", params={"minutes": 180}).json()["points"]
+    on = pd.DataFrame({"t": [pd.Timestamp(p["window_start"]).floor("60s") for p in pts],
+                       "ew": [p["early_warning"] for p in pts], "score": [p["score"] for p in pts]}).set_index("t")
+    j = on.join(off[["early_warning", "score"]], rsuffix="_off", how="inner")
+    clear = ((j["score"] - thr).abs() > 1e-3) & ((j["score_off"] - thr).abs() > 1e-3)
+    assert len(j) >= 80 and clear.sum() >= 60
+    assert j["ew"].any() and not j["ew"].all()
+    assert (j.loc[clear, "ew"] == j.loc[clear, "early_warning"]).all()
+
+
+def test_16_ew_handoff_rules(workspace, monkeypatch):
+    """C-8 handoffs: off by default (the response fields still say it); with RSW_EARLY_WARNING_HANDOFFS=1 one handoff
+    per episode start (event_type early_warning, no code, no class, the profile as candidates), a cooldown per gun,
+    none while a critical event or a terminal code is there; /handoffs?event_type= and /stats count them."""
+    monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))
+    monkeypatch.delenv("RSW_EARLY_WARNING_HANDOFFS", raising=False)
+    sys.path.insert(0, ROOT)
+    main = importlib.reload(importlib.import_module("main"))
+    from fastapi.testclient import TestClient
+
+    raw = pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
+    quiet = raw.iloc[:-600]  # no terminal code
+    with TestClient(main.app) as client:
+        d = main.app.state.detector
+        assert client.get("/health").json()["early_warning"] == {"model": True, "handoffs": False}
+        d.early_warning["threshold"] = -1e9  # every window after the warm-up warns
+        res = stream_chunks(client, "OFF", quiet)
+        ons = [r for r in res if r["early_warning_onset"]]
+        assert ons and all(r["early_warning_handoff_suppressed"] == "handoffs_off" for r in ons)
+        assert client.get("/handoffs").json() == []
+        assert res[-1]["early_warning"] and res[-1]["early_warning_threshold"] == -1e9
+        assert not res[0]["early_warning"], "warm-up windows never warn"
+        st = client.get("/guns/OFF/stats", params={"days": 31}).json()["total"]
+        assert st["early_warnings"] == len(ons) and st["early_warning_handoffs"] == 0 and st["early_warning_windows"] > 0
+        gun = next(x for x in client.get("/guns").json() if x["gun_id"] == "OFF")
+        assert gun["early_warning"] and gun["early_warning_since"] is not None
+        kinds = [e["kind"] for e in client.get("/guns/OFF/trace", params={"minutes": 180}).json()["events"]]
+        assert kinds.count("early_warning_start") == len(ons)
+
+    monkeypatch.setenv("RSW_EARLY_WARNING_HANDOFFS", "1")
+    main = importlib.reload(importlib.import_module("main"))
+    with TestClient(main.app) as client:
+        d = main.app.state.detector
+        assert client.get("/health").json()["early_warning"]["handoffs"] is True
+        d.early_warning["threshold"] = -1e9
+        assert client.put("/guns/ON/profile", json={"expected_fault_classes": ["E04"]}).status_code == 200
+        ons = [r for r in stream_chunks(client, "ON", quiet) if r["early_warning_onset"]]
+        assert len(ons) >= 2, "the warm-up end and the 90 s gap start an episode each"
+        assert [r["early_warning_handoff_suppressed"] for r in ons] == [None] + ["cooldown"] * (len(ons) - 1)
+        hs = client.get("/handoffs", params={"event_type": "early_warning"}).json()
+        assert len(hs) == 1 and client.get("/handoffs", params={"event_type": "critical"}).json() == []
+        h = hs[0]["handoff"]
+        assert h["event_id"] == ons[0]["handoff"]["event_id"] and h["schema_version"] == "1.3"
+        assert h["event_type"] == "early_warning" and h["trigger"]["source"] == "early_warning"
+        assert h["trigger"]["rule_code"] is None and h["fault_class"] is None
+        e = h["early_warning"]
+        assert e["candidate_fault_classes"] == ["E04"] and e["candidate_terminal_codes"] == ["E029"]
+        assert e["rule"] == d.early_warning["rule"] and e["horizon_min"] == [10, 60] and e["active_min"] >= 1
+        assert h["caveats"] == main.rag_mapping.CAVEATS_EARLY_WARNING
+        st = client.get("/guns/ON/stats", params={"days": 31}).json()["total"]
+        assert st["early_warning_handoffs"] == 1 and st["critical_events"] == 0
+
+        # an episode that starts in the request of a terminal code: never an early warning
+        d.early_warning["cooldown_s"] = 0
+        assert client.put("/guns/TC/profile", json={"expected_fault_classes": ["E01"]}).status_code == 200
+        for gun in ("CR", "TC"):  # CR: the E029 rule fires (critical); TC: E029 is outside the profile (no handoff)
+            d.early_warning["threshold"] = 1e9
+            stream_chunks(client, gun, quiet, step=600)
+            d.early_warning["threshold"] = -1e9
+            last = stream_chunks(client, gun, raw.iloc[-600:], step=600)[-1]
+            assert last["early_warning_onset"] and last["rule_triggered"]
+            assert last["early_warning_handoff_suppressed"] == ("critical" if gun == "CR" else "terminal_code")
+        assert len(client.get("/handoffs", params={"event_type": "early_warning"}).json()) == 1
+    os.environ.pop("RSW_EARLY_WARNING_HANDOFFS", None)
+
+
+def test_17_ew_restart_and_old_bundle(workspace, tmp_path, monkeypatch):
+    """C-8 state survives a restart (the run and the last handoff; under another model only the cooldown), and a bundle
+    without an early_warning block serves as before: fields False / None, no early-warning handoff even with the flag."""
+    import joblib
+
+    monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))
+    sys.path.insert(0, ROOT)
+    main = importlib.reload(importlib.import_module("main"))
+    g = main.GunState(gun_norm=True)
+    g.ew = {"run": 4, "last_t": pd.Timestamp("2021-09-01 01:00"), "since": pd.Timestamp("2021-09-01 00:57")}
+    g.ew_active, g.ew_last_handoff = True, pd.Timestamp("2021-09-01 00:57:59")
+    snap = json.loads(json.dumps(g.snapshot("X", "m1")))
+    g2 = main.GunState.restore(snap, gun_norm=True, model_created="m1")
+    assert g2.ew == g.ew and g2.ew_active and g2.ew_last_handoff == g.ew_last_handoff
+    g3 = main.GunState.restore(snap, gun_norm=True, model_created="m2")
+    assert g3.ew["run"] == 0 and not g3.ew_active and g3.ew_last_handoff == g.ew_last_handoff
+
+    b = joblib.load(workspace["models"] / "baseline_iforest.joblib")
+    b.pop("early_warning")
+    joblib.dump(b, tmp_path / "old.joblib")
+    monkeypatch.setenv("RSW_MODEL_PATH", str(tmp_path / "old.joblib"))
+    monkeypatch.setenv("RSW_EARLY_WARNING_HANDOFFS", "1")
+    main = importlib.reload(importlib.import_module("main"))
+    from fastapi.testclient import TestClient
+
+    raw = pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
+    with TestClient(main.app) as client:
+        assert client.get("/health").json()["early_warning"] == {"model": False, "handoffs": True}
+        assert client.get("/model").json()["model"]["early_warning_rule"] is None
+        out = stream_chunks(client, "OLD", raw.iloc[:3600], step=600)
+        assert out and not any(r["early_warning"] or r["early_warning_onset"] for r in out)
+        assert all(r["early_warning_threshold"] is None for r in out)
+        assert client.get("/handoffs", params={"event_type": "early_warning"}).json() == []
+    os.environ.pop("RSW_EARLY_WARNING_HANDOFFS", None)
+    os.environ.pop("RSW_MODEL_PATH", None)

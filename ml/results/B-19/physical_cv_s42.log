@@ -1,0 +1,15 @@
+64 train files, 58 physical guns; duplicate files ['E01_12', 'E01_13', 'E01_15', 'E01_16', 'E01_3', 'E03_10', 'E03_2', 'E03_3', 'E04_0', 'E04_16', 'E04_17']
+seed 42: moved ['E03_10', 'E03_2', 'E03_3', 'E04_0', 'E04_17']
+ file folds: sizes [18, 18, 14, 14]
+  fold 1/4: 18 files, threshold 0.9586, 122s
+  fold 2/4: 18 files, threshold 0.9460, 156s
+  fold 3/4: 14 files, threshold 0.9333, 447s
+  fold 4/4: 14 files, threshold 0.9406, 153s
+ file: auroc 0.688 +- 0.057  pre_rule 0.644 +- 0.060  gun 0.705  alarm@normal 0.0080  | duplicates pre_rule 0.597, others 0.655  (882s)
+ physical folds: sizes [15, 18, 17, 14]
+  fold 1/4: 15 files, threshold 0.9221, 111s
+  fold 2/4: 18 files, threshold 0.9488, 173s
+  fold 3/4: 17 files, threshold 0.9425, 180s
+  fold 4/4: 14 files, threshold 0.9435, 141s
+ physical: auroc 0.709 +- 0.081  pre_rule 0.666 +- 0.087  gun 0.722  alarm@normal 0.0118  | duplicates pre_rule 0.603, others 0.672  (610s)
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-19\physical_cv.json

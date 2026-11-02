@@ -1,0 +1,562 @@
+{
+ "criteria": "before computing any result below (2026-11-01):\n    rules       ML     B-20 fixed rule: model_ng_k1, threshold = the 0.975 quantile of each run's normal CV scores\n                BLIP   a short c10-off run (5 s <= length < 10 min, A-5 definition, A-4 runs) starts inside the window;\n                       one window; warm-up windows never flag (as ML)\n                UNION  ML or BLIP, one window\n    metrics     B-18 exactly (results/B-18/early_warning.py Frame.evaluate): hit = flag in a window ending 10-60 min\n                before T, chance = the same at T - 1..6 days, false alarm = run onsets > 60 min before T per gun-day\n    runs        the 8 OOF score sets of B-19 / B-20 (64 CV guns): each gun's hit / chance averaged over the runs, gun\n                bootstrap 2000, paired (one resample for both rules of a difference); 8 test guns as a check\n    comparisons D1 = excess(UNION) - excess(ML)          does the blip add hits on top of the model?\n                D2 = excess(UNION) - excess(ML at q*)    q* = the highest quantile of B-18's grid whose pooled false\n                                                         alarms per gun-day >= UNION's: the same alarms spent on the model\n    adds value  D1 CI lower bound > 0 AND D2 CI lower bound > 0 AND UNION <= 24 false alarms per gun-day (the user's\n                cap) AND the test excess of UNION >= that of ML (direction check only, run mean)\n    otherwise   the blip stays out of the early warning\n    caveat      BLIP was picked in A-5 from 9 events x 3 windows on these same failures, so a pass is consistency with\n                the model's evidence, not an independent confirmation",
+ "pooled": {
+  "ML": {
+   "fa_per_day": 16.4,
+   "recall": 0.488,
+   "chance": 0.343,
+   "excess": 0.146,
+   "ci": [
+    0.059,
+    0.221
+   ]
+  },
+  "BLIP": {
+   "fa_per_day": 7.27,
+   "recall": 0.344,
+   "chance": 0.198,
+   "excess": 0.146,
+   "ci": [
+    0.04,
+    0.249
+   ]
+  },
+  "UNION": {
+   "fa_per_day": 22.01,
+   "recall": 0.639,
+   "chance": 0.445,
+   "excess": 0.194,
+   "ci": [
+    0.085,
+    0.293
+   ]
+  },
+  "ML_q*": {
+   "fa_per_day": 23.88,
+   "recall": 0.562,
+   "chance": 0.433,
+   "excess": 0.13,
+   "ci": [
+    0.037,
+    0.212
+   ],
+   "q": 0.96
+  }
+ },
+ "test": {
+  "ML": {
+   "runs": [
+    {
+     "run": "file_s42",
+     "fa_per_day": 8.29,
+     "hits": 4,
+     "chance": 0.208,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s42",
+     "fa_per_day": 7.3,
+     "hits": 4,
+     "chance": 0.167,
+     "excess": 0.333,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "file_s1",
+     "fa_per_day": 9.13,
+     "hits": 4,
+     "chance": 0.229,
+     "excess": 0.271,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s1",
+     "fa_per_day": 8.91,
+     "hits": 4,
+     "chance": 0.229,
+     "excess": 0.271,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "file_s2",
+     "fa_per_day": 9.06,
+     "hits": 4,
+     "chance": 0.229,
+     "excess": 0.271,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s2",
+     "fa_per_day": 8.14,
+     "hits": 4,
+     "chance": 0.208,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "file_s3",
+     "fa_per_day": 8.7,
+     "hits": 4,
+     "chance": 0.208,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s3",
+     "fa_per_day": 9.13,
+     "hits": 4,
+     "chance": 0.229,
+     "excess": 0.271,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    }
+   ],
+   "hits_mean": 4.0,
+   "excess_mean": 0.287,
+   "fa_per_day_mean": 8.58
+  },
+  "BLIP": {
+   "runs": [
+    {
+     "run": "file_s42",
+     "fa_per_day": 6.5,
+     "hits": 3,
+     "chance": 0.083,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s42",
+     "fa_per_day": 6.5,
+     "hits": 3,
+     "chance": 0.083,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "file_s1",
+     "fa_per_day": 6.5,
+     "hits": 3,
+     "chance": 0.083,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s1",
+     "fa_per_day": 6.5,
+     "hits": 3,
+     "chance": 0.083,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "file_s2",
+     "fa_per_day": 6.5,
+     "hits": 3,
+     "chance": 0.083,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s2",
+     "fa_per_day": 6.5,
+     "hits": 3,
+     "chance": 0.083,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "file_s3",
+     "fa_per_day": 6.5,
+     "hits": 3,
+     "chance": 0.083,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s3",
+     "fa_per_day": 6.5,
+     "hits": 3,
+     "chance": 0.083,
+     "excess": 0.292,
+     "hit_guns": [
+      "test_2",
+      "test_4",
+      "test_5"
+     ]
+    }
+   ],
+   "hits_mean": 3.0,
+   "excess_mean": 0.292,
+   "fa_per_day_mean": 6.5
+  },
+  "UNION": {
+   "runs": [
+    {
+     "run": "file_s42",
+     "fa_per_day": 13.54,
+     "hits": 4,
+     "chance": 0.271,
+     "excess": 0.229,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s42",
+     "fa_per_day": 12.74,
+     "hits": 4,
+     "chance": 0.229,
+     "excess": 0.271,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "file_s1",
+     "fa_per_day": 14.18,
+     "hits": 4,
+     "chance": 0.292,
+     "excess": 0.208,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s1",
+     "fa_per_day": 14.03,
+     "hits": 4,
+     "chance": 0.292,
+     "excess": 0.208,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "file_s2",
+     "fa_per_day": 14.14,
+     "hits": 4,
+     "chance": 0.292,
+     "excess": 0.208,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s2",
+     "fa_per_day": 13.41,
+     "hits": 4,
+     "chance": 0.271,
+     "excess": 0.229,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "file_s3",
+     "fa_per_day": 13.9,
+     "hits": 4,
+     "chance": 0.271,
+     "excess": 0.229,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    },
+    {
+     "run": "physical_s3",
+     "fa_per_day": 14.18,
+     "hits": 4,
+     "chance": 0.292,
+     "excess": 0.208,
+     "hit_guns": [
+      "test_2",
+      "test_3",
+      "test_4",
+      "test_5"
+     ]
+    }
+   ],
+   "hits_mean": 4.0,
+   "excess_mean": 0.224,
+   "fa_per_day_mean": 13.77
+  },
+  "ML_q*": {
+   "runs": [
+    {
+     "run": "file_s42",
+     "fa_per_day": 12.96,
+     "hits": 5,
+     "excess": 0.312
+    },
+    {
+     "run": "physical_s42",
+     "fa_per_day": 11.79,
+     "hits": 5,
+     "excess": 0.354
+    },
+    {
+     "run": "file_s1",
+     "fa_per_day": 15.11,
+     "hits": 5,
+     "excess": 0.312
+    },
+    {
+     "run": "physical_s1",
+     "fa_per_day": 14.25,
+     "hits": 5,
+     "excess": 0.312
+    },
+    {
+     "run": "file_s2",
+     "fa_per_day": 14.4,
+     "hits": 5,
+     "excess": 0.312
+    },
+    {
+     "run": "physical_s2",
+     "fa_per_day": 12.31,
+     "hits": 5,
+     "excess": 0.312
+    },
+    {
+     "run": "file_s3",
+     "fa_per_day": 13.28,
+     "hits": 5,
+     "excess": 0.312
+    },
+    {
+     "run": "physical_s3",
+     "fa_per_day": 13.95,
+     "hits": 5,
+     "excess": 0.312
+    }
+   ],
+   "hits_mean": 5.0,
+   "excess_mean": 0.317,
+   "fa_per_day_mean": 13.51
+  }
+ },
+ "grid_fa_per_day": {
+  "0.500": 81.03,
+  "0.525": 84.37,
+  "0.550": 87.78,
+  "0.575": 90.42,
+  "0.600": 92.28,
+  "0.625": 93.45,
+  "0.650": 93.81,
+  "0.675": 93.48,
+  "0.700": 92.37,
+  "0.725": 90.39,
+  "0.750": 87.68,
+  "0.775": 84.02,
+  "0.800": 79.49,
+  "0.825": 74.1,
+  "0.850": 67.43,
+  "0.875": 59.76,
+  "0.900": 50.83,
+  "0.925": 40.13,
+  "0.950": 28.73,
+  "0.955": 26.29,
+  "0.960": 23.88,
+  "0.965": 21.3,
+  "0.970": 18.78,
+  "0.975": 16.4,
+  "0.980": 13.59,
+  "0.985": 10.7,
+  "0.990": 7.82,
+  "0.995": 4.65,
+  "0.997": 3.22,
+  "0.999": 1.39
+ },
+ "D1_union_minus_ml": {
+  "diff": 0.048,
+  "ci": [
+   -0.013,
+   0.112
+  ]
+ },
+ "D2_union_minus_ml_matched": {
+  "diff": 0.064,
+  "ci": [
+   0.006,
+   0.127
+  ]
+ },
+ "overlap_mean_over_runs": {
+  "both": 12.38,
+  "ml_only": 18.88,
+  "blip_only": 9.62,
+  "neither": 23.12,
+  "events": 64.0
+ },
+ "by_class": {
+  "ML": {
+   "E01": {
+    "recall": 0.444,
+    "chance": 0.275
+   },
+   "E02": {
+    "recall": 0.625,
+    "chance": 0.417
+   },
+   "E03": {
+    "recall": 0.486,
+    "chance": 0.361
+   },
+   "E04": {
+    "recall": 0.458,
+    "chance": 0.35
+   }
+  },
+  "BLIP": {
+   "E01": {
+    "recall": 0.278,
+    "chance": 0.204
+   },
+   "E02": {
+    "recall": 0.3,
+    "chance": 0.232
+   },
+   "E03": {
+    "recall": 0.278,
+    "chance": 0.176
+   },
+   "E04": {
+    "recall": 0.5,
+    "chance": 0.194
+   }
+  },
+  "UNION": {
+   "E01": {
+    "recall": 0.542,
+    "chance": 0.422
+   },
+   "E02": {
+    "recall": 0.7,
+    "chance": 0.477
+   },
+   "E03": {
+    "recall": 0.667,
+    "chance": 0.475
+   },
+   "E04": {
+    "recall": 0.674,
+    "chance": 0.419
+   }
+  },
+  "ML_q*": {
+   "E01": {
+    "recall": 0.528,
+    "chance": 0.348
+   },
+   "E02": {
+    "recall": 0.725,
+    "chance": 0.494
+   },
+   "E03": {
+    "recall": 0.514,
+    "chance": 0.427
+   },
+   "E04": {
+    "recall": 0.556,
+    "chance": 0.488
+   }
+  }
+ },
+ "checks": {
+  "D1_ci_above_0": false,
+  "D2_ci_above_0": true,
+  "union_within_cap": true,
+  "test_union_not_worse": false
+ },
+ "adds_value": false
+}

@@ -1,0 +1,4 @@
+gun test_3 drift: 2 critical terminal-code rule triggers on 2021-09-03
+test_3 handoffs: [('2021-09-03T09:23:59', 'rule', 'E016'), ('2021-09-03T09:25:59', 'rule', 'E029')] fault_class E04 findings []
+test_2 handoffs: [('2020-01-02T05:46:59', 'rule', 'E016'), ('2020-01-02T05:55:59', 'model', None)] 360 ['c10_std', 'c16_std', 'c10_mean', 'c16_mean']
+test_5 early-warning handoffs: 1 from models/c8/baseline_ensemble.joblib

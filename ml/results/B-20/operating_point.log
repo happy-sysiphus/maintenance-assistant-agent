@@ -1,0 +1,20 @@
+budget  0.5: fa 0.37  recall 0.113  chance 0.089  excess +0.024 [-0.020, +0.070]  picks {'model_watch_k3': 23, 'model_k10': 8, 'model_ng_k3': 1}
+budget    1: fa 1.07  recall 0.131  chance 0.099  excess +0.032 [-0.013, +0.078]  picks {'model_watch_k3': 13, 'model_ng_k3': 13, 'model_watch_k1': 3, 'model_k10': 2, 'model_k3': 1}
+budget    2: fa 1.75  recall 0.17  chance 0.111  excess +0.059 [+0.007, +0.114]  picks {'model_ng_k3': 25, 'model_watch_k1': 5, 'model_watch_k3': 2}
+budget    3: fa 2.45  recall 0.193  chance 0.133  excess +0.061 [+0.008, +0.115]  picks {'model_ng_k3': 25, 'model_watch_k1': 5, 'model_quiet_k1': 1, 'model_k3': 1}
+budget    5: fa 3.94  recall 0.242  chance 0.162  excess +0.081 [+0.021, +0.140]  picks {'model_ng_k3': 21, 'model_watch_k1': 7, 'model_ng_k1': 4}
+budget   10: fa 6.14  recall 0.271  chance 0.208  excess +0.063 [+0.001, +0.121]  picks {'model_ng_k3': 19, 'model_ng_k1': 8, 'model_watch_k1': 4, 'model_quiet_k1': 1}
+budget   20: fa 16.33  recall 0.486  chance 0.357  excess +0.129 [+0.059, +0.194]  picks {'model_ng_k3': 16, 'model_ng_k1': 15, 'model_k1': 1}
+budget   24: fa 18.71  recall 0.529  chance 0.386  excess +0.143 [+0.066, +0.214]  picks {'model_ng_k1': 17, 'model_ng_k3': 15}
+
+decision: budget 24 -> model_ng_k1 at q 0.9750 (17/32 picks)
+  file_s42: thr 0.9466  test {'run': 'file_s42', 'threshold': 0.9466, 'fa_per_day': 8.29, 'hits': 4, 'events': 8, 'chance': 0.208, 'hit_guns': ['test_2', 'test_3', 'test_4', 'test_5']}
+  physical_s42: thr 0.9514  test {'run': 'physical_s42', 'threshold': 0.9514, 'fa_per_day': 7.3, 'hits': 4, 'events': 8, 'chance': 0.167, 'hit_guns': ['test_2', 'test_3', 'test_4', 'test_5']}
+  file_s1: thr 0.9440  test {'run': 'file_s1', 'threshold': 0.944, 'fa_per_day': 9.13, 'hits': 4, 'events': 8, 'chance': 0.229, 'hit_guns': ['test_2', 'test_3', 'test_4', 'test_5']}
+  physical_s1: thr 0.9446  test {'run': 'physical_s1', 'threshold': 0.9446, 'fa_per_day': 8.91, 'hits': 4, 'events': 8, 'chance': 0.229, 'hit_guns': ['test_2', 'test_3', 'test_4', 'test_5']}
+  file_s2: thr 0.9443  test {'run': 'file_s2', 'threshold': 0.9443, 'fa_per_day': 9.06, 'hits': 4, 'events': 8, 'chance': 0.229, 'hit_guns': ['test_2', 'test_3', 'test_4', 'test_5']}
+  physical_s2: thr 0.9476  test {'run': 'physical_s2', 'threshold': 0.9476, 'fa_per_day': 8.14, 'hits': 4, 'events': 8, 'chance': 0.208, 'hit_guns': ['test_2', 'test_3', 'test_4', 'test_5']}
+  file_s3: thr 0.9451  test {'run': 'file_s3', 'threshold': 0.9451, 'fa_per_day': 8.7, 'hits': 4, 'events': 8, 'chance': 0.208, 'hit_guns': ['test_2', 'test_3', 'test_4', 'test_5']}
+  physical_s3: thr 0.9440  test {'run': 'physical_s3', 'threshold': 0.944, 'fa_per_day': 9.13, 'hits': 4, 'events': 8, 'chance': 0.229, 'hit_guns': ['test_2', 'test_3', 'test_4', 'test_5']}
+fixed rule pooled over 8 runs: {'runs': 8, 'fa_per_day': 16.4, 'recall': 0.488, 'chance': 0.343, 'excess': 0.146, 'ci': [0.059, 0.221]}
+saved operating_point.json

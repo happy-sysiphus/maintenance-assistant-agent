@@ -1,0 +1,197 @@
+72 failures, 65 physical guns, 56 clusters
+
+[30m] case share / same-clock share  OR [95% CI]  p
+  all
+    power_on     n=70  0.34 / 0.12  OR 9.3 [4.06, 35.11]  p 0.001  prec 0.0201
+    power_off    n=70  0.16 / 0.09  OR 3.0 [1.13, 11.0]  p 0.053  prec 0.0091
+    short_cycle  n=70  0.43 / 0.12  OR 9.51 [4.38, 24.69]  p 0.0005  prec 0.0221
+    cap_change   n=70  0.09 / 0.05  OR 2.13 [0.57, 8.89]  p 0.2994  prec 0.0043
+    dressing     n=70  0.27 / 0.28  OR 0.92 [0.47, 2.21]  p 0.8321  prec 0.0025
+    cap_maint    n=70  0.29 / 0.29  OR 0.92 [0.48, 2.16]  p 0.8366  prec 0.0027
+    stop_code    n=70  0.17 / 0.11  OR 3.25 [1.13, 13.0]  p 0.067
+    other_code   n=70  0.09 / 0.01  OR 16.17 [3.43, inf]  p 0.1099
+    production   n=70  0.51 / 0.50  OR 1.09 [0.66, 3.28]  p 0.8631
+  E01+E03
+    power_on     n=40  0.55 / 0.19  OR 11.75 [4.25, 110.0]  p 0.0005
+    power_off    n=40  0.10 / 0.07  OR 1.47 [0.25, 5.6]  p 0.7306
+    short_cycle  n=40  0.50 / 0.16  OR 9.2 [3.27, 40.0]  p 0.001
+    cap_change   n=40  0.07 / 0.05  OR 2.0 [0.0, inf]  p 0.5732
+    dressing     n=40  0.25 / 0.22  OR 1.26 [0.33, 6.14]  p 0.7731
+    cap_maint    n=40  0.25 / 0.24  OR 1.1 [0.27, 5.5]  p 1.0
+    stop_code    n=40  0.30 / 0.17  OR 5.57 [1.56, inf]  p 0.0245
+    other_code   n=40  0.10 / 0.01  OR 12.0 [2.0, inf]  p 0.3878
+    production   n=40  0.50 / 0.41  OR 1.71 [0.67, 3.95]  p 0.2764
+  E01
+    power_on     n=20  0.50 / 0.19  OR 10.25 [2.4, inf]  p 0.013
+    power_off    n=20  0.10 / 0.10  OR 1.0 [0.0, 5.0]  p 1.0
+    short_cycle  n=20  0.60 / 0.16  OR 27.5 [7.33, inf]  p 0.009
+    cap_change   n=20  0.10 / 0.03  OR 9.0 [0.0, inf]  p 0.4468
+    dressing     n=20  0.30 / 0.23  OR 1.73 [0.12, inf]  p 0.5862
+    cap_maint    n=20  0.30 / 0.24  OR 1.58 [0.08, inf]  p 0.6532
+    stop_code    n=20  0.25 / 0.16  OR 12.0 [1.5, inf]  p 0.1244
+    other_code   n=20  0.10 / 0.00  OR inf [inf, inf]  p 0.7381
+    production   n=20  0.55 / 0.39  OR 3.11 [0.89, 10.0]  p 0.1004
+  E02
+    power_on     n= 9  0.11 / 0.06  OR inf [inf, inf]  p 1.0
+    power_off    n= 9  0.00 / 0.00  OR nan None  p None
+    short_cycle  n= 9  0.22 / 0.04  OR 5.8 [0.0, inf]  p 0.5762
+    cap_change   n= 9  0.22 / 0.11  OR 1.78 [0.0, 34.67]  p 0.5577
+    dressing     n= 9  0.56 / 0.32  OR 5.71 [0.71, inf]  p 0.1434
+    cap_maint    n= 9  0.67 / 0.33  OR 7.02 [1.25, inf]  p 0.066
+    stop_code    n= 9  0.00 / 0.02  OR 0.0 [0.0, 0.0]  p 1.0
+    other_code   n= 9  0.11 / 0.06  OR inf [inf, inf]  p 1.0
+    production   n= 9  1.00 / 0.66  OR inf [inf, inf]  p 0.0335
+  E03
+    power_on     n=20  0.60 / 0.19  OR 13.25 [3.56, inf]  p 0.0055
+    power_off    n=20  0.10 / 0.04  OR 2.4 [0.0, inf]  p 0.5577
+    short_cycle  n=20  0.40 / 0.16  OR 4.62 [1.45, 29.5]  p 0.0655
+    cap_change   n=20  0.05 / 0.07  OR 0.6 [0.0, inf]  p 0.8151
+    dressing     n=20  0.20 / 0.21  OR 0.94 [0.12, 9.0]  p 0.9985
+    cap_maint    n=20  0.20 / 0.23  OR 0.76 [0.05, 15.5]  p 0.9825
+    stop_code    n=20  0.35 / 0.17  OR 4.5 [1.0, inf]  p 0.1509
+    other_code   n=20  0.10 / 0.02  OR 6.0 [0.0, inf]  p 0.6442
+    production   n=20  0.45 / 0.42  OR 1.14 [0.32, 3.91]  p 0.996
+  E04
+    power_on     n=21  0.05 / 0.02  OR 2.0 [0.0, inf]  p 1.0
+    power_off    n=21  0.33 / 0.15  OR inf [inf, inf]  p 0.006
+    short_cycle  n=21  0.38 / 0.10  OR 13.0 [3.6, inf]  p 0.031
+    cap_change   n=21  0.05 / 0.02  OR 5.0 [0.0, inf]  p 0.9095
+    dressing     n=21  0.19 / 0.39  OR 0.22 [0.02, 1.8]  p 0.0585
+    cap_maint    n=21  0.19 / 0.39  OR 0.22 [0.03, 1.83]  p 0.0555
+    stop_code    n=21  0.00 / 0.03  OR 0.0 [0.0, 0.0]  p 0.5622
+    other_code   n=21  0.05 / 0.00  OR inf [inf, inf]  p 1.0
+    production   n=21  0.33 / 0.59  OR 0.27 [0.04, 2.91]  p 0.1924
+
+[10m] case share / same-clock share  OR [95% CI]  p
+  all
+    power_on     n=70  0.20 / 0.05  OR 7.3 [3.0, 29.0]  p 0.0135  prec 0.0117
+    power_off    n=70  0.10 / 0.05  OR 5.4 [1.67, 22.0]  p 0.044  prec 0.0058
+    short_cycle  n=70  0.43 / 0.05  OR 20.83 [8.46, 84.5]  p 0.001  prec 0.0131
+    cap_change   n=70  0.07 / 0.01  OR 6.92 [1.33, inf]  p 0.1504  prec 0.0027
+    dressing     n=70  0.17 / 0.15  OR 1.3 [0.55, 3.6]  p 0.6347  prec 0.001
+    cap_maint    n=70  0.19 / 0.15  OR 1.41 [0.58, 3.93]  p 0.4898  prec 0.0012
+    stop_code    n=70  0.17 / 0.10  OR 3.64 [1.13, 16.4]  p 0.0435
+    other_code   n=70  0.07 / 0.01  OR 15.0 [3.0, inf]  p 0.3508
+    production   n=70  0.41 / 0.41  OR 0.99 [0.61, 2.4]  p 0.9965
+  E01+E03
+    power_on     n=40  0.35 / 0.08  OR 8.11 [3.25, 41.5]  p 0.0115
+    power_off    n=40  0.03 / 0.02  OR 1.2 [0.0, 7.5]  p 1.0
+    short_cycle  n=40  0.50 / 0.06  OR 18.5 [5.93, 140.0]  p 0.011
+    cap_change   n=40  0.05 / 0.01  OR 11.0 [0.0, inf]  p 0.5972
+    dressing     n=40  0.12 / 0.11  OR 1.27 [0.26, 17.0]  p 0.8281
+    cap_maint    n=40  0.12 / 0.11  OR 1.2 [0.21, 14.0]  p 0.984
+    stop_code    n=40  0.30 / 0.16  OR 6.67 [1.73, inf]  p 0.018
+    other_code   n=40  0.10 / 0.01  OR 12.0 [2.0, inf]  p 0.4013
+    production   n=40  0.40 / 0.30  OR 1.73 [0.59, 3.87]  p 0.3383
+  E01
+    power_on     n=20  0.35 / 0.08  OR 9.0 [2.0, inf]  p 0.077
+    power_off    n=20  0.00 / 0.03  OR 0.0 [0.0, 0.0]  p 0.6017
+    short_cycle  n=20  0.60 / 0.05  OR 67.0 [14.67, inf]  p 0.088
+    cap_change   n=20  0.05 / 0.00  OR inf [inf, inf]  p 1.0
+    dressing     n=20  0.15 / 0.06  OR 6.5 [0.5, inf]  p 0.2554
+    cap_maint    n=20  0.15 / 0.06  OR 6.5 [0.0, inf]  p 0.2799
+    stop_code    n=20  0.25 / 0.15  OR inf [inf, inf]  p 0.0665
+    other_code   n=20  0.10 / 0.00  OR inf [inf, inf]  p 0.7496
+    production   n=20  0.40 / 0.22  OR 3.75 [0.86, 10.0]  p 0.1629
+  E02
+    power_on     n= 9  0.00 / 0.00  OR nan None  p None
+    power_off    n= 9  0.00 / 0.00  OR nan None  p None
+    short_cycle  n= 9  0.22 / 0.04  OR 5.8 [0.0, inf]  p 0.5957
+    cap_change   n= 9  0.22 / 0.06  OR 3.56 [0.0, inf]  p 0.5217
+    dressing     n= 9  0.44 / 0.22  OR 4.0 [0.5, inf]  p 0.2694
+    cap_maint    n= 9  0.56 / 0.22  OR 5.17 [0.88, inf]  p 0.1559
+    stop_code    n= 9  0.00 / 0.02  OR 0.0 [0.0, 0.0]  p 1.0
+    other_code   n= 9  0.00 / 0.00  OR nan None  p None
+    production   n= 9  0.89 / 0.62  OR inf [inf, inf]  p 0.084
+  E03
+    power_on     n=20  0.35 / 0.08  OR 7.4 [1.83, inf]  p 0.0445
+    power_off    n=20  0.05 / 0.02  OR 3.0 [0.0, inf]  p 1.0
+    short_cycle  n=20  0.40 / 0.07  OR 8.8 [2.54, inf]  p 0.062
+    cap_change   n=20  0.05 / 0.02  OR 5.0 [0.0, inf]  p 0.8996
+    dressing     n=20  0.10 / 0.16  OR 0.46 [0.0, 4.0]  p 0.5892
+    cap_maint    n=20  0.10 / 0.17  OR 0.38 [0.0, 4.0]  p 0.3358
+    stop_code    n=20  0.35 / 0.17  OR 4.67 [0.93, inf]  p 0.1439
+    other_code   n=20  0.10 / 0.02  OR 6.0 [0.0, inf]  p 0.6282
+    production   n=20  0.40 / 0.38  OR 1.08 [0.33, 3.73]  p 0.991
+  E04
+    power_on     n=21  0.00 / 0.01  OR 0.0 [0.0, 0.0]  p 1.0
+    power_off    n=21  0.29 / 0.12  OR inf [inf, inf]  p 0.0165
+    short_cycle  n=21  0.38 / 0.03  OR inf [inf, inf]  p 0.1279
+    cap_change   n=21  0.05 / 0.00  OR inf [inf, inf]  p 1.0
+    dressing     n=21  0.14 / 0.19  OR 0.67 [0.0, 4.0]  p 0.6482
+    cap_maint    n=21  0.14 / 0.19  OR 0.67 [0.0, 4.0]  p 0.6542
+    stop_code    n=21  0.00 / 0.03  OR 0.0 [0.0, 0.0]  p 0.5377
+    other_code   n=21  0.05 / 0.00  OR inf [inf, inf]  p 1.0
+    production   n=21  0.24 / 0.55  OR 0.17 [0.03, 1.89]  p 0.1164
+
+[zone] case share / same-clock share  OR [95% CI]  p
+  all
+    power_on     n=70  0.27 / 0.15  OR 2.54 [1.16, 4.38]  p 0.036  prec 0.0159
+    power_off    n=70  0.16 / 0.11  OR 1.71 [0.56, 3.18]  p 0.2649  prec 0.0091
+    short_cycle  n=70  0.36 / 0.17  OR 3.17 [1.7, 6.34]  p 0.003  prec 0.0214
+    cap_change   n=70  0.11 / 0.10  OR 1.21 [0.34, 3.47]  p 0.7851  prec 0.0054
+    dressing     n=70  0.37 / 0.34  OR 1.22 [0.61, 3.81]  p 0.5937  prec 0.004
+    cap_maint    n=70  0.40 / 0.35  OR 1.34 [0.64, 4.36]  p 0.4563  prec 0.0041
+    stop_code    n=70  0.14 / 0.10  OR 2.6 [0.62, 13.67]  p 0.1719
+    other_code   n=70  0.06 / 0.01  OR 6.78 [0.78, inf]  p 0.1714
+    production   n=70  0.57 / 0.52  OR 1.34 [0.71, 5.14]  p 0.4093
+  E01+E03
+    power_on     n=40  0.35 / 0.21  OR 2.48 [1.19, 6.73]  p 0.0625
+    power_off    n=40  0.15 / 0.13  OR 1.25 [0.23, 4.4]  p 0.7411
+    short_cycle  n=40  0.33 / 0.17  OR 2.5 [1.03, 6.67]  p 0.0885
+    cap_change   n=40  0.05 / 0.08  OR 0.43 [0.0, 5.5]  p 0.3398
+    dressing     n=40  0.25 / 0.25  OR 1.0 [0.33, 3.09]  p 1.0
+    cap_maint    n=40  0.28 / 0.25  OR 1.23 [0.44, 3.75]  p 0.7136
+    stop_code    n=40  0.25 / 0.17  OR 4.33 [1.0, inf]  p 0.083
+    other_code   n=40  0.07 / 0.01  OR 6.0 [0.0, inf]  p 0.4323
+    production   n=40  0.40 / 0.37  OR 1.26 [0.33, 3.7]  p 0.7571
+  E01
+    power_on     n=20  0.30 / 0.21  OR 2.1 [0.67, 8.75]  p 0.3258
+    power_off    n=20  0.20 / 0.19  OR 1.08 [0.0, 16.0]  p 0.902
+    short_cycle  n=20  0.25 / 0.18  OR 1.57 [0.29, 7.5]  p 0.5432
+    cap_change   n=20  0.05 / 0.07  OR 0.25 [0.0, inf]  p 0.8681
+    dressing     n=20  0.20 / 0.27  OR 0.5 [0.0, 3.0]  p 0.4968
+    cap_maint    n=20  0.20 / 0.27  OR 0.5 [0.0, 2.89]  p 0.4768
+    stop_code    n=20  0.20 / 0.16  OR 6.0 [0.75, inf]  p 0.4163
+    other_code   n=20  0.10 / 0.00  OR inf [inf, inf]  p 0.7506
+    production   n=20  0.45 / 0.40  OR 1.43 [0.15, 7.8]  p 0.6957
+  E02
+    power_on     n= 9  0.11 / 0.12  OR 0.69 [0.0, inf]  p 0.8886
+    power_off    n= 9  0.00 / 0.05  OR 0.0 [0.0, 0.0]  p 0.7276
+    short_cycle  n= 9  0.33 / 0.16  OR 3.25 [0.0, 30.6]  p 0.5082
+    cap_change   n= 9  0.22 / 0.15  OR 2.33 [0.0, inf]  p 0.9405
+    dressing     n= 9  0.56 / 0.37  OR 2.61 [0.48, 23.66]  p 0.3013
+    cap_maint    n= 9  0.56 / 0.37  OR 2.61 [0.5, inf]  p 0.3048
+    stop_code    n= 9  0.00 / 0.02  OR 0.0 [0.0, 0.0]  p 1.0
+    other_code   n= 9  0.11 / 0.06  OR inf [inf, inf]  p 1.0
+    production   n= 9  1.00 / 0.72  OR inf [inf, inf]  p 0.05
+  E03
+    power_on     n=20  0.40 / 0.21  OR 2.77 [1.0, 10.0]  p 0.096
+    power_off    n=20  0.10 / 0.07  OR 1.57 [0.0, 9.0]  p 0.8326
+    short_cycle  n=20  0.40 / 0.17  OR 3.8 [1.12, 20.0]  p 0.054
+    cap_change   n=20  0.05 / 0.09  OR 0.5 [0.0, 6.67]  p 0.5782
+    dressing     n=20  0.30 / 0.23  OR 1.53 [0.27, inf]  p 0.6357
+    cap_maint    n=20  0.35 / 0.23  OR 2.4 [0.5, inf]  p 0.3443
+    stop_code    n=20  0.30 / 0.17  OR 4.0 [0.7, inf]  p 0.1854
+    other_code   n=20  0.05 / 0.03  OR 2.0 [0.0, inf]  p 1.0
+    production   n=20  0.35 / 0.34  OR 1.08 [0.08, 13.5]  p 0.978
+  E04
+    power_on     n=21  0.19 / 0.06  OR 3.83 [0.0, 24.0]  p 0.3258
+    power_off    n=21  0.24 / 0.09  OR 3.38 [0.0, 22.5]  p 0.2889
+    short_cycle  n=21  0.43 / 0.18  OR 5.43 [1.77, 20.33]  p 0.0195
+    cap_change   n=21  0.19 / 0.11  OR 1.91 [0.32, 6.67]  p 0.4163
+    dressing     n=21  0.52 / 0.49  OR 1.16 [0.29, 39.0]  p 0.8926
+    cap_maint    n=21  0.57 / 0.53  OR 1.18 [0.3, 37.0]  p 0.8136
+    stop_code    n=21  0.00 / 0.02  OR 0.0 [0.0, 0.0]  p 0.6192
+    other_code   n=21  0.00 / 0.00  OR nan None  p None
+    production   n=21  0.71 / 0.72  OR 0.97 [0.23, inf]  p 1.0
+
+primary (30 min window, Holm over 3):
+  H1 E01+E03 x power_on: 0.55 vs 0.19, OR 11.75 [4.25, 110.0], p 0.0005 -> Holm 0.0015, supported True | placebo OR 1.82 [0.48, 7.1] (contains 1: True)
+  H2 E04 x power_off: 0.33 vs 0.15, OR inf [inf, inf], p 0.006 -> Holm 0.012, supported True | placebo OR 2.25 [0.31, inf] (contains 1: True)
+  H3 E02 x cap_maint: 0.67 vs 0.33, OR 7.02 [1.25, inf], p 0.066 -> Holm 0.066, supported False | placebo OR 0.29 [0.0, 3.0] (contains 1: True)
+
+cost (events / gun-day over 495 gun-days): {"power_on": {"events": 1197, "per_gun_day": 2.42}, "power_off": {"events": 1209, "per_gun_day": 2.44}, "short_cycle": {"events": 4118, "per_gun_day": 8.32}, "cap_change": {"events": 1862, "per_gun_day": 3.76}, "dressing": {"events": 12140, "per_gun_day": 24.52}, "cap_maint": {"events": 14002, "per_gun_day": 28.28}, "stop_code": {"events": 442, "per_gun_day": 0.89}, "other_code": {"events": 74, "per_gun_day": 0.15}}
+exploratory zone power_on: placebo 0.145 / 0.142 OR 1.03 [0.38, 2.67] | train 0.29 / 0.168 | test 0.125 / 0.021
+exploratory zone short_cycle: placebo 0.13 / 0.191 OR 0.6 [0.2, 1.21] | train 0.355 / 0.187 | test 0.375 / 0.083
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\A-5\crossover.json

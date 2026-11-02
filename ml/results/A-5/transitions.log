@@ -1,0 +1,43 @@
+linked failures: {"on": {"n": 24, "by_class": {"E03": 12, "E01": 10, "E02": 1, "E04": 1}}, "off": {"n": 11, "by_class": {"E04": 7, "E01": 2, "E03": 2}}}
+lags by class (median min; n <= 5 min / <= 30 min):
+  E01: power_on 29.7 (7/10 of 20), power_off 173.4 (0/2 of 20), production 14.7 (8/11 of 20), cap_change 270.6 (1/2 of 19), dressing 176.1 (2/6 of 19), stop_code 0.2 (5/5 of 8), any_off_start 0.2 (12/13 of 20), any_on 6.4 (9/13 of 20), c10 off at T 12, inside an off run 12, off started <= 1 min before 11
+  E02: power_on 545.5 (0/1 of 11), power_off 1071.1 (0/0 of 11), production 0.1 (10/11 of 11), cap_change 94.5 (2/3 of 9), dressing 24.7 (2/7 of 11), stop_code 1503.3 (0/0 of 3), any_off_start 107.3 (2/3 of 11), any_on 94.8 (2/4 of 11), c10 off at T 1, inside an off run 1, off started <= 1 min before 1
+  E03: power_on 20.4 (6/12 of 20), power_off 174.7 (1/2 of 20), production 113.5 (8/9 of 20), cap_change 833.7 (0/1 of 20), dressing 229.6 (1/4 of 19), stop_code 1.1 (6/7 of 11), any_off_start 55.9 (8/9 of 20), any_on 0.4 (12/15 of 20), c10 off at T 2, inside an off run 2, off started <= 1 min before 8
+  E04: power_on 619.2 (0/1 of 21), power_off 156.9 (4/7 of 21), production 40.9 (5/7 of 21), cap_change 227.2 (1/1 of 19), dressing 58.3 (2/4 of 21), stop_code 3150.3 (0/0 of 13), any_off_start 3.8 (11/14 of 21), any_on 51.2 (3/5 of 21), c10 off at T 18, inside an off run 18, off started <= 1 min before 6
+percentile tests (failing transition among the gun's others):
+  on  off_min      {"strata": 24, "clusters": 21, "mean_percentile": 0.631, "ci": [0.526, 0.735], "p": 0.0507, "others_median": 9, "failing_median": 164.25, "others_median_value": 35.08}
+  on  idle_h       {"strata": 24, "clusters": 21, "mean_percentile": 0.654, "ci": [0.51, 0.773], "p": 0.0237, "others_median": 9, "failing_median": 3.73, "others_median_value": 3.14}
+  on  stop10       {"strata": 24, "clusters": 21, "mean_percentile": 0.589, "ci": [0.526, 0.664], "p": 0.0113, "others_median": 9, "failing_median": 0.0, "others_median_value": 0.0}
+  on  clock_dev    {"strata": 24, "clusters": 21, "mean_percentile": 0.473, "ci": [0.322, 0.622], "p": 0.669, "others_median": 9, "failing_median": 145.77, "others_median_value": 228.71}
+  on  c1_at        {"strata": 24, "clusters": 21, "mean_percentile": 0.56, "ci": [0.428, 0.68], "p": 0.3131, "others_median": 9, "failing_median": 2.15, "others_median_value": 1.8}
+  on  since_cap_h  {"strata": 24, "clusters": 21, "mean_percentile": 0.635, "ci": [0.504, 0.763], "p": 0.0602, "others_median": 8, "failing_median": 9.15, "others_median_value": 7.64}
+  off clock_dev    {"strata": 11, "clusters": 11, "mean_percentile": 0.326, "ci": [0.171, 0.521], "p": 0.0627, "others_median": 11, "failing_median": 1.22, "others_median_value": 4.65}
+  off welds10      {"strata": 11, "clusters": 11, "mean_percentile": 0.496, "ci": [0.373, 0.64], "p": 0.9569, "others_median": 11, "failing_median": 0.0, "others_median_value": 0.0}
+  off on_h         {"strata": 11, "clusters": 11, "mean_percentile": 0.444, "ci": [0.263, 0.625], "p": 0.5536, "others_median": 10, "failing_median": 4.3, "others_median_value": 1.53}
+primary (Holm over 3): {"P1": {"mean_percentile": 0.631, "ci": [0.526, 0.735], "p": 0.0507, "p_holm": 0.1014, "supported": false}, "P2": {"mean_percentile": 0.654, "ci": [0.51, 0.773], "p": 0.0237, "p_holm": 0.0711, "supported": false}, "P3": {"mean_percentile": 0.326, "ci": [0.171, 0.521], "p": 0.0627, "p_holm": 0.1014, "supported": false}}
+linked power-on detail:
+  {"file": "E01_0", "class": "E01", "power_on_kst": "2021-08-25 06:45:25", "s_to_failure": 12, "welds_between": 0, "off_min": 185.3, "idle_h": 3.7, "stop_code_10min_before": true}
+  {"file": "E01_10", "class": "E01", "power_on_kst": "2021-09-02 06:30:08", "s_to_failure": 839, "welds_between": 0, "off_min": 155.1, "idle_h": 3.2, "stop_code_10min_before": true}
+  {"file": "E01_11", "class": "E01", "power_on_kst": "2021-10-12 01:51:11", "s_to_failure": 195, "welds_between": 0, "off_min": 324.2, "idle_h": 10.6, "stop_code_10min_before": false}
+  {"file": "E01_17", "class": "E01", "power_on_kst": "2021-10-15 18:19:34", "s_to_failure": 251, "welds_between": 6, "off_min": 24.8, "idle_h": 0.5, "stop_code_10min_before": false}
+  {"file": "E01_2", "class": "E01", "power_on_kst": "2021-09-10 20:41:04", "s_to_failure": 27, "welds_between": 0, "off_min": 11.5, "idle_h": 0.2, "stop_code_10min_before": false}
+  {"file": "E01_3", "class": "E01", "power_on_kst": "2021-10-13 10:35:54", "s_to_failure": 1605, "welds_between": 0, "off_min": 88.5, "idle_h": 1.6, "stop_code_10min_before": false}
+  {"file": "E01_4", "class": "E01", "power_on_kst": "2021-10-15 10:11:03", "s_to_failure": 115, "welds_between": 0, "off_min": 31.0, "idle_h": 17.0, "stop_code_10min_before": false}
+  {"file": "E01_5", "class": "E01", "power_on_kst": "2021-08-26 06:48:49", "s_to_failure": 10, "welds_between": 0, "off_min": 218.0, "idle_h": 3.8, "stop_code_10min_before": true}
+  {"file": "E01_6", "class": "E01", "power_on_kst": "2021-10-15 10:11:04", "s_to_failure": 114, "welds_between": 0, "off_min": 31.0, "idle_h": 17.0, "stop_code_10min_before": false}
+  {"file": "E01_8", "class": "E01", "power_on_kst": "2021-09-04 06:20:02", "s_to_failure": 1554, "welds_between": 0, "off_min": 145.0, "idle_h": 3.4, "stop_code_10min_before": true}
+  {"file": "E02_10", "class": "E02", "power_on_kst": "2021-09-18 06:51:15", "s_to_failure": 900, "welds_between": 39, "off_min": 197.9, "idle_h": 3.3, "stop_code_10min_before": false}
+  {"file": "E03_0", "class": "E03", "power_on_kst": "2021-10-26 09:13:33", "s_to_failure": 40, "welds_between": 0, "off_min": 663.5, "idle_h": 14.4, "stop_code_10min_before": false}
+  {"file": "E03_1", "class": "E03", "power_on_kst": "2021-09-07 06:20:04", "s_to_failure": 1467, "welds_between": 0, "off_min": 145.0, "idle_h": 3.4, "stop_code_10min_before": true}
+  {"file": "E03_12", "class": "E03", "power_on_kst": "2021-09-19 10:13:26", "s_to_failure": 628, "welds_between": 0, "off_min": 613.6, "idle_h": 10.2, "stop_code_10min_before": false}
+  {"file": "E03_13", "class": "E03", "power_on_kst": "2021-10-01 10:09:21", "s_to_failure": 20, "welds_between": 0, "off_min": 1502.4, "idle_h": 25.1, "stop_code_10min_before": false}
+  {"file": "E03_14", "class": "E03", "power_on_kst": "2021-09-17 06:48:30", "s_to_failure": 391, "welds_between": 17, "off_min": 173.4, "idle_h": 3.6, "stop_code_10min_before": true}
+  {"file": "E03_15", "class": "E03", "power_on_kst": "2021-10-22 06:30:08", "s_to_failure": 982, "welds_between": 0, "off_min": 125.1, "idle_h": 2.9, "stop_code_10min_before": true}
+  {"file": "E03_16", "class": "E03", "power_on_kst": "2021-09-08 06:49:11", "s_to_failure": 13, "welds_between": 0, "off_min": 139.1, "idle_h": 3.9, "stop_code_10min_before": true}
+  {"file": "E03_17", "class": "E03", "power_on_kst": "2021-09-07 06:42:56", "s_to_failure": 15, "welds_between": 0, "off_min": 235.3, "idle_h": 3.9, "stop_code_10min_before": true}
+  {"file": "E03_3", "class": "E03", "power_on_kst": "2021-09-12 18:15:30", "s_to_failure": 236, "welds_between": 0, "off_min": 20.8, "idle_h": 0.5, "stop_code_10min_before": false}
+  {"file": "E03_6", "class": "E03", "power_on_kst": "2021-10-01 11:50:07", "s_to_failure": 15, "welds_between": 0, "off_min": 2743.0, "idle_h": 158.3, "stop_code_10min_before": false}
+  {"file": "E03_9", "class": "E03", "power_on_kst": "2021-10-15 09:54:52", "s_to_failure": 1678, "welds_between": 14, "off_min": 740.4, "idle_h": 16.0, "stop_code_10min_before": false}
+  {"file": "E04_6", "class": "E04", "power_on_kst": "2021-09-04 12:08:19", "s_to_failure": 713, "welds_between": 0, "off_min": 35.4, "idle_h": 0.6, "stop_code_10min_before": false}
+  {"file": "test_5", "class": "E03", "power_on_kst": "2021-10-03 11:00:39", "s_to_failure": 874, "welds_between": 0, "off_min": 5142.2, "idle_h": 85.7, "stop_code_10min_before": false}
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\A-5\transitions.json

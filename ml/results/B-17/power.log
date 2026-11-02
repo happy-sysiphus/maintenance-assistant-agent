@@ -1,0 +1,7 @@
+E02 1-6h open_dev   guns  7  +0.25 sd: False  -0.25 sd: True  +0.5 sd: False  -0.5 sd: True  +1.0 sd: False  -1.0 sd: True  +2.0 sd: True  -2.0 sd: True
+E02 1-6h c3_closed  guns  7  +0.25 sd: False  -0.25 sd: False  +0.5 sd: False  -0.5 sd: False  +1.0 sd: True  -1.0 sd: True  +2.0 sd: True  -2.0 sd: True
+E02 6-24h open_dev   guns  6  +0.25 sd: False  -0.25 sd: False  +0.5 sd: False  -0.5 sd: False  +1.0 sd: True  -1.0 sd: True  +2.0 sd: True  -2.0 sd: True
+E02 6-24h c3_closed  guns  6  +0.25 sd: False  -0.25 sd: True  +0.5 sd: False  -0.5 sd: True  +1.0 sd: True  -1.0 sd: True  +2.0 sd: True  -2.0 sd: True
+E03 1-6h open_dev   guns 14  +0.25 sd: False  -0.25 sd: False  +0.5 sd: False  -0.5 sd: True  +1.0 sd: True  -1.0 sd: True  +2.0 sd: True  -2.0 sd: True
+E03 1-6h c3_closed  guns 10  +0.25 sd: True  -0.25 sd: True  +0.5 sd: True  -0.5 sd: True  +1.0 sd: True  -1.0 sd: True  +2.0 sd: True  -2.0 sd: True
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-17\power.json

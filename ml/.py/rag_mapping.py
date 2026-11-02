@@ -1,6 +1,8 @@
 """
 ML -> downstream handoff mapping: turns one /predict result (AnomalyResult as a dict) into the document FE's api
-receives on a critical event (POST /api/ml/handoffs; schema `rag_handoff` v1.2).
+receives on a critical event (POST /api/ml/handoffs; schema `rag_handoff` v1.3) - or, since C-8, on an early-warning
+start (event_type "early_warning": no terminal code, no fault class; main.py sends it only with
+RSW_EARLY_WARNING_HANDOFFS=1).
 
 Scope (2026-10-21, D-003 / D-004 decided):
     ML (this module)   what is unusual: trigger, terminal code and fault class (E01..E04, from the data: the code a
@@ -23,8 +25,9 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-SCHEMA_VERSION = "1.2"  # 1.1 (2026-10-08): + error_timeline, sensor_trend, times with "Z"; 1.2 (2026-10-21): - symptoms,
-# situation_ids, fault_class.situation_id (no situation-doc mapping in ML)
+SCHEMA_VERSION = "1.3"  # 1.1 (2026-10-08): + error_timeline, sensor_trend, times with "Z"; 1.2 (2026-10-21): - symptoms,
+# situation_ids, fault_class.situation_id (no situation-doc mapping in ML); 1.3 (2026-11-01, C-8): + event_type,
+# early_warning (an early-warning event: no terminal code, no fault class)
 
 # a contributing feature counts as a finding when it explains at least MIN_SHARE of the positive contributions
 # AND its value (model units, see CAVEATS) is at least MIN_DEV away from the normal reference. Calibrated on the 132
@@ -81,6 +84,15 @@ CAVEATS = [
     "없는 gun(warming_up/global)은 학습 데이터 전체라 gun 사이의 원래 차이도 섞임; 흔들림, c10(작동 허용 신호), "
     "최근 10분 용접 가동률·에러 상태 비율은 늘 학습 데이터 전체 기준",
     "센서 해석(상황·원인)은 하지 않음 - 센서 소견은 평소와 다른 값일 뿐 원인 판단이 아님",
+]
+# C-8 early warning (history.md §42-43): the numbers are B-20's fixed rule pooled over 8 out-of-fold runs (train.py
+# EW_EVIDENCE) and its 8 test guns - keep them in step with a new operating point
+EARLY_WARNING_NOTE_KO = "조기 경보: 수십 분 안 고장 가능성(확정 아님) - 종료 코드가 아직 없고, 고장 유형은 모름"
+CAVEATS_EARLY_WARNING = [
+    "조기 경보는 정밀도가 낮음 - 고장 10~60분 전 경보가 켜진 고장 49%, 같은 시각 고장 없는 날도 34%(교차검증 8회 평균, "
+    "테스트 4/8건), 건당 하루 오경보 ~16회",
+    "종료 코드·고장 유형이 아직 없음 - early_warning.candidate_fault_classes는 건 프로파일일 뿐 진단이 아님",
+    "센서 소견은 평소와 다른 값일 뿐 원인 판단이 아님",
 ]
 
 
@@ -158,31 +170,42 @@ def interpret(result: dict[str, Any]) -> dict[str, Any]:
     return {"summary_ko": summary, "sensor_findings": findings, "fault_class": fclass}
 
 
-def build_handoff(result: dict[str, Any], event_id: str | None = None) -> dict[str, Any]:
-    """Full handoff document (schema v1.2) for one critical event. `result` = AnomalyResult.model_dump(mode='json')."""
+def build_handoff(result: dict[str, Any], event_id: str | None = None,
+                  early_warning: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Full handoff document (schema v1.3) for one critical event. `result` = AnomalyResult.model_dump(mode='json').
+    With `early_warning` (main.early_warning_info, C-8): an event_type "early_warning" document - trigger.source
+    "early_warning", no rule code, no fault class (nothing has fired yet), its own summary and caveats."""
     ctx = result.get("context") or {}
     model = result.get("model") or {}
-    # a repeat or an out-of-profile code (C-3) did not trigger this event
-    rule = bool(result.get("rule_triggered")) and not result.get("rule_repeat") and not result.get("rule_out_of_profile")
+    ew = early_warning is not None
+    # a repeat or an out-of-profile code (C-3) did not trigger this event; an early warning has no rule basis
+    rule = (not ew and bool(result.get("rule_triggered")) and not result.get("rule_repeat")
+            and not result.get("rule_out_of_profile"))
+    body = interpret(result)
+    if ew:
+        body["fault_class"] = None
+        body["summary_ko"] = f"{EARLY_WARNING_NOTE_KO}; {body['summary_ko']}"
     return {
         "schema_version": SCHEMA_VERSION,
+        "event_type": "early_warning" if ew else "critical",
         "event_id": event_id or uuid.uuid4().hex,
         "gun_id": result["gun_id"],
         "detected_at": utc_iso(result["window_end"]),
         "window_start": utc_iso(result["window_start"]),
-        "trigger": {"source": trigger_source(result),
+        "trigger": {"source": "early_warning" if ew else trigger_source(result),
                     "rule_code": result.get("rule_code") if rule else None,
                     "rule_trigger_time": utc_iso(result["rule_trigger_time"]) if rule and result.get("rule_trigger_time")
                     else None,
                     "anomaly_score": result.get("anomaly_score"), "threshold": result.get("threshold"),
                     "score_z": result.get("score_z"), "alarm_duration_s": result.get("alarm_duration_s", 0),
                     "sustained": bool(result.get("sustained_in_request") or result.get("sustained_alarm"))},
-        **interpret(result),
+        **body,
         "context": {"latest_error_code": ctx.get("latest_error_code"),
                     "error_active_share": ctx.get("error_active_share"),
                     "non_welding_share": ctx.get("non_welding_share"),
                     "welds_in_window": ctx.get("welds_in_window"), "welds_10min": ctx.get("welds_10min"),
                     "alarm_held": result.get("alarm_held", False), "gun_norm": result.get("gun_norm")},
         "detector": {"name": model.get("name"), "created": model.get("created"), "window_s": model.get("window_s")},
-        "caveats": CAVEATS,
+        "caveats": CAVEATS_EARLY_WARNING if ew else CAVEATS,
+        "early_warning": early_warning,
     }

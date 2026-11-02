@@ -1,0 +1,21 @@
+file_s42: thr 0.9466  overlap {'both': 13, 'ml_only': 16, 'blip_only': 9, 'neither': 26, 'events': 64}  test hits ML 4 BLIP 3 UNION 4
+physical_s42: thr 0.9514  overlap {'both': 12, 'ml_only': 21, 'blip_only': 10, 'neither': 21, 'events': 64}  test hits ML 4 BLIP 3 UNION 4
+file_s1: thr 0.9440  overlap {'both': 9, 'ml_only': 18, 'blip_only': 13, 'neither': 24, 'events': 64}  test hits ML 4 BLIP 3 UNION 4
+physical_s1: thr 0.9446  overlap {'both': 12, 'ml_only': 19, 'blip_only': 10, 'neither': 23, 'events': 64}  test hits ML 4 BLIP 3 UNION 4
+file_s2: thr 0.9443  overlap {'both': 13, 'ml_only': 18, 'blip_only': 9, 'neither': 24, 'events': 64}  test hits ML 4 BLIP 3 UNION 4
+physical_s2: thr 0.9476  overlap {'both': 12, 'ml_only': 16, 'blip_only': 10, 'neither': 26, 'events': 64}  test hits ML 4 BLIP 3 UNION 4
+file_s3: thr 0.9451  overlap {'both': 15, 'ml_only': 19, 'blip_only': 7, 'neither': 23, 'events': 64}  test hits ML 4 BLIP 3 UNION 4
+physical_s3: thr 0.9440  overlap {'both': 13, 'ml_only': 24, 'blip_only': 9, 'neither': 18, 'events': 64}  test hits ML 4 BLIP 3 UNION 4
+
+pooled over 8 runs (64 CV guns): fa/gun-day  recall  chance  excess [95% CI]
+  ML      16.40  0.488  0.343  +0.146 [+0.059, +0.221]
+  BLIP     7.27  0.344  0.198  +0.146 [+0.040, +0.249]
+  UNION   22.01  0.639  0.445  +0.194 [+0.085, +0.293]
+  ML_q*   23.88  0.562  0.433  +0.130 [+0.037, +0.212]  (q* 0.96)
+D1 UNION - ML        {'diff': 0.048, 'ci': [-0.013, 0.112]}
+D2 UNION - ML at q*  {'diff': 0.064, 'ci': [0.006, 0.127]}
+overlap (CV events, mean over runs): {'both': 12.38, 'ml_only': 18.88, 'blip_only': 9.62, 'neither': 23.12, 'events': 64.0}
+test (8 guns, run mean): {"ML": {"hits_mean": 4.0, "excess_mean": 0.287, "fa_per_day_mean": 8.58}, "BLIP": {"hits_mean": 3.0, "excess_mean": 0.292, "fa_per_day_mean": 6.5}, "UNION": {"hits_mean": 4.0, "excess_mean": 0.224, "fa_per_day_mean": 13.77}, "ML_q*": {"hits_mean": 5.0, "excess_mean": 0.317, "fa_per_day_mean": 13.51}}
+by class recall/chance: {"ML": {"E01": {"recall": 0.444, "chance": 0.275}, "E02": {"recall": 0.625, "chance": 0.417}, "E03": {"recall": 0.486, "chance": 0.361}, "E04": {"recall": 0.458, "chance": 0.35}}, "BLIP": {"E01": {"recall": 0.278, "chance": 0.204}, "E02": {"recall": 0.3, "chance": 0.232}, "E03": {"recall": 0.278, "chance": 0.176}, "E04": {"recall": 0.5, "chance": 0.194}}, "UNION": {"E01": {"recall": 0.542, "chance": 0.422}, "E02": {"recall": 0.7, "chance": 0.477}, "E03": {"recall": 0.667, "chance": 0.475}, "E04": {"recall": 0.674, "chance": 0.419}}, "ML_q*": {"E01": {"recall": 0.528, "chance": 0.348}, "E02": {"recall": 0.725, "chance": 0.494}, "E03": {"recall": 0.514, "chance": 0.427}, "E04": {"recall": 0.556, "chance": 0.488}}}
+checks {'D1_ci_above_0': False, 'D2_ci_above_0': True, 'union_within_cap': True, 'test_union_not_worse': False} -> adds value: False
+saved overlap.json

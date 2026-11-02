@@ -1,0 +1,33 @@
+file     CV over seeds ['42', '1', '2', '3']: auroc 0.698 (sd 0.008)  pre_rule 0.652 (sd 0.009) {'42': 0.644, '1': 0.661, '2': 0.642, '3': 0.661}
+   budget  0.5: fa 0.35  recall 0.109  chance 0.086  excess +0.023  (CI above 0 in 0/4 seeds)  s42 +0.015  s1 +0.026  s2 +0.039  s3 +0.013
+   budget    1: fa 1.15  recall 0.148  chance 0.113  excess +0.035  (CI above 0 in 0/4 seeds)  s42 +0.031  s1 +0.052  s2 +0.018  s3 +0.041
+   budget    2: fa 1.89  recall 0.18  chance 0.114  excess +0.066  (CI above 0 in 1/4 seeds)  s42 +0.073  s1 +0.073  s2 +0.049  s3 +0.069
+   budget    3: fa 2.37  recall 0.207  chance 0.138  excess +0.069  (CI above 0 in 1/4 seeds)  s42 +0.035  s1 +0.055  s2 +0.019  s3 +0.166
+   budget    5: fa 3.49  recall 0.238  chance 0.165  excess +0.073  (CI above 0 in 1/4 seeds)  s42 +0.048  s1 +0.059  s2 +0.019  s3 +0.166
+   budget   10: fa 6.03  recall 0.266  chance 0.221  excess +0.045  (CI above 0 in 1/4 seeds)  s42 +0.009  s1 +0.043  s2 +0.017  s3 +0.111
+physical CV over seeds ['42', '1', '2', '3']: auroc 0.707 (sd 0.007)  pre_rule 0.66 (sd 0.007) {'42': 0.666, '1': 0.659, '2': 0.666, '3': 0.649}
+   budget  0.5: fa 0.4  recall 0.117  chance 0.092  excess +0.025  (CI above 0 in 0/4 seeds)  s42 -0.001  s1 +0.024  s2 +0.054  s3 +0.023
+   budget    1: fa 1.0  recall 0.113  chance 0.085  excess +0.029  (CI above 0 in 0/4 seeds)  s42 -0.005  s1 +0.048  s2 +0.024  s3 +0.048
+   budget    2: fa 1.61  recall 0.16  chance 0.108  excess +0.052  (CI above 0 in 1/4 seeds)  s42 +0.083  s1 +0.042  s2 +0.045  s3 +0.038
+   budget    3: fa 2.54  recall 0.18  chance 0.127  excess +0.052  (CI above 0 in 0/4 seeds)  s42 +0.070  s1 +0.042  s2 +0.019  s3 +0.077
+   budget    5: fa 4.39  recall 0.246  chance 0.158  excess +0.088  (CI above 0 in 1/4 seeds)  s42 +0.167  s1 +0.029  s2 +0.074  s3 +0.082
+   budget   10: fa 6.25  recall 0.277  chance 0.196  excess +0.081  (CI above 0 in 1/4 seeds)  s42 +0.164  s1 +0.069  s2 +0.018  s3 +0.073
+pooled file     budget  0.5: 4 runs  fa 0.35  recall 0.109  chance 0.086  excess +0.023 [-0.019, +0.068]
+pooled file     budget    1: 4 runs  fa 1.15  recall 0.148  chance 0.113  excess +0.035 [-0.020, +0.088]
+pooled file     budget    2: 4 runs  fa 1.89  recall 0.18  chance 0.114  excess +0.066 [+0.006, +0.130]
+pooled file     budget    3: 4 runs  fa 2.37  recall 0.207  chance 0.138  excess +0.069 [+0.005, +0.136]
+pooled file     budget    5: 4 runs  fa 3.49  recall 0.238  chance 0.165  excess +0.073 [+0.003, +0.144]
+pooled file     budget   10: 4 runs  fa 6.03  recall 0.266  chance 0.221  excess +0.045 [-0.027, +0.111]
+pooled physical budget  0.5: 4 runs  fa 0.4  recall 0.117  chance 0.092  excess +0.025 [-0.026, +0.074]
+pooled physical budget    1: 4 runs  fa 1.0  recall 0.113  chance 0.085  excess +0.029 [-0.008, +0.071]
+pooled physical budget    2: 4 runs  fa 1.61  recall 0.16  chance 0.108  excess +0.052 [+0.003, +0.105]
+pooled physical budget    3: 4 runs  fa 2.54  recall 0.18  chance 0.127  excess +0.052 [+0.003, +0.100]
+pooled physical budget    5: 4 runs  fa 4.39  recall 0.246  chance 0.158  excess +0.088 [+0.030, +0.146]
+pooled physical budget   10: 4 runs  fa 6.25  recall 0.277  chance 0.196  excess +0.081 [+0.021, +0.138]
+pooled both     budget  0.5: 8 runs  fa 0.37  recall 0.113  chance 0.089  excess +0.024 [-0.020, +0.070]
+pooled both     budget    1: 8 runs  fa 1.07  recall 0.131  chance 0.099  excess +0.032 [-0.013, +0.078]
+pooled both     budget    2: 8 runs  fa 1.75  recall 0.17  chance 0.111  excess +0.059 [+0.007, +0.114]
+pooled both     budget    3: 8 runs  fa 2.45  recall 0.193  chance 0.133  excess +0.061 [+0.008, +0.115]
+pooled both     budget    5: 8 runs  fa 3.94  recall 0.242  chance 0.162  excess +0.081 [+0.021, +0.140]
+pooled both     budget   10: 8 runs  fa 6.14  recall 0.271  chance 0.208  excess +0.063 [+0.001, +0.121]
+saved summary.json

@@ -231,7 +231,9 @@ def build_graph(deps: Deps):
     def ingest(state: LoopState) -> dict:
         # 새 핸드오프(ML outbox − seen)마다 api 케이스를 찾아 행을 만든다
         seen = set(state["seen"])
-        new = [r["handoff"] for r in _json(ml.get("/handoffs")) if r["handoff"]["event_id"] not in seen]
+        # C-8 early warnings are not cases of this loop (keep RSW_EARLY_WARNING_HANDOFFS off for the rehearsal)
+        new = [r["handoff"] for r in _json(ml.get("/handoffs")) if r["handoff"]["event_id"] not in seen
+               and r["handoff"].get("event_type", "critical") != "early_warning"]
         counts = _json(api.post("/api/ml/sync"))
         for _ in range(_SYNC_RETRIES):
             if counts or not new:
@@ -649,7 +651,8 @@ def _dry_run(paths: list[str], ml_url: str) -> None:
     with httpx.Client(base_url=ml_url, timeout=60) as ml:
         for gun in guns:
             # limit 기본값은 50이라 ML OUTBOX_MAX(1000)까지 받는다
-            hs = [r["handoff"] for r in _json(ml.get("/handoffs", params={"gun_id": gun, "limit": 1000}))]
+            hs = [r["handoff"] for r in _json(ml.get("/handoffs", params={"gun_id": gun, "limit": 1000}))
+                  if r["handoff"].get("event_type", "critical") != "early_warning"]  # C-8: not this loop's events
             counts = Counter(((h.get("trigger") or {}).get("source"), (h.get("trigger") or {}).get("rule_code"))
                              for h in hs)
             detail = ", ".join(f"{src} {code or '-'} x{n}" for (src, code), n in counts.most_common())

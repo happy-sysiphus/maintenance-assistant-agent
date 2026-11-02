@@ -66,6 +66,8 @@ def replay_file(client: Any, path: str, gun_id: str | None = None, chunk_s: int 
         client.delete(f"/guns/{gun_id}")  # 404 for an unknown gun is fine
     summary: dict[str, Any] = {"gun_id": gun_id, "file": os.path.basename(path), "rows": len(df), "requests": 0,
                                "warming_up": 0, "windows_scored": 0, "critical_events": [], "rule_triggers": 0, "rule_repeats": 0, "rule_out_of_profile": 0,
+                               # C-8: early-warning starts (responses with early_warning_onset) and the handoffs sent
+                               "early_warnings": 0, "early_warning_handoffs": 0,
                                "max_score": None, "last": None}
     was_critical = False
     for part in chunks(df, chunk_s):
@@ -84,6 +86,8 @@ def replay_file(client: Any, path: str, gun_id: str | None = None, chunk_s: int 
         summary["rule_repeats"] += int(res["rule_triggered"] and res.get("rule_repeat", False))
         summary["rule_out_of_profile"] += int(res["rule_triggered"] and not res.get("rule_repeat", False)
                                               and res.get("rule_out_of_profile", False))
+        summary["early_warnings"] += int(res.get("early_warning_onset", False))
+        summary["early_warning_handoffs"] += int((res.get("handoff") or {}).get("event_type") == "early_warning")
         summary["max_score"] = res["anomaly_score"] if summary["max_score"] is None else max(summary["max_score"], res["anomaly_score"])
         summary["last"] = res
         critical, event = res["critical_in_request"], None
@@ -169,6 +173,7 @@ def main() -> None:
             last = s["last"] or {}
             print(f"{gun}: {s['rows']:,} rows, {s['requests']:,} requests, {s['windows_scored']:,} windows, "
                   f"{len(s['critical_events'])} critical events ({s['rule_triggers']} rule triggers, {s['rule_repeats']} repeats), "
+                  f"{s['early_warnings']} early warnings ({s['early_warning_handoffs']} handed off), "
                   f"max score {s['max_score'] or float('nan'):.3f}, final gun_norm {last.get('gun_norm')}, "
                   f"{time.time() - t0:.0f}s", flush=True)
 
