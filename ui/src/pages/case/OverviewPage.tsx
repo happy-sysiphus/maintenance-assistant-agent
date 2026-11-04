@@ -4,8 +4,9 @@ import { SignalChart } from '../../components/SignalChart'
 import { btnLarge, btnPrimary, card } from '../../components/ui'
 import { checkCounts, currentCandidate, signalLabel } from '../../lib/caseFlow'
 import { firstSentence, stripCites } from '../../lib/guidance'
+import { isClosed } from '../../types/case'
 import { useCaseDetail } from './context'
-import { BackLink, CaseFacts, CauseList, FalseAlarmButton } from './parts'
+import { BackLink, CaseFacts, CauseList, FalseAlarmButton, FieldMemoryNote } from './parts'
 
 // 상황 (wireframe/boards/V2Case.dc.html): 고장 전후 30분 그래프 + 확인할 원인
 export default function OverviewPage() {
@@ -17,6 +18,7 @@ export default function OverviewPage() {
   const current = currentCandidate(d)
   const started = Object.keys(d.records.checks).length > 0 || d.records.judgments.length > 0
   const noGuide = d.guidance.candidates.length === 0
+  const closed = isClosed(d.status)
   const summary = d.guidance.sections?.summary ? firstSentence(stripCites(d.guidance.sections.summary)) : null
 
   return (
@@ -74,6 +76,8 @@ export default function OverviewPage() {
 
         <section className={`${card} flex flex-col gap-3.5 p-[22px]`}>
           <span className="text-xs font-medium text-sub">확인할 원인</span>
+          {/* 이전 기록: 같은 설비 · 코드를 사람이 어떻게 닫았는지 (현장 기억). 카드 순서는 바꾸지 않는다 */}
+          <FieldMemoryNote d={d} />
           {/* RAG 안내 생성 실패: api는 기본 점검 항목(매핑)만 남긴다. 다시 열면 다시 만든다 */}
           {!noGuide && (d.guidance.status === 'error' || d.guidance.status === 'needs_citation_review') && (
             <p role="status" className="rounded-lg border border-warn-dot/30 bg-warn-soft px-3.5 py-3 text-sm text-warn">
@@ -85,7 +89,14 @@ export default function OverviewPage() {
           ) : (
             <CauseList d={d} />
           )}
-          {noGuide ? (
+          {/* 닫힌 케이스는 읽기 전용: 점검 · 오알람 버튼 대신 (해결이면) 정비일지로 */}
+          {closed ? (
+            d.status === 'resolved' && (
+              <Link to="log" className={`${btnPrimary} ${btnLarge}`}>
+                정비일지 보기
+              </Link>
+            )
+          ) : noGuide ? (
             <Link to="manual" className={`${btnPrimary} ${btnLarge}`}>
               직접 점검해서 기록
             </Link>
@@ -99,7 +110,7 @@ export default function OverviewPage() {
               원인 찾기
             </Link>
           )}
-          <FalseAlarmButton />
+          {!closed && <FalseAlarmButton />}
         </section>
       </div>
     </>

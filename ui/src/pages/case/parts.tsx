@@ -1,15 +1,16 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router'
 import { BackIcon, DocIcon } from '../../components/Icons'
 import { DocButton } from '../../components/ManualPanel'
 import { DotTag } from '../../components/Tag'
-import { btn, card } from '../../components/ui'
+import { btn, card, input } from '../../components/ui'
 import { MANUAL_SHORT, type ManualDoc } from '../../lib/api'
 import { candidateState, checkCounts, latestJudgment, signalLabel } from '../../lib/caseFlow'
 import { askAboutCause } from '../../lib/guidance'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
-import type { Candidate, CaseDetail, CheckCriterion, Closure } from '../../types/case'
+import { FALSE_ALARM_REASONS, type Candidate, type CaseDetail, type CheckCriterion, type Closure } from '../../types/case'
 
 // 케이스 화면들이 같이 쓰는 조각: 진행 표시, 오른쪽 칸 틀, 고장 정보 · 원인 목록 · 기록
 
@@ -277,6 +278,46 @@ export function CaseFacts({ d }: { d: CaseDetail }) {
 }
 
 
+const RECENT_OUTCOME = { false_alarm: '오알람', resolved: '해결' }
+
+/**
+ * 이전 기록: 같은 설비 · 코드를 사람이 어떻게 닫았나 (api FIELD_MEMORY=1, ml/docs/hitl-loop.md ④ 요청 1).
+ * api의 긴 문장(note_ko) 대신 최근 3건(날짜 · 결과 · 원인 또는 사유)만 보인다 (11/04).
+ * 사람 판정이라 매뉴얼 근거와 모양을 다르게: 회색 바탕, 쪽 칩 없음. 원인 카드 순서는 바꾸지 않는다.
+ * 기록이 없으면 아무것도 그리지 않는다.
+ */
+export function FieldMemoryNote({ d }: { d: CaseDetail }) {
+  const m = d.field_memory
+  const recent = m?.recent ?? []
+  if (!m || recent.length === 0) return null
+  // 줄을 누르면: 해결 = 그 건의 정비일지, 오알람 = 정비일지가 없으니 이 설비 · 코드로 거른 정비 이력 (11/04).
+  // 오알람 케이스(상황 화면)로 보내면 지금 화면과 똑같은 그래프가 나와 헷갈린다
+  const code = d.event.trigger.rule_code
+  const historyLink = `/history?gun=${encodeURIComponent(d.event.gun_id)}${code ? `&q=${encodeURIComponent(code)}` : ''}`
+  return (
+    <div role="note" aria-label="이전 기록" className="flex flex-col gap-1.5 rounded-lg bg-canvas px-3.5 py-3">
+      <span className="text-xs font-medium text-sub">이전 기록</span>
+      <ul className="flex flex-col">
+        {recent.map((r) => (
+          <li key={r.case_id}>
+            <Link
+              to={r.outcome === 'resolved' ? `/cases/${r.case_id}/log` : historyLink}
+              title={r.outcome === 'resolved' ? '정비일지 보기' : '정비 이력에서 보기'}
+              className="flex min-h-8 items-baseline gap-2.5 rounded text-sm hover:underline"
+            >
+              <span className="shrink-0 tabular-nums text-sub">{formatKst(r.closed_at)?.slice(5, 10).replace('-', '/')}</span>
+              <span className="shrink-0 font-medium">{RECENT_OUTCOME[r.outcome]}</span>
+              {/* 해결 = 판단한 원인, 오알람 = 닫을 때 고른 사유 */}
+              <span className="min-w-0 grow truncate text-ink-2">{(r.outcome === 'resolved' ? r.cause : r.reason) ?? ''}</span>
+              <span aria-hidden className="text-faint">›</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 /** 원인 목록. viewing을 주면(점검 · 판단 화면) 그 원인을 파랗게 가리킨다. 없으면 아직 제외되지 않은 첫 원인 */
 export function CauseList({ d, viewing }: { d: CaseDetail; viewing?: string }) {
   if (d.guidance.candidates.length === 0) return <p className="text-sm text-sub">매뉴얼 안내가 있는 원인이 없습니다.</p>
@@ -361,32 +402,88 @@ export function RecordTab({ d }: { d: CaseDetail }) {
 }
 
 /** 오알람으로 닫기: 실제 고장이 아니었을 때. 한 번 더 눌러야 닫힌다. 닫으면 작업함에서 빠지고 이력에 "오알람"으로 남는다 */
+const reasonChip = (on: boolean) =>
+  `inline-flex min-h-10 items-center rounded-lg border px-3.5 text-sm whitespace-nowrap ${
+    on ? 'border-ink bg-ink font-semibold text-white' : 'border-field bg-white font-medium text-ink-2'
+  }`
+
+/**
+ * 오알람으로 닫기. 누르면 팝업(브라우저 <dialog>)에서 사유(칩 하나, 필수) + 메모(선택)를 고르고 닫는다
+ * (11/04, hitl-loop.md ④ 요청 3). 닫으면 되돌릴 수 없어서(읽기 전용) 화면 가운데 팝업으로 분명하게 묻는다.
+ * Esc · 바깥 클릭 · 취소로 닫힌다. 사유는 현장 기억 "이전 기록"의 오알람 줄에 그대로 보인다.
+ */
 export function FalseAlarmButton() {
   const navigate = useNavigate()
-  const close = useCaseMutation<{ outcome: Closure }>('POST', '/close')
-  const [ask, setAsk] = useState(false)
-  if (!ask)
-    return (
-      <button type="button" className={btn} onClick={() => setAsk(true)}>
+  const close = useCaseMutation<{ outcome: Closure; reason: string; note?: string }>('POST', '/close')
+  const dialog = useRef<HTMLDialogElement>(null)
+  const [reason, setReason] = useState<string | null>(null)
+  const [note, setNote] = useState('')
+  const reset = () => {
+    setReason(null)
+    setNote('')
+    close.reset()
+  }
+  return (
+    <>
+      <button type="button" className={btn} onClick={() => dialog.current?.showModal()}>
         오알람으로 닫기
       </button>
-    )
-  return (
-    // 두 버튼을 같은 폭으로 나란히 (상황 화면에서는 칸 폭 전체를 반씩)
-    <span className="grid grid-cols-2 gap-2">
-      <button
-        type="button"
-        className={`${btn} border-ink`}
-        disabled={close.isPending}
-        onClick={() => close.mutate({ outcome: 'false_alarm' }, { onSuccess: () => navigate('/') })}
-      >
-        오알람 맞아요
-      </button>
-      <button type="button" className={btn} onClick={() => setAsk(false)}>
-        취소
-      </button>
-      {close.isError && <span className="col-span-2 text-sm text-alarm">저장하지 못했습니다</span>}
-    </span>
+      {/* body로 빼서 그린다: 수동 모드에서는 이 버튼이 <form> 안이라, 메모에서 Enter를 치면 바깥 폼이 제출된다 */}
+      {createPortal(
+        <dialog
+          ref={dialog}
+          aria-labelledby="false-alarm-title"
+          onClose={reset}
+          // 바깥(어두운 배경)을 누르면 닫는다. 카드 안을 누르면 target이 dialog가 아니다
+          onClick={(e) => e.target === e.currentTarget && dialog.current?.close()}
+          className="m-auto w-[440px] max-w-[calc(100vw-32px)] rounded-xl border border-line bg-white p-0 text-ink shadow-[0_8px_32px_rgba(16,24,40,0.18)] backdrop:bg-black/30"
+        >
+          <div className="flex flex-col gap-4 p-6">
+            <div className="flex flex-col gap-1">
+              <h2 id="false-alarm-title" className="text-lg font-semibold tracking-[-0.015em]">
+                왜 오알람인가요?
+              </h2>
+              <p className="text-sm text-sub">닫으면 다시 바꿀 수 없어요. 고른 사유는 다음 같은 알림의 이전 기록에 보여요.</p>
+            </div>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="오알람 사유">
+              {FALSE_ALARM_REASONS.map((r) => (
+                <button key={r} type="button" aria-pressed={reason === r} className={reasonChip(reason === r)} onClick={() => setReason(r)}>
+                  {r}
+                </button>
+              ))}
+            </div>
+            <input
+              className={input}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="메모 (선택)"
+              aria-label="오알람 메모"
+            />
+            {close.isError && <span className="text-sm text-alarm">저장하지 못했습니다</span>}
+            <div className="flex justify-end gap-2">
+              <button type="button" className={btn} onClick={() => dialog.current?.close()}>
+                취소
+              </button>
+              <button
+                type="button"
+                className={`${btn} border-ink`}
+                disabled={!reason || close.isPending}
+                onClick={() =>
+                  reason &&
+                  close.mutate(
+                    { outcome: 'false_alarm', reason, ...(note.trim() ? { note: note.trim() } : {}) },
+                    { onSuccess: () => navigate('/') },
+                  )
+                }
+              >
+                오알람으로 닫기
+              </button>
+            </div>
+          </div>
+        </dialog>,
+        document.body,
+      )}
+    </>
   )
 }
 

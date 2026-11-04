@@ -35,7 +35,8 @@ const PERIODS = [
 
 export default function HistoryPage() {
   const [params] = useSearchParams()
-  const [keyword, setKeyword] = useState('')
+  // 케이스 화면 "이전 기록"의 오알람 줄에서 오면 ?q=로 고장 코드를 검색해 둔다
+  const [keyword, setKeyword] = useState(params.get('q') ?? '')
   const [result, setResult] = useState<Closure | 'all'>('all')
   // 설비 화면의 "이 설비 정비 이력"에서 오면 ?gun=으로 설비를 골라 둔다
   const [gun, setGun] = useState(params.get('gun') ?? '')

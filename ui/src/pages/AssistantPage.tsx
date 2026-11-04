@@ -107,7 +107,18 @@ export default function AssistantPage() {
   const feedback = (index: number, value: 'up' | 'down') => {
     if (!active) return
     patch(active.id, (c) => ({ ...c, messages: c.messages.map((m, i) => (i === index ? { ...(m as BotMsg), feedback: value } : m)) }))
-    void apiSend('POST', '/assistant/feedback', { conversation_id: active.id, message_index: index, helpful: value === 'up' }).catch(() => {})
+    // 대화는 브라우저에만 있어서 번호만 보내면 api가 무엇을 평가했는지 모른다 → 질문 · 답을 같이 보낸다
+    // (11/04, ml/docs/hitl-loop.md ④ 요청 5). api가 SQLite feedback 표에 남긴다
+    const bot = active.messages[index] as BotMsg
+    void apiSend('POST', '/assistant/feedback', {
+      conversation_id: active.id,
+      message_index: index,
+      helpful: value === 'up',
+      question: bot.ask.question,
+      answer: bot.answer ? plain(bot.answer) : '',
+      status: bot.answer?.status ?? null,
+      situation_ids: bot.answer?.situation_ids ?? [],
+    }).catch(() => {})
   }
 
   const newChat = () => {

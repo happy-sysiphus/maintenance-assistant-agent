@@ -184,7 +184,8 @@ export interface Guidance {
   causes?: RagCause[]
 }
 
-// ---- 사람이 입력하는 기록 (api가 저장, ML · RAG에는 보내지 않음) ----
+// ---- 사람이 입력하는 기록 (api가 저장, ML · RAG에는 보내지 않음.
+//      api 현장 기억(FIELD_MEMORY=1)은 닫힌 케이스의 기록을 다시 읽어 field_memory · 이전 기록을 만든다) ----
 
 export type CheckResult = 'normal' | 'abnormal' | 'skipped'
 
@@ -316,8 +317,55 @@ export interface CaseRecords {
   manual?: ManualRecord
   field: FieldRecord[]
   handovers: HandoverRecord[]
-  /** 해결 종료 또는 미해결로 저장한 기록 (작업 시각) */
-  closure?: { outcome: Closure; at: string }
+  /** 해결 종료 또는 미해결로 저장한 기록 (작업 시각). reason · note는 오알람으로 닫을 때 (api FIELD_MEMORY=1일 때만 저장) */
+  closure?: { outcome: Closure; at: string; reason?: string; note?: string }
+}
+
+/** 오알람 사유 칩 (11/04 FE 초안, 팀 확정 전). 현장 기억 "이전 기록"에 그대로 보인다 */
+export const FALSE_ALARM_REASONS = ['설비 정지 · 전원 꺼짐', '정상 작업 중 변동', '센서 · 신호 문제', '기타'] as const
+
+/** 닫힌 케이스(해결 종료 · 오알람)는 읽기 전용. 미해결 · 도움 요청은 작업함에 남아 이어서 한다 */
+export const isClosed = (status: CaseStatus) => status === 'resolved' || status === 'false_alarm'
+
+// ---- 현장 기억 (api FIELD_MEMORY=1일 때만, ml/docs/hitl-loop.md ②) ----
+
+/** 점검 항목 하나의 지난 기록 수 (닫힌 케이스만, 설비 무관) */
+export interface FieldCheckCount {
+  abnormal: number
+  normal: number
+}
+
+/**
+ * 닫힌 케이스의 사람 판정을 다시 센 참고 정보. 매뉴얼 근거가 아니다.
+ * api가 케이스를 열 때마다 새로 세서 응답에만 붙인다(DB에 저장 안 함). 지금 보는 케이스는 빼고 센다.
+ */
+export interface FieldMemory {
+  /** 집계 키 "설비|규칙 코드" (예: "test_0|E029"). 코드 없는 알림은 "설비|" */
+  alarm_key: string
+  /** 같은 설비 · 코드에서 오알람으로 닫은 수 / 해결 종료(고장 확인) 수 */
+  alarm: { false_alarm: number; real: number }
+  /** ["R1"] = 오알람이 고장 확인보다 많아 "오알람인지부터 확인" 문장을 씀. 아니면 [] */
+  applied: string[]
+  /** 화면용 참고 문장. 기록이 없으면 null */
+  note_ko: string | null
+  /** 이 카드 점검 id(E0xx-Kn)별 지난 기록. 기록 없는 id는 키가 없다 */
+  checks: Record<string, FieldCheckCount>
+  /** 라벨이 붙은(오알람 · 해결 종료로 닫힌) 케이스 수 전체 */
+  labeled: number
+  /** 같은 설비 · 코드로 오알람 · 해결 종료된 케이스, 최근 닫은 순 최대 3건 (FE 추가, api/main.py recent_closures) */
+  recent?: FieldRecent[]
+}
+
+/** 이전 기록 한 줄 */
+export interface FieldRecent {
+  case_id: string
+  outcome: 'false_alarm' | 'resolved'
+  /** 닫은 시각 (작업 시각) */
+  closed_at: string
+  /** 해결이면 맞다고 판단한 원인 이름. 못 찾으면 null */
+  cause: string | null
+  /** 오알람으로 닫을 때 남긴 사유. 없으면 없음 */
+  reason?: string | null
 }
 
 /** GET /api/cases/:id 응답 */
@@ -326,6 +374,8 @@ export interface CaseDetail extends Omit<CaseSummary, 'event'> {
   score_trace: ScorePoint[]
   guidance: Guidance
   records: CaseRecords
+  /** 현장 기억. api를 FIELD_MEMORY=1로 켰을 때만 온다 */
+  field_memory?: FieldMemory
 }
 
 /** GET /api/history 의 한 줄: 해결 종료했거나 미해결로 저장한 케이스 */
