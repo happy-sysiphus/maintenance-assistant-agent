@@ -231,9 +231,11 @@ def test_flag_off_memory_like_unknown_route(api, monkeypatch):
 
 def test_flag_off_case_unchanged(api, make_handoff, monkeypatch):
     monkeypatch.delenv("FIELD_MEMORY", raising=False)
-    _false_alarm_first(api, make_handoff)
+    # 닫힌 케이스는 다시 닫을 수 없으므로(409, 11/04) 처음 닫을 때 reason · note를 같이 보내 무시되는지 본다
+    assert api.post("/api/ml/handoffs", json=make_handoff("e1")).json() == {"result": "new"}
     r = api.post("/api/cases/CASE-0001/close", json={"outcome": "false_alarm", "reason": "x", "note": "y"})
     assert set(r.json()["records"]["closure"]) == {"outcome", "at"}
+    assert api.post("/api/cases/CASE-0001/close", json={"outcome": "resolved"}).status_code == 409
     assert set(store.get("CASE-0001")["records"]["closure"]) == {"outcome", "at"}
     h2 = make_handoff("e2", t="2021-09-06T20:30:09Z")
     api.post("/api/ml/handoffs", json=h2)

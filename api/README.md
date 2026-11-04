@@ -86,6 +86,21 @@ py -3.11 -m pytest tests -q -p no:cacheprovider                     # langgraph�
 저장소 .venv에는 langgraph·pandas가 없어 test_driver_contract.py는 건너뜁니다.
 두 번째 줄은 그 Python에 requirements.txt(RAG 의존성 포함)를 설치한 뒤 실행합니다. 드라이버 계약 테스트까지 돕니다.
 
+## 11/04 FE 추가 (UI 연동)
+
+현장 기억을 화면에 붙이면서 api에 더한 것입니다. 기존 응답 필드는 바꾸지 않고 추가만 했습니다.
+
+- GET /api/cases/{id}: `field_memory.recent`(켰을 때만). 같은 설비·코드로 오알람·해결 종료된 케이스 최근 3건
+  `{case_id, outcome, closed_at, cause, reason}`. 해결이면 판단한 원인 이름, 오알람이면 닫을 때 고른 사유.
+  화면은 note_ko 문장 대신 이 목록을 "이전 기록"으로 보입니다(상황 화면 오른쪽).
+- 닫힌 케이스 읽기 전용: 해결 종료·오알람 케이스에 기록·닫기·도움 요청을 보내면 409 "closed".
+  다시 닫으면 마지막 closure가 현장 기억 라벨을 덮어쓰기 때문입니다. 미해결·도움 요청은 이어서 할 수 있습니다.
+- 저장 잠금: 케이스를 고치는 주소와 알림 수신(ingest)은 `_WRITE_LOCK` 하나로 한 번에 하나씩 처리합니다(플래그 무관).
+  상세 조회는 RAG 생성을 잠금 밖에서 하고, 안내가 바뀌었을 때만 저장합니다(그냥 열면 저장 안 함).
+  hitl-loop.md ④ 요청 9(ingest 경쟁)·10(상세 조회가 닫기를 덮음)에 대한 처리입니다.
+- 챗봇 피드백: POST /api/assistant/feedback가 질문·답·상태·코드와 함께 SQLite `feedback` 표에 저장합니다
+  (같은 답은 마지막 평가만). GET /api/assistant/feedback로 최근 순 목록을 봅니다. 현장 기억·RAG에는 아직 쓰지 않습니다.
+
 ## 브라우저에서 직접 질문하기
 
 API 실행 후 http://127.0.0.1:9000/docs 에서 POST /api/assistant/ask를 펼칩니다.

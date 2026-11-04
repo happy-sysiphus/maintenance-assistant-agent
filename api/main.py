@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import functools
 import os
 import threading
 import time
@@ -40,6 +41,21 @@ MANUAL_CAUSE = "MANUAL"
 TRACE_MINUTES = 30
 # 현장 기억을 켜면 ingest 전체(seen → put)를 한 번에 하나씩 (store._lock을 다시 잡으면 교착)
 _INGEST_LOCK = threading.Lock()
+# 케이스를 고치는 곳(읽기 → 고치기 → 저장)은 한 번에 하나씩 (11/04 FE, ml/docs/hitl-loop.md ④ 요청 9 · 10).
+# 겹치면 나중 저장이 먼저 저장한 기록(예: 닫기)을 옛 내용으로 덮는다. 상세 조회의 RAG 생성은 이 잠금 밖에서 한다.
+# store._lock과는 다른 잠금이고, store 함수 안에서는 잡지 않으므로 교착이 없다
+_WRITE_LOCK = threading.RLock()
+
+
+def locked(fn):
+    """케이스를 고치는 주소에 붙인다: 함수 전체를 _WRITE_LOCK 안에서 돌린다."""
+
+    @functools.wraps(fn)
+    def run(*args: Any, **kwargs: Any) -> Any:
+        with _WRITE_LOCK:
+            return fn(*args, **kwargs)
+
+    return run
 
 app = FastAPI(title="RSW 정비 지원 api")
 
@@ -85,7 +101,8 @@ def score_trace(gun_id: str, detected_at: str) -> list[dict[str, Any]]:
 
 def ingest(handoff: dict[str, Any]) -> str:
     """알림 하나를 케이스로. 같은 설비 · 같은 코드의 열린 케이스가 있으면 새 줄 대신 '반복'으로 묶는다."""
-    with _INGEST_LOCK if field_memory.enabled() else nullcontext():
+    # 반복을 붙이는 저장이 같은 케이스의 닫기 · 기록과 겹치지 않게 _WRITE_LOCK도 잡는다 (플래그와 상관없이)
+    with _INGEST_LOCK if field_memory.enabled() else nullcontext(), _WRITE_LOCK:
         eid = handoff["event_id"]
         if store.seen(eid):
             return "duplicate"
@@ -174,6 +191,19 @@ def load(case_id: str) -> dict[str, Any]:
     return guidance.attach_criteria(d)
 
 
+CLOSED = ("resolved", "false_alarm")
+
+
+def load_open(case_id: str) -> dict[str, Any]:
+    """기록을 바꾸는 주소용 load. 해결 종료 · 오알람으로 닫힌 케이스는 409 (읽기 전용, 11/04 FE).
+    다시 닫으면 마지막 closure가 현장 기억 라벨을 덮어쓰기 때문이다 (ml/docs/hitl-loop.md ⑥).
+    미해결 · 도움 요청은 이어서 하므로 막지 않는다."""
+    d = load(case_id)
+    if d["status"] in CLOSED:
+        raise HTTPException(409, "closed")
+    return d
+
+
 def save(d: dict[str, Any]) -> dict[str, Any]:
     store.put(d)
     return d
@@ -208,40 +238,83 @@ def list_cases():
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str):
-    enriched = guidance.enrich(load(case_id))
-    latest = load(case_id)  # Preserve records saved while generation was running.
-    latest["guidance"] = enriched["guidance"]
-    out = save(latest)
+    enriched = guidance.enrich(load(case_id))  # RAG 생성(수 초)은 잠금 밖에서
+    with _WRITE_LOCK:
+        latest = load(case_id)  # Preserve records saved while generation was running.
+        # 안내가 바뀌었을 때만 저장한다 (11/04): 그냥 열 때마다 저장하면 같은 순간의 닫기 · 기록을 덮을 수 있다
+        if latest["guidance"] != enriched["guidance"]:
+            latest["guidance"] = enriched["guidance"]
+            save(latest)
+    out = latest
     # 현장 기억은 볼 때마다 새로 세어 사본에만 붙인다 (DB에는 저장하지 않는다. 카드는 그대로)
-    return field_memory.annotate(out, store.all_cases()) if field_memory.enabled() else out
+    if not field_memory.enabled():
+        return out
+    cases = store.all_cases()
+    out = field_memory.annotate(out, cases)
+    out["field_memory"]["recent"] = recent_closures(out, cases)
+    return out
+
+
+RECENT_MAX = 3
+
+
+def recent_closures(d: dict[str, Any], cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """같은 설비 · 코드(field_memory.alarm_key)로 오알람 · 해결 종료된 케이스, 최근 닫은 순 RECENT_MAX건 (UI 이전 기록).
+
+    field_memory.alarm의 건수와 같은 범위(라벨 있는 닫힘만, 자기 자신 제외)다.
+    해결이면 맞다고 판단한 원인 이름(cause), 오알람이면 닫을 때 남긴 사유(reason)를 준다.
+    """
+    key = field_memory.alarm_key(d["event"])
+    rows = []
+    for c in cases:
+        if c["case_id"] == d["case_id"] or field_memory.alarm_key(c["event"]) != key:
+            continue
+        if field_memory.alarm_label(c) is None:
+            continue
+        closure = c["records"]["closure"]
+        rows.append(
+            {
+                "case_id": c["case_id"],
+                "outcome": closure["outcome"],
+                "closed_at": closure["at"],
+                "cause": cause_name(c) if closure["outcome"] == "resolved" else None,
+                "reason": closure.get("reason"),
+            }
+        )
+    rows.sort(key=lambda r: r["closed_at"], reverse=True)
+    return rows[:RECENT_MAX]
 
 
 @app.put("/api/cases/{case_id}/checks")
+@locked
 def put_checks(case_id: str, body: dict[str, Any]):
-    d = load(case_id)
+    d = load_open(case_id)
     touch(d)
     d["records"]["checks"].update(body["checks"])
     return save(d)
 
 
 def _append(case_id: str, key: str, body: dict[str, Any]) -> dict[str, Any]:
-    d = load(case_id)
+    d = load_open(case_id)
     touch(d)
     d["records"][key].append({**body, "at": now()})
     return d
 
 
 @app.post("/api/cases/{case_id}/judgments")
+@locked
 def post_judgment(case_id: str, body: dict[str, Any]):
     return save(_append(case_id, "judgments", body))
 
 
 @app.post("/api/cases/{case_id}/actions")
+@locked
 def post_action(case_id: str, body: dict[str, Any]):
     return save(_append(case_id, "actions", body))
 
 
 @app.post("/api/cases/{case_id}/results")
+@locked
 def post_result(case_id: str, body: dict[str, Any]):
     d = _append(case_id, "results", body)
     if body["outcome"] == "resolved":
@@ -250,8 +323,9 @@ def post_result(case_id: str, body: dict[str, Any]):
 
 
 @app.put("/api/cases/{case_id}/log")
+@locked
 def put_log(case_id: str, body: dict[str, Any]):
-    d = load(case_id)
+    d = load_open(case_id)
     if d["status"] == "resolved":
         raise HTTPException(409, "closed")
     approved = body.pop("approved", False)
@@ -263,8 +337,9 @@ def put_log(case_id: str, body: dict[str, Any]):
 
 
 @app.post("/api/cases/{case_id}/close")
+@locked
 def close(case_id: str, body: dict[str, Any]):
-    d = load(case_id)
+    d = load_open(case_id)
     if body["outcome"] == "resolved" and not (d["records"].get("log") or {}).get("approved_at"):
         raise HTTPException(409, "log not approved")
     closure = {"outcome": body["outcome"], "at": now()}
@@ -280,16 +355,18 @@ def close(case_id: str, body: dict[str, Any]):
 
 
 @app.put("/api/cases/{case_id}/manual")
+@locked
 def put_manual(case_id: str, body: dict[str, Any]):
-    d = load(case_id)
+    d = load_open(case_id)
     touch(d)
     d["records"]["manual"] = {**body, "saved_at": now()}
     return save(d)
 
 
 @app.post("/api/cases/{case_id}/field")
+@locked
 def post_field(case_id: str, body: dict[str, Any]):
-    d = load(case_id)
+    d = load_open(case_id)
     touch(d)
     d["records"]["checks"].update(body["checks"])
     d["records"]["field"].append(
@@ -299,8 +376,9 @@ def post_field(case_id: str, body: dict[str, Any]):
 
 
 @app.post("/api/cases/{case_id}/handover")
+@locked
 def post_handover(case_id: str, body: dict[str, Any]):
-    d = load(case_id)
+    d = load_open(case_id)
     t = now()
     d["records"]["handovers"].append({**body, "at": t})
     d["records"]["closure"] = {"outcome": "handed_over", "at": t}
@@ -435,6 +513,23 @@ async def ask(body: AssistantAskInput):
         raise HTTPException(422, str(exc)) from exc
 
 
+FEEDBACK_KEYS = ("conversation_id", "message_index", "helpful", "question", "answer", "status", "situation_ids")
+
+
 @app.post("/api/assistant/feedback")
 def feedback(body: dict[str, Any]):
+    """챗봇 답 👍/👎 (11/04 FE, ml/docs/hitl-loop.md ④ 요청 5). SQLite feedback 표에 남긴다.
+    question · answer가 없는 옛 화면 본문도 받는다(빈 값으로 저장). 현장 기억 · RAG에는 아직 쓰지 않는다."""
+    if not isinstance(body.get("conversation_id"), str) or not isinstance(body.get("message_index"), int):
+        raise HTTPException(422, "conversation_id · message_index가 필요합니다")
+    row = {k: body.get(k) for k in FEEDBACK_KEYS}
+    row["helpful"] = bool(row["helpful"])
+    row["at"] = now()
+    store.put_feedback(row)
     return {"ok": True}
+
+
+@app.get("/api/assistant/feedback")
+def feedback_list():
+    """모인 평가 (최근 순). RAG 담당이 👎 받은 질문 · 답을 볼 때 쓴다."""
+    return {"items": store.all_feedback()}

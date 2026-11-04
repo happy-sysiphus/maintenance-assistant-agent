@@ -28,6 +28,12 @@ def _conn() -> Iterator[sqlite3.Connection]:
     )
     # ML이 같은 알림을 다시 보내도(재시도) 한 번만 처리하려고 받은 event_id를 남긴다
     c.execute("CREATE TABLE IF NOT EXISTS events (event_id TEXT PRIMARY KEY, case_id TEXT)")
+    # 챗봇 답 평가 (11/04 FE). 대화는 브라우저에만 있어 질문 · 답을 같이 받는다. 같은 답을 다시 누르면 마지막 것만 남긴다
+    c.execute(
+        "CREATE TABLE IF NOT EXISTS feedback ("
+        " conversation_id TEXT, message_index INTEGER, helpful INTEGER, at TEXT, data TEXT,"
+        " PRIMARY KEY (conversation_id, message_index))"
+    )
     try:
         with c:
             yield c
@@ -65,6 +71,20 @@ def seen(event_id: str) -> bool:
 def mark_seen(event_id: str, case_id: str) -> None:
     with _lock, _conn() as c:
         c.execute("INSERT OR IGNORE INTO events VALUES (?, ?)", (event_id, case_id))
+
+
+def put_feedback(d: dict[str, Any]) -> None:
+    with _lock, _conn() as c:
+        c.execute(
+            "INSERT OR REPLACE INTO feedback VALUES (?, ?, ?, ?, ?)",
+            (d["conversation_id"], d["message_index"], int(d["helpful"]), d["at"], json.dumps(d, ensure_ascii=False)),
+        )
+
+
+def all_feedback() -> list[dict[str, Any]]:
+    with _lock, _conn() as c:
+        rows = c.execute("SELECT data FROM feedback ORDER BY at DESC").fetchall()
+    return [json.loads(r[0]) for r in rows]
 
 
 def open_case(gun_id: str, code: str | None) -> dict[str, Any] | None:
