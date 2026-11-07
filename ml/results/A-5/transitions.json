@@ -1,0 +1,653 @@
+{
+ "lags": {
+  "E01": {
+   "min_since_power_on": {
+    "median": 29.7,
+    "le_5": 7,
+    "le_30": 10,
+    "n": 20
+   },
+   "min_since_power_off": {
+    "median": 173.4,
+    "le_5": 0,
+    "le_30": 2,
+    "n": 20
+   },
+   "min_since_production": {
+    "median": 14.7,
+    "le_5": 8,
+    "le_30": 11,
+    "n": 20
+   },
+   "min_since_cap_change": {
+    "median": 270.6,
+    "le_5": 1,
+    "le_30": 2,
+    "n": 19
+   },
+   "min_since_dressing": {
+    "median": 176.1,
+    "le_5": 2,
+    "le_30": 6,
+    "n": 19
+   },
+   "min_since_stop_code": {
+    "median": 0.2,
+    "le_5": 5,
+    "le_30": 5,
+    "n": 8
+   },
+   "min_since_any_off_start": {
+    "median": 0.2,
+    "le_5": 12,
+    "le_30": 13,
+    "n": 20
+   },
+   "min_since_any_on": {
+    "median": 6.4,
+    "le_5": 9,
+    "le_30": 13,
+    "n": 20
+   },
+   "c10_off_at_T": 12,
+   "off_run_spans_T": 12,
+   "off_started_le_1min_before_T": 11
+  },
+  "E02": {
+   "min_since_power_on": {
+    "median": 545.5,
+    "le_5": 0,
+    "le_30": 1,
+    "n": 11
+   },
+   "min_since_power_off": {
+    "median": 1071.1,
+    "le_5": 0,
+    "le_30": 0,
+    "n": 11
+   },
+   "min_since_production": {
+    "median": 0.1,
+    "le_5": 10,
+    "le_30": 11,
+    "n": 11
+   },
+   "min_since_cap_change": {
+    "median": 94.5,
+    "le_5": 2,
+    "le_30": 3,
+    "n": 9
+   },
+   "min_since_dressing": {
+    "median": 24.7,
+    "le_5": 2,
+    "le_30": 7,
+    "n": 11
+   },
+   "min_since_stop_code": {
+    "median": 1503.3,
+    "le_5": 0,
+    "le_30": 0,
+    "n": 3
+   },
+   "min_since_any_off_start": {
+    "median": 107.3,
+    "le_5": 2,
+    "le_30": 3,
+    "n": 11
+   },
+   "min_since_any_on": {
+    "median": 94.8,
+    "le_5": 2,
+    "le_30": 4,
+    "n": 11
+   },
+   "c10_off_at_T": 1,
+   "off_run_spans_T": 1,
+   "off_started_le_1min_before_T": 1
+  },
+  "E03": {
+   "min_since_power_on": {
+    "median": 20.4,
+    "le_5": 6,
+    "le_30": 12,
+    "n": 20
+   },
+   "min_since_power_off": {
+    "median": 174.7,
+    "le_5": 1,
+    "le_30": 2,
+    "n": 20
+   },
+   "min_since_production": {
+    "median": 113.5,
+    "le_5": 8,
+    "le_30": 9,
+    "n": 20
+   },
+   "min_since_cap_change": {
+    "median": 833.7,
+    "le_5": 0,
+    "le_30": 1,
+    "n": 20
+   },
+   "min_since_dressing": {
+    "median": 229.6,
+    "le_5": 1,
+    "le_30": 4,
+    "n": 19
+   },
+   "min_since_stop_code": {
+    "median": 1.1,
+    "le_5": 6,
+    "le_30": 7,
+    "n": 11
+   },
+   "min_since_any_off_start": {
+    "median": 55.9,
+    "le_5": 8,
+    "le_30": 9,
+    "n": 20
+   },
+   "min_since_any_on": {
+    "median": 0.4,
+    "le_5": 12,
+    "le_30": 15,
+    "n": 20
+   },
+   "c10_off_at_T": 2,
+   "off_run_spans_T": 2,
+   "off_started_le_1min_before_T": 8
+  },
+  "E04": {
+   "min_since_power_on": {
+    "median": 619.2,
+    "le_5": 0,
+    "le_30": 1,
+    "n": 21
+   },
+   "min_since_power_off": {
+    "median": 156.9,
+    "le_5": 4,
+    "le_30": 7,
+    "n": 21
+   },
+   "min_since_production": {
+    "median": 40.9,
+    "le_5": 5,
+    "le_30": 7,
+    "n": 21
+   },
+   "min_since_cap_change": {
+    "median": 227.2,
+    "le_5": 1,
+    "le_30": 1,
+    "n": 19
+   },
+   "min_since_dressing": {
+    "median": 58.3,
+    "le_5": 2,
+    "le_30": 4,
+    "n": 21
+   },
+   "min_since_stop_code": {
+    "median": 3150.3,
+    "le_5": 0,
+    "le_30": 0,
+    "n": 13
+   },
+   "min_since_any_off_start": {
+    "median": 3.8,
+    "le_5": 11,
+    "le_30": 14,
+    "n": 21
+   },
+   "min_since_any_on": {
+    "median": 51.2,
+    "le_5": 3,
+    "le_30": 5,
+    "n": 21
+   },
+   "c10_off_at_T": 18,
+   "off_run_spans_T": 18,
+   "off_started_le_1min_before_T": 6
+  }
+ },
+ "linked": {
+  "on": {
+   "n": 24,
+   "by_class": {
+    "E03": 12,
+    "E01": 10,
+    "E02": 1,
+    "E04": 1
+   }
+  },
+  "off": {
+   "n": 11,
+   "by_class": {
+    "E04": 7,
+    "E01": 2,
+    "E03": 2
+   }
+  }
+ },
+ "tests": {
+  "on": {
+   "off_min": {
+    "strata": 24,
+    "clusters": 21,
+    "mean_percentile": 0.631,
+    "ci": [
+     0.526,
+     0.735
+    ],
+    "p": 0.0507,
+    "others_median": 9,
+    "failing_median": 164.25,
+    "others_median_value": 35.08
+   },
+   "idle_h": {
+    "strata": 24,
+    "clusters": 21,
+    "mean_percentile": 0.654,
+    "ci": [
+     0.51,
+     0.773
+    ],
+    "p": 0.0237,
+    "others_median": 9,
+    "failing_median": 3.73,
+    "others_median_value": 3.14
+   },
+   "stop10": {
+    "strata": 24,
+    "clusters": 21,
+    "mean_percentile": 0.589,
+    "ci": [
+     0.526,
+     0.664
+    ],
+    "p": 0.0113,
+    "others_median": 9,
+    "failing_median": 0.0,
+    "others_median_value": 0.0
+   },
+   "clock_dev": {
+    "strata": 24,
+    "clusters": 21,
+    "mean_percentile": 0.473,
+    "ci": [
+     0.322,
+     0.622
+    ],
+    "p": 0.669,
+    "others_median": 9,
+    "failing_median": 145.77,
+    "others_median_value": 228.71
+   },
+   "c1_at": {
+    "strata": 24,
+    "clusters": 21,
+    "mean_percentile": 0.56,
+    "ci": [
+     0.428,
+     0.68
+    ],
+    "p": 0.3131,
+    "others_median": 9,
+    "failing_median": 2.15,
+    "others_median_value": 1.8
+   },
+   "since_cap_h": {
+    "strata": 24,
+    "clusters": 21,
+    "mean_percentile": 0.635,
+    "ci": [
+     0.504,
+     0.763
+    ],
+    "p": 0.0602,
+    "others_median": 8,
+    "failing_median": 9.15,
+    "others_median_value": 7.64
+   }
+  },
+  "off": {
+   "clock_dev": {
+    "strata": 11,
+    "clusters": 11,
+    "mean_percentile": 0.326,
+    "ci": [
+     0.171,
+     0.521
+    ],
+    "p": 0.0627,
+    "others_median": 11,
+    "failing_median": 1.22,
+    "others_median_value": 4.65
+   },
+   "welds10": {
+    "strata": 11,
+    "clusters": 11,
+    "mean_percentile": 0.496,
+    "ci": [
+     0.373,
+     0.64
+    ],
+    "p": 0.9569,
+    "others_median": 11,
+    "failing_median": 0.0,
+    "others_median_value": 0.0
+   },
+   "on_h": {
+    "strata": 11,
+    "clusters": 11,
+    "mean_percentile": 0.444,
+    "ci": [
+     0.263,
+     0.625
+    ],
+    "p": 0.5536,
+    "others_median": 10,
+    "failing_median": 4.3,
+    "others_median_value": 1.53
+   }
+  }
+ },
+ "primary": {
+  "P1": {
+   "kind": "on",
+   "feature": "off_min",
+   "strata": 24,
+   "clusters": 21,
+   "mean_percentile": 0.631,
+   "ci": [
+    0.526,
+    0.735
+   ],
+   "p": 0.0507,
+   "others_median": 9,
+   "failing_median": 164.25,
+   "others_median_value": 35.08,
+   "p_holm": 0.1014,
+   "supported": false
+  },
+  "P2": {
+   "kind": "on",
+   "feature": "idle_h",
+   "strata": 24,
+   "clusters": 21,
+   "mean_percentile": 0.654,
+   "ci": [
+    0.51,
+    0.773
+   ],
+   "p": 0.0237,
+   "others_median": 9,
+   "failing_median": 3.73,
+   "others_median_value": 3.14,
+   "p_holm": 0.0711,
+   "supported": false
+  },
+  "P3": {
+   "kind": "off",
+   "feature": "clock_dev",
+   "strata": 11,
+   "clusters": 11,
+   "mean_percentile": 0.326,
+   "ci": [
+    0.171,
+    0.521
+   ],
+   "p": 0.0627,
+   "others_median": 11,
+   "failing_median": 1.22,
+   "others_median_value": 4.65,
+   "p_holm": 0.1014,
+   "supported": false
+  }
+ },
+ "linked_on_detail": [
+  {
+   "file": "E01_0",
+   "class": "E01",
+   "power_on_kst": "2021-08-25 06:45:25",
+   "s_to_failure": 12,
+   "welds_between": 0,
+   "off_min": 185.3,
+   "idle_h": 3.7,
+   "stop_code_10min_before": true
+  },
+  {
+   "file": "E01_10",
+   "class": "E01",
+   "power_on_kst": "2021-09-02 06:30:08",
+   "s_to_failure": 839,
+   "welds_between": 0,
+   "off_min": 155.1,
+   "idle_h": 3.2,
+   "stop_code_10min_before": true
+  },
+  {
+   "file": "E01_11",
+   "class": "E01",
+   "power_on_kst": "2021-10-12 01:51:11",
+   "s_to_failure": 195,
+   "welds_between": 0,
+   "off_min": 324.2,
+   "idle_h": 10.6,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E01_17",
+   "class": "E01",
+   "power_on_kst": "2021-10-15 18:19:34",
+   "s_to_failure": 251,
+   "welds_between": 6,
+   "off_min": 24.8,
+   "idle_h": 0.5,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E01_2",
+   "class": "E01",
+   "power_on_kst": "2021-09-10 20:41:04",
+   "s_to_failure": 27,
+   "welds_between": 0,
+   "off_min": 11.5,
+   "idle_h": 0.2,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E01_3",
+   "class": "E01",
+   "power_on_kst": "2021-10-13 10:35:54",
+   "s_to_failure": 1605,
+   "welds_between": 0,
+   "off_min": 88.5,
+   "idle_h": 1.6,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E01_4",
+   "class": "E01",
+   "power_on_kst": "2021-10-15 10:11:03",
+   "s_to_failure": 115,
+   "welds_between": 0,
+   "off_min": 31.0,
+   "idle_h": 17.0,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E01_5",
+   "class": "E01",
+   "power_on_kst": "2021-08-26 06:48:49",
+   "s_to_failure": 10,
+   "welds_between": 0,
+   "off_min": 218.0,
+   "idle_h": 3.8,
+   "stop_code_10min_before": true
+  },
+  {
+   "file": "E01_6",
+   "class": "E01",
+   "power_on_kst": "2021-10-15 10:11:04",
+   "s_to_failure": 114,
+   "welds_between": 0,
+   "off_min": 31.0,
+   "idle_h": 17.0,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E01_8",
+   "class": "E01",
+   "power_on_kst": "2021-09-04 06:20:02",
+   "s_to_failure": 1554,
+   "welds_between": 0,
+   "off_min": 145.0,
+   "idle_h": 3.4,
+   "stop_code_10min_before": true
+  },
+  {
+   "file": "E02_10",
+   "class": "E02",
+   "power_on_kst": "2021-09-18 06:51:15",
+   "s_to_failure": 900,
+   "welds_between": 39,
+   "off_min": 197.9,
+   "idle_h": 3.3,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E03_0",
+   "class": "E03",
+   "power_on_kst": "2021-10-26 09:13:33",
+   "s_to_failure": 40,
+   "welds_between": 0,
+   "off_min": 663.5,
+   "idle_h": 14.4,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E03_1",
+   "class": "E03",
+   "power_on_kst": "2021-09-07 06:20:04",
+   "s_to_failure": 1467,
+   "welds_between": 0,
+   "off_min": 145.0,
+   "idle_h": 3.4,
+   "stop_code_10min_before": true
+  },
+  {
+   "file": "E03_12",
+   "class": "E03",
+   "power_on_kst": "2021-09-19 10:13:26",
+   "s_to_failure": 628,
+   "welds_between": 0,
+   "off_min": 613.6,
+   "idle_h": 10.2,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E03_13",
+   "class": "E03",
+   "power_on_kst": "2021-10-01 10:09:21",
+   "s_to_failure": 20,
+   "welds_between": 0,
+   "off_min": 1502.4,
+   "idle_h": 25.1,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E03_14",
+   "class": "E03",
+   "power_on_kst": "2021-09-17 06:48:30",
+   "s_to_failure": 391,
+   "welds_between": 17,
+   "off_min": 173.4,
+   "idle_h": 3.6,
+   "stop_code_10min_before": true
+  },
+  {
+   "file": "E03_15",
+   "class": "E03",
+   "power_on_kst": "2021-10-22 06:30:08",
+   "s_to_failure": 982,
+   "welds_between": 0,
+   "off_min": 125.1,
+   "idle_h": 2.9,
+   "stop_code_10min_before": true
+  },
+  {
+   "file": "E03_16",
+   "class": "E03",
+   "power_on_kst": "2021-09-08 06:49:11",
+   "s_to_failure": 13,
+   "welds_between": 0,
+   "off_min": 139.1,
+   "idle_h": 3.9,
+   "stop_code_10min_before": true
+  },
+  {
+   "file": "E03_17",
+   "class": "E03",
+   "power_on_kst": "2021-09-07 06:42:56",
+   "s_to_failure": 15,
+   "welds_between": 0,
+   "off_min": 235.3,
+   "idle_h": 3.9,
+   "stop_code_10min_before": true
+  },
+  {
+   "file": "E03_3",
+   "class": "E03",
+   "power_on_kst": "2021-09-12 18:15:30",
+   "s_to_failure": 236,
+   "welds_between": 0,
+   "off_min": 20.8,
+   "idle_h": 0.5,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E03_6",
+   "class": "E03",
+   "power_on_kst": "2021-10-01 11:50:07",
+   "s_to_failure": 15,
+   "welds_between": 0,
+   "off_min": 2743.0,
+   "idle_h": 158.3,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E03_9",
+   "class": "E03",
+   "power_on_kst": "2021-10-15 09:54:52",
+   "s_to_failure": 1678,
+   "welds_between": 14,
+   "off_min": 740.4,
+   "idle_h": 16.0,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "E04_6",
+   "class": "E04",
+   "power_on_kst": "2021-09-04 12:08:19",
+   "s_to_failure": 713,
+   "welds_between": 0,
+   "off_min": 35.4,
+   "idle_h": 0.6,
+   "stop_code_10min_before": false
+  },
+  {
+   "file": "test_5",
+   "class": "E03",
+   "power_on_kst": "2021-10-03 11:00:39",
+   "s_to_failure": 874,
+   "welds_between": 0,
+   "off_min": 5142.2,
+   "idle_h": 85.7,
+   "stop_code_10min_before": false
+  }
+ ]
+}

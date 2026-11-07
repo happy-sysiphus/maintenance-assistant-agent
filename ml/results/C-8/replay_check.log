@@ -1,0 +1,2 @@
+test_2 {'seconds': 418, 'windows': 10090, 'ew_windows_online': 30, 'ew_windows_offline': 30, 'offline_windows': 10090, 'episodes_online': 20, 'handoffs_online': 12, 'handoffs_per_day': 1.71, 'critical_events': 1, 'suppressed': {'None': 12, 'cooldown': 6, 'critical': 1}, 'example_ok': True}
+test_5 {'seconds': 407, 'windows': 9963, 'ew_windows_online': 163, 'ew_windows_offline': 163, 'offline_windows': 9963, 'episodes_online': 15, 'handoffs_online': 5, 'handoffs_per_day': 0.71, 'critical_events': 2, 'suppressed': {'None': 5, 'critical': 2, 'cooldown': 2}, 'example_ok': True}

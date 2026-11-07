@@ -515,6 +515,198 @@ def restart_flags(w, cfg):
     return out
 
 
+# C-8 early warning (B-18 / B-19 / B-20, history.md §41-43): a low-precision "a failure may come in the next tens of
+# minutes" warning, separate from `severity`. Per window a condition (B-18 Frame.condition: score >= threshold, with or
+# without the non-welding gate / error-code terms; warm-up windows never warn) held for `sustain` consecutive windows.
+# The state machine is shared like restart_step: early_warning_step() runs window by window here (offline) and in
+# main.Detector.judge (online). The threshold is a quantile of gun-held-out (CV out-of-fold) normal scores - the
+# population B-18 swept - so it is calibrated in train.py's --cv loop, not on the final model's own fit scores.
+EW_RULES = ({f"model_k{k}": ("model", k) for k in (1, 3, 10)} | {f"model_ng_k{k}": ("model_ng", k) for k in (1, 3)}
+            | {f"model_quiet_k{k}": ("model_quiet", k) for k in (1, 3)}
+            | {f"model_watch_k{k}": ("model_watch", k) for k in (1, 3)})
+# B-20 (results/B-20/operating_point.json): the largest false-alarm budget <= 24 / gun-day whose excess over the
+# same-clock chance stays above 0 when pooled over 8 OOF runs; rule + quantile = the nested picks at that budget
+# (budget 24 -> model_ng_k1 in 17 of 32 picks, median q 0.975). One window above the threshold, no non-welding gate.
+EW_DEFAULT = {"rule": "model_ng_k1", "q": 0.975, "cooldown_s": 3600}
+# that fixed rule re-scored on the 8 OOF runs and pooled (gun bootstrap), and on the 8 test guns (production bundle)
+EW_EVIDENCE = {"source": "results/B-20/operating_point.json", "budget_per_gun_day": 24, "runs": 8,
+               "recall": 0.488, "chance": 0.343, "excess": 0.146, "excess_ci": [0.059, 0.221],
+               "false_alarms_per_gun_day": 16.4, "test_hits": "4/8", "test_false_alarms_per_gun_day": [7.3, 9.1],
+               "basis": "B-20 fixed rule, 8 out-of-fold runs pooled (4 fold seeds x file / physical-gun folds)"}
+EW_GATE = 0.5
+EW_ZONE_S = (600, 3600)        # hit: warning active in a window ending 10-60 min before the terminal-code onset T
+EW_PLACEBO_DAYS = range(1, 7)  # chance: the same rule at T - k days (same clock time)
+EW_ZONE_MIN = 25               # a zone counts with >= 25 of its 51 windows
+EW_CAL_LEAD_S = 86400          # calibration population: windows > 1 day before T, no error code, not warm-up
+EW_CAL_MIN = 500               # fewer -> windows > 1 h before T (short synthetic files); < 50 -> no early warning
+EW_TERMINAL_WINDOW_S = 900     # T = first own terminal code in the last 15 min of the file (B-17), else RULE_LEAD_S
+
+
+def early_warning_condition(kind, score, thr, non_welding, error_active, terminal_any, warmup):
+    """B-18 Frame.condition on window-level values (arrays or scalars): non_welding = the window's non-welding share,
+    error_active / terminal_any = any controller / terminal code in the window. Warm-up windows never warn."""
+    s = np.asarray(score) >= thr
+    gate = np.asarray(non_welding) <= EW_GATE
+    err = np.asarray(error_active) > 0
+    if kind == "model":
+        c = s & gate
+    elif kind == "model_ng":
+        c = s
+    elif kind == "model_quiet":
+        c = s & gate & ~err
+    elif kind == "model_watch":
+        c = (s & gate) | (err & (np.asarray(terminal_any) == 0))
+    else:
+        raise ValueError(f"unknown early-warning kind {kind}")
+    return c & ~np.asarray(warmup, dtype=bool)
+
+
+def early_warning_step(state, window_start, cond, sustain, window_s=60):
+    """Advance the early-warning state by one window (chronological). state = {"run": int, "last_t": Timestamp | None,
+    "since": Timestamp | None}, updated in place. A window that does not follow the previous one by exactly window_s
+    (a gap, B-18's run break) restarts the run. Returns (active, onset): active from the sustain-th consecutive
+    condition window on, onset on that window only."""
+    last = state.get("last_t")
+    if last is None or (window_start - last).total_seconds() != window_s:
+        state["run"] = 0
+    state["last_t"] = window_start
+    if cond:
+        state["run"] += 1
+        if state["run"] == 1:
+            state["since"] = window_start
+    else:
+        state["run"], state["since"] = 0, None
+    return state["run"] >= sustain, state["run"] == sustain
+
+
+def early_warning_flags(w, scores, cfg):
+    """Per-window (active, onset) bool arrays aligned with w, chronological per file (window start = the index, as
+    main.py floors it); cfg = the bundle's early_warning block."""
+    active, onset = np.zeros(len(w), dtype=bool), np.zeros(len(w), dtype=bool)
+    if not cfg or not cfg.get("enabled") or len(w) == 0:
+        return active, onset
+    zero = np.zeros(len(w))
+    cond = early_warning_condition(
+        cfg["kind"], scores, cfg["threshold"], w["non_welding"].to_numpy() if "non_welding" in w.columns else zero,
+        w["error_active"].to_numpy() if "error_active" in w.columns else zero,
+        w["terminal_any"].to_numpy() if "terminal_any" in w.columns else zero,
+        w["warmup"].to_numpy() > 0 if "warmup" in w.columns else zero.astype(bool))
+    files = w["file"].to_numpy() if "file" in w.columns else zero
+    for _, idx in pd.Series(np.arange(len(w))).groupby(files).indices.items():
+        order = idx[np.argsort(w.index.to_numpy()[idx], kind="stable")]
+        st = {"run": 0, "last_t": None, "since": None}
+        for i in order:
+            active[i], onset[i] = early_warning_step(st, w.index[i], bool(cond[i]), int(cfg["sustain"]),
+                                                     int(cfg.get("window_s", 60)))
+    return active, onset
+
+
+def terminal_onset_ttf(part):
+    """ttf_s (to the file end) of the failure's terminal-code onset T in one file's windows: the first window carrying
+    the file's own class code within EW_TERMINAL_WINDOW_S of the end, else any terminal code there, else RULE_LEAD_S
+    (B-17's rule at window resolution: the onset window's ttf_s is its last second)."""
+    ttf = part["ttf_s"].to_numpy()
+    late = ttf <= EW_TERMINAL_WINDOW_S
+    cls = str(part["class"].iloc[0]) if "class" in part.columns else ""
+    for col in ([TERM_FLAGS[CLASSES.index(cls)]] if cls in CLASSES else []) + ["terminal_any"]:
+        if col in part.columns:
+            on = late & (part[col].to_numpy() > 0)
+            if on.any():
+                return float(ttf[on].max())
+    return float(RULE_LEAD_S)
+
+
+def early_warning_leads(w):
+    """Per-window lead to the terminal-code onset T, seconds (window end -> T; <= 0 at or after T)."""
+    lead = np.full(len(w), np.nan)
+    for _, idx in w.groupby("file").indices.items():
+        lead[idx] = w["ttf_s"].to_numpy()[idx] - terminal_onset_ttf(w.iloc[idx])
+    return lead
+
+
+def early_warning_population(w):
+    """Calibration windows: > EW_CAL_LEAD_S before T, no controller code, not in the warm-up (non-welding windows
+    included - the population B-18 swept). Fewer than EW_CAL_MIN -> > 1 h before T (fallback). (mask, fallback)."""
+    lead = early_warning_leads(w)
+    base = (w["error_active"].to_numpy() == 0) & ~(w["warmup"].to_numpy() > 0 if "warmup" in w.columns else False)
+    pop = base & (lead > EW_CAL_LEAD_S)
+    if pop.sum() >= EW_CAL_MIN:
+        return pop, False
+    return base & (lead > EW_ZONE_S[1]), True
+
+
+def early_warning_calibrate(w, scores, q):
+    """Threshold = the q-quantile of the calibration windows' scores. (threshold, info); threshold None when fewer
+    than 50 windows qualify (no early warning)."""
+    pop, fallback = early_warning_population(w)
+    info = {"population": f"lead > {EW_ZONE_S[1] if fallback else EW_CAL_LEAD_S} s, error_active 0, not warm-up",
+            "n_windows": int(pop.sum()), "fallback": fallback}
+    if pop.sum() < 50:
+        return None, info
+    return float(np.quantile(np.asarray(scores)[pop], q)), info
+
+
+def early_warning_block(rule, q, cooldown_s, window_s, threshold, info, source, evidence=None):
+    """The bundle's early_warning block (main.py reads it; enabled only with a threshold)."""
+    kind, k = EW_RULES[rule]
+    return {"enabled": threshold is not None, "rule": rule, "kind": kind, "sustain": k,
+            "gate": EW_GATE if kind in ("model", "model_quiet", "model_watch") else None,
+            "warmup_excluded": True, "restart_hold": False, "threshold": threshold, "quantile": q,
+            "window_s": window_s, "cooldown_s": cooldown_s, "horizon_min": [EW_ZONE_S[0] // 60, EW_ZONE_S[1] // 60],
+            "calibration": {"source": source, **info}, "evidence": evidence}
+
+
+def early_warning_metrics(w, scores, cfg, n_boot=1000):
+    """Event-level early warning on one split (B-18 definitions): recall = guns warned in a window ending 10-60 min
+    before T, chance = the same at T - 1..6 days, false alarms = episode onsets > 60 min before T per monitored
+    gun-day (warm-up excluded); handoff onsets = the onsets serving would send (cooldown, no terminal code in the
+    window). Gun bootstrap CI of the excess."""
+    active, onset = early_warning_flags(w, scores, cfg)
+    lead = early_warning_leads(w)
+    ok = ~(w["warmup"].to_numpy() > 0) if "warmup" in w.columns else np.ones(len(w), dtype=bool)
+    term = w["terminal_any"].to_numpy() > 0 if "terminal_any" in w.columns else np.zeros(len(w), dtype=bool)
+
+    def hit(a, ld, k, shift):
+        z = (ld - shift >= EW_ZONE_S[0]) & (ld - shift <= EW_ZONE_S[1]) & k
+        return float((a & z).any()) if z.sum() >= EW_ZONE_MIN else np.nan
+
+    per = {}
+    for f, idx in w.groupby("file").indices.items():
+        idx = idx[np.argsort(w.index.to_numpy()[idx], kind="stable")]
+        ld, a, o, k = lead[idx], active[idx], onset[idx], ok[idx]
+        normal = (ld > EW_ZONE_S[1]) & k
+        sent, last = 0, None
+        for i in np.flatnonzero(o & normal & ~term[idx]):
+            t = w.index[idx[i]]
+            if last is None or (t - last).total_seconds() >= cfg.get("cooldown_s", 0):
+                sent, last = sent + 1, t
+        plc = np.array([hit(a, ld, k, d * 86400) for d in EW_PLACEBO_DAYS])
+        per[f] = {"hit": hit(a, ld, k, 0), "chance": float(np.nanmean(plc)) if np.isfinite(plc).any() else np.nan,
+                  "false_alarms": int((o & normal).sum()), "handoff_onsets": sent, "days": float(normal.sum() / 1440),
+                  "active_share_normal": float(a[normal].mean()) if normal.any() else np.nan}
+    hit_ = np.array([v["hit"] for v in per.values()])
+    plc_ = np.array([v["chance"] for v in per.values()])
+    fa = np.array([v["false_alarms"] for v in per.values()], dtype=float)
+    sent = np.array([v["handoff_onsets"] for v in per.values()], dtype=float)
+    days = np.array([v["days"] for v in per.values()])
+
+    def excess(sel):
+        return float(np.nanmean(hit_[sel]) - np.nanmean(plc_[sel])) if np.isfinite(hit_[sel]).any() else np.nan
+
+    rng = np.random.default_rng(42)
+    boot = [excess(rng.integers(0, len(per), len(per))) for _ in range(n_boot)] if len(per) else []
+    boot = [b for b in boot if b == b]
+    with np.errstate(invalid="ignore"):
+        return {"rule": cfg.get("rule"), "threshold": cfg.get("threshold"), "events": int(np.isfinite(hit_).sum()),
+                "recall": float(np.nanmean(hit_)) if np.isfinite(hit_).any() else np.nan,
+                "chance": float(np.nanmean(plc_)) if np.isfinite(plc_).any() else np.nan,
+                "excess": excess(np.arange(len(per))),
+                "excess_ci": [float(np.percentile(boot, 2.5)), float(np.percentile(boot, 97.5))] if boot else None,
+                "false_alarms_per_gun_day": float(fa.sum() / days.sum()) if days.sum() else np.nan,
+                "handoff_onsets_per_gun_day": float(sent.sum() / days.sum()) if days.sum() else np.nan,
+                "per_file": per}
+
+
 def warmup_flags(w, warmup_alarms):
     """The `warmup` argument of alarm_mask: None when warm-up windows may alarm (bundles before 2026-09-29)."""
     return None if warmup_alarms or "warmup" not in w.columns else w["warmup"].to_numpy()
@@ -597,9 +789,10 @@ def rule_repeats(trig, code, ttf_s, repeat_s=RULE_REPEAT_S):
 
 
 def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_alarms=True, restart=None,
-             critical_sustain=None, rule_per_code=RULE_PER_CODE, restart_held=None):
+             critical_sustain=None, rule_per_code=RULE_PER_CODE, restart_held=None, early_warning=None):
     """threshold: the global one; gun_thr: file -> per-gun threshold (applied after the warm-up); restart: restart-hold
-    config (RESTART_HOLD_DEFAULT) or None; critical_sustain: windows before a model alarm is critical (default sustain).
+    config (RESTART_HOLD_DEFAULT) or None; critical_sustain: windows before a model alarm is critical (default sustain);
+    early_warning: the bundle's early_warning block (C-8) -> m["early_warning"] (event level, B-18 definitions).
     Every AUROC / AUPRC here is pre-failure windows vs NORMAL windows: error-state windows outside the pre-failure
     window are neither (until 2026-09-29 they counted as negatives - history.md §14)."""
     normal = (val["label"] == 0) & (val["error_active"] == 0)
@@ -738,6 +931,8 @@ def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_al
         "files_rule_lead_ok": int(sum(1 for v in per_file.values() if v["rule_lead_min"] >= OP_LEAD_MIN)),
         "final_lead_min_median": float(np.median(lead[lead >= 0])) if (lead >= 0).any() else np.nan}
     m["per_class"], m["per_file"] = per_class, per_file
+    if early_warning and early_warning.get("enabled"):
+        m["early_warning"] = early_warning_metrics(val, s, early_warning)
     return m
 
 
@@ -793,7 +988,7 @@ def test_files_in(test_dir):
 
 def evaluate_test(model, feat_cols, model_cols, window, threshold, sustain, files, score_dir=None, tag="", gate=None,
                   gn=None, label_window=None, warmup_alarms=True, restart=None, critical_sustain=None,
-                  rule_per_code=RULE_PER_CODE):
+                  rule_per_code=RULE_PER_CODE, early_warning=None):
     """Window + score the preprocessed test files with the frozen model/threshold (+ the bundle's gun
     normalisation) and run the same evaluation as for validation. Optionally writes per-file score
     CSVs (time, score, alarm, threshold, ...)."""
@@ -814,7 +1009,7 @@ def evaluate_test(model, feat_cols, model_cols, window, threshold, sustain, file
     gun_thr = gun_thresholds(model, model_cols, pd.concat(cs) if cs else None, threshold, (gn or {}).get("threshold_q"), gate)
     rh = restart_flags(test_w, restart)
     m = evaluate(test_w, scores, threshold, sustain, gate, gun_thr, warmup_alarms, restart, critical_sustain,
-                 rule_per_code, restart_held=rh)
+                 rule_per_code, restart_held=rh, early_warning=early_warning)
     m["files"] = [os.path.basename(f) for f in files]
     m["file_class"] = {f: str(c) for f, c in test_w.groupby("file")["class"].first().items()}
     m["class_source"] = "inferred by preprocess.py from the terminal code in the last 10 min"
@@ -824,8 +1019,13 @@ def evaluate_test(model, feat_cols, model_cols, window, threshold, sustain, file
         test_w = test_w.assign(score=scores, alarm=alarm_mask(scores, thr, test_w["non_welding"].values, gate,
                                                               warmup_flags(test_w, warmup_alarms), rh if restart else None),
                                threshold=thr, restart_hold=rh.astype("float32"))
+        ew_cols = []
+        if early_warning and early_warning.get("enabled"):
+            ew_cols = ["early_warning"]
+            test_w["early_warning"] = early_warning_flags(test_w, scores, early_warning)[0].astype("float32")
         for f, part in test_w.groupby("file"):
-            out_cols = ["score", "alarm", "threshold", "restart_hold"] + [c for c in SCORE_META_COLS if c in part.columns]
+            out_cols = ["score", "alarm", "threshold", "restart_hold"] + ew_cols + \
+                [c for c in SCORE_META_COLS if c in part.columns]
             part[out_cols].to_csv(os.path.join(score_dir, f"{f}_{tag}.csv"))
     return m
 
@@ -856,6 +1056,9 @@ def score_frame(bundle, df):
     alarm = alarm_mask(s, thr, w["non_welding"].values if "non_welding" in w.columns else None, gate,
                        warmup_flags(w, bundle.get("warmup_alarms", True)), rh if restart else None)
     out = pd.DataFrame({"score": s, "alarm": alarm, "threshold": thr, "restart_hold": rh}, index=w.index)
+    ew = bundle.get("early_warning")
+    if ew and ew.get("enabled"):  # C-8, what main.py's early_warning field says window by window
+        out["early_warning"], out["early_warning_onset"] = early_warning_flags(w, s, ew)
     for c in SCORE_META_COLS:
         if c in w.columns:
             out[c] = w[c].values
@@ -925,6 +1128,14 @@ def main():
     ap.add_argument("--label-window", type=int, default=None,
                     help="pre-failure window in seconds for training / evaluation (default: the one preprocess.py used, 3600)")
     ap.add_argument("--cv", type=int, default=None, help="also run a gun-level k-fold (metrics['cv']) before the final fit")
+    ap.add_argument("--early-warning-rule", choices=sorted(EW_RULES), default=EW_DEFAULT["rule"],
+                    help="C-8 early-warning condition (B-18 config name; default: the B-20 decision)")
+    ap.add_argument("--early-warning-q", type=float, default=EW_DEFAULT["q"],
+                    help="early-warning threshold = this quantile of gun-held-out normal scores (--cv out-of-fold, "
+                         "else the val files)")
+    ap.add_argument("--early-warning-cooldown-min", type=float, default=EW_DEFAULT["cooldown_s"] / 60,
+                    help="min minutes between two early-warning handoffs of a gun (main.py)")
+    ap.add_argument("--no-early-warning", action="store_true", help="bundle without an early warning")
     ap.add_argument("--max-train-windows", type=int, default=None, help="subsample normal windows")
     ap.add_argument("--max-files", type=int, default=None)
     ap.add_argument("--seed", type=int, default=42)
@@ -962,7 +1173,8 @@ def main():
                           label_window=(b.get("args") or {}).get("label_window"),
                           warmup_alarms=b.get("warmup_alarms", True), restart=b.get("restart_hold"),
                           critical_sustain=b.get("critical_sustain"),
-                          rule_per_code=bool((b.get("rule") or {}).get("per_code", False)))
+                          rule_per_code=bool((b.get("rule") or {}).get("per_code", False)),
+                          early_warning=b.get("early_warning"))
         print_metrics("test", m)
         dst = os.path.join(args.model_dir, f"baseline_{args.model}_test_metrics.json")
         with open(dst, "w", encoding="utf-8") as f:
@@ -1035,14 +1247,26 @@ def main():
             model.fit(X)
             s_tr = anomaly_score(model, X)
         thr = float(np.quantile(s_tr, args.threshold_q))
-        m_val = None
+        m_val, s_va = None, None
         if va_files:
             va = pd.concat([parts[f] for f in va_files])
             cal = [calibs[f] for f in va_files if f in calibs]
             gun_thr = gun_thresholds(model, model_cols, pd.concat(cal) if cal else None, thr, q_gun, args.alarm_max_non_welding)
-            m_val = evaluate(va, anomaly_score(model, va[model_cols].to_numpy(dtype=np.float32)), thr, args.sustain,
+            s_va = anomaly_score(model, va[model_cols].to_numpy(dtype=np.float32))
+            m_val = evaluate(va, s_va, thr, args.sustain,
                              args.alarm_max_non_welding, gun_thr, args.warmup_alarms, restart, args.critical_sustain)
-        return model, X, s_tr, thr, m_val
+        return model, X, s_tr, thr, m_val, s_va
+
+    # C-8: the early-warning windows of some files (index = window start, as early_warning_flags expects)
+    ew_cols = ["file", "class", "ttf_s", "error_active", "terminal_any", "non_welding", "warmup"] + TERM_FLAGS
+
+    def ew_frame(fs):
+        return pd.concat([parts[f][[c for c in ew_cols if c in parts[f].columns]] for f in fs])
+
+    ew_rule = None if args.no_early_warning else args.early_warning_rule
+    if ew_rule and args.early_warning_q is None:
+        raise SystemExit("--early-warning-rule needs --early-warning-q (or --no-early-warning)")
+    ew_oof = []  # (validation files, their out-of-fold scores) per CV fold - float32, a few MB
 
     cv = None
     if args.cv:
@@ -1050,7 +1274,8 @@ def main():
         fold_metrics = []
         for i, va_files in enumerate(folds, 1):
             tr_files = [f for f in files if f not in va_files]
-            _, _, _, thr_i, m_i = fit_and_eval(tr_files, va_files)
+            _, _, _, thr_i, m_i, s_i = fit_and_eval(tr_files, va_files)
+            ew_oof.append((va_files, s_i.astype(np.float32)))
             fold_metrics.append({k: m_i[k] for k in ("auroc", "auroc_gun_mean", "auroc_pre_rule", "auprc", "recall_pre_failure",
                                                      "alarm_rate_normal", "alarm_rate_normal_per_file_min_max_std")}
                                 | {"threshold": thr_i, "val_files": [os.path.basename(f) for f in va_files],
@@ -1071,8 +1296,39 @@ def main():
               f"operating point {cv['files_both_ok']}/{len(files)} guns", flush=True)
 
     print(f"fitting {args.model} on the normal windows of {len(train_files)} files x {len(model_cols)} features")
-    model, X, train_scores, threshold, m_val = fit_and_eval(train_files, val_files)
+    model, X, train_scores, threshold, m_val, s_val = fit_and_eval(train_files, val_files)
     print(f"fitted on {len(X):,} normal windows, threshold {threshold:.4f}")
+
+    # C-8 early warning: threshold from gun-held-out scores - the CV out-of-fold ones, else the final model's val files
+    early_warning = None
+    if ew_rule:
+        evidence = EW_EVIDENCE if args.model == "ensemble" else None  # B-20 measured the production ensemble
+        cooldown_s = int(round(args.early_warning_cooldown_min * 60))
+        if ew_oof:
+            oof_w = ew_frame([f for fs, _ in ew_oof for f in fs])
+            oof_s = np.concatenate([s for _, s in ew_oof])
+            ew_thr, info = early_warning_calibrate(oof_w, oof_s, args.early_warning_q)
+            early_warning = early_warning_block(ew_rule, args.early_warning_q, cooldown_s, args.window, ew_thr, info,
+                                                f"cv{args.cv}_out_of_fold", evidence)
+            if early_warning["enabled"]:
+                cv["early_warning"] = early_warning_metrics(oof_w, oof_s, early_warning)
+            del oof_w, oof_s
+        elif s_val is not None:
+            ew_thr, info = early_warning_calibrate(ew_frame(val_files), s_val, args.early_warning_q)
+            early_warning = early_warning_block(ew_rule, args.early_warning_q, cooldown_s, args.window, ew_thr, info,
+                                                "val_files", evidence)
+        else:
+            early_warning = {"enabled": False, "rule": ew_rule, "reason": "no gun-held-out scores (no --cv, no val files)"}
+        if early_warning.get("enabled") and s_val is not None:
+            # does the threshold transfer to the final model? its share of val calibration windows above it ~ 1 - q
+            va_w = ew_frame(val_files)
+            pop, _ = early_warning_population(va_w)
+            early_warning["val_exceed_rate"] = float((s_val[pop] >= early_warning["threshold"]).mean()) if pop.any() else None
+            if m_val is not None:
+                m_val["early_warning"] = early_warning_metrics(va_w, s_val, early_warning)
+        print(f"early warning: {early_warning.get('rule')} threshold {early_warning.get('threshold')} "
+              f"({(early_warning.get('calibration') or {}).get('source', early_warning.get('reason'))}), "
+              f"val exceed rate {early_warning.get('val_exceed_rate')}")
 
     metrics = {"train": {"n_fit_windows": int(len(X)), "threshold": threshold,
                          "score_mean": float(train_scores.mean()), "score_std": float(train_scores.std())}}
@@ -1085,7 +1341,7 @@ def main():
         metrics["test"] = evaluate_test(model, feat_cols, model_cols, args.window, threshold, args.sustain, test_files,
                                         gate=args.alarm_max_non_welding, gn=gn, label_window=args.label_window,
                                         warmup_alarms=args.warmup_alarms, restart=restart,
-                                        critical_sustain=args.critical_sustain)
+                                        critical_sustain=args.critical_sustain, early_warning=early_warning)
         print_metrics("test", metrics["test"])
     else:
         print(f"no test files in {test_dir} - skipped test evaluation")
@@ -1099,6 +1355,8 @@ def main():
         # C-5: a model-only alarm is critical after critical_sustain windows (sustain stays the warning-level
         # "sustained"); no model alarm for restart_hold["hold_s"] after an idle block (None = off)
         "critical_sustain": args.critical_sustain, "restart_hold": restart,
+        # C-8: low-precision early warning tens of minutes ahead (separate from severity; main.py, handoff on a flag)
+        "early_warning": early_warning,
         # terminal-code rule (main.py fires it on an episode start, then keeps quiet for cooldown_s; a code that
         # already fired < repeat_s earlier is a repeat: reported, not critical)
         "rule": {"codes": list(TERMINAL_CODES), "cooldown_s": RULE_COOLDOWN_S, "repeat_s": RULE_REPEAT_S,

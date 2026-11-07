@@ -4,7 +4,7 @@
   "observed_at": "2021-09-03T09:25:59Z",
   "window_s": 60,
   "value_space": "ml_handoff_z",
-  "reference_id": "baseline_ensemble@2026-10-06T10:17:47",
+  "reference_id": "baseline_ensemble@2026-11-01T18:46:47",
   "gun_norm": "gun",
   "error_code": "E016",
   "fault_class": "E02",

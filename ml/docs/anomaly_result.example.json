@@ -30,6 +30,12 @@
   "windows_scored": 1,
   "critical_source": "rule",
   "critical_in_request": true,
+  "early_warning": true,
+  "early_warning_in_request": true,
+  "early_warning_onset": false,
+  "early_warning_since": "2021-09-03T09:23:00",
+  "early_warning_threshold": 0.9464368224143982,
+  "early_warning_handoff_suppressed": null,
   "contributing_features": [
     {
       "feature": "error_share_10min_mean",
@@ -151,7 +157,7 @@
   "model": {
     "name": "baseline_ensemble",
     "type": "ensemble",
-    "created": "2026-10-06T10:17:47",
+    "created": "2026-11-01T18:46:47",
     "window_s": 60,
     "threshold": 0.9457997090865815,
     "threshold_q": 0.99,
@@ -168,7 +174,14 @@
     "warmup_alarms": false,
     "critical_sustain": 10,
     "restart_hold_s": 1800,
-    "restart_idle_windows": 30
+    "restart_idle_windows": 30,
+    "early_warning_rule": "model_ng_k1",
+    "early_warning_threshold": 0.9464368224143982,
+    "early_warning_sustain": 1,
+    "early_warning_horizon_min": [
+      10,
+      60
+    ]
   },
   "drift_warning": [
     "2 critical terminal-code rule triggers on 2021-09-03"
@@ -180,7 +193,7 @@
       "observed_at": "2021-09-03T09:25:59Z",
       "window_s": 60,
       "value_space": "ml_handoff_z",
-      "reference_id": "baseline_ensemble@2026-10-06T10:17:47",
+      "reference_id": "baseline_ensemble@2026-11-01T18:46:47",
       "gun_norm": "gun",
       "error_code": "E016",
       "fault_class": "E02",

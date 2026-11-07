@@ -1,10 +1,13 @@
 """
-Unit tests of .py/rag_mapping.py (ML -> RAG handoff v1.2: no symptoms, no situation ids). Pure Python: no model, no server, < 1 s.
+Unit tests of .py/rag_mapping.py (ML -> RAG handoff v1.4: no symptoms, no situation ids; event_type critical /
+early_warning). Pure Python: no model, no server, < 1 s.
 The API side (handoff on /predict, /handoffs endpoints, replay) is covered in test_pipeline.py.
 """
 import copy
 import os
+import random
 import sys
+from datetime import datetime, timedelta
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, ".py"))
@@ -106,8 +109,8 @@ def test_schema_keys_match_main():
     r = copy.deepcopy(BASE)
     r["contributing_features"] = [feat("c5", "mean", -3.1)]
     h = rm.build_handoff(r)
-    assert set(h) == {"schema_version", "event_id", "gun_id", "detected_at", "window_start", "trigger", "summary_ko",
-                      "sensor_findings", "fault_class", "context", "detector", "caveats"}
+    assert set(h) == {"schema_version", "event_type", "event_id", "gun_id", "detected_at", "window_start", "trigger",
+                      "summary_ko", "sensor_findings", "fault_class", "context", "detector", "caveats", "early_warning"}
     assert set(h["sensor_findings"][0]) == {"sensor", "sensor_name", "sensor_name_ko", "group", "statistic",
                                             "direction", "deviation_z", "share", "text_ko"}
     assert set(h["fault_class"]) == {"code", "name_en", "name_ko", "terminal_code", "definition", "basis"}
@@ -141,7 +144,7 @@ def test_handoff_times_are_utc_with_z():
     r = copy.deepcopy(BASE)
     r["contributing_features"] = [feat("c5", "mean", -3.1)]
     h = rm.build_handoff(r)
-    assert h["schema_version"] == "1.2"
+    assert h["schema_version"] == "1.4"
     assert h["detected_at"] == "2021-09-05T02:23:20Z" and h["window_start"] == "2021-09-05T02:22:21Z"
     assert h["trigger"]["rule_trigger_time"] == "2021-09-05T02:23:00Z"
     assert rm.utc_iso("2021-09-05T02:23:20Z") == "2021-09-05T02:23:20Z"
@@ -153,3 +156,116 @@ def test_caveats_carry_current_test_numbers():
     """FE note: the caveats are shown on screen - they must match models/baseline_ensemble_test_metrics.json."""
     text = " ".join(rm.CAVEATS)
     assert "0.64" not in text and "0/8" not in text and "0.71" in text and "2/8" in text
+
+
+EW = {"since": "2021-09-05T02:20:00Z", "onset_at": "2021-09-05T02:20:59Z", "active_min": 4, "rule": "model_ng_k1",
+      "sustain_windows": 1, "threshold": 0.95, "quantile": 0.975, "score": 0.97, "horizon_min": [10, 60],
+      "expected": None, "candidate_fault_classes": ["E01"], "candidate_terminal_codes": ["E012"], "note_ko": "x"}
+
+
+def test_ew_handoff_has_no_class():
+    """C-8: an early warning is told apart by event_type and trigger.source, and carries no terminal code and no
+    fault class even when the request saw a code (the api keys cases and RAG on rule_code / fault_class)."""
+    r = copy.deepcopy(BASE)  # a rule-triggered result: the early-warning document must still not carry the code
+    r["context"]["known_code_class_hint"] = "E01"
+    h = rm.build_handoff(r, "ev1", early_warning=EW)
+    assert h["event_type"] == "early_warning" and h["trigger"]["source"] == "early_warning"
+    assert h["trigger"]["rule_code"] is None and h["trigger"]["rule_trigger_time"] is None
+    assert h["fault_class"] is None and h["early_warning"] == EW
+    assert h["summary_ko"].startswith(rm.EARLY_WARNING_NOTE_KO)
+    assert rm.build_handoff(r)["event_type"] == "critical" and rm.build_handoff(r)["early_warning"] is None
+
+
+def test_ew_caveats():
+    """The early-warning caveats replace the critical ones and carry B-20's numbers (train.EW_EVIDENCE)."""
+    h = rm.build_handoff(copy.deepcopy(BASE), early_warning=EW)
+    text = " ".join(h["caveats"])
+    assert h["caveats"] == rm.CAVEATS_EARLY_WARNING and "49%" in text and "34%" in text and "4/8" in text
+    assert "0.71" not in text
+
+
+# ------------------------------------------------------------------ v1.4 sensor_block (spec section 10)
+CHANNELS = [f"c{i}" for i in range(1, 20)]
+MINUTE0 = datetime(2021, 10, 3, 2, 0, 0)
+
+
+def srow(sec, minute=0, **kw):
+    r = {c: float(i) for i, c in enumerate(CHANNELS)}
+    r.update(time=MINUTE0 + timedelta(minutes=minute, seconds=sec), error="0")
+    r.update(kw)
+    return r
+
+
+def block(rows, start=0, end=59):
+    return rm.sensor_block(rows, MINUTE0 + timedelta(seconds=start), MINUTE0 + timedelta(seconds=end), CHANNELS)
+
+
+def decode(entries, present):
+    """[[second, value], ...] -> {second: value}, for the seconds that hold a row."""
+    changes, out, cur = dict(entries), {}, None
+    for s in range(60):
+        cur = changes.get(s, cur)
+        if s in present:
+            out[s] = cur
+    return out
+
+
+def test_block_decodes_to_the_rows():
+    rng = random.Random(0)
+    rows = []
+    for s in range(60):
+        if s not in (7, 8, 30):
+            r = srow(s, error=rng.choice(["0", "0", "E006"]))
+            r.update({c: rng.choice([0.0, 1.0, 2500.0, 157.8632812, -1367.0]) for c in CHANNELS})
+            rows.append(r)
+    b = block(rows)
+    present = {r["time"].second for r in rows}
+    assert b["missing_s"] == [7, 8, 30] and list(b["channels"]) == CHANNELS
+    for c in CHANNELS:
+        assert decode(b["channels"][c], present) == {r["time"].second: r[c] for r in rows}, c
+    assert decode(b["error"], present) == {r["time"].second: r["error"] for r in rows}
+
+
+def test_block_resend_keeps_the_last_arrival():
+    rows = [srow(s) for s in range(60)] + [srow(5, c5=99.0), srow(5, c5=7.0, error="E006")]
+    b = block(rows)
+    assert decode(b["channels"]["c5"], set(range(60)))[5] == 7
+    assert decode(b["error"], set(range(60)))[5] == "E006"
+
+
+def test_block_out_of_order_rows_are_sorted():
+    rows = [srow(s, c5=float(s % 7)) for s in range(60)]
+    assert block(rows[::-1]) == block(rows) == block(rows[30:] + rows[:30])
+
+
+def test_block_gap_has_no_false_entry():
+    rows = [srow(s, c5=5.0) for s in range(60) if not 10 <= s <= 14]
+    b = block(rows)
+    assert b["missing_s"] == [10, 11, 12, 13, 14] and b["channels"]["c5"] == [[0, 5]]
+    rows = [srow(s, c5=5.0 if s < 10 else 6.0) for s in range(60) if not 10 <= s <= 14]
+    assert block(rows)["channels"]["c5"] == [[0, 5], [15, 6]], "the change shows at the first real row"
+
+
+def test_block_partial_window_uses_clock_seconds():
+    b = block([srow(s) for s in range(20, 41)], start=20, end=40)
+    assert b["channels"]["c1"][0][0] == 20 and b["missing_s"] == [] and b["error"] == [[20, "0"]]
+    assert b["window_start"] == "2021-10-03T02:00:20Z" and b["window_end"] == "2021-10-03T02:00:40Z"
+
+
+def test_block_leaves_out_the_next_minute():
+    rows = [srow(s) for s in range(60)] + [srow(s, minute=1, c5=99.0, error="E029") for s in range(10)]
+    b = block(rows)
+    assert b["channels"]["c5"] == [[0, 4]] and b["error"] == [[0, "0"]]
+
+
+def test_block_without_rows():
+    b = block([])
+    assert list(b["channels"]) == CHANNELS and all(v == [] for v in b["channels"].values())
+    assert b["error"] == [] and b["missing_s"] == list(range(60))
+
+
+def test_block_whole_floats_become_ints():
+    b = block([srow(0, c14=2500.0, c7=157.8632812, c10=1.0)])
+    assert b["channels"]["c14"] == [[0, 2500]] and type(b["channels"]["c14"][0][1]) is int
+    assert b["channels"]["c10"] == [[0, 1]] and type(b["channels"]["c10"][0][1]) is int
+    assert b["channels"]["c7"] == [[0, 157.8632812]] and type(b["channels"]["c7"][0][1]) is float

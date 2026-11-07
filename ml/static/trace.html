@@ -239,7 +239,7 @@ function drawTimeline(D,P,F){
   // events (full height)
   D.events.forEach(e=>{ const t=parse(e.time).getTime(); if(t<tA||t>tB) return; const col=e.kind==="critical_start"?"var(--crit)":e.kind==="rule"?"var(--ink)":"var(--mute)";
     el("line",{x1:x(t),x2:x(t),y1:0,y2:H-hAxis,stroke:col,"stroke-width":e.kind==="rule"||e.kind==="critical_start"?1.5:1,"stroke-dasharray":e.kind==="rule"||e.kind==="critical_start"?"":"2 3"},svg);
-    const lab=e.kind==="critical_start"?"모델 위험":e.kind==="rule"?`규칙 ${e.code}`:e.kind==="rule_out_of_profile"?`프로파일 밖 ${e.code}`:`규칙 반복 ${e.code}`;
+    const lab=e.kind==="critical_start"?"모델 위험":e.kind==="early_warning_start"?"조기 경보":e.kind==="rule"?`규칙 ${e.code}`:e.kind==="rule_out_of_profile"?`프로파일 밖 ${e.code}`:`규칙 반복 ${e.code}`;
     const right=x(t)>W-m.r-120, yy=e.kind==="critical_start"?hScore-8:24;
     el("text",{x:right?x(t)-4:x(t)+4,y:yy,"text-anchor":right?"end":"start",class:"lbl b"},svg).textContent=lab; });
   if(F){ const t=parse(F.window_end).getTime(); if(t>=tA&&t<=tB){ el("line",{x1:x(t),x2:x(t),y1:0,y2:H-hAxis,stroke:"var(--model)","stroke-width":1,"stroke-dasharray":"1 3"},svg); } }

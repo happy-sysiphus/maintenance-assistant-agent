@@ -1,6 +1,6 @@
 ## RSW 용접기 고장 예측 — 이상탐지 파이프라인
 
-저항 점용접기(RSW)의 센서 시계열에서 고장 전조를 실시간으로 탐지하고, 그 신호를 원인 분석(RAG/LLM) 단계로 넘기는 프로젝트다.
+저항 점용접기(RSW)의 센서 시계열에서 고장 전조를 실시간으로 탐지하고, 그 신호를 원인 분석(RAG/LLM) 단계로 넘기는 프로젝트다. 수 시간 전 예지는 이 데이터로 되지 않는다(B-14). 몇십 분 전은 정밀도가 낮은 조기 경보(C-8, 2026-11-01)로 낸다. 고장 둘 중 하나에 10–60분 전 경보가 켜지고, 오경보는 건당 하루 ~16회다.
 
 - **0~4절**: 데이터와 논문, 접근 방식, 데이터에서 확인한 사실 — *무엇을 왜 하는가*
 - **5절**: 구현 워크플로우 — *무엇을 어떤 순서로 돌리면 무엇이 나오는가*
@@ -150,8 +150,8 @@ E01~E04를 정답으로 삼는 분류는 하지 않는다(LightGBM도 "고장 �
 
 이상탐지 신호가 나온 다음 단계다. **ML 쪽(1~2번과 핸드오프)은 구현되어 있다. 3~4번(매뉴얼 검색·LLM 안내)은 RAG 담당이 구현했다(2026-10-28). 핸드오프는 api가 받아 종료 코드로 RAG를 부른다(5.10절).**
 
-1. 필터링된 강한 이상 시그널이 탐지되면 Root Cause Agent로 전달 → **구현됨**: `severity: critical`(종료 코드 에피소드 시작, 또는 모델 알람이 10분 이상 지속 — C-5)이 트리거 기준
-2. Agent가 이상 감지 시점 앞뒤의 센서 수치·로그 스트림을 모아 컨텍스트 구성 → **구현됨**: critical 이벤트마다 **핸드오프 문서**(센서 편차 소견, 종료 코드, 고장 유형)를 만든다(`.py/rag_mapping.py`, 5.10절)
+1. 필터링된 강한 이상 시그널이 탐지되면 Root Cause Agent로 전달 → **구현됨**: `severity: critical`(종료 코드 에피소드 시작, 또는 모델 알람이 10분 이상 지속 — C-5)이 트리거 기준. 몇십 분 전 조기 경보(C-8)는 `event_type: early_warning`으로 따로, 플래그를 켤 때만 보낸다
+2. Agent가 이상 감지 시점 앞뒤의 센서 수치·로그 스트림을 모아 컨텍스트 구성 → **구현됨**: critical 이벤트마다 **핸드오프 문서**(센서 편차 소견, 종료 코드, 고장 유형, 시각 피처를 뺀 상위 피처 3개, 이벤트 1분의 초당 원시값)를 만든다(`.py/rag_mapping.py`, 5.10절)
 3. 감지된 에러 코드에 맞는 정비 지침서를 Vector DB에서 RAG로 검색 → **구현됨(RAG 담당)**: api가 핸드오프의 `trigger.rule_code`(없으면 `fault_class.terminal_code`)로 RAG를 부른다. RAG 입력은 E012·E016·E028·E029뿐이다
 4. LLM이 이상 패턴과 검색된 매뉴얼을 융합해 원인·영향도·조치 가이드를 자연어로 요약 → **구현됨(RAG 담당)**: 케이스 상세를 처음 열 때 api가 RAG 답을 만들어 저장한다. 센서는 쓰지 않고, 답은 ML로 오지 않는다(5.10.6절)
 
@@ -163,6 +163,8 @@ E01~E04를 정답으로 삼는 분류는 하지 않는다(LightGBM도 "고장 �
 설계상 유의점:
 
 - **알람 피로도.** 너무 예민하면 무시당한다. 그래서 임계값을 오탐률 1% 설계로 잡고, 모델 단독으로는 **10분 연속 초과일 때만** critical(핸드오프)을 내며(3분 연속은 warning의 "지속 알람"), 30분 이상 쉬었다가 재가동한 직후 30분은 모델 알람을 보류한다(C-5, 5.6~5.7절). 종료 코드 규칙은 그대로 즉시 critical.
+  - 예외는 몇십 분 전 조기 경보(C-8)다. 사용자 결정으로 미탐 우선이라 오경보 ~16회/건·일을 감수한다.
+  - 그래서 `severity`와 따로 두고(`early_warning*` 필드), 핸드오프는 플래그(`RSW_EARLY_WARNING_HANDOFFS=1`)를 켤 때만 보낸다. 같은 건에는 60분에 한 번이다(5.10.2).
 - **매뉴얼 RAG 구성.** RAG는 고장 유형(E01~E04)이 아니라 종료 코드(E012·E016·E028·E029)별로 매뉴얼 4종을 찾는다. 원인 후보, 고정 점검 9개(`E012-K1` 등)와 그 기준, 조치를 인용과 함께 낸다. 숫자 기준은 없다. 문서에 조치가 없는 E012·E028은 조치를 비워 둔다(`ui/docs/09-rag-development-reply.md` 3절).
 
 ---
@@ -436,6 +438,29 @@ E03과 E04는 18/18 완벽하다. 이 매핑으로 테스트 8파일의 클래�
 | c2가 0인 시간이 59~70% | 대부분 비가동 | `weld_duty_10min` 피처 |
 | 수집 시기 | E02 일부는 2019-12~2020-07, 나머지는 2021-08~10 | `04_collection_timeline.png` |
 
+##### 5.3.8 운전 맥락 — 원본 도메인 EDA (A-4)
+
+상관이 아니라 건과 라인이 무엇을 하고 있었는지를 원본 1 Hz에서 읽었다. 전문과 그림은 `results/A-4/report.md`, 경위는 `history.md` 40절에 있다.
+
+| 발견 | 수치 | 의미 |
+|---|---|---|
+| 가동 일정 | 03:40~06:50 거의 0, 07:00 일제 기동, 점심·교대·저녁 정지, 일요일 8% | 시각 피처가 "일정"을 배운다 |
+| 결측의 71%는 기록만 끊김 | 60초 초과 gap 중 카운터가 평소 속도로 움직인 것 718/1,017 | gap ≠ 정지 |
+| c1 = 캡 마모 보정값 | 드레싱 ~28분마다 +0.3 mm, 캡 교체 ~3.9시간마다 ~3 mm 감소 | 짧은 c16 = 0(≤ 60초)은 드레싱 동작, 긴 것은 정지 |
+| 택트 | 14타 / 77초 반복(66/68건) | 차체 한 대 77초 |
+| E003·E011 = 야간 정지 상태 코드 | 84%·78%가 03~07시, 용접 0, c10 꺼짐 90% 이상 | 전조가 아니다 |
+| **79파일 = 물리적 건 72개** | (c7, c8, c9) + 카운터 연속, 6묶음 13파일, test_0 = E03_9 | 파일 단위 CV는 독립이 아니다(MEMORY §7-11). 같은 건을 한 폴드로 묶어도 CV 수치는 그대로다(B-19) |
+| 고장 순간 | E01·E03 06시 기동 12건, E04 전원 꺼짐 18/21, E02만 생산 중(드레싱·교체 직후), 동시 고장 4묶음 13건 | 마모 누적보다 전환 순간의 상태 이상 |
+
+**A-5 검정**(`results/A-5/report.md`, `history.md` 44절): 위 "고장 순간"을 같은 건·같은 시각의 다른 날(사례-교차)과 같은 건의 다른 전환에 비교했다.
+
+| 발견 | 수치 | 의미 |
+|---|---|---|
+| E01·E03 = 기동 점검 실패 | 고장 직전 30분 기동 55% vs 같은 시각 19%(OR 11.8, 사전 고정 가설 통과), 기동에 이은 24건 중 20건은 용접 0타 | 센서로 앞서 볼 생산 구간이 없다 |
+| E04 = 전원 차단 상태 코드 | 18/21이 꺼짐 구간 안, 꺼진 지 중앙값 3.8분 | 마모 고장으로 읽지 않는다 |
+| 실패할 기동은 못 고름 | 같은 건의 다른 기동과 비교해 꺼짐 길이·용접 공백·시각·캡 상태 모두 보정 후 차이 없음 | 기동 감시는 예측이 아니라 일정 안내(전체 34% vs 우연 12%, 건·일당 2.4회) |
+| 탐색: 짧은 전원 깜빡임 | 고장 10–60분 전 36% vs 같은 시각 17%(사후 선택). 운영 조기 경보에 얹으면 +4.8점 [−1.3, +11.2], 테스트에서 늘어난 적중 없음(`results/A-5/overlap.py`, 사전 고정) | 조기 경보에 넣지 않는다. 현장 데이터 재검정용 가설 |
+
 #### 5.4 2단계 — 전처리, 학습 파일 (`python .py/preprocess.py`)
 
 처리 순서(파일마다): 1 Hz 격자 정렬 → 결측률 >40% 파일 폐기 → error 코드 gap 너머로 carry → gap ≤60초 ffill, 초과 gap은 행 삭제·`segment_id` 분리(`fill_gaps()`, 서빙과 공유) → c16 규칙(`c16 <= 0`; `--outlier-hi`로 상한 추가 가능)으로 비용접 행 센서값 blank + carry, `non_welding` 플래그 → c11/c12 → 증분·10분 롤링 → 시각 피처, `ttf_s`, `label` → 정상행(`label==0 & error_active==0`)으로 z-score fit(글로벌) → 저장.
@@ -561,7 +586,7 @@ parquet 한 파일은 **35개 컬럼**이다. 그중 **24개만 모델 입력**�
 
 운영점(선행 ≥30분 & 오탐 ≤1회/일): 검증 0/14, 테스트 0/8. 고장으로 이어지는 지속 알람 검증 9/14·테스트 2/8이지만 선행 중앙값 9.1분·5.8분 — 규칙이 잡는 마지막 10분 안이다. 정상 구간 지속 오탐은 테스트 최대 0.83회/일(8/8건 ≤1회), 검증 12/14건 ≤1회. 종료 코드 규칙 기준선: 8/8건, 선행 중앙값 9.2분, critical 오트리거 0.18회/일/건(반복 강등 4회, 강등하지 않으면 0.25).
 
-→ 앙상블로 고장 10분 전 분리력(규칙 이전 AUROC)이 IsolationForest 단독 대비 4-fold 0.594→0.644, 테스트 0.619→0.671, 고장 전 1h 알람률이 테스트 3.5→7.5%로 올랐다. 그래도 **30분 이상 선행하는 지속 알람은 0건**이다(`test.md` 1절). 종료 상태(E029 등)는 모델이 아니라 규칙(`rule_triggered`)이 잡는다. 파일별 결과와 원인은 **`test.md`**, 절제 실험 경과는 **`history.md`**에 있다.
+→ 앙상블로 고장 10분 전 분리력(규칙 이전 AUROC)이 IsolationForest 단독 대비 4-fold 0.594→0.644, 테스트 0.619→0.671, 고장 전 1h 알람률이 테스트 3.5→7.5%로 올랐다. 그래도 **30분 이상 선행하는 지속 알람은 0건**이다(`test.md` 1절). 몇십 분 전은 운영점을 따로 둔 조기 경보(C-8, B-20)가 맡는다. 미탐 우선이라 정밀도가 낮다. 종료 상태(E029 등)는 모델이 아니라 규칙(`rule_triggered`)이 잡는다. 파일별 결과와 원인은 **`test.md`**, 절제 실험 경과는 **`history.md`**에 있다.
 
 산출물 `models/`:
 
@@ -672,7 +697,7 @@ RAG 핸드오프 엔드포인트(`/handoffs`, `/handoffs/{event_id}`, `/handoffs
 
 - `threshold`: **이 윈도우를 판정한 임계값** — 워밍업이 끝난 건은 `gun_threshold`, 그 전·글로벌 건은 `model.threshold`(글로벌). `gun_norm`은 `warming_up` / `gun` / `global`.
 - `rule_triggered` / `severity_source`: 이 요청의 행에서 종료 코드(E012/E016/E028/E029) **에피소드가 시작**되고(`model.rule_per_code`면 코드가 바뀌어도 새 발화, 쿨다운은 코드별 — C-6) 건의 쿨다운(30분, `model.rule_cooldown_s`)이 지났으면 모델과 무관하게 `severity=critical`. 코드가 떠 있는 동안 계속 critical이 아니다 — E029는 E01~E03 건에서도 고장 며칠 전부터 수 시간씩 떠 있다(테스트 test_0 16시간). `rule_code`·`rule_class_hint`는 발화시킨 코드와 그 클래스(윈도우 끝에서는 코드가 이미 사라졌을 수 있으므로 하류는 `context.known_code_class_hint`가 아니라 이것을 쓴다). `rule_code_active`는 최신 코드가 종료 코드인지(상태). `severity_source`는 `model`(지속 알람) / `rule` / `model+rule` / `none`. 보장되는 선행은 마지막 ~10분. **`rule_repeat`**: 같은 코드가 이 건에서 24h(`model.rule_repeat_s`) 안에 이미 발화했으면 `rule_triggered=true`이지만 critical이 아니라 `warning`이고 핸드오프도 없다(`critical_in_request=false`) — 학습·테스트 80건에서 반복 발화는 18회 중 17회가 오트리거였다. critical 오트리거는 테스트 평균 0.18회/일/건(강등 전 0.25)
-- `severity`: `normal`(임계 미만 또는 보류) / `warning`(초과; `sustain × window` = 180초 이상 이어지면 `sustained_alarm`) / `critical`(임계 초과가 `critical_sustain × window` = 600초 이상 연속, `alarm_duration_s` — C-5, 2026-10-06; 이 필드가 없는 구 번들은 180초) — 3절 알람 피로도의 기준(핸드오프는 critical에만). **시간 기준**이라 클라이언트 호출 주기와 무관하다(1초마다 호출해도 3초 만에 critical이 되지 않는다). `critical_in_request`는 청크 중간 윈도우가 critical이었던 경우까지 포함하므로 하류 트리거는 이 필드를 본다. 그 근거는 `critical_source`(요청 단위; `severity_source`는 최신 윈도우 기준이라 청크 안에서 끝난 지속 알람이면 `none`)
+- `severity`: `normal`(임계 미만 또는 보류) / `warning`(초과; `sustain × window` = 180초 이상 이어지면 `sustained_alarm`) / `critical`(임계 초과가 `critical_sustain × window` = 600초 이상 연속, `alarm_duration_s` — C-5, 2026-10-06; 이 필드가 없는 구 번들은 180초) — 3절 알람 피로도의 기준(핸드오프는 critical에만; 조기 경보는 `early_warning*` 필드로 따로, 핸드오프는 플래그로 — 5.10.2). **시간 기준**이라 클라이언트 호출 주기와 무관하다(1초마다 호출해도 3초 만에 critical이 되지 않는다). `critical_in_request`는 청크 중간 윈도우가 critical이었던 경우까지 포함하므로 하류 트리거는 이 필드를 본다. 그 근거는 `critical_source`(요청 단위; `severity_source`는 최신 윈도우 기준이라 청크 안에서 끝난 지속 알람이면 `none`)
 - `alarm_held`: 윈도우의 `non_welding_share`가 번들의 `alarm_max_non_welding`(0.5)을 넘으면 `true`. 이때 `is_anomaly`·점수는 그대로 주되 `severity`는 `normal`, `consecutive_alarms`는 0으로 리셋된다(비용접 중 점수는 신뢰하지 않는다). `hold_reason`에 이유가 들어간다.
 - `contributing_features`: 피처 하나를 정상 기준값(`feature_reference`)으로 치환했을 때의 점수 감소량, 상위 8개. 모델 무관 방식
 - `known_code_class_hint`: 최신 error 코드가 종료 코드면 그 클래스. 모델과 무관한 안전장치
@@ -720,7 +745,20 @@ python .py/replay.py test/test_0.csv --speed 60               # 60배속
 8. 재시작하면 버퍼·trace와 진행 중인 워밍업은 사라진다(판정 상태는 `RSW_STATE_DIR`에 남는다, 5.7절). 재시작 직후 몇 분의 창은 롤링 이력이 짧다.
 9. 규칙 반복 강등의 대가: 학습 72건 중 1건은 전날 같은 코드가 한 번 떴던 탓에 고장 직전 발화가 warning으로만 나간다. critical 오트리거의 대부분(테스트 10/14)은 여전히 첫 발화이고, 전부 다른 클래스 코드다 — 건의 고장 유형을 알면 거를 수 있다.
 
-#### 5.10 ML → RAG 핸드오프 (개발 스펙 v1.2)
+#### 5.10 ML → RAG 핸드오프 (개발 스펙 v1.4)
+
+**v1.4 (2026-11-06 — 1.3과 호환, 필드 추가만)**: 최상위 필드 `contributing_features`(시각 피처를 뺀 상위 피처 최대 3개)와 `sensor_features`(그 1분의 19개 채널 초당 원시값, `error` 포함)를 추가했다.
+- 치명과 조기경보가 같은 형식이다. 조기경보는 경보를 낸 1분, 치명은 코드가 뜬 분이 채점됐으면 그 분, 아직 끝나지 않았으면 직전에 완성된 1분, 끝내 채점되지 않았으면 그 뒤 첫 1분을 담고, 모델 단독 치명은 처음 치명이 된 분을 담는다(설계 3절).
+- `handoff.sensor_features`는 `/predict` 최상위의 `sensor_features`(v4)와 이름만 같고 내용이 다르다.
+- 읽는 규칙은 `docs/handoff_sensor_features_for_rag.md`에 있다. 예시는 `docs/rag_handoff.example.json`, `docs/rag_handoff_early_warning.example.json`, `docs/handoff_sensor_features_typical.example.json`이다.
+
+**v1.3 (2026-11-01, C-8 — 1.2와 호환, 필드 추가만)**: `event_type`(`critical` | `early_warning`)과 `early_warning` 블록을 추가했다.
+- `RSW_EARLY_WARNING_HANDOFFS=1`일 때 조기 경보 에피소드의 시작도 핸드오프로 나간다.
+  - 그 문서는 `event_type: "early_warning"`, `trigger.source: "early_warning"`이다.
+  - `trigger.rule_code`·`fault_class`가 없다. 아직 종료 코드가 없기 때문이다.
+  - `early_warning`에는 시작 시각, 규칙·임계값, 오프라인 정확도(`expected`), 건 프로파일의 후보 유형·코드가 들어 있다. 후보는 진단이 아니다.
+- critical 문서에는 `event_type: "critical"`, `early_warning: null`만 더해졌다.
+- 받는 쪽 안내(케이스 묶음·RAG 키로 `rule_code`를 쓰지 말 것, 예상 건수)는 `docs/early-warning-handoff.md`에 있다. 예시는 `docs/rag_handoff_early_warning.example.json`이다.
 
 **v1.2 (2026-10-21, D-003·D-6 결정 — 필드 삭제라 호환 깨짐)**: `symptoms[]`(P1~P9), `situation_ids`(S01~S10), `fault_class.situation_id`를 뺐다. ML은 정의서의 상황·증상 매핑을 하지 않고, 컨트롤러 코드(`fault_class.terminal_code`, `trigger.rule_code` — 예: E012)와 고장 유형(`fault_class.code` — 예: E01, 종료 코드를 데이터로 연결한 것)만 그대로 보낸다. 센서 편차는 매분 sensor-features 문서(5.11, v4 — 보내지 않음)에도 있다. RAG는 2026-10-28부터 E 코드로 조회한다(5.10.1). 아래 5.10.4~5.10.5의 symptoms·situation_ids 설명은 v1.1 기록으로 남겨 둔다.
 
@@ -748,6 +786,11 @@ ML(이상탐지)과 하류(api·RAG: 원인·점검·매뉴얼·안내)를 **따
 - critical 에피소드의 **첫 요청**(직전 요청은 critical 아님 → 이번 `critical_in_request=true`)에 1회.
 - 종료 코드 규칙이 발화할 때마다(`rule_triggered=true`; 에피소드 시작 1회 + 건별 30분 쿨다운). 단 반복 발화(`rule_repeat=true`, 같은 코드가 이 건에서 24h 안에 이미 발화)는 critical이 아니므로 넘기지 않는다. 같은 요청에서 모델이 critical이면 모델 이벤트로 넘어가되, 반복 발화는 규칙 근거로 쓰지 않는다(`trigger.rule_code = null`, `fault_class.basis`는 `latest_error_code`).
 - `replay.py`도 같은 이벤트를 찍는다(`fault_class=E0x | 요약`).
+- **조기 경보(C-8, v1.3)**: `RSW_EARLY_WARNING_HANDOFFS=1`일 때만 넘긴다(기본 끔 — 지금 api는 모든 핸드오프를 critical 케이스로 받는다).
+  - 시점: 조기 경보 에피소드가 시작된 요청에서 1회(`early_warning_onset=true`). 같은 건에서는 60분 쿨다운이 있다(번들 `early_warning.cooldown_s`).
+  - 같은 요청에 critical 이벤트·종료 코드가 있으면 보내지 않는다. 직전 요청이 critical이어도 마찬가지다. 사유는 `early_warning_handoff_suppressed`(`critical` / `terminal_code` / `cooldown` / `handoffs_off`)에 남는다.
+  - 멱등 키는 critical과 겹치지 않는다(`gun|window_end|early_warning|since`).
+  - `GET /handoffs?event_type=early_warning`으로 이것만 받을 수 있다.
 
 ##### 5.10.3 어떻게 넘기나 (전달 방식)
 
@@ -772,6 +815,8 @@ JSON Schema는 서버의 `/docs`·`/openapi.json`.
 | `symptoms[]` | 센서 증상 규칙(5.10.5) 매칭: `id`(P1~P9), `name_ko`, `match`, `evidence`, `related_classes`, `situation_ids`, `agrees_with_fault_class`, `confidence`(low / medium) |
 | `situation_ids` | 온톨로지에서 조회할 상황 ID, 가능성 높은 순(고장 유형의 상황이 항상 먼저) |
 | `context`, `detector`, `caveats` | 윈도우 상황, 모델 정보, 해석 한계 문구 |
+| `contributing_features[]` | (v1.4) 이벤트 1분의 상위 피처 최대 3개. `/predict`의 `contributing_features`와 같은 9개 필드이고, 점수 기여가 양수이며 시각 피처(`hour_sin`, `hour_cos`)는 뺀다 |
+| `sensor_features` | (v1.4) 이벤트 1분의 원시값: `window_start`, `window_end`, `missing_s`, `channels`(c1~c19의 `[초, 값]` 변화점), `error`. 실패하면 `null` |
 
 호환 규칙: 필드 추가는 1.x, 삭제·의미 변경은 2.0. `rag_mapping.build_handoff()`와 `main.RagHandoff`의 키는 `tests/test_rag_mapping.py::test_schema_keys_match_main`이 묶는다.
 
@@ -823,7 +868,7 @@ JSON Schema는 서버의 `/docs`·`/openapi.json`.
 
 #### 5.11 매분 센서 문서 (sensor-features-v4, D-6)
 
-2026-10-21 결정(WORK_LOG D-004, `history.md` 33·34절): 예지보전이 안 되므로(B-14) ML은 해석하지 않은 측정 사실만 매분 문서로 낸다(상황·증상 매핑, 모델 점수 없음). **보내지 않는다.** RAG가 쓰지 않고(센서 의미와 매뉴얼 내용이 정확히 맞지 않아 답 품질이 낮았다), ML도 보내지 않기로 했다(`history.md` 37절). 보내는 코드(push)도 지웠다. 문서 자체는 계약이라 `/predict` 응답과 GET으로 계속 나온다(아래 '전달'). 코드 `.py/sensor_features.py`(순수 Python), 스키마 `docs/sensor_features.schema.json`, 예시 `docs/sensor_features.example.json`(실데이터 test_3, `python docs/make_examples.py`로 다시 만든다), 설명서 `docs/sensor_features_for_rag.md`(6절에 RAG 답).
+2026-10-21 결정(WORK_LOG D-004, `history.md` 33·34절): 수 시간 전 예지보전이 안 되므로(B-14) ML은 해석하지 않은 측정 사실만 매분 문서로 낸다(상황·증상 매핑, 모델 점수 없음). **보내지 않는다.** RAG가 쓰지 않고(센서 의미와 매뉴얼 내용이 정확히 맞지 않아 답 품질이 낮았다), ML도 보내지 않기로 했다(`history.md` 37절). 보내는 코드(push)도 지웠다. 문서 자체는 계약이라 `/predict` 응답과 GET으로 계속 나온다(아래 '전달'). 코드 `.py/sensor_features.py`(순수 Python), 스키마 `docs/sensor_features.schema.json`, 예시 `docs/sensor_features.example.json`(실데이터 test_3, `python docs/make_examples.py`로 다시 만든다), 설명서 `docs/sensor_features_for_rag.md`(6절에 RAG 답).
 
 센서 분류는 실데이터로 정했다(`results/D-6/pair_check.py`, 원본 값 종류 세기): c4·c10·c18은 값이 0/1(on/off) 두 가지뿐인 상태 신호, c7·c8·c9·c17은 건 안에서 상수, c13~c16은 용접점마다 바뀌는 설정값(1분에 여러 번), c2↔c14·c3↔c15는 같은 물리량(누르는 순간 c2 = c14, 대기 중 c3 ≈ c15), c5↔c13은 짝이 아님.
 

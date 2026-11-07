@@ -164,6 +164,9 @@ cd ml; py -3.11 .py/hitl_loop.py test/test_0.csv
 
 - PowerShell에서 환경 변수를 `""`로 두면 값이 지워진다. 그래서 `RSW_STATE_DIR=""`(메모리만)는 기본 `state/`로 돌아간다. 새 폴더 이름을 준다.
 - 같은 창에 `RSW_RAG_URL`이 남아 있으면 `Remove-Item Env:RSW_RAG_URL`로 지운다.
+- (2026-11-01, C-8) ③ 표는 조기 경보 핸드오프를 끈 상태(`RSW_EARLY_WARNING_HANDOFFS` 없음, 기본) 기준이다.
+  - 켜면 api가 조기 경보도 케이스로 받아 건수가 바뀐다.
+  - 드라이버(`.py/hitl_loop.py`)는 조기 경보 핸드오프를 건너뛴다(`docs/early-warning-handoff.md`).
 
 ### 드라이버가 하는 일
 

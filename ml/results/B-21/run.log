@@ -1,0 +1,48 @@
+file_s42: fold sizes [18, 18, 14, 14]
+  fold 1/4: 18 files, positives 1605/1911 kept, threshold 0.9444, 74s
+  fold 2/4: 18 files, positives 1476/1815 kept, threshold 0.9239, 106s
+  fold 3/4: 14 files, positives 1695/2056 kept, threshold 0.9261, 110s
+  fold 4/4: 14 files, positives 1698/2048 kept, threshold 0.9420, 129s
+file_s42: auroc 0.681  pre_rule 0.648  gun 0.703  alarm@normal 0.0123  (422s)
+physical_s42: fold sizes [15, 18, 17, 14]
+  fold 1/4: 15 files, positives 1710/2047 kept, threshold 0.9546, 83s
+  fold 2/4: 18 files, positives 1484/1823 kept, threshold 0.9542, 83s
+  fold 3/4: 17 files, positives 1590/1920 kept, threshold 0.9334, 87s
+  fold 4/4: 14 files, positives 1690/2040 kept, threshold 0.9241, 113s
+physical_s42: auroc 0.658  pre_rule 0.633  gun 0.678  alarm@normal 0.0069  (368s)
+file_s1: fold sizes [18, 18, 14, 14]
+  fold 1/4: 18 files, positives 1649/1961 kept, threshold 0.9273, 108s
+  fold 2/4: 18 files, positives 1374/1685 kept, threshold 0.9413, 94s
+  fold 3/4: 14 files, positives 1772/2129 kept, threshold 0.9280, 97s
+  fold 4/4: 14 files, positives 1679/2055 kept, threshold 0.9347, 96s
+file_s1: auroc 0.687  pre_rule 0.649  gun 0.695  alarm@normal 0.0208  (397s)
+physical_s1: fold sizes [15, 18, 16, 15]
+  fold 1/4: 15 files, positives 1749/2091 kept, threshold 0.9172, 101s
+  fold 2/4: 18 files, positives 1406/1718 kept, threshold 0.9307, 97s
+  fold 3/4: 16 files, positives 1677/2013 kept, threshold 0.9236, 78s
+  fold 4/4: 15 files, positives 1642/2008 kept, threshold 0.9368, 92s
+physical_s1: auroc 0.662  pre_rule 0.626  gun 0.668  alarm@normal 0.0100  (369s)
+file_s2: fold sizes [18, 18, 14, 14]
+  fold 1/4: 18 files, positives 1441/1759 kept, threshold 0.9134, 135s
+  fold 2/4: 18 files, positives 1671/1972 kept, threshold 0.9277, 121s
+  fold 3/4: 14 files, positives 1684/2035 kept, threshold 0.9371, 122s
+  fold 4/4: 14 files, positives 1678/2064 kept, threshold 0.9509, 101s
+file_s2: auroc 0.667  pre_rule 0.631  gun 0.672  alarm@normal 0.0162  (481s)
+physical_s2: fold sizes [18, 17, 14, 15]
+  fold 1/4: 18 files, positives 1449/1766 kept, threshold 0.9456, 84s
+  fold 2/4: 17 files, positives 1681/1993 kept, threshold 0.9267, 82s
+  fold 3/4: 14 files, positives 1716/2067 kept, threshold 0.9160, 83s
+  fold 4/4: 15 files, positives 1628/2004 kept, threshold 0.9263, 78s
+physical_s2: auroc 0.667  pre_rule 0.642  gun 0.677  alarm@normal 0.0126  (329s)
+file_s3: fold sizes [18, 18, 14, 14]
+  fold 1/4: 18 files, positives 1455/1786 kept, threshold 0.9303, 84s
+  fold 2/4: 18 files, positives 1660/1988 kept, threshold 0.9441, 78s
+  fold 3/4: 14 files, positives 1669/2026 kept, threshold 0.9076, 85s
+  fold 4/4: 14 files, positives 1690/2030 kept, threshold 0.9384, 93s
+file_s3: auroc 0.662  pre_rule 0.643  gun 0.685  alarm@normal 0.0209  (342s)
+physical_s3: fold sizes [20, 19, 11, 14]
+  fold 1/4: 20 files, positives 1400/1711 kept, threshold 0.9524, 75s
+  fold 2/4: 19 files, positives 1610/1927 kept, threshold 0.9500, 77s
+  fold 3/4: 11 files, positives 1814/2202 kept, threshold 0.9488, 110s
+  fold 4/4: 14 files, positives 1650/1990 kept, threshold 0.9156, 92s
+physical_s3: auroc 0.629  pre_rule 0.611  gun 0.644  alarm@normal 0.0184  (355s)

@@ -1,0 +1,44 @@
+gaps: {"kept": {"frozen": 286, "logging_dropout": 718, "partial": 13}, "high_missing_e02": {"frozen": 167, "logging_dropout": 199, "partial": 4}}
+low-activity 10-min slots (<35% welding): 03:00, 03:10, 03:20, 03:30, 03:40, 03:50, 04:00, 04:10, 04:20, 04:30, 04:40, 04:50, 05:00, 05:10, 05:20, 05:30, 05:40, 05:50, 06:00, 06:10, 06:20, 06:30, 06:40, 06:50, 11:30, 11:40, 11:50, 12:00, 12:10, 16:00, 16:10, 20:30, 20:40, 20:50, 21:00, 21:10
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\a0106\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+cap cycle: {'steps': {'dress': 12437, 'other': 2121, 'cap_change': 1775}, 'cap_change_after_c16_32': 0.99, 'dress_after_c16_8': 0.93} {'standby': {'short_episodes': 15164, 'within_2min_of_c1_change': 0.84}, 'c10_off': {'short_episodes': 3068, 'within_2min_of_c1_change': 0.14}}
+                   count     mean     std     min      25%      50%      75%      max
+dress_n             71.0   175.17  169.28    0.00    28.00   143.00   289.00   772.00
+cap_n               71.0    24.99   26.59    0.00     3.00    18.00    39.50   114.00
+dress_every_welds   70.0   285.52  345.07    2.00   186.50   227.00   262.50  2196.00
+dress_every_min     70.0   193.70  825.60    2.48    17.51    28.14    57.79  6498.82
+cap_every_welds     58.0  1639.37  682.40  409.00  1128.50  1748.25  2072.00  4248.00
+cap_every_h         58.0     9.71   12.83    0.95     2.50     3.88    10.53    63.02
+wear_per_dress      70.0     0.29    0.11    0.10     0.20     0.30     0.39     0.60
+c1_before_cap       63.0     3.21    1.37    1.00     2.05     3.20     4.30     6.40
+takt: 66 guns with a repeating program sequence; period 14.0 welds, cycle 77.0 s (IQR 75.0-78.0)
+error codes: {"E001": {"episodes": 4, "no_weld_during": 1.0, "c10_off_share": 0.44, "start_kst_03_07": 0.0}, "E003": {"episodes": 298, "no_weld_during": 1.0, "c10_off_share": 0.92, "start_kst_03_07": 0.84}, "E006": {"episodes": 2, "no_weld_during": 1.0, "c10_off_share": 0.78, "start_kst_03_07": 0.0}, "E007": {"episodes": 1, "no_weld_during": 1.0, "c10_off_share": 0.99, "start_kst_03_07": 0.0}, "E009": {"episodes": 3, "no_weld_during": 1.0, "c10_off_share": 0.13, "start_kst_03_07": 0.0}, "E010": {"episodes": 5, "no_weld_during": 1.0, "c10_off_share": 0.09, "start_kst_03_07": 0.0}, "E011": {"episodes": 150, "no_weld_during": 0.99, "c10_off_share": 0.91, "start_kst_03_07": 0.78}, "E012": {"episodes": 34, "no_weld_during": 1.0, "c10_off_share": 0.45, "start_kst_03_07": 0.26}, "E016": {"episodes": 14, "no_weld_during": 1.0, "c10_off_share": 0.32, "start_kst_03_07": 0.0}, "E028": {"episodes": 29, "no_weld_during": 1.0, "c10_off_share": 0.21, "start_kst_03_07": 0.28}, "E029": {"episodes": 68, "no_weld_during": 1.0, "c10_off_share": 0.9, "start_kst_03_07": 0.25}}
+guns: 72 distinct (c7, c8, c9) in 79 files
+  ['E04_0', 'E03_2', 'E01_15'] ['E04', 'E03', 'E01'] overlap 0.0 h, c11 [1909054, 2051321, 2057534] - [1947550, 2057542, 2060351]
+  ['E04_17', 'E01_13'] ['E04', 'E01'] overlap 124.5 h, c11 [2791518, 2799911] - [2834865, 2843531]
+  ['E03_10', 'E01_3'] ['E03', 'E01'] overlap 163.5 h, c11 [1279845, 1279845] - [1282222, 1282254]
+  ['E04_16', 'E01_12'] ['E04', 'E01'] overlap 0.0 h, c11 [4553820, 4838735] - [4626020, 4847039]
+  ['E01_16', 'E03_3'] ['E01', 'E03'] overlap 164.4 h, c11 [4486099, 4486486] - [4521540, 4521774]
+  ['test_0', 'E03_9'] ['E01', 'E03'] overlap 0.0 h, c11 [3511451, 3587244] - [3536266, 3588939]
+failures by class: {"E01": {"n": 20, "kst_06": 5, "kst_10_11": 4, "welding_in_5min": 8, "c10_off_at_onset": 12, "dress_or_capchange_in_5min": 4, "stop_code_in_5min": 5}, "E02": {"n": 11, "kst_06": 0, "kst_10_11": 2, "welding_in_5min": 10, "c10_off_at_onset": 1, "dress_or_capchange_in_5min": 8, "stop_code_in_5min": 0}, "E03": {"n": 20, "kst_06": 7, "kst_10_11": 6, "welding_in_5min": 8, "c10_off_at_onset": 2, "dress_or_capchange_in_5min": 3, "stop_code_in_5min": 6}, "E04": {"n": 21, "kst_06": 0, "kst_10_11": 6, "welding_in_5min": 5, "c10_off_at_onset": 18, "dress_or_capchange_in_5min": 3, "stop_code_in_5min": 0}}
+simultaneous: [['E04_3', 'E04_16', 'E04_17', 'E04_0', 'E04_1'], ['E03_17', 'E03_1', 'E01_13'], ['E01_4', 'E01_6', 'E03_9'], ['E01_14', 'E01_12']]
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\A-4\domain_eda.json + fig_*.png (80s)

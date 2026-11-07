@@ -1,0 +1,62 @@
+{
+ "E02 1-6h open_dev (7 guns)": {
+  "+0.25 sd": false,
+  "-0.25 sd": true,
+  "+0.5 sd": false,
+  "-0.5 sd": true,
+  "+1.0 sd": false,
+  "-1.0 sd": true,
+  "+2.0 sd": true,
+  "-2.0 sd": true
+ },
+ "E02 1-6h c3_closed (7 guns)": {
+  "+0.25 sd": false,
+  "-0.25 sd": false,
+  "+0.5 sd": false,
+  "-0.5 sd": false,
+  "+1.0 sd": true,
+  "-1.0 sd": true,
+  "+2.0 sd": true,
+  "-2.0 sd": true
+ },
+ "E02 6-24h open_dev (6 guns)": {
+  "+0.25 sd": false,
+  "-0.25 sd": false,
+  "+0.5 sd": false,
+  "-0.5 sd": false,
+  "+1.0 sd": true,
+  "-1.0 sd": true,
+  "+2.0 sd": true,
+  "-2.0 sd": true
+ },
+ "E02 6-24h c3_closed (6 guns)": {
+  "+0.25 sd": false,
+  "-0.25 sd": true,
+  "+0.5 sd": false,
+  "-0.5 sd": true,
+  "+1.0 sd": true,
+  "-1.0 sd": true,
+  "+2.0 sd": true,
+  "-2.0 sd": true
+ },
+ "E03 1-6h open_dev (14 guns)": {
+  "+0.25 sd": false,
+  "-0.25 sd": false,
+  "+0.5 sd": false,
+  "-0.5 sd": true,
+  "+1.0 sd": true,
+  "-1.0 sd": true,
+  "+2.0 sd": true,
+  "-2.0 sd": true
+ },
+ "E03 1-6h c3_closed (10 guns)": {
+  "+0.25 sd": true,
+  "-0.25 sd": true,
+  "+0.5 sd": true,
+  "-0.5 sd": true,
+  "+1.0 sd": true,
+  "-1.0 sd": true,
+  "+2.0 sd": true,
+  "-2.0 sd": true
+ }
+}

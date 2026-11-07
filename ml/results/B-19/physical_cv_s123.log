@@ -1,0 +1,43 @@
+64 train files, 58 physical guns; duplicate files ['E01_12', 'E01_13', 'E01_15', 'E01_16', 'E01_3', 'E03_10', 'E03_2', 'E03_3', 'E04_0', 'E04_16', 'E04_17']
+seed 1: moved ['E03_10', 'E03_2', 'E03_3', 'E04_16', 'E04_17']
+ file folds: sizes [18, 18, 14, 14]
+  fold 1/4: 18 files, threshold 0.9357, 135s
+  fold 2/4: 18 files, threshold 0.9290, 185s
+  fold 3/4: 14 files, threshold 0.9329, 251s
+  fold 4/4: 14 files, threshold 0.9365, 465s
+ file: auroc 0.711 +- 0.033  pre_rule 0.661 +- 0.036  gun 0.716  alarm@normal 0.0144  | duplicates pre_rule 0.653, others 0.663  (1040s)
+ physical folds: sizes [15, 18, 16, 15]
+  fold 1/4: 15 files, threshold 0.9305, 169s
+  fold 2/4: 18 files, threshold 0.9259, 146s
+  fold 3/4: 16 files, threshold 0.9283, 136s
+  fold 4/4: 15 files, threshold 0.9273, 144s
+ physical: auroc 0.707 +- 0.048  pre_rule 0.659 +- 0.057  gun 0.723  alarm@normal 0.0133  | duplicates pre_rule 0.557, others 0.678  (598s)
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-19\physical_cv.json
+seed 2: moved ['E03_10', 'E03_2', 'E03_3', 'E04_16', 'E04_17']
+ file folds: sizes [18, 18, 14, 14]
+  fold 1/4: 18 files, threshold 0.9451, 164s
+  fold 2/4: 18 files, threshold 0.9308, 170s
+  fold 3/4: 14 files, threshold 0.9258, 181s
+  fold 4/4: 14 files, threshold 0.9363, 142s
+ file: auroc 0.694 +- 0.053  pre_rule 0.642 +- 0.065  gun 0.701  alarm@normal 0.0137  | duplicates pre_rule 0.606, others 0.643  (660s)
+ physical folds: sizes [18, 17, 14, 15]
+  fold 1/4: 18 files, threshold 0.9396, 60s
+  fold 2/4: 17 files, threshold 0.9392, 114s
+  fold 3/4: 14 files, threshold 0.9362, 175s
+  fold 4/4: 15 files, threshold 0.9545, 188s
+ physical: auroc 0.715 +- 0.060  pre_rule 0.666 +- 0.069  gun 0.737  alarm@normal 0.0124  | duplicates pre_rule 0.644, others 0.664  (541s)
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-19\physical_cv.json
+seed 3: moved ['E03_10', 'E03_2', 'E04_0', 'E04_17']
+ file folds: sizes [18, 18, 14, 14]
+  fold 1/4: 18 files, threshold 0.9328, 208s
+  fold 2/4: 18 files, threshold 0.9507, 219s
+  fold 3/4: 14 files, threshold 0.9264, 178s
+  fold 4/4: 14 files, threshold 0.9354, 306s
+ file: auroc 0.698 +- 0.067  pre_rule 0.661 +- 0.061  gun 0.708  alarm@normal 0.0128  | duplicates pre_rule 0.590, others 0.673  (928s)
+ physical folds: sizes [20, 19, 11, 14]
+  fold 1/4: 20 files, threshold 0.9422, 236s
+  fold 2/4: 19 files, threshold 0.9493, 94s
+  fold 3/4: 11 files, threshold 0.9270, 65s
+  fold 4/4: 14 files, threshold 0.9216, 75s
+ physical: auroc 0.697 +- 0.067  pre_rule 0.649 +- 0.070  gun 0.709  alarm@normal 0.0193  | duplicates pre_rule 0.485, others 0.678  (473s)
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\results\B-19\physical_cv.json

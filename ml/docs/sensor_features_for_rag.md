@@ -1,5 +1,7 @@
 # 매분 센서 문서 (sensor-features-v4) 설명서
 
+> 핸드오프의 `sensor_features`(v1.4)는 이 문서의 v4가 아니다. 그 설명은 `docs/handoff_sensor_features_for_rag.md`를 본다.
+
 2026-10-21 · ML
 
 > **2026-10-29: 보내지 않는다.** RAG는 이 문서를 쓰지 않기로 했고(10-28, `ui/docs/09-rag-development-reply.md` 18~23줄; 답은 6절), ML도 보내지 않기로 했다(사용자 결정, `history.md` 37절). 센서를 넣어 봤지만 센서 의미와 매뉴얼 내용이 정확히 맞지 않아 답 품질이 낮았다는 이유다. 센서 문맥이 필요해지면 쓰임새와 범위부터 따로 논의한다. 보내는 코드(push, `RSW_RAG_SENSOR_URL`)도 10-29에 지웠다. 문서 자체는 계약이라 `/predict`의 `sensor_features[]`와 `GET /guns/{id}/sensor-features`로 계속 나온다(2절). 3절의 "RAG에서" 칸은 처음 설계 때의 안내다(`fault_class` 행만 지금 기준).

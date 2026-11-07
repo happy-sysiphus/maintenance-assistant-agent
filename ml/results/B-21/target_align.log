@@ -1,0 +1,29 @@
+file_s42 BASE: thr@0.975 0.9466
+file_s42 V1: thr@0.975 0.9374
+physical_s42 BASE: thr@0.975 0.9514
+physical_s42 V1: thr@0.975 0.9356
+file_s1 BASE: thr@0.975 0.9440
+file_s1 V1: thr@0.975 0.9452
+physical_s1 BASE: thr@0.975 0.9446
+physical_s1 V1: thr@0.975 0.9329
+file_s2 BASE: thr@0.975 0.9443
+file_s2 V1: thr@0.975 0.9443
+physical_s2 BASE: thr@0.975 0.9476
+physical_s2 V1: thr@0.975 0.9439
+file_s3 BASE: thr@0.975 0.9451
+file_s3 V1: thr@0.975 0.9468
+physical_s3 BASE: thr@0.975 0.9440
+physical_s3 V1: thr@0.975 0.9360
+
+pooled over 8 runs (64 CV guns): fa/gun-day  recall  chance  excess [95% CI]
+  BASE        16.40  0.488  0.343  +0.146 [+0.059, +0.221]
+  V1_975      17.86  0.475  0.357  +0.117 [+0.033, +0.193]
+  V1_matched  17.86  0.475  0.357  +0.117 [+0.033, +0.193]  (q 0.975)
+D primary (V1 matched - BASE) {'diff': -0.029, 'ci': [-0.074, 0.016]}
+D at 0.975 (V1 - BASE)        {'diff': -0.029, 'ci': [-0.074, 0.016]}
+curve (q: BASE fa/excess | V1 fa/excess): 0.900: 50.83/+0.151 | 54.12/+0.121  0.925: 40.13/+0.163 | 43.59/+0.140  0.950: 28.73/+0.122 | 31.86/+0.136  0.955: 26.29/+0.127 | 29.32/+0.137  0.960: 23.88/+0.130 | 26.6/+0.139  0.965: 21.3/+0.135 | 23.62/+0.130  0.970: 18.78/+0.142 | 20.72/+0.120  0.975: 16.4/+0.146 | 17.86/+0.117  0.980: 13.59/+0.124 | 14.77/+0.094  0.985: 10.7/+0.107 | 11.7/+0.088  0.990: 7.82/+0.090 | 8.43/+0.082  0.995: 4.65/+0.065 | 5.02/+0.042  0.995: 4.65/+0.065 | 5.02/+0.042  0.997: 3.22/+0.042 | 3.37/+0.021  0.999: 1.39/+0.016 | 1.31/+0.002
+test (8 guns, run mean): {"BASE": {"hits_mean": 3.88, "excess_mean": 0.338, "fa_per_day_mean": 7.03}, "BASE_bundle": {"hits_mean": 4.0, "excess_mean": 0.287, "fa_per_day_mean": 8.58}, "V1_matched": {"hits_mean": 3.5, "excess_mean": 0.138, "fa_per_day_mean": 14.64}, "V1_975": {"hits_mean": 3.5, "excess_mean": 0.138, "fa_per_day_mean": 14.64}}
+CV window AUROC (mean of 8 runs): {'auroc': {'BASE': 0.7024, 'V1': 0.664}, 'auroc_pre_rule': {'BASE': 0.656, 'V1': 0.6353}, 'auroc_gun_mean': {'BASE': 0.7152, 'V1': 0.6777}, 'alarm_rate_normal': {'BASE': 0.0132, 'V1': 0.0148}}
+by class: {"BASE": {"E01": {"recall": 0.444, "chance": 0.275, "excess": 0.169}, "E02": {"recall": 0.625, "chance": 0.417, "excess": 0.208}, "E03": {"recall": 0.486, "chance": 0.361, "excess": 0.125}, "E04": {"recall": 0.458, "chance": 0.35, "excess": 0.109}}, "V1_matched": {"E01": {"recall": 0.403, "chance": 0.27, "excess": 0.133}, "E02": {"recall": 0.588, "chance": 0.352, "excess": 0.236}, "E03": {"recall": 0.5, "chance": 0.381, "excess": 0.119}, "E04": {"recall": 0.458, "chance": 0.425, "excess": 0.034}}}
+checks {'D_ci_above_0': False, 'test_not_worse': False, 'pre_rule_kept': False} -> adopt V1: False; post-fault reliance: False
+saved target_align.json

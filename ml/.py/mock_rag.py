@@ -3,7 +3,7 @@ Stand-in receiver for ML's handoff push (tests). The real receiver is FE's api (
 acknowledges with {"result": "new" | "repeat" | "duplicate"}). The per-minute sensor document is pushed nowhere -
 RAG declined it and the push was removed (history.md 37).
 
-  POST /diagnose         critical-event handoff (schema rag_handoff v1.2 - main.RagHandoff), answered with an old
+  POST /diagnose         critical-event handoff (schema rag_handoff v1.4 - main.RagHandoff), answered with an old
                          report shape that no real receiver uses (docs/rag_response.example.json)
   GET  /received         handoffs received, newest last
 
