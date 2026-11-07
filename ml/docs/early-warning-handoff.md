@@ -1,6 +1,6 @@
 # 조기 경보 핸드오프 안내 (api·RAG 담당용)
 
-2026-11-01 · ML (C-8, 핸드오프 v1.3)
+2026-11-01 · ML (C-8, 핸드오프 v1.4)
 
 요약: ML이 몇십 분 전 **조기 경보**를 낸다.
 - **critical 이벤트와 구분**: 핸드오프로 보낼 때는 `event_type: "early_warning"`을 단다. 종료 코드와 고장 유형이 없다.
@@ -43,11 +43,11 @@ ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
   - 조기 경보만 받으려면 `GET /handoffs?event_type=early_warning`을 쓴다.
   - 멱등 키는 critical과 겹치지 않는다.
 
-## 3. 문서 (`RagHandoff` v1.3, 예시 `docs/rag_handoff_early_warning.example.json`)
+## 3. 문서 (`RagHandoff` v1.4, 예시 `docs/rag_handoff_early_warning.example.json`)
 
 | 필드 | critical | early_warning |
 |---|---|---|
-| `schema_version` | `"1.3"` | `"1.3"` |
+| `schema_version` | `"1.4"` | `"1.4"` |
 | `event_type` | `"critical"` | `"early_warning"` |
 | `trigger.source` | `model` / `rule` / `model+rule` | `"early_warning"` |
 | `trigger.rule_code`, `rule_trigger_time` | 규칙 발화면 코드 | 항상 `null` |
@@ -55,6 +55,8 @@ ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
 | `summary_ko` | 센서 소견 + 유형 | "조기 경보: 수십 분 안 고장 가능성(확정 아님) - …"로 시작 |
 | `caveats` | critical용 | 조기 경보용(정밀도·후보 안내) |
 | `early_warning` | `null` | 아래 표 |
+| `contributing_features` | 이벤트 1분의 상위 피처 최대 3개(시각 피처 제외) | 같음 |
+| `sensor_features` | 이벤트 1분의 초당 원시값 | 같음 |
 
 `early_warning` 블록:
 
@@ -77,6 +79,29 @@ ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
 - 인박스는 코드가 없는 행을 점선 "확정 아님"으로 보여 준다. 이 표시는 조기 경보에도 맞는다.
 
 구분해서 처리하려면 `event_type`을 읽으면 된다. 예: 별도 등급("주의"), 별도 케이스 묶음, 후보 코드로 RAG 조회 여부. 어떻게 할지는 api·RAG 쪽 결정이다.
+
+v1.4의 두 필드(`contributing_features`, `sensor_features`)에 필요한 일이다. 조기경보와 치명 두 이벤트에 모두 해당한다(2026-11-06, 설계 `docs/superpowers/specs/2026-11-06-handoff-v1-4-design.md` 12절). ML 구현은 이 일을 기다리지 않는다. 다만 끝나기 전에는 두 필드를 읽는 곳이 없다.
+
+- RAG
+  - `handoff.sensor_features`를 읽는다. `/predict` 최상위의 v4 `sensor_features`와 이름만 같고 내용이 다르다.
+  - 코드가 있는 치명(`trigger.rule_code` 또는 `fault_class.terminal_code`)은 지금도 RAG를 호출하므로 두 필드를 가장 먼저 쓸 수 있는 경로다. 둘 다 없는 모델 단독 치명은 조기경보처럼 RAG를 호출하지 않는다.
+  - 상위 3개는 합의한 영향이 가장 큰 3개에서 시각 피처를 뺀 목록이다. 조기경보 244건 중 169건, 치명 20건 중 3건(`replay.py` 구간 기준)에서 모델의 실제 상위 3개와 다르다.
+  - 별도 입력이 필요하다. 블록과 상위 3개를 합치면 경보 244건과 치명 20건 모두 질문 제한 2,000자(`rag/service.py:105`)를 넘는다.
+  - 시스템 프롬프트의 "입력에는 센서가 없습니다"(`rag/service.py:24`)를 바꿔야 한다.
+  - 캐시 키(`rag/service.py:86`)에 `event_id`나 입력 해시를 넣어야 한다. 없으면 다른 분의 답이 재사용된다.
+  - 질문마다 `event_id`, 프롬프트 버전, 문서 fingerprint, 모델, 실제 입력을 남긴다. 피드백 쪽에서 LLM이 본 것을 확인하기 위해서다.
+  - LLM에 어떤 필드를 어떤 형태로 넘길지 정한다. 읽기 시험에서 gpt-5.4-mini가 질문 20개 중 12개만 맞혔고, `summary_ko`의 c10 문구는 블록과 어긋날 수 있고, 청크 요청에서는 블록과 `sensor_findings`의 구간이 다르고, 치명에서는 코드가 뜬 초가 블록 밖일 수 있다.
+  - 프롬프트 시험에는 오경보 분을 포함한다. test_5 02:00은 실제 고장 전 경보 4건 중 하나라서, 이것만으로 맞추면 안 된다.
+  - 피드백 쪽 기계 검사 후보: LLM이 인용한 숫자는 핸드오프나 그것에서 코드로 계산한 값이어야 하고, "평소와 다름"은 `sensor_findings` 항목에만 쓸 수 있다.
+  - 설명은 `docs/handoff_sensor_features_for_rag.md` 한 곳에 있다.
+- api
+  - 두 필드를 RAG로 넘긴다. 지금 `enrich`는 코드만 넘긴다(`api/guidance.py:91`). RAG가 별도 입력을 정하면 `case["event"]`의 두 필드를 그 입력으로 넘긴다.
+  - `event_type`을 읽는다. 지금은 `severity`가 `critical`로 고정이다.
+  - 조기경보에는 E 코드가 없어 `enrich`가 RAG를 호출하지 않는다(`api/guidance.py:19-20`, `:80-91`).
+  - 조기경보는 코드가 `null`인 열린 케이스에 합쳐지고, 이때 `event_id`와 `detected_at`만 남아 블록이 버려진다(`api/main.py:110-112`). 같은 건, 같은 코드의 치명도 열린 케이스가 있으면 마찬가지다.
+  - 케이스가 2시간, 4시간, 8시간, 24시간 뒤에 닫힌다고 가정하면 조기경보 블록이 남는 비율은 69%, 52%, 37%, 18%다. 치명 20건은 같은 가정에서 모두 남는다. 코드로 발생한 치명은 같은 코드가 24시간 안에 다시 뜨면 반복이라 치명이 아니고, 모델 단독 1건은 `rule_code`가 없어 코드 케이스에 합쳐지지 않는다.
+  - 조기경보 핸드오프는 api가 처리할 때까지 꺼 둔다(`RSW_EARLY_WARNING_HANDOFFS`). 치명 핸드오프는 플래그와 상관없이 두 필드를 싣는다. api는 받은 문서를 그대로 저장하므로 크기만 늘고 동작은 바뀌지 않는다.
+  - 줄 번호는 origin/main 기준이다.
 
 ## 5. 얼마나 오나
 

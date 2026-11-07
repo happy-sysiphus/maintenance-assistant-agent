@@ -151,7 +151,7 @@ E01~E04를 정답으로 삼는 분류는 하지 않는다(LightGBM도 "고장 �
 이상탐지 신호가 나온 다음 단계다. **ML 쪽(1~2번과 핸드오프)은 구현되어 있다. 3~4번(매뉴얼 검색·LLM 안내)은 RAG 담당이 구현했다(2026-10-28). 핸드오프는 api가 받아 종료 코드로 RAG를 부른다(5.10절).**
 
 1. 필터링된 강한 이상 시그널이 탐지되면 Root Cause Agent로 전달 → **구현됨**: `severity: critical`(종료 코드 에피소드 시작, 또는 모델 알람이 10분 이상 지속 — C-5)이 트리거 기준. 몇십 분 전 조기 경보(C-8)는 `event_type: early_warning`으로 따로, 플래그를 켤 때만 보낸다
-2. Agent가 이상 감지 시점 앞뒤의 센서 수치·로그 스트림을 모아 컨텍스트 구성 → **구현됨**: critical 이벤트마다 **핸드오프 문서**(센서 편차 소견, 종료 코드, 고장 유형)를 만든다(`.py/rag_mapping.py`, 5.10절)
+2. Agent가 이상 감지 시점 앞뒤의 센서 수치·로그 스트림을 모아 컨텍스트 구성 → **구현됨**: critical 이벤트마다 **핸드오프 문서**(센서 편차 소견, 종료 코드, 고장 유형, 시각 피처를 뺀 상위 피처 3개, 이벤트 1분의 초당 원시값)를 만든다(`.py/rag_mapping.py`, 5.10절)
 3. 감지된 에러 코드에 맞는 정비 지침서를 Vector DB에서 RAG로 검색 → **구현됨(RAG 담당)**: api가 핸드오프의 `trigger.rule_code`(없으면 `fault_class.terminal_code`)로 RAG를 부른다. RAG 입력은 E012·E016·E028·E029뿐이다
 4. LLM이 이상 패턴과 검색된 매뉴얼을 융합해 원인·영향도·조치 가이드를 자연어로 요약 → **구현됨(RAG 담당)**: 케이스 상세를 처음 열 때 api가 RAG 답을 만들어 저장한다. 센서는 쓰지 않고, 답은 ML로 오지 않는다(5.10.6절)
 
@@ -745,7 +745,12 @@ python .py/replay.py test/test_0.csv --speed 60               # 60배속
 8. 재시작하면 버퍼·trace와 진행 중인 워밍업은 사라진다(판정 상태는 `RSW_STATE_DIR`에 남는다, 5.7절). 재시작 직후 몇 분의 창은 롤링 이력이 짧다.
 9. 규칙 반복 강등의 대가: 학습 72건 중 1건은 전날 같은 코드가 한 번 떴던 탓에 고장 직전 발화가 warning으로만 나간다. critical 오트리거의 대부분(테스트 10/14)은 여전히 첫 발화이고, 전부 다른 클래스 코드다 — 건의 고장 유형을 알면 거를 수 있다.
 
-#### 5.10 ML → RAG 핸드오프 (개발 스펙 v1.3)
+#### 5.10 ML → RAG 핸드오프 (개발 스펙 v1.4)
+
+**v1.4 (2026-11-06 — 1.3과 호환, 필드 추가만)**: 최상위 필드 `contributing_features`(시각 피처를 뺀 상위 피처 최대 3개)와 `sensor_features`(그 1분의 19개 채널 초당 원시값, `error` 포함)를 추가했다.
+- 치명과 조기경보가 같은 형식이다. 조기경보는 경보를 낸 1분, 치명은 코드가 뜬 분이 채점됐으면 그 분, 아직 끝나지 않았으면 직전에 완성된 1분, 끝내 채점되지 않았으면 그 뒤 첫 1분을 담고, 모델 단독 치명은 처음 치명이 된 분을 담는다(설계 3절).
+- `handoff.sensor_features`는 `/predict` 최상위의 `sensor_features`(v4)와 이름만 같고 내용이 다르다.
+- 읽는 규칙은 `docs/handoff_sensor_features_for_rag.md`에 있다. 예시는 `docs/rag_handoff.example.json`, `docs/rag_handoff_early_warning.example.json`, `docs/handoff_sensor_features_typical.example.json`이다.
 
 **v1.3 (2026-11-01, C-8 — 1.2와 호환, 필드 추가만)**: `event_type`(`critical` | `early_warning`)과 `early_warning` 블록을 추가했다.
 - `RSW_EARLY_WARNING_HANDOFFS=1`일 때 조기 경보 에피소드의 시작도 핸드오프로 나간다.
@@ -810,6 +815,8 @@ JSON Schema는 서버의 `/docs`·`/openapi.json`.
 | `symptoms[]` | 센서 증상 규칙(5.10.5) 매칭: `id`(P1~P9), `name_ko`, `match`, `evidence`, `related_classes`, `situation_ids`, `agrees_with_fault_class`, `confidence`(low / medium) |
 | `situation_ids` | 온톨로지에서 조회할 상황 ID, 가능성 높은 순(고장 유형의 상황이 항상 먼저) |
 | `context`, `detector`, `caveats` | 윈도우 상황, 모델 정보, 해석 한계 문구 |
+| `contributing_features[]` | (v1.4) 이벤트 1분의 상위 피처 최대 3개. `/predict`의 `contributing_features`와 같은 9개 필드이고, 점수 기여가 양수이며 시각 피처(`hour_sin`, `hour_cos`)는 뺀다 |
+| `sensor_features` | (v1.4) 이벤트 1분의 원시값: `window_start`, `window_end`, `missing_s`, `channels`(c1~c19의 `[초, 값]` 변화점), `error`. 실패하면 `null` |
 
 호환 규칙: 필드 추가는 1.x, 삭제·의미 변경은 2.0. `rag_mapping.build_handoff()`와 `main.RagHandoff`의 키는 `tests/test_rag_mapping.py::test_schema_keys_match_main`이 묶는다.
 

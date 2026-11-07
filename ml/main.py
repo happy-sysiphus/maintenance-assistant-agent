@@ -23,12 +23,14 @@ Endpoints
     GET  /handoffs/{event_id}     one handoff document + its delivery status
     POST /handoffs/preview        AnomalyResult JSON -> handoff document (no state; for the receiver's tests)
 
-ML -> downstream handoff (.py/rag_mapping.py, schema v1.3): the first request of every critical episode (and every
+ML -> downstream handoff (.py/rag_mapping.py, schema v1.4): the first request of every critical episode (and every
 terminal-code rule trigger) carries `handoff` - sensor findings in words, the terminal code and fault class (E01..E04).
 No situation ids since v1.2. FE's api receives it and asks RAG for causes, checks and manual sections with the
 terminal code only (history.md 37). Every handoff is kept in the outbox (GET /handoffs); with RSW_RAG_URL set (the
 api: http://127.0.0.1:9000/api/ml/handoffs) a background worker POSTs it there, retrying with backoff (header
 Idempotency-Key = event_id - the receiver drops duplicates).
+Since v1.4 the handoff also carries `sensor_features` (the raw per-second values) and `contributing_features` (the top
+model features) of the event's own minute, for early warnings and critical events alike.
 
 Early warning (C-8, bundle `early_warning`, history.md §42-43): a low-precision "a failure may come in the next tens of
 minutes" state per gun (`early_warning*` fields, trace, /guns), separate from `severity`. With
@@ -104,6 +106,7 @@ TOP_K_FEATURES = 8
 TRACE_WINDOWS = 360  # per-gun history of scored windows for GET /guns/{id}/trace (6 h at 60 s windows)
 TRACE_TOP_FEATURES = 4  # sensors a trace charts by default: the focus window's top contributors
 HANDOFF_TREND_MIN = 30  # minutes of sensor trend a handoff carries (techspec D-3)
+HANDOFF_TOP_FEATURES = 3  # v1.4: top contributing features (time-of-day features excluded) a handoff carries
 # not charted by default: time of day is not a sensor, and the error share is the code strip of the chart itself
 TRACE_SKIP = {"hour_sin", "hour_cos", "error_share_10min"}
 # push target for handoffs (FE's api: http://127.0.0.1:9000/api/ml/handoffs); unset = pull only (GET /handoffs)
@@ -377,11 +380,24 @@ class EarlyWarningInfo(BaseModel):
     note_ko: str
 
 
+class HandoffSensorFeatures(BaseModel):
+    """v1.4: the raw per-second values of the event's minute, as received (not the v4 per-minute z document)."""
+    window_start: str = Field(description="first second of the window, UTC with Z")
+    window_end: str = Field(description="last second of the window, UTC with Z; for an early warning = onset_at")
+    missing_s: list[int] = Field(description="clock seconds (0-59) of the window with no real row")
+    channels: dict[str, list[tuple[int, int | float]]] = Field(
+        description="c1-c19 (always 19 keys): [clock second, value] at the first row and wherever the value changed; "
+                    "a value holds until the next entry and not in missing_s; as received, not rounded; c10 is 1/0")
+    error: list[tuple[int, str]] = Field(
+        description="controller code as [clock second, code] with the same encoding; '0' = no code; not one of the 19")
+
+
 class RagHandoff(BaseModel):
     """What the downstream (FE's api, POST /api/ml/handoffs) receives for one critical event (schema_version 1.2 =
     1.1 - symptoms, situation_ids, fault_class.situation_id; 1.1 = 1.0 + error_timeline, sensor_trend; every time is
     UTC with "Z"). 1.3 (C-8) = 1.2 + event_type, early_warning: an early-warning event has event_type
-    "early_warning", trigger.source "early_warning", no rule_code and no fault_class."""
+    "early_warning", trigger.source "early_warning", no rule_code and no fault_class. 1.4 = 1.3 +
+    contributing_features, sensor_features (the top features and the raw values of the event's minute)."""
     schema_version: str
     event_type: Literal["critical", "early_warning"] = Field(
         "critical", description="critical: a critical model alarm or a terminal-code rule trigger; early_warning: a "
@@ -402,6 +418,13 @@ class RagHandoff(BaseModel):
     sensor_trend: list[SensorTrend] = Field(
         default_factory=list, description="the top contributing features over the last 30 min of scored windows")
     early_warning: EarlyWarningInfo | None = Field(None, description="set when event_type is early_warning")
+    contributing_features: list[FeatureContribution] = Field(
+        default_factory=list, description="v1.4: up to 3 top features of the event's minute (contribution > 0, "
+                                          "hour_sin / hour_cos left out; fewer than 3 possible); same fields and "
+                                          "numbers as /predict, not rounded; [] when none or on failure")
+    sensor_features: HandoffSensorFeatures | None = Field(
+        None, description="v1.4: the raw values of the event's minute (an early warning: the window ending at "
+                          "early_warning.onset_at); not the /predict sensor_features (v4); null on failure")
 
 
 class HandoffRecord(BaseModel):
@@ -1602,7 +1625,7 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
         count(g, h.time, rule_triggers=1, rule_repeats=h.repeat, rule_out_of_profile=h.out_of_profile and not h.repeat)
     critical_sent = False
     if (critical and not g.was_critical) or (rule is not None and rule.critical):
-        attach_handoff(request, result, g)
+        attach_handoff(request, result, g, window=critical_window(verdicts, vecs, rule))
         count(g, result.window_end, critical_events=1)
         critical_sent = True
     for h in hits:  # the other triggers of this request (e.g. E016 then E029): a handoff each now, not later
@@ -1610,10 +1633,12 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
             continue
         record_focus(g, None, h)
         if h.critical:
-            attach_handoff(request, build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, h, vecs[-1]), g)
+            attach_handoff(request,
+                           build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, h, vecs[-1]), g,
+                           window=critical_window(verdicts, vecs, h))
             count(g, result.window_end, critical_events=1)
             critical_sent = True
-    onset = next((v for v in verdicts if v.ew_onset), None)
+    onset, onset_vec = next(((v, x) for v, x in zip(verdicts, vecs) if v.ew_onset), (None, None))
     if onset is not None:  # C-8: one early-warning handoff per request at most, unless something stronger is there
         terminal = bool(hits) or result.rule_code_active or any(
             v.w["error_code"].isin(trainlib.TERMINAL_CODES).any() for v in verdicts)
@@ -1624,7 +1649,8 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
                   else None if request.app.state.ew_handoffs else "handoffs_off")
         result.early_warning_handoff_suppressed = reason
         if reason is None:
-            attach_handoff(request, result, g, early_warning=early_warning_info(d, g, result, onset.w.index[-1]))
+            attach_handoff(request, result, g, early_warning=early_warning_info(d, g, result, onset.w.index[-1]),
+                           window=(onset.w, onset_vec))
             g.ew_last_handoff = onset.w.index[-1]
             count(g, result.window_end, early_warning_handoffs=1)
     g.was_critical = critical
@@ -1777,12 +1803,44 @@ def sensor_doc(d: Detector, gun_id: str, p: dict[str, Any]) -> dict[str, Any]:
                                      p.get("gun_norm") or "global", f"{d.info.name}@{d.info.created}")
 
 
+def critical_window(verdicts: list[Verdict], vecs: np.ndarray, rule: RuleHit | None) -> tuple[pd.DataFrame, np.ndarray]:
+    """The window a critical event stands for: the first window ending at or after the code's trigger second (the one
+    holding it, or the next one when its minute was never scored), or the first window the model called critical; the
+    latest window when no window reaches the trigger yet. A failure here costs the choice of window, never the event."""
+    try:
+        by_rule = rule is not None and rule.critical
+        for v, vec in zip(verdicts, vecs):
+            if (rule.time <= v.w.index[-1]) if by_rule else v.critical:
+                return v.w, vec
+    except Exception:
+        log.exception("handoff window failed, using the latest window")
+    return verdicts[-1].w, vecs[-1]
+
+
+def handoff_sensor_features(g: "GunState", w: pd.DataFrame) -> dict[str, Any]:
+    """The handoff's raw block of window `w` from the gun's rows, validated by HandoffSensorFeatures."""
+    start, end = w.index[0].to_pydatetime(), w.index[-1].to_pydatetime()
+    return HandoffSensorFeatures(**rag_mapping.sensor_block(g.rows, start, end, SENSOR_COLS)).model_dump()
+
+
+def handoff_top_features(d: Detector, vec: np.ndarray) -> list[dict[str, Any]]:
+    """Top features of the window vector, without time-of-day features; raises on NaN or inf, so the caller
+    drops only this field."""
+    feats = [c for c in d.score(vec)[1] if c.contribution > 0 and c.sensor not in rag_mapping.NOT_A_SYMPTOM]
+    top = [c.model_dump() for c in feats[:HANDOFF_TOP_FEATURES]]
+    json.dumps(top, allow_nan=False)  # ValueError on NaN / inf: costs this field, never the pull list
+    return top
+
+
 def attach_handoff(request: Request, result: AnomalyResult, g: "GunState | None" = None,
-                   early_warning: dict[str, Any] | None = None) -> None:
+                   early_warning: dict[str, Any] | None = None,
+                   window: tuple[pd.DataFrame, np.ndarray] | None = None) -> None:
     """ML -> RAG handoff (same events replay.py prints) into the outbox; the push worker delivers it when
     RSW_RAG_URL is set. A mapping error is logged and leaves the response without a handoff: the scored state is
     already committed, so a 500 here would turn the client's retry into a resend that never produces the handoff.
-    With `early_warning` (C-8): an event_type "early_warning" handoff instead of a critical one."""
+    With `early_warning` (C-8): an event_type "early_warning" handoff instead of a critical one.
+    With `window` (v1.4): the (window, vector) the event stands for, which fills sensor_features and
+    contributing_features; each has its own try."""
     try:
         doc = rag_mapping.build_handoff(result.model_dump(mode="json"), handoff_event_id(result, early_warning),
                                         early_warning=early_warning)
@@ -1795,6 +1853,15 @@ def attach_handoff(request: Request, result: AnomalyResult, g: "GunState | None"
                 doc["sensor_trend"] = handoff_sensor_trend(d, g, result)
             except Exception:
                 log.exception("handoff context failed for %s at %s", result.gun_id, result.window_end)
+            if window is not None:
+                try:
+                    doc["sensor_features"] = handoff_sensor_features(g, window[0])
+                except Exception:
+                    log.exception("handoff sensor features failed for %s at %s", result.gun_id, result.window_end)
+                try:
+                    doc["contributing_features"] = handoff_top_features(d, window[1])
+                except Exception:
+                    log.exception("handoff top features failed for %s at %s", result.gun_id, result.window_end)
         result.handoff = RagHandoff(**doc)
     except Exception:
         log.exception("handoff mapping failed for %s at %s", result.gun_id, result.window_end)

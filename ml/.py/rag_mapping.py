@@ -1,6 +1,6 @@
 """
 ML -> downstream handoff mapping: turns one /predict result (AnomalyResult as a dict) into the document FE's api
-receives on a critical event (POST /api/ml/handoffs; schema `rag_handoff` v1.3) - or, since C-8, on an early-warning
+receives on a critical event (POST /api/ml/handoffs; schema `rag_handoff` v1.4) - or, since C-8, on an early-warning
 start (event_type "early_warning": no terminal code, no fault class; main.py sends it only with
 RSW_EARLY_WARNING_HANDOFFS=1).
 
@@ -25,9 +25,10 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-SCHEMA_VERSION = "1.3"  # 1.1 (2026-10-08): + error_timeline, sensor_trend, times with "Z"; 1.2 (2026-10-21): - symptoms,
+SCHEMA_VERSION = "1.4"  # 1.1 (2026-10-08): + error_timeline, sensor_trend, times with "Z"; 1.2 (2026-10-21): - symptoms,
 # situation_ids, fault_class.situation_id (no situation-doc mapping in ML); 1.3 (2026-11-01, C-8): + event_type,
-# early_warning (an early-warning event: no terminal code, no fault class)
+# early_warning (an early-warning event: no terminal code, no fault class); 1.4 (2026-11-06): + contributing_features,
+# sensor_features, filled by main.attach_handoff
 
 # a contributing feature counts as a finding when it explains at least MIN_SHARE of the positive contributions
 # AND its value (model units, see CAVEATS) is at least MIN_DEV away from the normal reference. Calibrated on the 132
@@ -105,6 +106,28 @@ def utc_iso(v: Any) -> str | None:
     return s if (s.endswith("Z") or "+" in s[10:] or s[10:].count("-") > 0) else s + "Z"
 
 
+def _plain(v: float) -> int | float:
+    return int(v) if float(v).is_integer() else v  # int.is_integer needs Python 3.12
+
+
+def sensor_block(rows, start, end, channels) -> dict[str, Any]:
+    """rows in g.rows form: time a naive UTC datetime, c1-c19 numbers (c10 1.0 / 0.0), error a string."""
+    by_t = {r["time"]: r for r in rows if start <= r["time"] <= end}  # arrival order: a resend replaces, as features()
+    ts = sorted(by_t)
+
+    def changes(key, conv=lambda v: v):
+        out = []
+        for t in ts:
+            v = conv(by_t[t][key])
+            if not out or out[-1][1] != v:
+                out.append([t.second, v])
+        return out
+
+    return {"window_start": utc_iso(start), "window_end": utc_iso(end),
+            "missing_s": sorted(set(range(start.second, end.second + 1)) - {t.second for t in ts}),
+            "channels": {c: changes(c, _plain) for c in channels}, "error": changes("error")}
+
+
 def sensor_findings(contributing_features: list[dict[str, Any]], min_share: float = MIN_SHARE,
                     min_dev: float = MIN_DEV) -> list[dict[str, Any]]:
     """(1)->(2): contributing window features -> directional findings ('c5 mean low'), strongest first."""
@@ -172,7 +195,7 @@ def interpret(result: dict[str, Any]) -> dict[str, Any]:
 
 def build_handoff(result: dict[str, Any], event_id: str | None = None,
                   early_warning: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Full handoff document (schema v1.3) for one critical event. `result` = AnomalyResult.model_dump(mode='json').
+    """Full handoff document (schema v1.4) for one critical event. `result` = AnomalyResult.model_dump(mode='json').
     With `early_warning` (main.early_warning_info, C-8): an event_type "early_warning" document - trigger.source
     "early_warning", no rule code, no fault class (nothing has fired yet), its own summary and caveats."""
     ctx = result.get("context") or {}

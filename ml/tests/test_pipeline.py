@@ -395,7 +395,7 @@ def test_4_api_matches_offline(workspace):
         assert r.json()["rule_code"] == "E029" and r.json()["rule_class_hint"] == "E04"
         # ML -> RAG handoff rides on the rule trigger and lands in the outbox (pull; no RSW_RAG_URL in tests)
         ho = r.json()["handoff"]
-        assert ho is not None and ho["schema_version"] == "1.3" and ho["gun_id"] == "G2"
+        assert ho is not None and ho["schema_version"] == "1.4" and ho["gun_id"] == "G2"
         assert ho["event_type"] == "critical" and ho["early_warning"] is None
         # v1.1 (FE requests 3-5): UTC times with Z, controller code runs, sensor trend, Korean names
         assert ho["detected_at"].endswith("Z") and ho["window_start"].endswith("Z")
@@ -1302,7 +1302,7 @@ def test_16_ew_handoff_rules(workspace, monkeypatch):
         hs = client.get("/handoffs", params={"event_type": "early_warning"}).json()
         assert len(hs) == 1 and client.get("/handoffs", params={"event_type": "critical"}).json() == []
         h = hs[0]["handoff"]
-        assert h["event_id"] == ons[0]["handoff"]["event_id"] and h["schema_version"] == "1.3"
+        assert h["event_id"] == ons[0]["handoff"]["event_id"] and h["schema_version"] == "1.4"
         assert h["event_type"] == "early_warning" and h["trigger"]["source"] == "early_warning"
         assert h["trigger"]["rule_code"] is None and h["fault_class"] is None
         e = h["early_warning"]
@@ -1361,3 +1361,570 @@ def test_17_ew_restart_and_old_bundle(workspace, tmp_path, monkeypatch):
         assert client.get("/handoffs", params={"event_type": "early_warning"}).json() == []
     os.environ.pop("RSW_EARLY_WARNING_HANDOFFS", None)
     os.environ.pop("RSW_MODEL_PATH", None)
+
+
+# ------------------------------------------------------------------ v1.4 (spec section 10)
+def v14_load(workspace, monkeypatch, ew=False):
+    monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))
+    if ew:
+        monkeypatch.setenv("RSW_EARLY_WARNING_HANDOFFS", "1")
+    else:
+        monkeypatch.delenv("RSW_EARLY_WARNING_HANDOFFS", raising=False)
+    sys.path.insert(0, ROOT)
+    return importlib.reload(importlib.import_module("main"))
+
+
+def v14_raw(workspace):
+    return pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
+
+
+def v14_t(raw):
+    return pd.to_datetime(raw["time"], utc=True).dt.tz_localize(None)
+
+
+def v14_post(client, gun, part):
+    r = client.post("/predict", json={"gun_id": gun, "readings": part.to_dict("records")})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def v14_status(client, gun, part):
+    return client.post("/predict", json={"gun_id": gun, "readings": part.to_dict("records")}).status_code
+
+
+def v14_unpack(entries, block):
+    """{second: value} of one channel / error, over the seconds of the window that hold a real row."""
+    lo, hi = pd.Timestamp(block["window_start"]).second, pd.Timestamp(block["window_end"]).second
+    changes, out, cur = dict(map(tuple, entries)), {}, None
+    for s in range(lo, hi + 1):
+        cur = changes.get(s, cur)
+        if s not in block["missing_s"]:
+            out[s] = cur
+    return out
+
+
+def v14_check_block(block, rows):
+    """The block holds exactly the rows sent (rows: the raw CSV rows of that window)."""
+    t = v14_t(rows)
+    assert [s for s in range(pd.Timestamp(block["window_start"]).second, pd.Timestamp(block["window_end"]).second + 1)
+            if s not in set(t.dt.second)] == block["missing_s"]
+    for i in range(1, 20):
+        c = f"c{i}"
+        want = rows[c].map({"on": 1.0, "off": 0.0}) if c == "c10" else rows[c].astype(float)
+        assert v14_unpack(block["channels"][c], block) == dict(zip(t.dt.second, want)), c
+    assert v14_unpack(block["error"], block) == dict(zip(t.dt.second, rows["error"]))
+
+
+def v14_filter(contribs):
+    return [c for c in contribs if c["contribution"] > 0 and c["sensor"] not in ("hour_sin", "hour_cos")][:3]
+
+
+def v14_rows(raw, end):
+    """The raw rows of the clock minute a window end falls in."""
+    t, e = v14_t(raw), pd.Timestamp(end).tz_localize(None)
+    return raw[t.dt.floor("min") == e.floor("min")]
+
+
+def test_v14_ew_basic(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch, ew=True)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    with TestClient(main.app) as client:
+        main.app.state.detector.early_warning["threshold"] = -1e9
+        res = stream_chunks(client, "V1", raw.iloc[:-600])
+    r = next(x for x in res if (x["handoff"] or {}).get("event_type") == "early_warning")
+    h, b, cf = r["handoff"], r["handoff"]["sensor_features"], r["handoff"]["contributing_features"]
+    assert h["schema_version"] == "1.4" and b["window_end"] == h["early_warning"]["onset_at"]
+    assert set(b["channels"]) == {f"c{i}" for i in range(1, 20)}
+    assert 0 < len(cf) <= 3 and all(c["contribution"] > 0 for c in cf) and not any(c["sensor"][:5] == "hour_" for c in cf)
+    assert r["windows_scored"] == 1 and cf == v14_filter(r["contributing_features"])
+    v14_check_block(b, v14_rows(raw, b["window_end"]))
+
+
+def test_v14_block_is_what_was_received(workspace, monkeypatch):
+    """A warning minute with c16 <= 0 seconds and missing seconds: the block holds the rows, not what the model saw."""
+    main = v14_load(workspace, monkeypatch, ew=True)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace).copy()
+    t = v14_t(raw)
+    m0 = pd.Timestamp("2021-10-01 00:35:00")
+    minute = t.dt.floor("min") == m0
+    raw.loc[minute & t.dt.second.between(20, 29), "c16"] = 0.0
+    raw.loc[minute & t.dt.second.between(30, 31), "error"] = "E003"
+    keep = ~(minute & t.dt.second.between(10, 14))
+    raw, t = raw[keep], t[keep]
+    with TestClient(main.app) as client:
+        d = main.app.state.detector
+        d.early_warning["threshold"] = 1e9
+        stream_chunks(client, "V2", raw[t < m0], step=600)
+        d.early_warning["threshold"] = -1e9
+        r = v14_post(client, "V2", raw[t.dt.floor("min") == m0])
+        g, b = main.app.state.guns["V2"], r["handoff"]["sensor_features"]
+        assert r["handoff"]["event_type"] == "early_warning" and b["window_end"] == "2021-10-01T00:35:59Z"
+        assert b["missing_s"] == [10, 11, 12, 13, 14]
+        v14_check_block(b, raw[t.dt.floor("min") == m0])
+        # the model saw other numbers in the c16 = 0 seconds: the last welding values, not what was sent
+        rows = pd.DataFrame(list(g.rows)).set_index("time").sort_index()
+        f = d.features(rows.reset_index(), g.carry).f
+        seen = f.loc["2021-10-01 00:35:20":"2021-10-01 00:35:29", "c5"] * d.scaler["c5"]["std"] + d.scaler["c5"]["mean"]
+        sent = rows.loc["2021-10-01 00:35:20":"2021-10-01 00:35:29", "c5"]
+        assert (seen.round(1) != sent.round(1)).any() and seen.nunique() == 1, "carried forward"
+
+
+def test_v14_ew_chunk_onset_is_not_the_latest(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch, ew=True)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    with TestClient(main.app) as client:
+        d = main.app.state.detector
+        d.early_warning["threshold"] = -1e9
+        v14_post(client, "V3", raw.iloc[:1200])
+        part = raw.iloc[1200:2380]
+        r = v14_post(client, "V3", part)
+        g = main.app.state.guns["V3"]
+        p = next(x for x in g.trace if x["window_end"] == pd.Timestamp("2021-10-01 00:30:59"))
+        feats = [c.model_dump() for c in d.score(p["vec"])[1]]
+    h = r["handoff"]
+    assert h["event_type"] == "early_warning" and r["windows_scored"] > 1
+    assert h["sensor_features"]["window_end"] == h["early_warning"]["onset_at"] == "2021-10-01T00:30:59Z"
+    v14_check_block(h["sensor_features"], v14_rows(part, "2021-10-01T00:30:59Z"))
+    assert h["contributing_features"] == v14_filter(feats)
+    assert h["contributing_features"] != v14_filter(r["contributing_features"])
+    assert h["detected_at"] == r["window_end"] + "Z" and h["detected_at"] > h["early_warning"]["onset_at"]
+    assert h["trigger"]["anomaly_score"] == h["early_warning"]["score"] == r["anomaly_score"]
+    assert h["sensor_findings"] == main.rag_mapping.sensor_findings(r["contributing_features"])
+    assert h["context"]["non_welding_share"] == r["context"]["non_welding_share"]
+    assert all(s["points"][-1]["t"] == h["detected_at"] for s in h["sensor_trend"])
+
+
+def test_v14_ew_two_onsets_take_the_first(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch, ew=True)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    with TestClient(main.app) as client:
+        main.app.state.detector.early_warning["threshold"] = -1e9
+        v14_post(client, "V4", raw.iloc[:1200])
+        v14_post(client, "V4", raw.iloc[1200:1450])
+        r = v14_post(client, "V4", raw.iloc[1450:2450])  # the warm-up end and the 90 s gap: an episode each
+        ons = [e["time"] for e in main.app.state.guns["V4"].trace_events if e["kind"] == "early_warning_start"]
+    h = r["handoff"]
+    assert len(ons) == 2
+    assert h["sensor_features"]["window_end"] == h["early_warning"]["onset_at"] == "2021-10-01T00:30:59Z"
+    assert h["early_warning"]["since"] > h["early_warning"]["onset_at"], "since: the later episode"
+
+
+def test_v14_stored_v13_record_loads(workspace, monkeypatch, tmp_path):
+    main = v14_load(workspace, monkeypatch)
+    from datetime import datetime, timezone
+
+    from fastapi.testclient import TestClient
+
+    doc = json.load(open(os.path.join(ROOT, "docs", "rag_handoff.example.json"), encoding="utf-8"))
+    doc = {k: v for k, v in doc.items() if k not in ("contributing_features", "sensor_features")}
+    doc["schema_version"] = "1.3"  # make_examples.py rewrites this example to v1.4 (spec section 11)
+    box = tmp_path / "state" / "outbox"
+    box.mkdir(parents=True)
+    rec = {"handoff": doc, "created_at": datetime.now(timezone.utc).isoformat(), "delivery": "pull_only"}
+    (box / f"{doc['event_id']}.json").write_text(json.dumps(rec), encoding="utf-8")
+    with TestClient(main.app) as client:
+        got = client.get("/handoffs").json()
+    assert len(got) == 1 and got[0]["handoff"]["schema_version"] == "1.3"
+    assert got[0]["handoff"]["contributing_features"] == [] and got[0]["handoff"]["sensor_features"] is None
+
+
+def test_v14_top_features_unit():
+    from types import SimpleNamespace
+
+    sys.path.insert(0, ROOT)
+    main = importlib.import_module("main")
+
+    def detector(pairs):
+        feats = [main.FeatureContribution(feature=f"{s}_mean", sensor=s, sensor_name=s, statistic="mean", value=1.0,
+                                          reference=0.0, contribution=c, share=0.1) for s, c in pairs]
+        return SimpleNamespace(score=lambda vec: (0.9, feats))
+
+    def sensors(pairs):
+        return [c["sensor"] for c in main.handoff_top_features(detector(pairs), None)]
+
+    mixed = [("hour_sin", 0.5), ("c5", 0.4), ("hour_cos", 0.3), ("c2", 0.2), ("c3", 0.0), ("c6", -0.1)]
+    assert sensors(mixed) == ["c5", "c2"], "no hour_*, no contribution <= 0, fewer than 3 is fine"
+    assert sensors([("c1", 0.4), ("c2", 0.3), ("c3", 0.2), ("c5", 0.1)]) == ["c1", "c2", "c3"]
+
+
+def test_v14_minute_without_real_rows(workspace, monkeypatch):
+    """Review focus: a clock minute that is all gap fill. The event stays, the block is empty, the pull list works."""
+    main = v14_load(workspace, monkeypatch, ew=True)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    t = v14_t(raw)
+    m0 = pd.Timestamp("2021-10-01 00:35:00")
+    with TestClient(main.app) as client:
+        d = main.app.state.detector
+        d.early_warning["threshold"] = 1e9
+        stream_chunks(client, "EM", raw[t < m0], step=600)
+        d.early_warning["threshold"] = -1e9
+        r = v14_post(client, "EM", raw[t.dt.floor("min") == m0 + pd.Timedelta(minutes=1)])
+        assert client.get("/handoffs", params={"gun_id": "EM"}).status_code == 200
+    b = r["handoff"]["sensor_features"]
+    assert r["windows_scored"] == 2 and b["window_end"] == "2021-10-01T00:35:59Z"
+    assert b["missing_s"] == list(range(60)) and b["error"] == [] and len(b["channels"]) == 19
+    assert all(v == [] for v in b["channels"].values())
+
+
+def test_v14_push_sends_the_block(workspace, monkeypatch):
+    """Review focus: the push path writes the block as JSON arrays, integers stay integers."""
+    import asyncio
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+
+    import httpx
+
+    main = v14_load(workspace, monkeypatch)
+    doc = json.load(open(os.path.join(ROOT, "docs", "rag_handoff.example.json"), encoding="utf-8"))
+    doc["sensor_features"] = {"window_start": "2021-09-03T09:25:00Z", "window_end": "2021-09-03T09:25:59Z",
+                              "missing_s": [3], "channels": {"c1": [[0, 1], [5, 1.5]]}, "error": [[0, "0"]]}
+    ho = main.RagHandoff(**doc)
+    now = datetime.now(timezone.utc)
+    rec = main.HandoffRecord(handoff=ho, created_at=now, delivery="pending", next_attempt_at=now)
+    seen = []
+
+    def receive(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json={"status": "ok"})
+
+    app = SimpleNamespace(state=SimpleNamespace(
+        rag_url="http://api.test/diagnose", rag_transport=httpx.MockTransport(receive), outbox=main.Outbox(None),
+        rag_backoff_s=(0.05,), rag_max_attempts=3))
+    asyncio.run(main.push_handoff(app, rec))
+    assert rec.delivery == "delivered" and seen[0]["sensor_features"] == doc["sensor_features"]
+    assert isinstance(seen[0]["sensor_features"]["channels"]["c1"][0][1], int)
+
+
+def test_v14_openapi_has_the_block(workspace, monkeypatch):
+    """Review focus: /docs reads this schema; the tuple types must not break it."""
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    with TestClient(main.app) as client:
+        r = client.get("/openapi.json")
+    assert r.status_code == 200
+    schemas = r.json()["components"]["schemas"]
+    assert "HandoffSensorFeatures" in schemas
+    assert {"contributing_features", "sensor_features"} <= set(schemas["RagHandoff"]["properties"])
+
+
+def test_v14_critical_code_in_a_scored_minute(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    part = raw.iloc[:118].copy()
+    part.iloc[70:90, part.columns.get_loc("error")] = "E029"
+    with TestClient(main.app) as client:
+        r = v14_post(client, "C1", part)
+    h, b = r["handoff"], r["handoff"]["sensor_features"]
+    assert h["event_type"] == "critical" and h["trigger"]["rule_code"] == "E029"
+    assert b["window_end"] == "2021-10-01T00:01:59Z" and [10, "E029"] in b["error"]
+    assert b["missing_s"] == [40, 41] and h["contributing_features"] == v14_filter(r["contributing_features"])
+    v14_check_block(b, v14_rows(part, b["window_end"]))
+
+
+def test_v14_critical_minute_not_finished(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    part = raw.iloc[:900].copy()
+    t = pd.to_datetime(part["time"], utc=True)
+    part.loc[(t >= t.iloc[-1].floor("min")).to_numpy(), "error"] = "E029"
+    with TestClient(main.app) as client:
+        r = v14_post(client, "C2", part)
+    h, b = r["handoff"], r["handoff"]["sensor_features"]
+    assert b["window_end"] == h["detected_at"] and b["window_start"] == h["window_start"]
+    assert h["trigger"]["rule_trigger_time"] > b["window_end"]
+    assert not any(code == "E029" for _, code in b["error"])
+    assert h["contributing_features"] == v14_filter(r["contributing_features"])
+    assert any(x["code"] == "E029" for x in h["error_timeline"])
+
+
+def test_v14_critical_model_only_first_critical_window(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    with TestClient(main.app) as client:
+        d = main.app.state.detector
+        d.threshold, d.warmup_alarms = -1e9, True
+        r = v14_post(client, "C3", raw.iloc[:1170])
+        res = stream_chunks(client, "C3b", raw.iloc[:1170])  # test_9's 60-row client: one window per request
+    h, b = r["handoff"], r["handoff"]["sensor_features"]
+    assert h["trigger"]["source"] == "model" and r["windows_scored"] == 19
+    assert b["window_end"] == "2021-10-01T00:09:59Z" and h["detected_at"] > b["window_end"]
+    one = next(x for x in res if x["handoff"])
+    assert one["handoff"]["trigger"]["source"] == "model" and one["windows_scored"] == 1
+    assert one["handoff"]["sensor_features"]["window_end"] == one["handoff"]["detected_at"] == "2021-10-01T00:09:59Z"
+
+
+def test_v14_critical_chunk_code_in_the_middle(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    part = raw.iloc[:600].copy()
+    part.iloc[300:340, part.columns.get_loc("error")] = "E029"
+    with TestClient(main.app) as client:
+        r = v14_post(client, "C4", part)
+    h, b = r["handoff"], r["handoff"]["sensor_features"]
+    assert b["window_end"] == "2021-10-01T00:05:59Z" and any(code == "E029" for _, code in b["error"])
+    assert h["detected_at"] == r["window_end"] + "Z" and h["detected_at"] > b["window_end"]
+    assert h["sensor_findings"] == main.rag_mapping.sensor_findings(r["contributing_features"])
+    v14_check_block(b, v14_rows(part, b["window_end"]))
+
+
+def test_v14_critical_two_codes_each_their_minute(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    part = raw.iloc[:900].copy()
+    part.loc[300:339, "error"] = "E016"
+    part.loc[400:439, "error"] = "E029"  # test_10 has E029 at row 340: the same clock minute as E016
+    with TestClient(main.app) as client:
+        r = v14_post(client, "C5", part)
+        hs = [x["handoff"] for x in client.get("/handoffs", params={"gun_id": "C5"}).json()]
+    assert [h["trigger"]["rule_code"] for h in hs] == ["E016", "E029"] and r["windows_scored"] > 2
+    assert hs[0]["event_id"] != hs[1]["event_id"] and hs[0]["event_id"] == r["handoff"]["event_id"]
+    for h in hs:
+        b = h["sensor_features"]
+        assert b["window_start"] <= h["trigger"]["rule_trigger_time"] <= b["window_end"]
+        assert any(code == h["trigger"]["rule_code"] for _, code in b["error"])
+        assert h["detected_at"] == r["window_end"] + "Z"
+    assert hs[0]["sensor_features"]["window_end"] != hs[1]["sensor_features"]["window_end"]
+    assert hs[0]["contributing_features"] != hs[1]["contributing_features"]
+
+
+def test_v14_critical_held_code_before_the_block(workspace, monkeypatch):
+    """A code seen in a 202 whose minute is never scored: the block is the first window after it."""
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    with TestClient(main.app) as client:
+        assert v14_status(client, "HC", raw.iloc[:300]) == 200
+        assert v14_status(client, "HC", raw.iloc[400:430].assign(error="E029")) == 202
+        r = v14_post(client, "HC", raw.iloc[430:560].assign(error="E029"))
+    h, b = r["handoff"], r["handoff"]["sensor_features"]
+    assert r["windows_scored"] == 2 and h["trigger"]["rule_trigger_time"] < b["window_start"]
+    assert b["window_end"] == "2021-10-01T00:07:59Z" and h["detected_at"] == "2021-10-01T00:08:59Z"
+
+
+def test_v14_critical_beats_an_onset_in_the_same_request(workspace, monkeypatch):
+    """Review focus: an early warning that starts in the request of a code. Only the critical handoff goes out, and its
+    block is the code's minute, not the onset's."""
+    main = v14_load(workspace, monkeypatch, ew=True)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    with TestClient(main.app) as client:
+        d = main.app.state.detector
+        d.early_warning["threshold"] = 1e9
+        stream_chunks(client, "CB", raw.iloc[:-600], step=600)
+        d.early_warning["threshold"] = -1e9
+        last = stream_chunks(client, "CB", raw.iloc[-600:], step=600)[-1]
+        hs = client.get("/handoffs", params={"gun_id": "CB"}).json()
+    h, b = last["handoff"], last["handoff"]["sensor_features"]
+    assert last["early_warning_onset"] and last["early_warning_handoff_suppressed"] == "critical"
+    assert h["event_type"] == "critical" and h["early_warning"] is None and len(hs) == 1
+    assert b["window_start"] <= h["trigger"]["rule_trigger_time"] <= b["window_end"]
+
+
+def test_v14_restart_keeps_a_partial_window(workspace, monkeypatch):
+    """Review focus: rows lost in a restart. The block holds what is left, in clock seconds; the lost head of the minute
+    is before window_start, not in missing_s."""
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    t = v14_t(raw)
+    a = int((t < pd.Timestamp("2021-10-01 00:06:20")).sum())
+    b = int((t < pd.Timestamp("2021-10-01 00:07:10")).sum())
+    with TestClient(main.app) as client:
+        assert v14_status(client, "RS", raw.iloc[:a]) == 200
+    part = raw.iloc[a + 5:b].copy()
+    part.iloc[-15:, part.columns.get_loc("error")] = "E016"
+    with TestClient(main.app) as client:
+        r = v14_post(client, "RS", part)
+    bk = r["handoff"]["sensor_features"]
+    assert pd.Timestamp(bk["window_start"]).second != 0 and bk["missing_s"] == []
+    assert bk["window_end"] == r["handoff"]["detected_at"]
+    v14_check_block(bk, v14_rows(part, bk["window_end"]))
+
+
+def test_v14_critical_window_unit():
+    from types import SimpleNamespace
+
+    sys.path.insert(0, ROOT)
+    main = importlib.import_module("main")
+
+    def verdict(minute, critical=False):
+        t = pd.date_range(f"2021-10-01 00:{minute:02d}:00", periods=60, freq="s")
+        return SimpleNamespace(w=pd.DataFrame(index=t), critical=critical)
+
+    vs = [verdict(1), verdict(2), verdict(3)]
+    vecs = np.array([[1.0], [2.0], [3.0]])
+
+    def picked(verdicts, rule):
+        w, vec = main.critical_window(verdicts, vecs, rule)
+        return w.index[0].minute, float(vec[0])
+
+    hit = main.RuleHit(pd.Timestamp("2021-10-01 00:02:30"), "E029", False)
+    assert picked(vs, hit) == (2, 2.0), "the code in the middle window"
+    assert picked(vs, main.RuleHit(pd.Timestamp("2021-10-01 00:04:30"), "E029", False)) == (3, 3.0), "after all windows"
+    model = [verdict(1), verdict(2, critical=True), verdict(3, critical=True)]
+    assert picked(model, None) == (2, 2.0), "no code: the first critical window"
+    rep = main.RuleHit(pd.Timestamp("2021-10-01 00:01:30"), "E029", True)
+    assert picked(model, rep) == (2, 2.0), "a repeat code is ignored"
+    out = main.RuleHit(pd.Timestamp("2021-10-01 00:01:30"), "E029", False, True)
+    assert picked(model, out) == (2, 2.0), "an out-of-profile code is ignored"
+    assert picked(vs, None) == (3, 3.0) and picked(vs, rep) == (3, 3.0), "nothing applies: the latest window"
+    before = main.RuleHit(pd.Timestamp("2021-10-01 00:00:30"), "E029", False)
+    assert picked(vs, before) == (1, 1.0), "before all windows: the first window"
+    between = [verdict(1), verdict(3)]
+    gap = main.RuleHit(pd.Timestamp("2021-10-01 00:02:30"), "E029", False)
+    assert main.critical_window(between, vecs[:2], gap)[0].index[0].minute == 3, "between two windows: the later one"
+
+
+def test_v14_window_choice_failure_keeps_the_event(workspace, monkeypatch):
+    """A rule time that cannot be compared with the window index: the latest window, and the event stays."""
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    with TestClient(main.app) as client:
+        v14_post(client, "WF", raw.iloc[:300])
+        hit = main.RuleHit(pd.Timestamp("2021-10-01 00:04:00", tz="UTC"), "E029", False)
+        main.app.state.guns["WF"].pending_rules.append(hit)
+        r = v14_post(client, "WF", raw.iloc[300:360])
+        recs = client.get("/handoffs", params={"gun_id": "WF"}).json()
+    h = r["handoff"]
+    assert len(recs) == 1 and h["sensor_features"]["window_end"] == h["detected_at"] and h["contributing_features"]
+
+
+def v14_two_hits(client, gun, raw):
+    part = raw.iloc[:900].copy()
+    part.loc[300:339, "error"] = "E016"
+    part.loc[400:439, "error"] = "E029"
+    r = v14_post(client, gun, part)
+    resp = client.get("/handoffs", params={"gun_id": gun})
+    assert resp.status_code == 200, resp.text
+    return r, [x["handoff"] for x in resp.json()]
+
+
+def test_v14_get_handoffs_carries_the_block(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    with TestClient(main.app) as client:
+        r, hs = v14_two_hits(client, "Q", v14_raw(workspace))
+        assert hs[0] == r["handoff"] and hs[0]["sensor_features"] is not None
+        one = client.get(f"/handoffs/{hs[1]['event_id']}")
+        assert one.status_code == 200 and one.json()["handoff"] == hs[1]
+    with TestClient(main.app) as client:  # a restart reads the stored v1.4 records back unchanged
+        assert [x["handoff"] for x in client.get("/handoffs", params={"gun_id": "Q"}).json()] == hs
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -float("inf")])
+def test_v14_nan_costs_only_the_top_features(workspace, monkeypatch, bad):
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    class BadValue:
+        """Only what handoff_top_features sees: d.score itself must stay healthy for /predict."""
+
+        def __init__(self, d):
+            self.d = d
+
+        def score(self, vec):
+            s, feats = self.d.score(vec)
+            i = next(i for i, c in enumerate(feats) if c.contribution > 0 and c.sensor[:5] != "hour_")
+            feats[i] = feats[i].model_copy(update={"value": bad})
+            return s, feats
+
+    real = main.handoff_top_features
+
+    def poisoned(d, vec):
+        return real(BadValue(d), vec)
+
+    monkeypatch.setattr(main, "handoff_top_features", poisoned)
+    with TestClient(main.app) as client:
+        r, hs = v14_two_hits(client, "N", v14_raw(workspace))
+    assert len(hs) == 2 and all(h["contributing_features"] == [] and h["sensor_features"] for h in hs)
+    assert r["contributing_features"], "the /predict list is untouched"
+
+
+def test_v14_nan_without_the_check_breaks_the_pull_list(workspace, monkeypatch):
+    """Section 6's reason for the check: NaN in the outbox costs every GET /handoffs."""
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    real = main.handoff_top_features
+
+    def unchecked(d, vec):
+        top = real(d, vec)
+        return [{**top[0], "value": float("nan")}] + top[1:]
+
+    monkeypatch.setattr(main, "handoff_top_features", unchecked)
+    with TestClient(main.app, raise_server_exceptions=False) as client:
+        part = v14_raw(workspace).iloc[:600].copy()
+        part.iloc[300:340, part.columns.get_loc("error")] = "E029"
+        r = client.post("/predict", json={"gun_id": "NN", "readings": part.to_dict("records")})
+        assert client.get("/handoffs").status_code == 500
+        assert r.status_code == 500, "the /predict response carries it too"
+
+
+@pytest.mark.parametrize("wrong", [{"window_start": 1}, {"window_start": "a", "window_end": "b", "missing_s": [],
+                                                         "channels": {"c1": [[0, "text"]]}, "error": []}, None])
+def test_v14_wrong_block_costs_only_the_block(workspace, monkeypatch, wrong):
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    def builder(*args):
+        return wrong
+
+    monkeypatch.setattr(main.rag_mapping, "sensor_block", builder)
+    with TestClient(main.app) as client:
+        r, hs = v14_two_hits(client, "W", v14_raw(workspace))
+    assert len(hs) == 2 and r["handoff"]["sensor_features"] is None
+    assert all(h["sensor_features"] is None and len(h["contributing_features"]) > 0 for h in hs)
+
+
+def test_v14_block_exception_costs_only_the_block(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    def builder(*args):
+        raise RuntimeError("block")
+
+    monkeypatch.setattr(main.rag_mapping, "sensor_block", builder)
+    with TestClient(main.app) as client:
+        _, hs = v14_two_hits(client, "B", v14_raw(workspace))
+    assert len(hs) == 2 and all(h["sensor_features"] is None and h["contributing_features"] for h in hs)
+
+
+def test_v14_context_failure_leaves_the_two_fields(workspace, monkeypatch):
+    main = v14_load(workspace, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    def boom(*args):
+        raise RuntimeError("timeline")
+
+    monkeypatch.setattr(main, "handoff_error_timeline", boom)
+    with TestClient(main.app) as client:
+        _, hs = v14_two_hits(client, "T", v14_raw(workspace))
+    assert len(hs) == 2 and all(h["error_timeline"] == [] and h["sensor_trend"] == [] for h in hs)
+    assert all(h["sensor_features"] and h["contributing_features"] for h in hs)
