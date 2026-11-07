@@ -113,6 +113,11 @@ def ingest(handoff: dict[str, Any]) -> str:
             store.put(same)
             store.mark_seen(eid, same["case_id"])
             return "repeat"
+        card = guidance.guidance_for(handoff)
+        # R2(현장 기억): 닫힌 케이스의 '이상' 점검 기록으로 이 케이스의 점검 순서를 한 번 정한다 (field_memory.order_for)
+        order = None
+        if field_memory.enabled():
+            order = field_memory.order_for(guidance.event_code(handoff), store.all_cases())
         d = {
             "case_id": store.next_id(),
             "status": "new",
@@ -121,10 +126,12 @@ def ingest(handoff: dict[str, Any]) -> str:
             "assignee": None,
             "event": handoff,
             "score_trace": score_trace(handoff["gun_id"], handoff["detected_at"]),
-            "guidance": guidance.guidance_for(handoff),
+            "guidance": field_memory.apply_order(card, order["lead"]) if order else card,
             "records": {"checks": {}, "judgments": [], "actions": [], "results": [], "field": [], "handovers": []},
             "repeats": [],
         }
+        if order:
+            d["field_order"] = order
         store.put(d)
         store.mark_seen(eid, d["case_id"])
         return "new"
@@ -238,15 +245,23 @@ def list_cases():
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str):
-    enriched = guidance.enrich(load(case_id))  # RAG 생성(수 초)은 잠금 밖에서
+    current = load(case_id)
+    # R2로 순서를 정한 케이스에 판단 · 조치 · 결과가 있으면 카드를 다시 만들지 않는다 (원인 번호가 카드 위치라서)
+    enriched = current if field_memory.order_pinned(current) else guidance.enrich(current)  # RAG 생성(수 초)은 잠금 밖에서
     with _WRITE_LOCK:
         latest = load(case_id)  # Preserve records saved while generation was running.
+        card = enriched["guidance"]
+        order = latest.get("field_order")
+        if order:
+            # 새 RAG 카드에도 같은 순서를 다시 적용한다. 생성 중에 기록이 들어왔으면 저장된 카드를 지킨다
+            pinned = field_memory.order_pinned(latest)
+            card = latest["guidance"] if pinned else field_memory.apply_order(card, order["lead"])
         # 안내가 바뀌었을 때만 저장한다 (11/04): 그냥 열 때마다 저장하면 같은 순간의 닫기 · 기록을 덮을 수 있다
-        if latest["guidance"] != enriched["guidance"]:
-            latest["guidance"] = enriched["guidance"]
+        if latest["guidance"] != card:
+            latest["guidance"] = card
             save(latest)
     out = latest
-    # 현장 기억은 볼 때마다 새로 세어 사본에만 붙인다 (DB에는 저장하지 않는다. 카드는 그대로)
+    # 현장 기억은 볼 때마다 새로 세어 사본에만 붙인다 (field_memory는 DB에 저장하지 않는다. 순서는 ingest가 정한다, R2)
     if not field_memory.enabled():
         return out
     cases = store.all_cases()

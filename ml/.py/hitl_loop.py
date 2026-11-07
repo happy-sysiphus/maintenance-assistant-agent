@@ -14,7 +14,8 @@ api는 rag를 import하므로 RAG 의존성(neo4j 등)이 있는 인터프리터
 `pip install -r api/requirements.txt` 뒤의 python. 현장 기억(FIELD_MEMORY=1)과 새 DB(API_DB)로 켠다.
 드라이버는 py -3.11(langgraph, pandas)로 돌린다. rag/.env가 없으면 안내 카드는 매핑에서 오고 RAG 글은 오류로
 보이지만, 루프(멈춤 → 사람이 닫음 → 다음 알림의 안내 문장)는 그대로 돈다.
-안내 카드(E 코드 하나)는 api가 정한 그대로 보여 주고, 현장 기억은 GET 케이스의 field_memory(문장)로만 읽는다.
+안내 카드는 api가 정한 그대로 보여 준다: 후보(E 코드 하나)와 카드의 점검 순서(card_checks, R2면 바뀐 순서).
+현장 기억은 GET 케이스의 field_memory(applied · 문장)로 읽는다.
 GET /api/cases/{id}는 RAG를 부를 수 있어(키가 있으면 수 초) 닫힘은 GET /api/history로 기다린다.
 
 산출물은 results/D-8/runs/<시각>/: loop_view.html(2초마다 새로고침되는 현황), loop_log.jsonl, summary.md, workflow.mmd.
@@ -189,7 +190,7 @@ def _row(h: dict[str, Any], status: str, case_id: str | None = None, folded_into
     trig = h.get("trigger") or {}
     return {"event_id": h["event_id"], "case_id": case_id, "gun_id": h["gun_id"], "code": trig.get("rule_code"),
             "source": trig.get("source"), "data_time": trig.get("rule_trigger_time") or h["detected_at"],
-            "status": status, "folded_into": folded_into, "order": None, "applied": None,
+            "status": status, "folded_into": folded_into, "order": None, "card_checks": None, "applied": None,
             "note_ko": None, "closure": None, "human_label": None, "data_label": None, "ttf_s": None, "agree": None,
             "memory_delta": None, "warn": None}
 
@@ -269,13 +270,19 @@ def build_graph(deps: Deps):
         return {"seen": state["seen"] + [h["event_id"] for h in new], "alerts": alerts, "queue": queue_}
 
     def guide(state: LoopState) -> dict:
-        # 안내 카드(guidance.candidates, api가 정한 그대로)와 현장 기억 문장(최상위 field_memory, 플래그가 꺼져 있으면 없음).
+        # 안내 카드(api가 정한 그대로): 후보(guidance.candidates)와 guidance.causes의 점검 순서(원인 목록이 비면
+        # candidates[0].checks). 현장 기억 문장은 최상위 field_memory(플래그가 꺼져 있으면 없음).
         # 이 GET이 케이스의 첫 상세 조회라 api가 여기서 RAG 답을 만든다(수 초 걸릴 수 있음)
         alerts, row = _current(state)
         case = _json(api.get(f"/api/cases/{row['case_id']}"))
         g = case.get("guidance") or {}
         fm = case.get("field_memory") or {}
         row["order"] = [c["situation_id"] for c in g.get("candidates", [])]
+        causes = g.get("causes") or []
+        checks = [k for c in causes for k in c.get("checks") or []]
+        if not causes:  # 원인 목록이 빈 카드는 화면이 candidates를 그대로 쓴다 (스펙 5.4)
+            checks = (g.get("candidates") or [{}])[0].get("checks") or []
+        row["card_checks"] = [k["id"] for k in checks]
         row["applied"] = list(fm.get("applied") or [])
         row["note_ko"] = fm.get("note_ko")
         return {"alerts": alerts}
@@ -284,7 +291,8 @@ def build_graph(deps: Deps):
         # 이어 갈 때 이 노드는 처음부터 다시 돌므로 payload만 만들고 멈춘다
         _, row = _current(state)
         payload = {"case_id": row["case_id"], "url": f"{deps.ui_url}/cases/{row['case_id']}", "gun_id": row["gun_id"],
-                   "code": row["code"], "order": row["order"], "note_ko": row["note_ko"]}
+                   "code": row["code"], "order": row["order"], "card_checks": row["card_checks"],
+                   "note_ko": row["note_ko"]}
         return {"resume": interrupt(payload)}
 
     def learn(state: LoopState) -> dict:
@@ -507,6 +515,18 @@ def _delta_text(delta: dict | None) -> str:
     return "; ".join(parts) or "—"
 
 
+def _last_time(alerts: list[dict]) -> str | None:
+    """현황 상태 줄의 '마지막 알림 데이터 시각': 받은 순서로 마지막 알림의 시각(파일 기간이 겹치면 가장 늦은 시각과 다르다)."""
+    times = [r["data_time"] for r in alerts if r.get("data_time")]
+    return times[-1] if times else None
+
+
+def _card_text(order: list[str] | None, card_checks: list[str] | None) -> str:
+    """안내 카드 칸: 후보(E 코드)와 점검 순서를 " · "로 잇는다. 예: "E029 · E029-K2 → E029-K1". 둘 다 없으면 "—"."""
+    parts = [" → ".join(p) for p in (order or [], card_checks or []) if p]
+    return " · ".join(parts) or "—"
+
+
 def _cells(r: dict) -> list[str]:
     """알림 행 하나의 칸(escape 전 문자열). 데이터 라벨·일치는 닫히기 전 "—"."""
     closed = r["status"] == "closed"
@@ -517,7 +537,8 @@ def _cells(r: dict) -> list[str]:
     outcome = (r["closure"] or {}).get("outcome")
     data = _DATA_KO.get(r["data_label"], r["data_label"]) if closed and r["data_label"] else "—"
     return [r["data_time"] or "—", r["gun_id"], r["code"] or "—", r["source"] or "—", status, r["case_id"] or "—",
-            " → ".join(r["order"] or []) or "—", ", ".join(r["applied"] or []) or "—", _CLOSURE_KO.get(outcome, outcome) if outcome else "—",
+            _card_text(r["order"], r.get("card_checks")), ", ".join(r["applied"] or []) or "—",
+            _CLOSURE_KO.get(outcome, outcome) if outcome else "—",
             _HUMAN_KO.get(r["human_label"], r["human_label"]) if r["human_label"] else "—", data, agree,
             r["note_ko"] or "—", _delta_text(r["memory_delta"])]
 
@@ -565,7 +586,7 @@ def render_view(state: dict, current: str | None, waiting: dict | None, ui_url: 
         # 링크는 이름 붙은 탭 하나(d8-ui)를 다시 쓴다: 현황 탭은 그대로 열려 있다
         status = (f'<p class="status" style="color:{AMBER}">⏸ 사람 확인 대기 · '
                   f'<a href="{e(f"{ui_url}/cases/{cid}")}" target="d8-ui">{e(cid)}</a>'
-                  f' · 안내 카드 {e(" → ".join(waiting.get("order") or []) or "—")}</p>')
+                  f' · 안내 카드 {e(_card_text(waiting.get("order"), waiting.get("card_checks")))}</p>')
         if waiting.get("note_ko"):
             status += f'<p class="note">{e(waiting["note_ko"])}</p>'
     else:
@@ -617,6 +638,9 @@ def render_summary(state: dict) -> str:
     if state.get("error"):
         parts += ["재생이 오류로 끝났습니다:", "", "```", state["error"].rstrip(), "```", ""]
     parts += ["## 알림", "", _md_table(_COLS, [_cells(r) for r in state.get("alerts", [])]), ""]
+    if any("R2" in (r.get("applied") or []) for r in state.get("alerts", [])):
+        # R2(점검 순서)는 사람이 남긴 이상 기록으로 바뀐다. 재생 시연에서는 그 기록을 대본이 정한다
+        parts += ["작업자 판정은 시연 대본이다. 성능이 아니다.", ""]
     if _warns(state):
         parts += ["## 경고", ""] + [f"- ⚠ {w}" for w in _warns(state)] + [""]
     parts += ["## 현장 기억", "", _md_table(_MEM_COLS, alarms), "",
@@ -715,14 +739,13 @@ def main() -> None:
                     warned.add((r["event_id"], r["warn"]))
                     print(f"  ⚠ {r['warn']}", flush=True)
             if waiting:
-                order = " → ".join(waiting.get("order") or []) or "—"
+                order = _card_text(waiting.get("order"), waiting.get("card_checks"))
                 print(f"  ⏸ {waiting['case_id']} 사람 확인 대기 · 안내 카드 {order}: {waiting['url']}", flush=True)
                 if waiting.get("note_ko"):
                     print(f"      {waiting['note_ko']}", flush=True)
-            times = [r["data_time"] for r in state.get("alerts", []) if r["data_time"]]
             current = running_node(node, state)
             try:
-                write_atomic(view_path, render_view(state, current, waiting, ui, max(times) if times else None))
+                write_atomic(view_path, render_view(state, current, waiting, ui, _last_time(state.get("alerts", []))))
             except OSError as e:  # 다음 갱신이 다시 쓴다
                 print(f"  ⚠ 현황 파일을 쓰지 못했습니다({e}): 다음 갱신에서 다시 씁니다", flush=True)
             with open(log_path, "a", encoding="utf-8") as f:
@@ -743,10 +766,9 @@ def main() -> None:
             last["state"] = {**last["state"], "error": f"{prev}\n{note}" if prev else note}
             raise
         finally:
-            times = [r["data_time"] for r in last["state"].get("alerts", []) if r["data_time"]]
+            shown = _last_time(last["state"].get("alerts", []))
             for path, text in (
-                    (view_path, lambda: render_view(last["state"], None, None, ui, max(times) if times else None,
-                                                    ended=ended)),
+                    (view_path, lambda: render_view(last["state"], None, None, ui, shown, ended=ended)),
                     (os.path.join(out, "summary.md"), lambda: render_summary(last["state"])),
                     (os.path.join(out, "workflow.mmd"), lambda: build_graph(deps).get_graph().draw_mermaid())):
                 try:

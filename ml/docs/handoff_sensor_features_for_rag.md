@@ -9,7 +9,7 @@
 ## 읽기 규칙
 
 1. **읽는 법.** `channels`의 각 채널과 `error`는 `[초, 값]` 목록이다. 초는 시계 초(0~59)다. 값은 다음 항목까지 유지되고, `missing_s`의 초에는 값이 없다. 예를 들어 `"c10": [[0,0],[40,1]]`은 0~39초에 0, 40~59초에 1이다. `error`의 `"0"`은 코드 없음이다.
-2. **구간.** `sensor_features`와 `contributing_features`는 이벤트를 낸 1분이고, `sensor_findings`, `sensor_trend`, `context`는 최신 윈도우다. 1분 단위 전송이면 둘은 같다. 치명에서 코드가 뜬 분이 아직 끝나지 않았으면 두 필드는 직전에 완성된 1분이고, 코드는 블록에 없다(`trigger.rule_trigger_time`이 `window_end`보다 늦다). 그 분이 끝내 채점되지 않았으면 두 필드는 그 뒤 첫 1분이고, 코드가 뜬 초는 블록 앞에 있다(`trigger.rule_trigger_time`이 `window_start`보다 이르다). 윈도우는 항상 :00~:59는 아니다. `sensor_features`는 `null`일 수 있고 상위 피처는 3개보다 적을 수 있다.
+2. **구간.** `sensor_features`와 `contributing_features`는 이벤트를 낸 1분이고, `sensor_findings`, `sensor_trend`, `context`는 최신 윈도우다. 1분 단위 전송이면 거의 늘 같다. 한 요청이 윈도우를 둘 이상 채점하면 다를 수 있다. 치명에서 코드가 뜬 분이 아직 끝나지 않았으면 두 필드는 직전에 완성된 1분이고, 코드는 블록에 없다(`trigger.rule_trigger_time`이 `window_end`보다 늦다). 그 분이 끝내 채점되지 않았으면 두 필드는 그 뒤 첫 1분이고, 코드가 뜬 초는 블록 앞에 있다(`trigger.rule_trigger_time`이 `window_start`보다 이르다). 윈도우는 항상 :00~:59는 아니다. `sensor_features`는 `null`일 수 있고 상위 피처는 3개보다 적을 수 있다.
 3. **모델 입력과의 차이.** 모델은 빈 초를 앞 값으로 채우고, `c16 <= 0`인 초의 입력 채널(c1~c10, c13~c18)을 직전 용접 행의 값으로 대체해서 본다. 따라서 블록의 c16=0은 모델이 본 값이 아니고, 상위 피처의 `value`는 블록으로 재현되지 않는다.
 4. 단위가 가려져 있으므로 매뉴얼의 수치와 비교하지 않는다.
 5. `contributing_features`는 모델이 기댄 피처를 보여 줄 뿐, 평소와 다르다는 뜻이 아니다. "평소와 다름"은 `sensor_findings`에 있는 항목만 쓸 수 있다.

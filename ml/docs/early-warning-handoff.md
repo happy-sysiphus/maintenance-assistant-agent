@@ -62,7 +62,7 @@ ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
 
 | 키 | 뜻 |
 |---|---|
-| `since` / `onset_at` | 조건이 처음 맞은 창 / 경보가 켜진 창 끝(UTC, Z) |
+| `since` / `onset_at` | 조건이 처음 맞은 창 / 경보가 켜진 창 끝(UTC, Z). 한 요청이 윈도우를 둘 이상 채점하면 `since`는 최신 윈도우 기준이라 `onset_at`과 같거나 더 늦을 수 있다 |
 | `active_min` | `since`부터 `detected_at`까지 분 |
 | `rule`, `sustain_windows`, `threshold`, `quantile`, `score` | 판정 규칙(`model_ng_k1`: 점수 ≥ 임계값인 창 하나)과 그 값 |
 | `horizon_min` | `[10, 60]`: 무엇을 경고하나(종료 코드 10–60분 전) |
@@ -76,7 +76,7 @@ ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
 - `severity`가 `"critical"`로 고정이라 화면에 "긴급"으로 나온다.
 - 케이스 묶음 키가 `(gun_id, trigger.rule_code)`다. 조기 경보는 `rule_code`가 `null`이라 같은 건의 모델 단독 critical 케이스(역시 `null`)와 같은 열린 케이스로 묶일 수 있다.
 - RAG 키는 `trigger.rule_code` → `fault_class.terminal_code`다. 둘 다 `null`이라 `guidance`가 `no_evidence`가 된다.
-- 인박스는 코드가 없는 행을 점선 "확정 아님"으로 보여 준다. 이 표시는 조기 경보에도 맞는다.
+- 인박스는 코드가 없는 행을 점선 "모델 신호만"으로 보여 준다. 이 표시는 조기 경보에도 맞는다.
 
 구분해서 처리하려면 `event_type`을 읽으면 된다. 예: 별도 등급("주의"), 별도 케이스 묶음, 후보 코드로 RAG 조회 여부. 어떻게 할지는 api·RAG 쪽 결정이다.
 

@@ -178,11 +178,13 @@ def r1_note(gun, code, fa, real):
 class FakeAPI:
     """api 대역: 메모리 안에서 ingest(같은 설비·코드의 열린 케이스면 반복으로 묶기), 닫기, labels·alarms·checks 계산.
     안내는 E 코드 카드 하나(candidates[0].situation_id = 코드), 현장 기억은 GET 케이스의 최상위 field_memory.
+    causes(점검 id 묶음 목록)를 주면 RAG 카드처럼 최상위 guidance.causes도 둔다(드라이버가 점검 순서를 읽는 곳).
     닫기는 사람이 화면에서 하는 것처럼 /api/history를 polls번째 조회할 때 일어난다."""
 
-    def __init__(self, ml, memory_on=True, empty_syncs=0, ml_status="ok", annotate=True):
+    def __init__(self, ml, memory_on=True, empty_syncs=0, ml_status="ok", annotate=True, causes=None):
         self.ml = ml
         self.memory_on = memory_on
+        self.causes = causes
         self.annotate = annotate  # False면 GET 케이스에 field_memory가 없다(플래그 꺼진 api처럼)
         self.ml_status = ml_status  # /api/health의 ml (api가 본 ML 상태)
         self.empty_syncs = empty_syncs  # 처음 이만큼은 sync가 {}를 돌려준다(ML을 아직 못 읽은 것처럼)
@@ -210,6 +212,8 @@ class FakeAPI:
             "guidance": {"status": "ok", "candidates": [
                 {"situation_id": card, "checks": [{"id": f"{card}-K1"}, {"id": f"{card}-K2"}], "causes": []}]},
             "records": {"judgments": [], "results": [], "checks": []}}
+        if self.causes:
+            self.cases[cid]["guidance"]["causes"] = [{"checks": [{"id": i} for i in ids]} for ids in self.causes]
         return "new"
 
     def sync(self):
@@ -374,11 +378,14 @@ def test_loop_waits_and_resumes():
                          "learn", "evaluate", "advance", "report"]
     assert final["resume"]["closure"]["outcome"] == "false_alarm"  # state에는 남는다
     assert rec.calls[3][1] == {"case_id": "CASE-0001", "url": "http://ui/cases/CASE-0001", "gun_id": "test_0",
-                               "code": "E029", "order": ["E029"], "note_ko": None}
+                               "code": "E029", "order": ["E029"], "card_checks": ["E029-K1", "E029-K2"],
+                               "note_ko": None}
     row = final["alerts"][0]
     assert row["status"] == "closed" and row["human_label"] == "false_alarm"
     assert row["case_id"] == "CASE-0001" and row["closure"]["outcome"] == "false_alarm"
     assert row["order"] == ["E029"] and row["applied"] == [] and "baseline" not in row
+    # 원인 목록이 없는 카드는 candidates[0]의 점검 순서
+    assert row["card_checks"] == ["E029-K1", "E029-K2"]
     assert row["memory_delta"] == {"alarms": [{"key": "test_0|E029", "gun_id": "test_0", "code": "E029",
                                                "false_alarm": 1, "real": 0, "case_ids": ["CASE-0001"]}],
                                    "checks": []}
@@ -391,7 +398,7 @@ def test_loop_waits_and_resumes():
 
 
 def test_second_alert_gets_note():
-    # 사람이 오알람으로 닫으면 같은 설비·코드의 다음 알림에 R1 문장이 붙는다(카드는 그대로)
+    # 사람이 오알람으로 닫으면 같은 설비·코드의 다음 알림에 R1 문장이 붙는다(R1은 카드를 바꾸지 않는다)
     script = [(FILE_ITEM, []), (("alert", 1, "test_0", {}), [handoff("h1")]),
               (("alert", 2, "test_0", {}), [handoff("h2", t="2021-09-05T05:00:00Z")]), (("end",), [])]
     deps, api, feeder, rec = make_run(script)
@@ -925,3 +932,63 @@ def test_main_ctrl_c(tmp_path, monkeypatch):
         hl.main()
     assert "중단됨: 사용자가 멈춤(Ctrl+C)" in (out / "loop_view.html").read_text(encoding="utf-8")
     assert "사용자가 멈춤(Ctrl+C)" in (out / "summary.md").read_text(encoding="utf-8")
+
+
+# ---- R2: 카드 점검 순서 보이기 (ml/docs/superpowers/specs/2026-11-07-feedback-card-order-design.md 5.4) ----
+
+SCRIPT_LINE = "작업자 판정은 시연 대본이다. 성능이 아니다."
+
+
+def test_guide_reads_card_checks_from_causes():
+    deps, api, feeder, rec = make_run(ALERT_H1, causes=[["E029-K2"], ["E029-K1"]])
+    final = hl.run_loop(deps, rec, poll_s=0)
+    row = final["alerts"][0]
+    assert row["card_checks"] == ["E029-K2", "E029-K1"] and row["order"] == ["E029"]
+    waits = [c[1] for c in rec.calls if c[0] == "__interrupt__"]
+    assert waits[0]["card_checks"] == ["E029-K2", "E029-K1"]
+
+
+def test_guide_card_checks_no_fallback_when_causes_exist():
+    # 스펙 5.4: candidates[0].checks는 원인 목록이 빌 때만 쓴다. 원인이 있으면 화면도 원인만 본다(guidance.ts expand)
+    deps, api, feeder, rec = make_run(ALERT_H1, causes=[[]])
+    final = hl.run_loop(deps, rec, poll_s=0)
+    assert final["alerts"][0]["card_checks"] == []
+
+
+def test_last_time_is_the_last_alert():
+    # 상태 줄은 '마지막 알림 데이터 시각'이다. test_7 → test_0처럼 파일 기간이 겹치면 가장 늦은 시각과 다르다
+    alerts = [{"data_time": "2021-09-08T17:55:05Z"}, {"data_time": None}, {"data_time": "2021-09-04T11:30:00Z"}]
+    assert hl._last_time(alerts) == "2021-09-04T11:30:00Z"
+    assert hl._last_time([]) is None and hl._last_time([{"data_time": None}]) is None
+
+
+def test_card_text_rendering():
+    state = view_state()
+    state["alerts"][0].update(card_checks=["E029-K2", "E029-K1"], applied=["R1", "R2"])
+    waiting = {"case_id": "CASE-0002", "url": "http://localhost:5173/cases/CASE-0002", "gun_id": "test_0",
+               "code": "E029", "order": ["E029"], "card_checks": ["E029-K2", "E029-K1"], "note_ko": None}
+    html = hl.render_view(state, "operator", waiting, "http://localhost:5173", "2021-09-04T11:30:00Z")
+    assert "· 안내 카드 E029 · E029-K2 → E029-K1</p>" in html
+    cells = {c[5]: c for c in (re.findall(r"<td[^>]*>(.*?)</td>", r) for r in html.split("<tr>")) if len(c) == 14}
+    assert cells["CASE-0001"][6] == "E029 · E029-K2 → E029-K1" and cells["CASE-0001"][7] == "R1, R2"
+    assert cells["CASE-0002"][6] == "E029"  # card_checks가 없는 행은 지금처럼 코드만
+    assert hl._card_text(None, None) == "—" and hl._card_text([], ["E029-K1"]) == "E029-K1"
+
+
+def test_summary_script_line():
+    assert SCRIPT_LINE not in hl.render_summary(view_state())
+    state = view_state()
+    state["alerts"][0]["applied"] = ["R2"]
+    assert hl.render_summary(state).count(SCRIPT_LINE) == 1
+
+
+def test_main_console_card_checks(tmp_path, monkeypatch, capsys):
+    def fake_run_loop(deps, on_update):
+        state, payload = interrupted_state()
+        on_update("__interrupt__", {**payload, "card_checks": ["E029-K2", "E029-K1"]}, state)
+        return {**state, "queue": [], "done": True}
+
+    run_main(tmp_path, monkeypatch, fake_run_loop)
+    hl.main()
+    console = capsys.readouterr().out
+    assert "  ⏸ CASE-0002 사람 확인 대기 · 안내 카드 E029 · E029-K2 → E029-K1: http://ui/cases/CASE-0002" in console

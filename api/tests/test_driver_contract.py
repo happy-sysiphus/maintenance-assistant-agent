@@ -2,7 +2,8 @@
 
 api는 TestClient(임시 DB, FIELD_MEMORY=1, RAG는 conftest의 가짜 답)이고 ML은 스크립트 outbox다.
 드라이버 그래프를 끝까지 돌리면서, 중단마다 작업자 대역이 UI와 같은 주소 · 본문으로 케이스를 닫는다.
-안내 카드는 E 코드 하나 그대로이고, 현장 기억은 참고 문장(field_memory.note_ko)으로만 바뀐다.
+안내 카드의 후보는 E 코드 하나다. 이 시나리오들의 해결 종료는 첫 점검(K1) 이상이라 R2(점검 순서)가 생기지 않는다.
+그래서 카드는 바뀌지 않고, 현장 기억은 참고 문장(field_memory.note_ko)으로만 바뀐다. R2는 test_memory_api.py가 본다.
 소켓도 실제 CSV도 쓰지 않는다.
 """
 
@@ -269,9 +270,10 @@ def test_scenario_test_0(run, api, make_handoff):
     plan = ["false_alarm"] * 5 + ["E012"]
     final, op, counted = run(script, plan)
     rows = final["alerts"]
-    # 카드는 E 코드 하나 그대로 (순서를 바꾸지 않는다)
+    # 후보는 E 코드 하나. 해결 종료는 E012의 첫 점검 이상뿐이라 R2가 없고 점검 순서는 매핑 그대로다
     assert [r["order"] for r in rows] == [["E029"]] * 5 + [["E012"]]
     assert [p["order"] for p in op.payloads] == [r["order"] for r in rows]
+    assert [r["card_checks"] for r in rows] == [["E029-K1", "E029-K2"]] * 5 + [["E012-K1", "E012-K2"]]
     assert [r["applied"] for r in rows] == [[]] + [["R1"]] * 4 + [[]]
     assert rows[0]["note_ko"] is None
     assert [r["note_ko"] for r in rows[1:5]] == [r1("test_0", "E029", n) for n in range(1, 5)]
