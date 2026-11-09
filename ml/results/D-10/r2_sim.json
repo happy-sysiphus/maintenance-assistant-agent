@@ -1,0 +1,327 @@
+{
+ "criteria": "before computing any result below (2026-11-09):\n    setting   code E012 (two checks in two causes, no action guard on the mapping card). Every new case is resolved, at one\n              of 8 guns drawn uniformly, and has exactly one truly abnormal check: the lower one with probability p\n    worker    walks the card from the top, records \"normal\" until the true check, records it \"abnormal\" and stops. With\n              probability b (top-item bias: the \"next\" button needs only one record) the worker instead records the top item\n              abnormal and stops\n    order     at each new case, order_for over the closed cases so far decides the card (once, at ingest, as the api does)\n    measure   position of the true check on the card: mapping order (before) against R2's order (after), same draws. Saving\n              per case = before - after, mean over the first N cases of a run\n    grid      p in (0.1, 0.3, 0.5, 0.7, 0.9), b in (0, 0.3), N in (12, 50), 1000 runs per (p, b), seeded\n    report    mean saving and the 2.5-97.5 percentile range over runs, share of runs where R2 fired within N cases, median case\n              number of the first firing, share of cases seen with the moved card\n    sanity    p = 0.5, b = 0: the share of runs with R2 on at some point after 12 closed cases is the spec's 38.8% (397/1024,\n              spec 10) within 0.03",
+ "code": "E012",
+ "checks": [
+  "E012-K1",
+  "E012-K2"
+ ],
+ "scenarios": [
+  {
+   "p_lower": 0.1,
+   "top_bias": 0.0,
+   "by_n": {
+    "12": {
+     "mean_position_before": 1.097,
+     "mean_position_after": 1.0971666666666666,
+     "mean_saving": -0.00016666666666666666,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "fired_share": 0.002,
+     "median_first_fire": 4.0,
+     "moved_case_share": 0.0003333333333333333
+    },
+    "50": {
+     "mean_position_before": 1.09738,
+     "mean_position_after": 1.09742,
+     "mean_saving": -4e-05,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "fired_share": 0.002,
+     "median_first_fire": 4.0,
+     "moved_case_share": 8e-05
+    }
+   },
+   "on_after_12_closed": 0.002
+  },
+  {
+   "p_lower": 0.1,
+   "top_bias": 0.3,
+   "by_n": {
+    "12": {
+     "mean_position_before": 1.1003333333333334,
+     "mean_position_after": 1.1004166666666666,
+     "mean_saving": -8.333333333333333e-05,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "fired_share": 0.001,
+     "median_first_fire": 8.0,
+     "moved_case_share": 8.333333333333333e-05
+    },
+    "50": {
+     "mean_position_before": 1.09862,
+     "mean_position_after": 1.09864,
+     "mean_saving": -2e-05,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "fired_share": 0.001,
+     "median_first_fire": 8.0,
+     "moved_case_share": 2e-05
+    }
+   },
+   "on_after_12_closed": 0.001
+  },
+  {
+   "p_lower": 0.3,
+   "top_bias": 0.0,
+   "by_n": {
+    "12": {
+     "mean_position_before": 1.3050833333333334,
+     "mean_position_after": 1.3115,
+     "mean_saving": -0.006416666666666666,
+     "range": [
+      -0.08333333333333333,
+      0.0
+     ],
+     "fired_share": 0.067,
+     "median_first_fire": 6.0,
+     "moved_case_share": 0.012083333333333333
+    },
+    "50": {
+     "mean_position_before": 1.29932,
+     "mean_position_after": 1.30198,
+     "mean_saving": -0.00266,
+     "range": [
+      -0.04,
+      0.0
+     ],
+     "fired_share": 0.078,
+     "median_first_fire": 6.0,
+     "moved_case_share": 0.00614
+    }
+   },
+   "on_after_12_closed": 0.067
+  },
+  {
+   "p_lower": 0.3,
+   "top_bias": 0.3,
+   "by_n": {
+    "12": {
+     "mean_position_before": 1.2975833333333333,
+     "mean_position_after": 1.2999166666666666,
+     "mean_saving": -0.002333333333333333,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "fired_share": 0.023,
+     "median_first_fire": 6.0,
+     "moved_case_share": 0.007333333333333333
+    },
+    "50": {
+     "mean_position_before": 1.30098,
+     "mean_position_after": 1.3029,
+     "mean_saving": -0.0019199999999999998,
+     "range": [
+      0.0,
+      0.0
+     ],
+     "fired_share": 0.024,
+     "median_first_fire": 6.0,
+     "moved_case_share": 0.00496
+    }
+   },
+   "on_after_12_closed": 0.023
+  },
+  {
+   "p_lower": 0.5,
+   "top_bias": 0.0,
+   "by_n": {
+    "12": {
+     "mean_position_before": 1.5030833333333333,
+     "mean_position_after": 1.5016666666666667,
+     "mean_saving": 0.0014166666666666676,
+     "range": [
+      -0.16666666666666666,
+      0.25
+     ],
+     "fired_share": 0.405,
+     "median_first_fire": 6.0,
+     "moved_case_share": 0.13441666666666666
+    },
+    "50": {
+     "mean_position_before": 1.50186,
+     "mean_position_after": 1.49916,
+     "mean_saving": 0.0026999999999999997,
+     "range": [
+      -0.12,
+      0.22
+     ],
+     "fired_share": 0.689,
+     "median_first_fire": 10.0,
+     "moved_case_share": 0.28254
+    }
+   },
+   "on_after_12_closed": 0.405
+  },
+  {
+   "p_lower": 0.5,
+   "top_bias": 0.3,
+   "by_n": {
+    "12": {
+     "mean_position_before": 1.505,
+     "mean_position_after": 1.50575,
+     "mean_saving": -0.0007499999999999996,
+     "range": [
+      -0.08333333333333333,
+      0.08333333333333333
+     ],
+     "fired_share": 0.11,
+     "median_first_fire": 6.0,
+     "moved_case_share": 0.043916666666666666
+    },
+    "50": {
+     "mean_position_before": 1.5043,
+     "mean_position_after": 1.5054,
+     "mean_saving": -0.0011000000000000003,
+     "range": [
+      -0.08,
+      0.06
+     ],
+     "fired_share": 0.149,
+     "median_first_fire": 8.0,
+     "moved_case_share": 0.07822
+    }
+   },
+   "on_after_12_closed": 0.11
+  },
+  {
+   "p_lower": 0.7,
+   "top_bias": 0.0,
+   "by_n": {
+    "12": {
+     "mean_position_before": 1.6989166666666666,
+     "mean_position_after": 1.5330833333333334,
+     "mean_saving": 0.1658333333333333,
+     "range": [
+      -0.16666666666666666,
+      0.5833333333333334
+     ],
+     "fired_share": 0.827,
+     "median_first_fire": 6.0,
+     "moved_case_share": 0.4033333333333333
+    },
+    "50": {
+     "mean_position_before": 1.69918,
+     "mean_position_after": 1.3756,
+     "mean_saving": 0.32358,
+     "range": [
+      0.04,
+      0.58
+     ],
+     "fired_share": 1.0,
+     "median_first_fire": 6.0,
+     "moved_case_share": 0.80994
+    }
+   },
+   "on_after_12_closed": 0.827
+  },
+  {
+   "p_lower": 0.7,
+   "top_bias": 0.3,
+   "by_n": {
+    "12": {
+     "mean_position_before": 1.70225,
+     "mean_position_after": 1.6384166666666666,
+     "mean_saving": 0.06383333333333334,
+     "range": [
+      -0.08333333333333333,
+      0.4187499999999981
+     ],
+     "fired_share": 0.353,
+     "median_first_fire": 6.0,
+     "moved_case_share": 0.15566666666666668
+    },
+    "50": {
+     "mean_position_before": 1.70126,
+     "mean_position_after": 1.53248,
+     "mean_saving": 0.16878,
+     "range": [
+      -0.02,
+      0.5204999999999995
+     ],
+     "fired_share": 0.639,
+     "median_first_fire": 12.0,
+     "moved_case_share": 0.42166
+    }
+   },
+   "on_after_12_closed": 0.353
+  },
+  {
+   "p_lower": 0.9,
+   "top_bias": 0.0,
+   "by_n": {
+    "12": {
+     "mean_position_before": 1.89775,
+     "mean_position_after": 1.3635833333333334,
+     "mean_saving": 0.5341666666666668,
+     "range": [
+      0.08333333333333333,
+      0.75
+     ],
+     "fired_share": 0.998,
+     "median_first_fire": 4.0,
+     "moved_case_share": 0.6678333333333333
+    },
+    "50": {
+     "mean_position_before": 1.89806,
+     "mean_position_after": 1.16478,
+     "mean_saving": 0.7332799999999999,
+     "range": [
+      0.54,
+      0.9
+     ],
+     "fired_share": 1.0,
+     "median_first_fire": 4.0,
+     "moved_case_share": 0.92016
+    }
+   },
+   "on_after_12_closed": 0.998
+  },
+  {
+   "p_lower": 0.9,
+   "top_bias": 0.3,
+   "by_n": {
+    "12": {
+     "mean_position_before": 1.9020833333333333,
+     "mean_position_after": 1.6360833333333333,
+     "mean_saving": 0.266,
+     "range": [
+      0.0,
+      0.75
+     ],
+     "fired_share": 0.691,
+     "median_first_fire": 6.0,
+     "moved_case_share": 0.3348333333333333
+    },
+    "50": {
+     "mean_position_before": 1.90228,
+     "mean_position_after": 1.28536,
+     "mean_saving": 0.61692,
+     "range": [
+      0.059500000000000025,
+      0.86
+     ],
+     "fired_share": 0.982,
+     "median_first_fire": 8.0,
+     "moved_case_share": 0.76824
+    }
+   },
+   "on_after_12_closed": 0.691
+  }
+ ],
+ "sanity_on_after_12_closed": 0.405,
+ "study_n_per_arm": {
+  "0.6": 95,
+  "0.7": 21,
+  "0.9": 3
+ },
+ "seconds": 314
+}

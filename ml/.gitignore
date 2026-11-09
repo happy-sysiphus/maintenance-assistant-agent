@@ -44,3 +44,5 @@ results/B-15/cache/
 
 # D-8 HITL 루프 실행 산출물 (py -3.11 .py/hitl_loop.py)
 results/D-8/runs/
+# D-9 ML 피드백 루프 보고서 · 오프라인 실행 산출물 (케이스 번호와 현장 메모가 들어감)
+results/D-9/runs/

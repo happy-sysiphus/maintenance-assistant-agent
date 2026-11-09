@@ -1928,3 +1928,84 @@ def test_v14_context_failure_leaves_the_two_fields(workspace, monkeypatch):
         _, hs = v14_two_hits(client, "T", v14_raw(workspace))
     assert len(hs) == 2 and all(h["error_timeline"] == [] and h["sensor_trend"] == [] for h in hs)
     assert all(h["sensor_features"] and h["contributing_features"] for h in hs)
+
+
+WINDOW_LOG_KEYS = ["window_start", "window_end", "model", "score", "threshold", "alarm", "held", "sustained", "critical",
+                   "early_warning", "early_warning_onset", "ew_threshold", "warmup", "gun_norm", "non_welding_share",
+                   "error_codes", "error_code", "vec"]
+
+
+def test_18_window_log(workspace, tmp_path, monkeypatch, caplog):
+    """D-9 window log (spec 5): RSW_WINDOW_LOG=1 + a state dir -> one line per newly scored window (the trace's windows)
+    in <state>/windows/<gun>/<UTC day>.jsonl and the model's entry in windows/models.json; off -> no files. On or off,
+    the responses are the same, and a write error warns once per gun and changes nothing else."""
+    from fastapi.testclient import TestClient
+    from train import load_bundle, score_frame
+
+    model = workspace["models"] / "baseline_iforest.joblib"
+    b = load_bundle(str(model))
+    thr = float(np.median(score_frame(b, pd.read_parquet(workspace["pre"] / "test" / "test_0.parquet"))["score"]))
+    raw = pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
+    monkeypatch.setenv("RSW_MODEL_PATH", str(model))
+    sys.path.insert(0, ROOT)
+
+    def stream(state, log_on):
+        monkeypatch.setenv("RSW_STATE_DIR", str(state))
+        if log_on:
+            monkeypatch.setenv("RSW_WINDOW_LOG", "1")
+        else:
+            monkeypatch.delenv("RSW_WINDOW_LOG", raising=False)
+        main = importlib.reload(importlib.import_module("main"))
+        with TestClient(main.app) as client:
+            main.app.state.detector.early_warning["threshold"] = thr  # the warning switches often
+            res = stream_chunks(client, "WL", raw)
+            tr = client.get("/guns/WL/trace", params={"minutes": 360}).json()
+            return res, tr, main.app.state.detector.info
+
+    off, _, info = stream(tmp_path / "off", False)
+    assert not (tmp_path / "off" / "windows").exists()
+
+    on, tr, _ = stream(tmp_path / "on", True)
+    assert on == off
+    files = sorted((tmp_path / "on" / "windows" / "WL").glob("*.jsonl"))
+    lines = [json.loads(x) for f in files for x in f.read_text(encoding="utf-8").splitlines()]
+    assert lines and all(list(x) == WINDOW_LOG_KEYS for x in lines)
+    pts = tr["points"]
+    assert [x["window_start"] for x in lines] == [p["window_start"] + "Z" for p in pts]
+    assert [x["score"] for x in lines] == [p["score"] for p in pts]
+    assert [f.stem for f in files] == sorted({x["window_start"][:10] for x in lines})
+    onsets = sum(x["early_warning_onset"] for x in lines)
+    assert onsets >= 1 and onsets == [e["kind"] for e in tr["events"]].count("early_warning_start")
+    assert any(x["warmup"] for x in lines) and not any(x["early_warning"] for x in lines if x["warmup"])
+    assert all(x["ew_threshold"] == thr for x in lines)
+    key = f"{info.name}@{info.created}"
+    models = json.loads((tmp_path / "on" / "windows" / "models.json").read_text(encoding="utf-8"))
+    assert list(models) == [key] and all(x["model"] == key for x in lines)
+    assert models[key]["model_cols"] == list(b["model_cols"]) and models[key]["threshold"] == b["threshold"]
+    assert models[key]["early_warning"] == {k: b["early_warning"][k] for k in ("rule", "threshold", "quantile")}
+    assert all(len(x["vec"]) == len(b["model_cols"]) for x in lines)
+
+    bad = tmp_path / "bad"
+    (bad / "windows").mkdir(parents=True)
+    (bad / "windows" / "WL").write_text("a file where the gun's folder should be", encoding="utf-8")
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        res_bad, _, _ = stream(bad, True)
+    assert res_bad == off
+    assert sum("window log" in r.getMessage() for r in caplog.records) == 1
+
+
+def test_18b_window_log_memory_only(workspace, monkeypatch, caplog):
+    """RSW_WINDOW_LOG=1 with RSW_STATE_DIR="" (memory only): one startup warning and nothing is written."""
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))
+    monkeypatch.setenv("RSW_STATE_DIR", "")
+    monkeypatch.setenv("RSW_WINDOW_LOG", "1")
+    sys.path.insert(0, ROOT)
+    main = importlib.reload(importlib.import_module("main"))
+    raw = pd.read_csv(workspace["test"] / "test_0.csv", dtype={"c10": str, "error": str})
+    with caplog.at_level(logging.WARNING), TestClient(main.app) as client:
+        assert stream_chunks(client, "MEM", raw.iloc[:1800], step=600)
+        assert main.app.state.window_log.root is None
+    assert sum("RSW_WINDOW_LOG" in r.getMessage() for r in caplog.records) == 1

@@ -1,0 +1,14 @@
+E012: checks ['E012-K1', 'E012-K2'], the lower check can be moved first on the mapping card
+p 0.1 b 0.0: N12 saving -0.000 [0. 0.] fired 0.002 | N50 saving -0.000 [0. 0.] fired 0.002 median first 4.0 moved 0.000  (31s)
+p 0.1 b 0.3: N12 saving -0.000 [0. 0.] fired 0.001 | N50 saving -0.000 [0. 0.] fired 0.001 median first 8.0 moved 0.000  (63s)
+p 0.3 b 0.0: N12 saving -0.006 [-0.083  0.   ] fired 0.067 | N50 saving -0.003 [-0.04  0.  ] fired 0.078 median first 6.0 moved 0.006  (94s)
+p 0.3 b 0.3: N12 saving -0.002 [0. 0.] fired 0.023 | N50 saving -0.002 [0. 0.] fired 0.024 median first 6.0 moved 0.005  (125s)
+p 0.5 b 0.0: N12 saving +0.001 [-0.167  0.25 ] fired 0.405 | N50 saving +0.003 [-0.12  0.22] fired 0.689 median first 10.0 moved 0.283  (156s)
+p 0.5 b 0.3: N12 saving -0.001 [-0.083  0.083] fired 0.110 | N50 saving -0.001 [-0.08  0.06] fired 0.149 median first 8.0 moved 0.078  (188s)
+p 0.7 b 0.0: N12 saving +0.166 [-0.167  0.583] fired 0.827 | N50 saving +0.324 [0.04 0.58] fired 1.000 median first 6.0 moved 0.810  (219s)
+p 0.7 b 0.3: N12 saving +0.064 [-0.083  0.419] fired 0.353 | N50 saving +0.169 [-0.02  0.52] fired 0.639 median first 12.0 moved 0.422  (251s)
+p 0.9 b 0.0: N12 saving +0.534 [0.083 0.75 ] fired 0.998 | N50 saving +0.733 [0.54 0.9 ] fired 1.000 median first 4.0 moved 0.920  (282s)
+p 0.9 b 0.3: N12 saving +0.266 [0.   0.75] fired 0.691 | N50 saving +0.617 [0.06 0.86] fired 0.982 median first 8.0 moved 0.768  (314s)
+sanity: p 0.5, b 0: on after 12 closed 0.405 (spec 10: 0.388)
+study size per arm: {'0.6': 95, '0.7': 21, '0.9': 3}
+saved r2_sim.json (314s)

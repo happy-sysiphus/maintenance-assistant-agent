@@ -53,9 +53,20 @@ def all_cases() -> list[dict[str, Any]]:
     return [json.loads(r[0]) for r in rows]
 
 
+def group_key(e: dict[str, Any]) -> str | None:
+    """케이스를 묶는 키 (cases.code 칸): 종료 코드. 코드 없는 조기 경보는 "early_warning", 코드 없는 모델 단독 critical은 None.
+
+    조기 경보와 모델 단독 critical이 같은 설비의 열린 케이스 하나에 섞이지 않게 한다 (ml D-9 스펙 11.1).
+    """
+    code = e["trigger"].get("rule_code")
+    if code:
+        return code
+    return "early_warning" if e.get("event_type") == "early_warning" else None
+
+
 def put(d: dict[str, Any]) -> None:
     e = d["event"]
-    code = e["trigger"].get("rule_code")
+    code = group_key(e)
     with _lock, _conn() as c:
         c.execute(
             "INSERT OR REPLACE INTO cases VALUES (?, ?, ?, ?, ?, ?)",
@@ -88,7 +99,7 @@ def all_feedback() -> list[dict[str, Any]]:
 
 
 def open_case(gun_id: str, code: str | None) -> dict[str, Any] | None:
-    """같은 설비 · 같은 코드로 아직 끝나지 않은 케이스 (반복 알림을 묶을 곳)."""
+    """같은 설비 · 같은 묶음 키(group_key)로 아직 끝나지 않은 케이스 (반복 알림을 묶을 곳)."""
     with _lock, _conn() as c:
         row = c.execute(
             "SELECT data FROM cases WHERE gun_id = ? AND code IS ? AND status NOT IN ('resolved', 'unresolved', 'false_alarm')"

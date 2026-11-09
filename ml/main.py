@@ -43,6 +43,9 @@ State survives a restart (RSW_STATE_DIR, default ./state; "" = memory only): eve
 <dir>/guns/<gun_id>.json, every handoff to <dir>/outbox/<event_id>.json. Not kept: the reading buffer (the first
 windows after a restart have less rolling history), the trace ring, and a warm-up in progress (it restarts). A gun
 whose state was written under another model (bundle `created`) goes back to warming up.
+With RSW_WINDOW_LOG=1 (D-9) every newly scored window is also appended to <dir>/windows/<gun_id>/<YYYY-MM-DD>.jsonl
+(verdicts, codes, model input `vec`; windows/models.json maps the model id to its columns and thresholds) for the
+offline feedback loop (.py/feedback_loop.py). Off by default.
 
 Windows are the clock-aligned `window_s` buckets train.py builds offline (00:01:00-00:01:59), scored once
 complete - the latest result is up to window_s - 1 seconds behind the newest reading. A gun gets HTTP 202
@@ -1102,6 +1105,8 @@ class Detector:
                 g.trace.append({"window_start": w.index[0], "window_end": w.index[-1], "score": v.score,
                                 "threshold": v.threshold, "alarm": alarm, "held": v.held, "sustained": v.sustained,
                                 "critical": v.critical, "early_warning": ew_active,
+                                # D-9 window log: the onset flag and the warm-up the early-warning condition used
+                                "early_warning_onset": ew_onset, "warmup": self.in_warmup(g, w.index[0]),
                                 "non_welding_share": nw_share, "gun_norm": g.norm_status,
                                 "error_codes": list(dict.fromkeys(codes[codes != "0"].tolist())), "vec": vec,
                                 "error_code": sensor_features.last_code(codes.tolist()), "raw": raw})
@@ -1473,6 +1478,69 @@ class Outbox:
                 os.remove(self.path(k))
 
 
+def window_log_line(p: dict[str, Any], model_id: str, ew_threshold: float | None) -> dict[str, Any]:
+    """One trace point (a newly scored window) -> one window-log line (D-9 spec 5.4); times are UTC with Z."""
+    return {"window_start": rag_mapping.utc_iso(pd.Timestamp(p["window_start"]).isoformat()),
+            "window_end": rag_mapping.utc_iso(pd.Timestamp(p["window_end"]).isoformat()),
+            "model": model_id, "score": float(p["score"]), "threshold": float(p["threshold"]),
+            "alarm": bool(p["alarm"]), "held": bool(p["held"]), "sustained": bool(p["sustained"]),
+            "critical": bool(p["critical"]), "early_warning": bool(p["early_warning"]),
+            "early_warning_onset": bool(p.get("early_warning_onset", False)), "ew_threshold": ew_threshold,
+            "warmup": bool(p.get("warmup", False)), "gun_norm": p.get("gun_norm"),
+            "non_welding_share": float(p["non_welding_share"]), "error_codes": list(p.get("error_codes") or []),
+            "error_code": p.get("error_code"), "vec": [float(x) for x in p["vec"]]}
+
+
+class WindowLog:
+    """<state dir>/windows/<gun_id>/<YYYY-MM-DD>.jsonl (UTC day of the window start): one line per newly scored window,
+    for the offline feedback loop (D-9, .py/feedback_loop.py; RSW_WINDOW_LOG=1). windows/models.json maps the model id
+    to its columns and thresholds. root None = off. A write error warns once per gun and never touches the response,
+    the gun state or the outbox; after a restart a window may be written again (the loop keeps the last line)."""
+
+    def __init__(self, root: str | None) -> None:
+        self.root = root
+        self.dir = os.path.join(root, "windows") if root else None
+        self.warned: set[str] = set()
+
+    def add_model(self, model_id: str, entry: dict[str, Any]) -> None:
+        """Add (or refresh) the model's entry in models.json; other models' entries stay."""
+        if not self.dir:
+            return
+        path = os.path.join(self.dir, "models.json")
+        try:
+            os.makedirs(self.dir, exist_ok=True)
+            models: dict[str, Any] = {}
+            if os.path.exists(path):
+                try:
+                    with open(path, encoding="utf-8") as fh:
+                        models = json.load(fh)
+                except (OSError, ValueError):
+                    log.warning("window log: unreadable %s, writing it again", path)
+            models[model_id] = entry
+            write_json_atomic(path, models)
+        except Exception:  # never fail the start-up over the log
+            log.exception("window log: could not write %s", path)
+
+    def write(self, gun_id: str, points: list[dict[str, Any]], model_id: str, ew_threshold: float | None) -> None:
+        if not self.dir or not points:
+            return
+        try:
+            folder = os.path.join(self.dir, quote(gun_id, safe="-_."))
+            os.makedirs(folder, exist_ok=True)
+            by_day: dict[str, list[str]] = {}
+            for p in points:
+                line = json.dumps(window_log_line(p, model_id, ew_threshold), ensure_ascii=False)
+                by_day.setdefault(pd.Timestamp(p["window_start"]).strftime("%Y-%m-%d"), []).append(line)
+            for day, lines in by_day.items():
+                with open(os.path.join(folder, f"{day}.jsonl"), "a", encoding="utf-8") as fh:
+                    fh.write("\n".join(lines) + "\n")
+        except Exception as exc:  # never fail a scored response over the log
+            if gun_id not in self.warned:
+                self.warned.add(gun_id)
+                log.warning("window log: could not write gun %s (%s); later errors for this gun are not logged",
+                            gun_id, exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     model_path = os.environ.get("RSW_MODEL_PATH", MODEL_PATH)
@@ -1497,6 +1565,16 @@ async def lifespan(app: FastAPI):
     if app.state.ew_handoffs and d.early_warning is None:
         log.warning("RSW_EARLY_WARNING_HANDOFFS is on, but %s has no early warning (retrain with the current train.py)",
                     model_path)
+    # D-9: one line per newly scored window for the offline feedback loop, only on request and with a state dir
+    window_log = os.environ.get("RSW_WINDOW_LOG", "").strip().lower() in ("1", "true", "on", "yes")
+    if window_log and state_dir is None:
+        log.warning("RSW_WINDOW_LOG is on, but RSW_STATE_DIR is empty (memory only): no window log is written")
+    app.state.window_log = WindowLog(state_dir if window_log else None)
+    e = d.early_warning
+    app.state.window_log.add_model(f"{d.info.name}@{d.info.created}", {
+        "model_cols": d.model_cols, "threshold": d.threshold,
+        "early_warning": None if e is None else {"rule": str(e["rule"]), "threshold": float(e["threshold"]),
+                                                 "quantile": e.get("quantile")}})
     if not hasattr(app.state, "rag_transport"):
         app.state.rag_transport = None  # httpx transport override (tests route the push to an in-process mock)
     if os.environ.get("RSW_RAG_SENSOR_URL"):  # the D-6 per-minute push was removed (history.md 37)
@@ -1616,6 +1694,10 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
     last_trace = g.trace[-1]["window_end"] if g.trace else None
     verdicts = d.judge(g, f, wins, trainlib.anomaly_score(d.model, vecs), vecs, fresh)
     new_minutes = [p for p in g.trace if last_trace is None or p["window_end"] > last_trace]  # D-6: first scored now
+    wl = getattr(request.app.state, "window_log", None)
+    if wl is not None and new_minutes:  # D-9: the trace's new windows, one line each (RSW_WINDOW_LOG=1)
+        wl.write(req.gun_id, new_minutes, f"{d.info.name}@{d.info.created}",
+                 None if d.early_warning is None else float(d.early_warning["threshold"]))
     score, contribs = d.score(vecs[-1])  # the latest window, with feature attributions
     g.last_score = score
     result = build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, rule, vecs[-1])
