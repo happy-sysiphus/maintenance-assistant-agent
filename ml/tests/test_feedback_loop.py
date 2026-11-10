@@ -788,6 +788,48 @@ def test_field_flags_a_threshold_on_the_far_side_of_the_apply_command():
     assert flags(0.5) == {"GATE": False, "Q+": False, "Q-": True, "Q0.975": False}
 
 
+def test_field_judges_q_plus_and_minus_at_the_threshold_the_apply_command_would_make():
+    """`train.py --early-warning-q` recalibrates on the training data, so the field judges that threshold (the lab
+    mean), not its own quantile; GATE keeps the served one and Q0.975 is the field's own quantile by definition."""
+    W, F, thr = _field_table()
+    entry = {"early_warning": {"rule": "model_ng_k1", "threshold": thr, "quantile": 0.975}}
+    own = fe.field_evaluation(W, F, entry, [])
+    out = fe.field_evaluation(W, F, entry, [], {"champion": thr, "Q+": thr + 0.01, "Q-": thr - 0.01})
+    ch = out["challengers"]
+    assert {k: (v["threshold"], v["threshold_basis"]) for k, v in ch.items()} == {
+        "GATE": (thr, "served"), "Q+": (thr + 0.01, "lab_mean"), "Q-": (thr - 0.01, "lab_mean"),
+        "Q0.975": (own["challengers"]["Q0.975"]["threshold"], "field_quantile")}
+    assert ch["Q+"]["threshold"] != own["challengers"]["Q+"]["threshold"]
+    assert not ch["Q+"]["against_apply"] and not ch["Q-"]["against_apply"]
+    fr = fe.build_frame(W, F)
+    for name, t in (("Q+", thr + 0.01), ("Q-", thr - 0.01)):
+        rr = fe.evaluate(fr, fe.condition(fr, "model_ng", t))
+        assert ch[name]["summary"]["fa_per_day"] == rr.fa.sum() / rr.days.sum()
+
+
+def test_field_warns_when_no_lab_gives_the_apply_threshold():
+    W, F, thr = _field_table()
+    entry = {"early_warning": {"rule": "model_ng_k1", "threshold": thr, "quantile": 0.975}}
+    own = fe.field_evaluation(W, F, entry, [])
+    assert own["challengers"]["Q+"]["threshold_basis"] == "field_quantile" and fe.FIELD_QUANTILE_KO in own["warnings"]
+    given = fe.field_evaluation(W, F, entry, [], {"Q+": thr + 0.01, "Q-": thr - 0.01})
+    assert fe.FIELD_QUANTILE_KO not in given["warnings"]
+
+
+def test_field_flags_a_lab_mean_on_the_far_side_of_the_served_threshold():
+    """A lab cache that no longer matches the served bundle can put the estimate on the wrong side: not evidence."""
+    W, F, thr = _field_table()
+    entry = {"early_warning": {"rule": "model_ng_k1", "threshold": thr, "quantile": 0.975}}
+    ch = fe.field_evaluation(W, F, entry, [], {"Q+": thr - 0.01, "Q-": thr + 0.01})["challengers"]
+    assert ch["Q+"]["against_apply"] and ch["Q-"]["against_apply"]
+
+
+def test_lab_mean_thresholds():
+    lab = {"thresholds": {"r1": {"champion": 0.94, "Q+": 0.95}, "r2": {"champion": 0.96, "Q+": 0.97}}}
+    assert fe.lab_mean_thresholds(lab) == pytest.approx({"champion": 0.95, "Q+": 0.96})
+    assert fe.lab_mean_thresholds(None) == {}
+
+
 def test_challenger_entry_applies_the_direction_flag_and_shows_thresholds():
     ch = next(c for c in fe.CHALLENGERS if c.name == "Q+")
     lab = {"challengers": {"Q+": {"verdict": "pass"}},
@@ -889,6 +931,32 @@ def test_report_shows_thresholds_recall_change_and_review_reason(tmp_path):
     assert "적중 변화" in md and "임계값: 지금 0.999 · 현장 " in md
     assert "현장 임계값은 지금보다 낮은데 적용 명령은 임계값을 올린다" in md
     assert "- g5 E02: 검토 필요 (미확인 케이스 1건)" in md
+
+
+def test_report_judges_the_field_at_the_lab_mean_thresholds(tmp_path, monkeypatch):
+    st, hist = _synthetic_state(tmp_path)
+    lab_dir = tmp_path / "lab"
+    lab_dir.mkdir()
+    (lab_dir / "scores_cv_x.parquet").write_bytes(b"")
+    meta = tmp_path / "meta.csv"
+    meta.write_text("unused", encoding="utf-8")
+    with open(os.path.join(st, "windows", "models.json"), encoding="utf-8") as fh:
+        thr = json.load(fh)["m@1"]["early_warning"]["threshold"]
+    lab = {"runs": ["r1", "r2"], "champion": None, "reference": None,
+           "challengers": {c.name: {"verdict": "na"} for c in fe.CHALLENGERS},
+           "thresholds": {"r1": {"champion": thr, "Q+": thr + 0.005, "Q-": thr - 0.02},
+                          "r2": {"champion": thr, "Q+": thr + 0.015, "Q-": thr - 0.04}}}
+    monkeypatch.setattr(fe, "lab_evaluation", lambda runs: lab)
+    assert fl.main(["--state", st, "--history", hist, "--lab", str(lab_dir), "--lab-meta", str(meta),
+                    "--out", str(tmp_path / "out"), "--tag", "t"]) == 0
+    rep = _report(tmp_path, "t")
+    qp = next(c for c in rep["early_warning"]["challengers"] if c["name"] == "Q+")
+    assert qp["field"]["threshold"] == pytest.approx(thr + 0.01) and qp["field"]["threshold_basis"] == "lab_mean"
+    assert qp["thresholds"]["lab_mean"] == pytest.approx(thr + 0.01)
+    assert rep["early_warning"]["confirmed_only"]["challengers"]["Q+"] == qp["field"]["summary"]  # every failure resolved
+    assert fe.FIELD_QUANTILE_KO not in rep["warnings"]
+    md = (tmp_path / "out" / "t" / "report.md").read_text(encoding="utf-8")
+    assert f"임계값: 지금 {thr:.3f} · 현장 평가 {thr + 0.01:.3f}(실험실 평균, 적용 명령이 만들 값의 추정)" in md
 
 
 CLOSED_ONLY = ("닫힌 케이스만 읽음(--history · --api): 열린 케이스가 있어도 프로필 제안이 막히지 않고 critical 미확인 수에도 "

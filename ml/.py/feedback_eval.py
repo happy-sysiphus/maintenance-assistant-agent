@@ -41,6 +41,7 @@ OUTBOX_RETENTION_DAYS = 30
 CLASSES = ("E01", "E02", "E03", "E04")
 REASONS = ("설비 정지 · 전원 꺼짐", "정상 작업 중 변동", "센서 · 신호 문제", "기타")
 REASON_NONE = "사유 없음"
+FIELD_QUANTILE_KO = "실험실 캐시가 없어(--lab 없음) 현장 Q+ · Q−는 현장 정상 창의 분위수로 평가함. 적용 명령이 만들 임계값이 아니므로 참고만 할 것"
 
 # the "출처" column of spec 7.8, per constant (the report's criteria)
 CONSTANT_SOURCES = {
@@ -592,10 +593,17 @@ def lab_evaluation(runs) -> dict:
             "thresholds": thresholds}
 
 
+def lab_mean_thresholds(lab: dict | None) -> dict[str, float]:
+    """Each rule's threshold averaged over the lab runs: the estimate of what retraining at its quantile makes (7.2)."""
+    runs = list(((lab or {}).get("thresholds") or {}).values())
+    return {k: float(np.mean([t[k] for t in runs])) for k in (runs[0] if runs else ())}
+
+
 def field_evaluation(windows: pd.DataFrame, failures: pd.DataFrame, model_entry: dict | None,
-                     links: list[EwLink]) -> dict | None:
+                     links: list[EwLink], apply_thresholds: dict[str, float] | None = None) -> dict | None:
     """The field (the window log of one model, judged failures, human links): the served decision, the B-20 reference
-    point (7.1) and the challengers with field thresholds; every rule judged with the same acted-on runs."""
+    point (7.1) and the challengers, every rule judged with the same acted-on runs. Q+ / Q- are judged at
+    apply_thresholds (what their apply command would make, 7.2); without it, at the field's own quantile, with a warning."""
     if windows is None or not len(windows):
         return None
     notes: list[str] = []
@@ -628,15 +636,24 @@ def field_evaluation(windows: pd.DataFrame, failures: pd.DataFrame, model_entry:
     if np.isfinite(thr_r):
         ev_r = pool([evaluate(fr, condition(fr, "model_ng", thr_r), acted)], fr.fail_gun, n_guns)
         ref = summary(ev_r)
+    apply_thr = apply_thresholds or {}
+    if not apply_thr:
+        notes.append(FIELD_QUANTILE_KO)
     challengers, empty = {}, []
     for ch in CHALLENGERS:
-        thr = float(thr_c) if ch.quantile is None else quantile_threshold(fr, ch.quantile)
+        if ch.quantile is None:
+            thr, thr_basis = float(thr_c), "served"
+        elif ch.name in apply_thr:
+            thr, thr_basis = apply_thr[ch.name], "lab_mean"
+        else:
+            thr, thr_basis = quantile_threshold(fr, ch.quantile), "field_quantile"
         if ev_r is None or not np.isfinite(thr):
             challengers[ch.name] = {"verdict": "na"}
             empty.append(ch.name)
             continue
         ev = pool([evaluate(fr, condition(fr, ch.kind, thr), acted)], fr.fail_gun, n_guns)
         res = _challenger_result(ev, ev_c, ev_r, champ, ref, thr, field=True)
+        res["threshold_basis"] = thr_basis
         # the apply command retrains at this quantile: it moves the threshold up (Q+) or down (Q-) from the served one
         res["against_apply"] = bool(ch.lab and ch.quantile is not None and ch.quantile != served_q
                                     and (thr - float(thr_c)) * (ch.quantile - served_q) < 0)

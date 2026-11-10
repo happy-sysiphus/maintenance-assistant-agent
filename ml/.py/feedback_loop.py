@@ -335,11 +335,10 @@ def challenger_entry(ch: fe.Challenger, lab: dict | None, field: dict | None) ->
     field_r = field["challengers"][ch.name] if field else None
     lab_v, field_v = (lab_r or {}).get("verdict", "na"), (field_r or {}).get("verdict", "na")
     code, ko = fe.combine(lab_v, field_v, bool((field_r or {}).get("against_apply")))
-    per_run = [t[ch.name] for t in ((lab or {}).get("thresholds") or {}).values() if ch.name in t]
     return {"name": ch.name, "reason": ch.reason, "apply_ko": ch.apply_ko, "lab": lab_r, "field": field_r,
             "lab_verdict": lab_v, "field_verdict": field_v, "verdict": code, "verdict_ko": ko,
             "thresholds": {"served": (field or {}).get("champion_threshold"), "field": (field_r or {}).get("threshold"),
-                           "lab_mean": float(np.mean(per_run)) if per_run else None}}
+                           "lab_mean": fe.lab_mean_thresholds(lab).get(ch.name)}}
 
 
 def build_report(args: argparse.Namespace, now: datetime) -> dict:
@@ -361,8 +360,9 @@ def build_report(args: argparse.Namespace, now: datetime) -> dict:
     lab = fe.lab_evaluation(iter_lab(args.lab, args.lab_meta)) if args.lab else None
     model = str(windows["model"].iloc[0]) if len(windows) else None
     entry = models.get(model) if model else None
-    field = fe.field_evaluation(windows, failures[failures["status"] != "rejected"], entry, links)
-    confirmed = fe.field_evaluation(windows, failures[failures["status"] == "confirmed"], entry, links)
+    apply_thr = fe.lab_mean_thresholds(lab)
+    field = fe.field_evaluation(windows, failures[failures["status"] != "rejected"], entry, links, apply_thr)
+    confirmed = fe.field_evaluation(windows, failures[failures["status"] == "confirmed"], entry, links, apply_thr)
     if field is None:
         notes.append("창 기록 없음: 조기 경보 현장 평가는 해당 없음")
     else:
@@ -449,6 +449,8 @@ def _recall_change(d: Any) -> str:
     return f"{d['recall_change']:+.3f} {_ci(d['recall_change_ci'])}"
 
 
+FIELD_BASIS_KO = {"served": "지금 임계값", "lab_mean": "실험실 평균, 적용 명령이 만들 값의 추정",
+                  "field_quantile": "현장 분위수, 적용 명령이 만들 값 아님"}
 EW_TABLE = ("| 규칙 | 출처 | 오알람/건·일 | 적중 | 우연 | 초과분 [95% CI] | 적중 변화(지금 규칙 대비) [95% CI] "
             "| D(지금 규칙) [95% CI] | D(기준점) [95% CI] | 판정 |", "|---|---|---|---|---|---|---|---|---|---|")
 
@@ -522,9 +524,10 @@ def render_md(rep: dict) -> str:
                             fe.VERDICT_KO[v]))
     out.append("")
     for c in ew["challengers"]:
-        th = c["thresholds"]
-        shown = "" if th["field"] is None else f". 임계값: 지금 {_f3(th['served'])} · 현장 {_f3(th['field'])}"
-        if shown and th["lab_mean"] is not None:
+        th, basis = c["thresholds"], (c["field"] or {}).get("threshold_basis")
+        shown = "" if th["field"] is None else (f". 임계값: 지금 {_f3(th['served'])} · 현장 평가 {_f3(th['field'])}"
+                                                f"({FIELD_BASIS_KO[basis]})")
+        if shown and th["lab_mean"] is not None and basis != "lab_mean":
             shown += f" · 실험실 평균 {_f3(th['lab_mean'])}"
         out.append(f"- **{c['name']}**: {c['verdict_ko']} (실험실 {fe.VERDICT_KO[c['lab_verdict']]}, 현장 "
                    f"{fe.VERDICT_KO[c['field_verdict']]}). 적용 방법: {c['apply_ko']}{shown}")
