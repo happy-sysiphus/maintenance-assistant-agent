@@ -1,0 +1,653 @@
+{
+ "iforest_base46": {
+  "model": "iforest",
+  "n_model_cols": 46,
+  "dropped": [
+   "c19"
+  ],
+  "test_auroc": 0.645046263388549,
+  "test_auroc_pre_rule": 0.6185533092928261,
+  "test_auroc_gun_mean": 0.6357889186359665,
+  "test_auprc": 0.011043402190213845,
+  "test_alarm_rate_normal": 0.003957110033188665,
+  "test_recall_pre_failure": 0.03112033195020747,
+  "test_per_class_auroc": {
+   "E01": 0.3702926326617728,
+   "E02": 0.8935161183117315,
+   "E03": 0.7032160079221562,
+   "E04": 0.6389213552205524
+  },
+  "val_auroc": 0.6619736203474877,
+  "val_auroc_pre_rule": 0.6226325354372144,
+  "cv_auroc_mean": 0.6393283868559752,
+  "cv_auroc_sd": 0.04334582827868034,
+  "cv_auroc_pre_rule_mean": 0.5943387143025769,
+  "cv_auroc_pre_rule_sd": 0.04481670836054369,
+  "cv_auroc_gun_mean": 0.6644056258425508,
+  "test_early_warning": {
+   "rule": "model_ng_k1",
+   "threshold": 0.5083010792732239,
+   "events": 8,
+   "recall": 0.125,
+   "chance": 0.3125,
+   "excess": -0.1875,
+   "excess_ci": [
+    -0.5208333333333334,
+    0.22916666666666666
+   ],
+   "false_alarms_per_gun_day": 10.89041095890411,
+   "handoff_onsets_per_gun_day": 6.052303860523038,
+   "per_file": {
+    "test_0": {
+     "hit": 0.0,
+     "chance": 0.8333333333333334,
+     "false_alarms": 232,
+     "handoff_onsets": 86,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.028974971440440336
+    },
+    "test_1": {
+     "hit": 0.0,
+     "chance": 0.5,
+     "false_alarms": 146,
+     "handoff_onsets": 74,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.016254270628429445
+    },
+    "test_2": {
+     "hit": 1.0,
+     "chance": 0.0,
+     "false_alarms": 12,
+     "handoff_onsets": 11,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.0013458950201884253
+    },
+    "test_3": {
+     "hit": 0.0,
+     "chance": 0.16666666666666666,
+     "false_alarms": 24,
+     "handoff_onsets": 23,
+     "days": 6.709722222222222,
+     "active_share_normal": 0.002483957772717864
+    },
+    "test_4": {
+     "hit": 0.0,
+     "chance": 0.0,
+     "false_alarms": 7,
+     "handoff_onsets": 6,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.0009317734755150636
+    },
+    "test_5": {
+     "hit": 0.0,
+     "chance": 0.0,
+     "false_alarms": 2,
+     "handoff_onsets": 2,
+     "days": 6.6194444444444445,
+     "active_share_normal": 0.000419639110365086
+    },
+    "test_6": {
+     "hit": 0.0,
+     "chance": 0.6666666666666666,
+     "false_alarms": 81,
+     "handoff_onsets": 66,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.009628325913655658
+    },
+    "test_7": {
+     "hit": 0.0,
+     "chance": 0.3333333333333333,
+     "false_alarms": 79,
+     "handoff_onsets": 56,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.009450617925018175
+    }
+   }
+  },
+  "threshold": 0.5232246901075158
+ },
+ "iforest_no_time44": {
+  "model": "iforest",
+  "n_model_cols": 42,
+  "dropped": [
+   "c19",
+   "hour_sin",
+   "hour_cos"
+  ],
+  "test_auroc": 0.6378901760281017,
+  "test_auroc_pre_rule": 0.6120247798059739,
+  "test_auroc_gun_mean": 0.6190402873391113,
+  "test_auprc": 0.01116679817745057,
+  "test_alarm_rate_normal": 0.003459280061271381,
+  "test_recall_pre_failure": 0.026970954356846474,
+  "test_per_class_auroc": {
+   "E01": 0.3918834105429633,
+   "E02": 0.876881023595879,
+   "E03": 0.7661388099543615,
+   "E04": 0.5825074407073088
+  },
+  "val_auroc": 0.6750429853893948,
+  "val_auroc_pre_rule": 0.6376572569454679,
+  "cv_auroc_mean": 0.6459165374491987,
+  "cv_auroc_sd": 0.05125619154752995,
+  "cv_auroc_pre_rule_mean": 0.602738526278014,
+  "cv_auroc_pre_rule_sd": 0.05365556332122985,
+  "cv_auroc_gun_mean": 0.6675140880741057,
+  "test_early_warning": {
+   "rule": "model_ng_k1",
+   "threshold": 0.5060003399848938,
+   "events": 8,
+   "recall": 0.125,
+   "chance": 0.27083333333333337,
+   "excess": -0.14583333333333337,
+   "excess_ci": [
+    -0.47916666666666663,
+    0.25
+   ],
+   "false_alarms_per_gun_day": 9.844333748443336,
+   "handoff_onsets_per_gun_day": 5.697384806973847,
+   "per_file": {
+    "test_0": {
+     "hit": 0.0,
+     "chance": 0.8333333333333334,
+     "false_alarms": 228,
+     "handoff_onsets": 86,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.028040294942361616
+    },
+    "test_1": {
+     "hit": 0.0,
+     "chance": 0.5,
+     "false_alarms": 135,
+     "handoff_onsets": 74,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.01501190599440936
+    },
+    "test_2": {
+     "hit": 1.0,
+     "chance": 0.0,
+     "false_alarms": 11,
+     "handoff_onsets": 11,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.0011388342478517446
+    },
+    "test_3": {
+     "hit": 0.0,
+     "chance": 0.16666666666666666,
+     "false_alarms": 23,
+     "handoff_onsets": 22,
+     "days": 6.709722222222222,
+     "active_share_normal": 0.0023804595321879527
+    },
+    "test_4": {
+     "hit": 0.0,
+     "chance": 0.0,
+     "false_alarms": 7,
+     "handoff_onsets": 6,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.0009317734755150636
+    },
+    "test_5": {
+     "hit": 0.0,
+     "chance": 0.0,
+     "false_alarms": 2,
+     "handoff_onsets": 2,
+     "days": 6.6194444444444445,
+     "active_share_normal": 0.000419639110365086
+    },
+    "test_6": {
+     "hit": 0.0,
+     "chance": 0.5,
+     "false_alarms": 68,
+     "handoff_onsets": 60,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.007040066259447148
+    },
+    "test_7": {
+     "hit": 0.0,
+     "chance": 0.16666666666666666,
+     "false_alarms": 53,
+     "handoff_onsets": 44,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.006646588430782013
+    }
+   }
+  },
+  "threshold": 0.5183119224535445
+ },
+ "iforest_no_err44": {
+  "model": "iforest",
+  "n_model_cols": 44,
+  "dropped": [
+   "c19",
+   "error_share_10min"
+  ],
+  "test_auroc": 0.6067712609256174,
+  "test_auroc_pre_rule": 0.5942283316313506,
+  "test_auroc_gun_mean": 0.597792485140002,
+  "test_auprc": 0.008318700483394455,
+  "test_alarm_rate_normal": 0.003701812611692622,
+  "test_recall_pre_failure": 0.016597510373443983,
+  "test_per_class_auroc": {
+   "E01": 0.35450635404930686,
+   "E02": 0.8456580259222333,
+   "E03": 0.6804258158959786,
+   "E04": 0.5923920525360897
+  },
+  "val_auroc": 0.5852870580594975,
+  "val_auroc_pre_rule": 0.5733700135414911,
+  "cv_auroc_mean": 0.574168467770046,
+  "cv_auroc_sd": 0.04496910724038296,
+  "cv_auroc_pre_rule_mean": 0.5557311364146416,
+  "cv_auroc_pre_rule_sd": 0.04380910502818801,
+  "cv_auroc_gun_mean": 0.5914425719425657,
+  "test_early_warning": {
+   "rule": "model_ng_k1",
+   "threshold": 0.5123228430747986,
+   "events": 8,
+   "recall": 0.25,
+   "chance": 0.3541666666666667,
+   "excess": -0.10416666666666669,
+   "excess_ci": [
+    -0.4375,
+    0.29166666666666663
+   ],
+   "false_alarms_per_gun_day": 12.048567870485677,
+   "handoff_onsets_per_gun_day": 6.313823163138231,
+   "per_file": {
+    "test_0": {
+     "hit": 0.0,
+     "chance": 0.8333333333333334,
+     "false_alarms": 233,
+     "handoff_onsets": 87,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.028974971440440336
+    },
+    "test_1": {
+     "hit": 0.0,
+     "chance": 0.6666666666666666,
+     "false_alarms": 181,
+     "handoff_onsets": 85,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.02008489491665804
+    },
+    "test_2": {
+     "hit": 1.0,
+     "chance": 0.0,
+     "false_alarms": 13,
+     "handoff_onsets": 11,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.0014494254063567658
+    },
+    "test_3": {
+     "hit": 0.0,
+     "chance": 0.16666666666666666,
+     "false_alarms": 24,
+     "handoff_onsets": 22,
+     "days": 6.709722222222222,
+     "active_share_normal": 0.002483957772717864
+    },
+    "test_4": {
+     "hit": 0.0,
+     "chance": 0.0,
+     "false_alarms": 6,
+     "handoff_onsets": 6,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.0008282430893467233
+    },
+    "test_5": {
+     "hit": 0.0,
+     "chance": 0.0,
+     "false_alarms": 2,
+     "handoff_onsets": 2,
+     "days": 6.6194444444444445,
+     "active_share_normal": 0.000419639110365086
+    },
+    "test_6": {
+     "hit": 1.0,
+     "chance": 0.8333333333333334,
+     "false_alarms": 102,
+     "handoff_onsets": 66,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.011388342478517445
+    },
+    "test_7": {
+     "hit": 0.0,
+     "chance": 0.3333333333333333,
+     "false_alarms": 84,
+     "handoff_onsets": 59,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.009969882646173019
+    }
+   }
+  },
+  "threshold": 0.5244337130736967
+ },
+ "iforest_no_time_err40": {
+  "model": "iforest",
+  "n_model_cols": 40,
+  "dropped": [
+   "c19",
+   "hour_sin",
+   "hour_cos",
+   "error_share_10min"
+  ],
+  "test_auroc": 0.6190687973584662,
+  "test_auroc_pre_rule": 0.6078037879754914,
+  "test_auroc_gun_mean": 0.5888731022846228,
+  "test_auprc": 0.008932772239863097,
+  "test_alarm_rate_normal": 0.004059229001787082,
+  "test_recall_pre_failure": 0.01867219917012448,
+  "test_per_class_auroc": {
+   "E01": 0.3610828038292244,
+   "E02": 0.8736191425722831,
+   "E03": 0.771386807887712,
+   "E04": 0.551682795474609
+  },
+  "val_auroc": 0.5738281672828003,
+  "val_auroc_pre_rule": 0.5595922971562869,
+  "cv_auroc_mean": 0.5687406034009348,
+  "cv_auroc_sd": 0.03762920052222331,
+  "cv_auroc_pre_rule_mean": 0.5482078241640556,
+  "cv_auroc_pre_rule_sd": 0.03633042094614727,
+  "cv_auroc_gun_mean": 0.5938630987547754,
+  "test_early_warning": {
+   "rule": "model_ng_k1",
+   "threshold": 0.5113404989242554,
+   "events": 8,
+   "recall": 0.125,
+   "chance": 0.33333333333333337,
+   "excess": -0.20833333333333337,
+   "excess_ci": [
+    -0.5625,
+    0.20833333333333334
+   ],
+   "false_alarms_per_gun_day": 12.029887920298878,
+   "handoff_onsets_per_gun_day": 6.519302615193025,
+   "per_file": {
+    "test_0": {
+     "hit": 0.0,
+     "chance": 0.8333333333333334,
+     "false_alarms": 234,
+     "handoff_onsets": 87,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.028871118496209366
+    },
+    "test_1": {
+     "hit": 0.0,
+     "chance": 0.6666666666666666,
+     "false_alarms": 182,
+     "handoff_onsets": 90,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.02039548607516306
+    },
+    "test_2": {
+     "hit": 1.0,
+     "chance": 0.0,
+     "false_alarms": 14,
+     "handoff_onsets": 12,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.001760016564861787
+    },
+    "test_3": {
+     "hit": 0.0,
+     "chance": 0.16666666666666666,
+     "false_alarms": 26,
+     "handoff_onsets": 23,
+     "days": 6.709722222222222,
+     "active_share_normal": 0.0030014489753674187
+    },
+    "test_4": {
+     "hit": 0.0,
+     "chance": 0.0,
+     "false_alarms": 7,
+     "handoff_onsets": 7,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.001035303861683404
+    },
+    "test_5": {
+     "hit": 0.0,
+     "chance": 0.0,
+     "false_alarms": 4,
+     "handoff_onsets": 2,
+     "days": 6.6194444444444445,
+     "active_share_normal": 0.000629458665547629
+    },
+    "test_6": {
+     "hit": 0.0,
+     "chance": 0.6666666666666666,
+     "false_alarms": 86,
+     "handoff_onsets": 66,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.010249508230665701
+    },
+    "test_7": {
+     "hit": 0.0,
+     "chance": 0.3333333333333333,
+     "false_alarms": 91,
+     "handoff_onsets": 62,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.011008412088482708
+    }
+   }
+  },
+  "threshold": 0.5254312466593923
+ },
+ "ensemble_base46": {
+  "model": "ensemble",
+  "n_model_cols": 46,
+  "dropped": [
+   "c19"
+  ],
+  "test_auroc": 0.7128050459906122,
+  "test_auroc_pre_rule": 0.671480214449834,
+  "test_auroc_gun_mean": 0.703277560175144,
+  "test_auprc": 0.048465593542840586,
+  "test_alarm_rate_normal": 0.004774061781976002,
+  "test_recall_pre_failure": 0.06846473029045644,
+  "test_per_class_auroc": {
+   "E01": 0.5374498778874885,
+   "E02": 0.913118976404121,
+   "E03": 0.8599392921725653,
+   "E04": 0.622386102911052
+  },
+  "val_auroc": 0.7671244743338612,
+  "val_auroc_pre_rule": 0.7287028348224833,
+  "cv_auroc_mean": 0.673017022543732,
+  "cv_auroc_sd": 0.015999761591721583,
+  "cv_auroc_pre_rule_mean": 0.6267606303216573,
+  "cv_auroc_pre_rule_sd": 0.009459142790997169,
+  "cv_auroc_gun_mean": 0.6837125410869717,
+  "test_early_warning": {
+   "rule": "model_ng_k1",
+   "threshold": 0.9448724985122681,
+   "events": 8,
+   "recall": 0.5,
+   "chance": 0.22916666666666666,
+   "excess": 0.27083333333333337,
+   "excess_ci": [
+    -0.22916666666666663,
+    0.7291666666666667
+   ],
+   "false_alarms_per_gun_day": 8.816936488169365,
+   "handoff_onsets_per_gun_day": 4.669987546699875,
+   "per_file": {
+    "test_0": {
+     "hit": 0.0,
+     "chance": 0.6666666666666666,
+     "false_alarms": 99,
+     "handoff_onsets": 50,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.03873714819815142
+    },
+    "test_1": {
+     "hit": 0.0,
+     "chance": 0.5,
+     "false_alarms": 138,
+     "handoff_onsets": 62,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.016461331400766124
+    },
+    "test_2": {
+     "hit": 1.0,
+     "chance": 0.0,
+     "false_alarms": 18,
+     "handoff_onsets": 12,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.002381198881871829
+    },
+    "test_3": {
+     "hit": 1.0,
+     "chance": 0.16666666666666666,
+     "false_alarms": 30,
+     "handoff_onsets": 21,
+     "days": 6.709722222222222,
+     "active_share_normal": 0.004760919064375905
+    },
+    "test_4": {
+     "hit": 1.0,
+     "chance": 0.0,
+     "false_alarms": 29,
+     "handoff_onsets": 18,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.005797701625427063
+    },
+    "test_5": {
+     "hit": 1.0,
+     "chance": 0.0,
+     "false_alarms": 14,
+     "handoff_onsets": 4,
+     "days": 6.6194444444444445,
+     "active_share_normal": 0.014792278640369283
+    },
+    "test_6": {
+     "hit": 0.0,
+     "chance": 0.3333333333333333,
+     "false_alarms": 68,
+     "handoff_onsets": 43,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.0073506574179521686
+    },
+    "test_7": {
+     "hit": 0.0,
+     "chance": 0.16666666666666666,
+     "false_alarms": 76,
+     "handoff_onsets": 40,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.00893135320386333
+    }
+   }
+  },
+  "threshold": 0.9457995419529389
+ },
+ "ensemble_no_time_err40": {
+  "model": "ensemble",
+  "n_model_cols": 40,
+  "dropped": [
+   "c19",
+   "hour_sin",
+   "hour_cos",
+   "error_share_10min"
+  ],
+  "test_auroc": 0.582433458474974,
+  "test_auroc_pre_rule": 0.5700228331631351,
+  "test_auroc_gun_mean": 0.5539914528837862,
+  "test_auprc": 0.010608216422406856,
+  "test_alarm_rate_normal": 0.004186877712535103,
+  "test_recall_pre_failure": 0.029045643153526972,
+  "test_per_class_auroc": {
+   "E01": 0.3809975962379549,
+   "E02": 0.8859305417082088,
+   "E03": 0.7434846723499526,
+   "E04": 0.49207571334386757
+  },
+  "val_auroc": 0.6391404924226148,
+  "val_auroc_pre_rule": 0.6134601133002318,
+  "cv_auroc_mean": 0.6059592767689097,
+  "cv_auroc_sd": 0.06111824721282275,
+  "cv_auroc_pre_rule_mean": 0.5787346535762254,
+  "cv_auroc_pre_rule_sd": 0.0604378271345521,
+  "cv_auroc_gun_mean": 0.6132225555203848,
+  "test_early_warning": {
+   "rule": "model_ng_k1",
+   "threshold": 0.9333089590072632,
+   "events": 8,
+   "recall": 0.625,
+   "chance": 0.43749999999999994,
+   "excess": 0.18750000000000006,
+   "excess_ci": [
+    -0.22968750000000004,
+    0.5833333333333333
+   ],
+   "false_alarms_per_gun_day": 19.632627646326274,
+   "handoff_onsets_per_gun_day": 8.98505603985056,
+   "per_file": {
+    "test_0": {
+     "hit": 0.0,
+     "chance": 0.6666666666666666,
+     "false_alarms": 139,
+     "handoff_onsets": 68,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.017551147575033753
+    },
+    "test_1": {
+     "hit": 1.0,
+     "chance": 0.5,
+     "false_alarms": 220,
+     "handoff_onsets": 84,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.02526141422507506
+    },
+    "test_2": {
+     "hit": 1.0,
+     "chance": 0.3333333333333333,
+     "false_alarms": 49,
+     "handoff_onsets": 32,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.006522414328605446
+    },
+    "test_3": {
+     "hit": 1.0,
+     "chance": 0.8333333333333334,
+     "false_alarms": 147,
+     "handoff_onsets": 79,
+     "days": 6.709722222222222,
+     "active_share_normal": 0.019975160422272823
+    },
+    "test_4": {
+     "hit": 1.0,
+     "chance": 0.0,
+     "false_alarms": 39,
+     "handoff_onsets": 28,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.004348276219070297
+    },
+    "test_5": {
+     "hit": 0.0,
+     "chance": 0.0,
+     "false_alarms": 11,
+     "handoff_onsets": 2,
+     "days": 6.6194444444444445,
+     "active_share_normal": 0.00209819555182543
+    },
+    "test_6": {
+     "hit": 0.0,
+     "chance": 0.6666666666666666,
+     "false_alarms": 254,
+     "handoff_onsets": 92,
+     "days": 6.707638888888889,
+     "active_share_normal": 0.03199088932601719
+    },
+    "test_7": {
+     "hit": 1.0,
+     "chance": 0.5,
+     "false_alarms": 192,
+     "handoff_onsets": 96,
+     "days": 6.686805555555556,
+     "active_share_normal": 0.02253608889812026
+    }
+   }
+  },
+  "threshold": 0.9301391896420717
+ }
+}
