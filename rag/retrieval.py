@@ -17,6 +17,9 @@ TERMS = {
     "교정": ["calibration"], "호밍": ["homing"], "윤활": ["lubrication"],
     "힘": ["force"], "냉각": ["cooling"], "밀링": ["milling"],
     "드레싱": ["milling"], "영점": ["zero"], "공급": ["supply"],
+    "펌웨어": ["firmware"], "업데이트": ["update"],
+    "제어권": ["master", "control"], "필드버스": ["fieldbus"],
+    "전원": ["power", "voltage"], "공압": ["pneumatic"],
 }
 
 
@@ -62,8 +65,24 @@ def public_evidence(row):
         if matching:
             text = min(matching,key=len)
     return {"id": row["id"], "doc": row["doc"], "page": row["page"],
-            "quote": row.get("quote") or text[:300], "text": text[:1800],
+            "quote": row.get("quote") or text[:300], "text": text,
             "review_needed": bool(row.get("review_needed"))}
+
+
+def evidence_parts(row):
+    """A complete cross-page row remains searchable, with separate page citations."""
+    units = json.loads(row.get("source_json") or "[]")
+    pages = {part["page"] for u in units for part in u.get("source_parts",[])}
+    if len(pages) <= 1 or row.get("quote"):
+        return [public_evidence(row)]
+    result = []
+    for page in sorted(pages):
+        parts = [p for u in units for p in u.get("source_parts",[]) if p["page"] == page]
+        text = "\n".join(p["text"] for p in parts)
+        evidence = public_evidence({**row,"id":f"{row['id']}:p{page}","page":page,"text":text})
+        evidence.update(source_pages=sorted(pages), logical_row_ids=[u.get("row_id") for u in units if u.get("row_id")])
+        result.append(evidence)
+    return result
 
 
 def retrieve(question, error_code=None, history=None, *, use_vectors=True, database=None):
@@ -102,7 +121,8 @@ def retrieve(question, error_code=None, history=None, *, use_vectors=True, datab
             rows = session.run(f"""CALL db.index.fulltext.queryNodes('{TEXT_INDEX}', $search, {{limit:64}})
                 YIELD node,score WHERE node:Rag AND node.searchable=true
                 RETURN node.id AS id,node.doc AS doc,node.page_number AS page,
-                    node.text AS text,node.quote AS quote,node.review_needed AS review_needed,score""",
+                    node.text AS text,node.quote AS quote,node.review_needed AS review_needed,
+                    node.source_json AS source_json,node.section AS section,node.unit_kind AS unit_kind,score""",
                 search=search).data()
             branches["keyword"] = [r["id"] for r in rows]
             by_id.update({r["id"]: r for r in rows})
@@ -112,23 +132,43 @@ def retrieve(question, error_code=None, history=None, *, use_vectors=True, datab
             rows = session.run(f"""CALL db.index.vector.queryNodes('{VECTOR_INDEX}',64,$vector)
                 YIELD node,score WHERE node:Rag AND node.searchable=true AND score>=0.30
                 RETURN node.id AS id,node.doc AS doc,node.page_number AS page,
-                    node.text AS text,node.quote AS quote,node.review_needed AS review_needed,score""",
+                    node.text AS text,node.quote AS quote,node.review_needed AS review_needed,
+                    node.source_json AS source_json,node.section AS section,node.unit_kind AS unit_kind,score""",
                 vector=vector).data()
             branches["vector"] = [r["id"] for r in rows]
             by_id.update({r["id"]: r for r in rows})
-        selected = list(dict.fromkeys(required + fuse_rankings(branches)))
+        ranked = fuse_rankings(branches)
+        # Recover nearby instructions/warnings in the same section, never another error row.
+        seeds = [key for key in ranked[:4] if by_id[key].get("section") and by_id[key].get("unit_kind") != "error_row"]
+        neighbours = []
+        if seeds:
+            nearby = session.run("""UNWIND $ids AS seed
+                MATCH (c:Rag:Chunk {id:seed})
+                CALL (c) {
+                    MATCH (c)-[:NEXT_CHUNK*1..2]-(n:Rag:Chunk)
+                    WHERE n.searchable=true AND n.doc=c.doc AND n.section=c.section
+                      AND n.unit_kind <> 'error_row'
+                    RETURN DISTINCT n ORDER BY abs(n.chunk_index-c.chunk_index),n.id LIMIT 3
+                }
+                RETURN DISTINCT n.id AS id,n.doc AS doc,n.page_number AS page,n.text AS text,
+                    n.quote AS quote,n.review_needed AS review_needed,n.source_json AS source_json""",ids=seeds).data()
+            neighbours = [r["id"] for r in nearby]
+            by_id.update({r["id"]:r for r in nearby})
+        selected = list(dict.fromkeys(required + ranked + neighbours))
         # Keep exact code evidence complete; apply the budget only to supplements.
         evidence, chars = [], 0
         seen = set()
         for key in selected:
-            row = public_evidence(by_id[key])
-            unique = (row["doc"], row["page"], row["text"])
-            if unique in seen:
+            parts = evidence_parts(by_id[key])
+            new_parts = [r for r in parts if (r["doc"],r["page"],r["text"]) not in seen]
+            if not new_parts:
                 continue
-            if key not in required and chars + len(row["text"]) > 18000:
+            size = sum(len(r["text"]) for r in new_parts)
+            if key not in required and chars + size > 18000:
                 continue
-            seen.add(unique)
-            evidence.append(row)
-            chars += len(row["text"])
+            for row in new_parts:
+                seen.add((row["doc"],row["page"],row["text"]))
+                evidence.append(row)
+            chars += size
     return {"evidence": evidence, "situations": [json.loads(r["mapping"]) for r in situations],
             "embedding_tokens": embedding_tokens, "routes": list(branches)}

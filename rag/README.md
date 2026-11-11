@@ -1,6 +1,12 @@
 # RAG 개발 보고 및 실행 안내
 
-2026-10-28 · E 코드 기반 정비 안내 RAG
+2026-11-11 버전의 변경과 검증 결과는 [RAG 변경 보고서](docs/rag-release-20261111.md)에 정리했습니다. 조기 경보 로컬 실행은 [연동 안내](docs/early-warning-integration.md), 화면 작업은 [UI 개발 안내](../ui/docs/10-early-warning-rag-ui.md)를 참고하세요.
+
+2026-11-04 · E 코드 기반 정비 안내 RAG
+
+**이번 개선:** 레이아웃·표 구조 파싱, Claude 답변 생성, 정비 이력 기반 점검 제안을 추가했습니다.
+변경 이유·실측 결과·남은 검토 항목은 [개발 일지](docs/development-log.md)를 확인하세요.
+기존 OpenAI 평가 결과는 `RAGAS/results/`에 보존합니다.
 
 이전 버전과의 차이, 현재 개발 상태, UI 요청 대응 결과, 팀원의 실제 실행 절차를 정리합니다.
 팀원은 전달받은 환경 설정과 공용 Neo4j Aura로 질문할 수 있습니다.
@@ -12,6 +18,7 @@
 3. [UI 문서 요청 대응 현황](#3-ui-문서-요청-대응-현황)
 4. [실제 실행 및 API 테스트 예시](#4-실제-실행-및-api-테스트-예시)
 5. [rag 폴더 외 변경 사항](#5-rag-폴더-외-변경-사항)
+6. [2026-11-04 개선 사항](#6-2026-11-04-개선-사항)
 
 ## 1. 이전 버전과 달라진 점
 
@@ -24,7 +31,7 @@
 | 그래프 | S 상황 노드에서 근거 연결 | Situation 중심 구조 유지, E 코드 네 개로 변경 |
 | 검색 | 상황 ID 기반 그래프 조회 | E 코드 근거 우선 확보 + 키워드·벡터 하이브리드 검색 |
 | 답변 | 마크다운 설명문 중심 | JSON으로 해석·요약·원인·점검·정상 기준·조치 분리 |
-| 점검 ID | 문자열 점검 순서 | E012-K1 같은 고정 ID. 모델은 등록 ID만 선택 |
+| 점검 ID | 문자열 점검 순서 | E012-K1 같은 고정 ID. 코드별 카드는 검토 매핑 순서로 연결 |
 | 대화 문맥 | history 입력 없음 | 선택적 history로 이어 묻기 지원 |
 | DB | 로컬 Neo4j 연결 전제 | 공용 Aura의 KG·임베딩·검색 인덱스 사용 |
 | API | 매핑 파일을 읽어 임시 안내 조립 | 실제 RAG 함수 호출과 한국어 답변 생성 연결 |
@@ -50,7 +57,7 @@ rag_dev2에서는 코드 근거 보존과 검색 순위 결합 아이디어를 �
 ### 완료한 기능
 
 - Aura에 문서 4종·198페이지·Situation 4개 적재 및 연결 확인.
-- 원본 882개와 인용 근거 23개, 총 905개 청크 저장. 본문 검색 대상은 684개이며 이미지 자리표시자는 제외.
+- 원본 942개와 인용 근거 23개, 총 965개 청크 저장. 본문 검색 대상은 732개이며 이미지 자리표시자는 제외.
 - E 코드 정의와 연결 근거를 우선 확보하고 키워드·벡터 검색을 보충하는 하이브리드 검색.
 - 코드가 있는 질문과 없는 질문을 같은 JSON 형식으로 처리.
 - 해석·요약·원인·점검·정상 기준·조치와 문서 인용 분리.
@@ -62,11 +69,12 @@ rag_dev2에서는 코드 근거 보존과 검색 순위 결합 아이디어를 �
 
 ### 검증 결과와 응답 확인
 
-오프라인 회귀 테스트 **22개를 통과**했습니다.
+오프라인 회귀 테스트 **98개를 통과**했습니다. 실제 PDF 머리글·행 경계 검사도 포함합니다.
+대표 20쪽의 원문 대조 검사와 전체 198쪽 처리 검사를 통과했습니다. 원본 확인이 필요한 표 블록 18개는 별도로 표시합니다.
 실제 Aura 조회, E 코드 네 개의 답변 생성, 일반 질문·이어 묻기, 캐시 및 API 연결도 확인했습니다.
 사용 중 발견된 새 점검 ID 생성 문제와 Swagger 입력칸 누락은 수정하고 회귀 테스트에 포함했습니다.
 
-캐시 없는 대표 응답은 약 4~12초였고, 초기 캐시 적중 측정은 약 1초였습니다.
+이번 50문항의 캐시 없는 응답은 평균 **10.555초**, p95 **14.763초**였습니다. 캐시 적중은 외부 모델을 호출하지 않습니다.
 네 코드의 실제 응답 JSON은 [docs/](docs/)에 있습니다.
 
 | 필드 | 확인할 내용 |
@@ -80,7 +88,8 @@ rag_dev2에서는 코드 근거 보존과 검색 순위 결합 아이디어를 �
 | evidence | doc·page·quote·text 등 조회 근거 |
 | review_notes | 적용 범위·시각 정보 확인 안내 |
 | seconds / usage | 전체 시간과 토큰 사용량 |
-| cache_hit / api_calls_this_run | 캐시 재사용 여부와 이번 OpenAI 호출 수 |
+| cache_hit / api_calls_this_run | 캐시 재사용 여부와 이번 외부 API 호출 수 |
+| maintenance_advice | 관련 정비 이력 기반 제안. 없으면 null. PDF 근거와 구분한 사례 ID 포함 |
 | validation_errors | 검증 실패의 code·message·path |
 
 근거가 없으면 actions는 빈 배열, criterion은 null로 반환합니다.
@@ -91,12 +100,9 @@ rag_dev2에서는 코드 근거 보존과 검색 순위 결합 아이디어를 �
 
 ### UI에 남은 작업
 
-RAG와 API까지 연결했으며, 실제 사용자용 UI 화면·mock은 새 계약에 맞춰 수정하지 않았습니다.
-
-- S 기반 후보 전환을 E 코드당 안내 하나로 변경.
-- PDF 식별자·문서 이름표를 네 종류로 확장.
-- 구조화된 설명·조치와 빈 배열·null 표시 반영.
-- 첫 생성이 10초를 넘을 수 있으므로 로딩 표시 반영.
+현재 main의 UI는 E 코드·문서 네 종류·원인 카드 표시를 지원합니다. 이번 작업에서는 ui/src를 수정하지 않았습니다.
+새 maintenance_advice는 챗봇 본문과 API에서 확인하며, 케이스 화면에 별도 정비 제안 영역을 둘지는 UI 후속 작업입니다.
+첫 생성이 10초를 넘을 수 있으므로 실제 화면의 로딩 상태도 확인해야 합니다.
 
 Swagger에서 답변이 나오는 것은 테스트 페이지 → API → RAG 연결 확인입니다.
 ML 감지부터 사용자용 UI 화면까지의 전체 흐름을 모두 검증했다는 의미는 아닙니다.
@@ -182,15 +188,16 @@ maintenance-assistant-agent/
 
 | 전달받는 설정 | 내용 |
 |---|---|
-| OPENAI_API_KEY | 질문 임베딩·한국어 답변용 키 |
+| OPENAI_API_KEY | 질문·문서 임베딩용 키 |
+| ANTHROPIC_API_KEY | Claude 한국어 답변 생성용 키 |
 | NEO4J_URI | Aura 접속 주소 |
 | NEO4J_USERNAME / NEO4J_PASSWORD | DB 접속 사용자명·비밀번호 |
 | NEO4J_DATABASE | 실제 DB 이름 |
-| OPENAI_MODEL | gpt-5.4-mini |
+| ANTHROPIC_MODEL | claude-sonnet-5-5 |
 | OPENAI_EMBEDDING_MODEL | text-embedding-3-small |
 | RAG_SYSTEM_TRUST | OS 인증서 사용 여부. 전달받은 설정을 기준으로 사용 |
 
-OpenAI 키만으로는 충분하지 않으며 Aura 설정도 함께 필요합니다.
+Claude 키·OpenAI 키·Aura 설정이 모두 필요합니다. 서비스 답변 생성과 임베딩은 서로 다른 모델을 사용해도 됩니다.
 .env와 .env.txt는 비밀값이 들어 있는 로컬 파일이므로 커밋하지 않습니다.
 이 이름들은 Git 제외 규칙에 포함돼 있습니다.
 
@@ -211,7 +218,7 @@ $repoRoot = (Get-Location).Path
 $ragPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
 ```
 
-**OpenAI 호출 없이 근거만 조회:**
+**외부 모델 호출 없이 근거만 조회:**
 
 ```powershell
 & $ragPython -B -m rag ask --error-code E029 --question "점검 근거를 보여주세요." --no-llm --json
@@ -246,17 +253,18 @@ status가 retrieval_only이고 evidence에 문서·페이지가 있으면 조회
 정상 생성은 status=ok입니다. answer·sections·causes·evidence를 확인합니다.
 needs_citation_review라면 validation_errors, error라면 error 필드와 환경 설정·연결을 확인합니다.
 
-실제 생성에는 OpenAI 호출 비용이 발생합니다.
---no-llm은 OpenAI를 호출하지 않고, --cache를 추가하면 동일한 질문·문맥의 유효한 답변을 재사용합니다.
-cache_hit=true, api_calls_this_run=0이면 이번에는 OpenAI를 호출하지 않은 것입니다.
+실제 생성에는 Claude 답변과 OpenAI 질문 임베딩 비용이 발생합니다.
+--no-llm은 두 API를 모두 호출하지 않습니다. --cache는 문서·모델·질문·대화·정비 이력이 같은 유효한 답변을 재사용합니다.
+cache_hit=true, api_calls_this_run=0이면 이번에는 외부 모델을 호출하지 않은 것입니다.
 기본 실행은 답변 파일을 만들지 않습니다.
 
 **API 잔액 및 평균 호출 비용**
 
-- 현재 잔액: [OpenAI Billing에서 실제 잔액 확인](https://platform.openai.com/settings/organization/billing/overview). API 키를 발급한 계정으로 로그인하고 해당 조직을 선택합니다. README에 잔액 숫자를 저장하지 않으며, 링크를 열어 최신 현황을 확인합니다.(현재 9달러 정도 남음)
+- 실제 잔액: [OpenAI Billing](https://platform.openai.com/settings/organization/billing/overview), [Claude Billing](https://platform.claude.com/settings/billing). README에는 변하는 잔액 숫자를 저장하지 않습니다.
 - 사용 내역: [OpenAI Usage에서 기간별 사용 비용 확인](https://platform.openai.com/usage).
-- 질문 1건당 평균 예상 비용: **약 $0.00446 (약 0.45센트)**. 2026-10-28 최종 검증 질문 5건(E012·E016·E028·E029 및 일반 질문 1건)의 토큰 사용량 기준이며, 질문 임베딩과 답변 생성을 합산했습니다. 애플리케이션 캐시 적중 건은 표본에서 제외했습니다.
-- 계산 단가: 100만 토큰당 [gpt-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) 입력 $0.75·출력 $4.50, [text-embedding-3-small](https://developers.openai.com/api/docs/models/text-embedding-3-small) $0.02 (2026-10-28 확인). 입력 캐시 할인 없이 계산한 추정치이며, 질문·대화 길이·모델·요금 변경에 따라 실제 청구액은 달라집니다. 문서 전체 임베딩 비용은 이 질문당 평균에 포함하지 않습니다.
+- **현재 Claude 버전: 질문 1건 평균 약 $0.02270**, 2026-11-04 캐시 없는 50문항 기준입니다. 질문 임베딩과 답변 생성 비용이며, 문서 임베딩·RAGAS 평가자 비용은 제외합니다.
+- 같은 50문항의 이전 OpenAI 버전은 약 $0.00410/건이었습니다. 이번 전체 개발·연결 검증·평가 기록 추정 비용은 **$2.47302 / 상한 $3**입니다.
+- 계산 단가: 100만 토큰당 [Claude Sonnet 5.5](https://platform.claude.com/docs/en/about-claude/pricing) 입력 $2·출력 $10, [text-embedding-3-small](https://developers.openai.com/api/docs/models/text-embedding-3-small) $0.02. 토큰 사용량 기반 추정치로 실제 청구액·계정 잔액과 다를 수 있습니다. 상세 내역은 [비교 보고서](RAGAS/results-20261104/COMPARISON.md)를 확인하세요.
 
 ### 4.4 API 서버 시작
 
@@ -335,7 +343,7 @@ API를 중지·재실행하고 브라우저 페이지를 새로고침합니다.
 Swagger 또는 UI의 JSON 요청
   → POST /api/assistant/ask
   → RAG answer_question()
-  → Aura 근거 검색 + OpenAI 생성
+  → OpenAI 질문 임베딩 + Aura 근거 검색 + Claude 생성
   → 형식·인용·점검 ID 검증
   → API JSON 응답
 ```
@@ -399,9 +407,8 @@ npm run dev
 ```
 
 브라우저에서 http://localhost:5173 을 엽니다. API 서버도 계속 실행 중이어야 합니다.
-새 E 코드·문서 네 종류·구조화 조치 표시를 화면에 반영하는 작업은 UI 담당 범위로 남아 있습니다.
-현재는 Swagger와 PowerShell로 RAG ↔ API의 실제 동작을 확인하고,
-화면 변경 사항은 [09번 답신](../ui/docs/09-rag-development-reply.md)에 맞춰 반영하면 됩니다.
+기존 UI의 E 코드·문서 네 종류·원인·조치 표시를 유지합니다.
+이번 개선은 카드 순서를 바꾸지 않으며, 정비 이력 제안은 챗봇 답변 본문과 API의 maintenance_advice에서 확인합니다.
 
 ### 4.8 오프라인 회귀 테스트
 
@@ -409,10 +416,11 @@ npm run dev
 
 ```powershell
 Set-Location $repoRoot
-& $ragPython -B -m unittest discover -s rag/tests -v
+& $ragPython -m pip install pytest
+& $ragPython -B -m pytest rag/tests api/tests -q -p no:cacheprovider
 ```
 
-이 테스트는 OpenAI·Neo4j를 모의 처리하므로 외부 모델 호출 비용이 없습니다.
+이 테스트는 Claude·OpenAI·Neo4j를 모의 처리하므로 외부 모델 호출 비용이 없습니다.
 .env와 파싱 결과·백업·캐시 등 로컬 산출물은 Git 제외 경로에서 관리합니다.
 
 ## 5. rag 폴더 외 변경 사항
@@ -431,4 +439,24 @@ RAG를 실제로 호출하기 위한 API 연동 코드와 인수인계 문서를
 | [ui/docs/07-rag-requests-now.md](../ui/docs/07-rag-requests-now.md) | 요청 원문을 유지하고 상단에 09번 개발 답변 링크 추가 |
 | [ui/docs/09-rag-development-reply.md](../ui/docs/09-rag-development-reply.md) (신규) | 07번 요청별 충족 여부·호출 예시·응답 계약·검증 결과·남은 UI 작업 기록 |
 
-UI 폴더의 변경은 위 두 문서이며, **ui/src의 화면 코드와 ML 코드는 수정하지 않았습니다.**
+위 표는 10/28 최초 연동까지의 변경 이력입니다. 11/04 개발 일지에 나온 API의 종료 이력 전달과 기록 보존은 당시 로컬 검증에 사용한 변경입니다. 11/11 게시 범위는 RAG 코드와 새 UI 개발 안내이며, 조기 경보의 API·UI 작업은 [연동 안내](docs/early-warning-integration.md)에 있습니다.
+
+## 6. 2026-11-04 개선 사항
+
+- 파싱은 Docling의 레이아웃·표 구조와 PDF 원본 셀 경계를 대조합니다. 머리글·행·표 ID·페이지·좌표를 보존합니다.
+- 페이지를 넘는 설명은 하나의 검색 단위로 연결하되, 인용 근거는 원래 페이지별로 제공합니다. 그림은 위치만 기록합니다.
+- 회전된 비트 행렬 등 검증되지 않은 시각 관계는 원본 확인 대상으로 남깁니다.
+- 청크 크기는 600·900·1200자의 검색 비교로 정합니다. 비교 방법과 선택 근거는 개발 일지에 기록합니다.
+- 답변은 Claude, 임베딩은 OpenAI입니다. 코드 질문의 원인·점검 카드는 검토된 매핑 순서를 유지합니다.
+- RAG는 호출자가 `maintenance_context`로 넘긴 같은 E 코드의 최근 종료 기록을 최대 5건 사용합니다. 당시 로컬 API 검증에서는 현재 케이스를 제외해 전달했습니다.
+- 반복 실패·점검 결과를 고려한 제안은 maintenance_advice에 분리합니다. 이력으로 매뉴얼 기준·수리 조치를 새로 만들지 않습니다.
+
+CLI에서는 `--maintenance-context 기록.json`으로 정규화된 기록을 선택적으로 줄 수 있습니다.
+형식은 case_id·error_code·closed_at(시간대 포함)·outcome·checks·actions·note이며,
+checks는 점검 ID → normal/abnormal/skipped, actions는 수행 내용 문자열 목록입니다.
+API에서 이 기능을 쓰려면 종료 이력을 정규화해 RAG 호출에 전달해야 합니다.
+
+파싱용 의존성은 `requirements-parse.txt`로 분리되어 있어 서비스 실행 시 Docling을 설치할 필요가 없습니다.
+전체 변경·검증 보고는 [개발 일지](docs/development-log.md)에 있습니다. 공유 Aura를 사용하는 팀원은 KG를 재구축하지 않습니다.
+
+같은 50문항의 [RAGAS 비교 보고서](RAGAS/results-20261104/COMPARISON.md)에는 개선된 지표와 하락한 지표, 응답 시간·비용 증가를 함께 기록했습니다.

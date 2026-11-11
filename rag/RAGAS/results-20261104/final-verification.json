@@ -1,0 +1,75 @@
+{
+  "verified_at": "2026-11-04T08:59:03.116561+00:00",
+  "status": "passed",
+  "offline_tests": {
+    "passed": 98,
+    "seconds": 60.34,
+    "external_calls": "mocked"
+  },
+  "baseline_result_files_unchanged_with_git_line_ending_normalization": 18,
+  "baseline_checkout_crlf_files": 18,
+  "same_dataset_sha256": "be3762c2a9be90ddc760cedd28407597688defba57b7d8916e14b1007157eb36",
+  "answers_ok": 50,
+  "valid_latest_metrics": 250,
+  "recorded_usd": 2.47302034,
+  "budget_usd": 3,
+  "rag_generation_retrieval_code_unchanged_since_evaluation": true,
+  "post_evaluation_changes": {
+    "api/guidance.py": {
+      "evaluated_sha256": "a4c7fc3105a6a790ddf17c62b4db61ea6d509a26e185c23fae9b315a12450ac9",
+      "current_sha256": "426c1f3b5e29ccea9a48e0ad2c9999b46d4065419a6de13f02b0ed44085350ad"
+    },
+    "api/main.py": {
+      "evaluated_sha256": "d6369fdbc670dfa7867b7dd05c618059ce470126c35124ffd690d89ffce14675",
+      "current_sha256": "7979301c530855eb5a7e7f042b603482e2ebeb6ef605119bd56a4549ab448c3e"
+    },
+    "api/tests/test_generation_context.py": {
+      "evaluated_sha256": "bde79e1860c8dac84efad08f4332a3d793bb2421083d3c2f353ad476d1b53c55",
+      "current_sha256": "a34a215ad29c064b4a719cc04af63aee06aef7a80a1610407559b9a5712ba909"
+    },
+    "rag/pipeline/parse.py": {
+      "evaluated_sha256": "4582a94deddc6c3bc6fa2462da9a74aa6cdbf6d14fa37f824f76982d53b0a7be",
+      "current_sha256": "1b34b801a92b252691d4af1207bc02b32a701c1fca8e71e45a84de74a442a36c"
+    }
+  },
+  "parser_formatting_ast_unchanged": true,
+  "post_evaluation_note": "API-only protection of existing cause ordinal IDs and concurrent work/closure; regression tested. Parser trailing newline cleanup has identical AST.",
+  "python_syntax_files": 25,
+  "secret_scan": "passed; no secret values recorded",
+  "private_and_runtime_paths_ignored": true,
+  "markdown_local_links": "passed",
+  "pdf_sha256_unchanged": {
+    "festo": "af7b8bdb5b420996364ed34571e0fc7f3356cd8776935b772294bf3a7a7e210b",
+    "manual82": "a4276e4ab79045593a71ea7a3a968e6b642a456aa593cc066c3fa633712f4a00",
+    "diagnostic4": "dcea813c4041f047ec9242bc3377e5f06398fe96b989ef355126da3109244eab",
+    "whitepaper11": "20864a37c99feb62227a6fa4ac76bcf51f6937148dcf46e180b65fb141a73f3f"
+  },
+  "aura": {
+    "ready": true,
+    "version": "aa8ffc598911968957f372ab87fb359817623b1827a41c1c534d0a8f902b13d9",
+    "codes": [
+      "E012",
+      "E016",
+      "E028",
+      "E029"
+    ],
+    "counts": {
+      "nodes": 1197,
+      "chunks": 965,
+      "pages": 198
+    },
+    "indexes": [
+      {
+        "name": "rag_chunk_text",
+        "state": "ONLINE"
+      },
+      {
+        "name": "rag_chunk_vector",
+        "state": "ONLINE"
+      }
+    ]
+  },
+  "final_retrieval_only_check": "passed; no paid model call",
+  "ui_source_and_ml_unchanged": true,
+  "stale_stage_error": "archived to ignored runtime path"
+}

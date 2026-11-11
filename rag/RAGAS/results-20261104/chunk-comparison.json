@@ -1,0 +1,38 @@
+{
+  "method": "offline vector-only comparison; same question/document embedding model; not a hybrid or end-to-end benchmark",
+  "questions": 18,
+  "selection": "recall@8, then MRR@8, then smaller retrieved text",
+  "metrics": [
+    {
+      "max_chars": 600,
+      "chunks": 1066,
+      "searchable": 832,
+      "median_chars": 269.5,
+      "oversized_atomic_units": 17,
+      "source_page_recall_at_8": 0.7777777777777778,
+      "mrr_at_8": 0.5144179894179894,
+      "mean_retrieved_chars": 2326.4444444444443
+    },
+    {
+      "max_chars": 900,
+      "chunks": 979,
+      "searchable": 746,
+      "median_chars": 241.0,
+      "oversized_atomic_units": 2,
+      "source_page_recall_at_8": 0.8333333333333334,
+      "mrr_at_8": 0.513425925925926,
+      "mean_retrieved_chars": 2569.8888888888887
+    },
+    {
+      "max_chars": 1200,
+      "chunks": 942,
+      "searchable": 709,
+      "median_chars": 222,
+      "oversized_atomic_units": 2,
+      "source_page_recall_at_8": 0.8333333333333334,
+      "mrr_at_8": 0.5180555555555556,
+      "mean_retrieved_chars": 2768.1666666666665
+    }
+  ],
+  "selected_max_chars": 1200
+}

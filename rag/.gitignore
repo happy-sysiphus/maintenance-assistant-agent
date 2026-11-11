@@ -18,5 +18,6 @@ data/*
 !data/festo_manual.pdf
 !data/error_mapping.json
 !data/manuals.json
+!data/processing.json
 !data/manuals/
 !data/manuals/*.pdf

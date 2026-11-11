@@ -50,9 +50,16 @@ class Sections(Record):
     summary: str
 
 
+class MaintenanceAdvice(Record):
+    text: str
+    check_ids: list[str]
+    case_ids: list[str]
+
+
 class GeneratedAnswer(Record):
     sections: Sections
     causes: list[Cause]
+    maintenance_advice: MaintenanceAdvice | None = None
 
 
 class AnswerValidationError(ValueError):
@@ -64,6 +71,7 @@ class AnswerValidationError(ValueError):
 def generation_schema(error_code, item=None):
     """The model selects registered IDs; the application owns stored checks."""
     schema = GeneratedAnswer.model_json_schema()
+    schema["required"] = ["sections", "causes", "maintenance_advice"]
     cause = schema["$defs"]["Cause"]
     cause["properties"]["situation_id"] = (
         {"type":"string","enum":[error_code]} if error_code else {"type":"null"})
@@ -176,4 +184,8 @@ def render_answer(payload):
             parts.append(f"- 조치: {when}{action['text']} {cite_text(action['cite'])}")
     if sections["summary"]:
         parts.append("요약: " + sections["summary"])
+    advice = payload.get("maintenance_advice")
+    if advice:
+        parts.append("정비 이력 참고(매뉴얼 근거와 구분): " + advice["text"]
+                     + "\n참고 사례: " + ", ".join(advice["case_ids"]))
     return "\n\n".join(part for part in parts if part)

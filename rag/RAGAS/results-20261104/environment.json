@@ -1,0 +1,17 @@
+{
+  "python": "3.13.11 (tags/v3.13.11:6278944, Dec  5 2025, 16:26:58) [MSC v.1944 64 bit (AMD64)]",
+  "packages": {
+    "ragas": "0.4.3",
+    "anthropic": "1.17.0",
+    "openai": "2.44.0",
+    "neo4j": "6.2.0",
+    "pdfplumber": "0.11.10",
+    "docling": "2.146.0",
+    "docling-core": "2.105.0",
+    "langchain-core": "1.4.8",
+    "langchain-community": "0.3.31",
+    "httpx": "0.28.1",
+    "httpx2": "2.16.0",
+    "pydantic": "2.14.2"
+  }
+}

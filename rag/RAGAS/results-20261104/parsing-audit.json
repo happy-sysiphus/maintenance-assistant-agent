@@ -1,0 +1,247 @@
+{
+  "pages": 198,
+  "golden_page_checks": [
+    {
+      "doc": "festo",
+      "page": 18,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "festo",
+      "page": 89,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "festo",
+      "page": 90,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "festo",
+      "page": 91,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "festo",
+      "page": 92,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "festo",
+      "page": 93,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "manual82",
+      "page": 23,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "manual82",
+      "page": 24,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "manual82",
+      "page": 38,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "manual82",
+      "page": 59,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "manual82",
+      "page": 66,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "manual82",
+      "page": 78,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "manual82",
+      "page": 79,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "manual82",
+      "page": 80,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "diagnostic4",
+      "page": 1,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "diagnostic4",
+      "page": 2,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "diagnostic4",
+      "page": 3,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "diagnostic4",
+      "page": 4,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "whitepaper11",
+      "page": 5,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "doc": "whitepaper11",
+      "page": 6,
+      "passed": true,
+      "issues": []
+    }
+  ],
+  "cross_page_rows": {
+    "17": [
+      1,
+      2
+    ],
+    "30": [
+      2,
+      3
+    ]
+  },
+  "mixed_table_chunks": [],
+  "table_review_required": [
+    {
+      "doc": "festo",
+      "page": 18,
+      "table_id": "festo:tables:23",
+      "reason": "manual_visual_reference"
+    },
+    {
+      "doc": "festo",
+      "page": 92,
+      "table_id": "festo:tables:82",
+      "reason": "rotated_bit_matrix_unverified"
+    },
+    {
+      "doc": "festo",
+      "page": 93,
+      "table_id": "festo:tables:83",
+      "reason": "rotated_bit_matrix_unverified"
+    },
+    {
+      "doc": "manual82",
+      "page": 4,
+      "table_id": "manual82:tables:0",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 4,
+      "table_id": "manual82:tables:1",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 20,
+      "table_id": "manual82:tables:6",
+      "reason": "manual_visual_reference"
+    },
+    {
+      "doc": "manual82",
+      "page": 29,
+      "table_id": "manual82:tables:15",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 29,
+      "table_id": "manual82:tables:16",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 30,
+      "table_id": "manual82:tables:17",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 30,
+      "table_id": "manual82:tables:18",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 30,
+      "table_id": "manual82:tables:19",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 35,
+      "table_id": "manual82:tables:22",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 38,
+      "table_id": "manual82:tables:26",
+      "reason": "manual_visual_reference"
+    },
+    {
+      "doc": "manual82",
+      "page": 60,
+      "table_id": "manual82:tables:42",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 61,
+      "table_id": "manual82:tables:43",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 64,
+      "table_id": "manual82:tables:45",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 74,
+      "table_id": "manual82:tables:50",
+      "reason": "unverified_table_header_mapping"
+    },
+    {
+      "doc": "manual82",
+      "page": 77,
+      "table_id": "manual82:tables:51",
+      "reason": "unverified_table_header_mapping"
+    }
+  ],
+  "method": "Selected PDF text, headers and row boundaries checked against rendered originals; not a complete transcription accuracy benchmark."
+}

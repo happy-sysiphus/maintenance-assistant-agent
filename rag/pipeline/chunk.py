@@ -10,13 +10,13 @@ from pathlib import Path
 from ..paths import CHUNKS, PARSED_BLOCKS, PARSED_DOCS
 
 from langchain_core.documents import Document
-from ..documents import manuals
+from ..documents import manuals, DATA
 
 
 INPUT_PATH = PARSED_DOCS
 BLOCKS_PATH = PARSED_BLOCKS
 OUTPUT_PATH = CHUNKS
-DEFAULT_MAX_CHARS = 1200
+DEFAULT_MAX_CHARS = json.loads((DATA / "processing.json").read_text(encoding="utf-8"))["max_chars"]
 REVIEW_WARNING = "[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]"
 
 SECTION_RE = re.compile(r"^\d+(?:\.\d+)*\s+\S")
@@ -49,11 +49,15 @@ class Unit:
     review_needed: bool = False
     review_type: str | None = None
     review_reason: str | None = None
+    table_id: str = ""
+    row_id: str = ""
+    source_parts: tuple = ()
 
     @property
-    def group_key(self) -> tuple[str, str, str, str, int]:
+    def group_key(self) -> tuple:
         # A chunk may contain both reviewed and ordinary units.
-        return self.kind, self.section_title, self.table_title, self.fault_heading, self.segment
+        return (self.kind, self.section_title, self.table_title, self.fault_heading,
+                self.segment, self.table_id, self.row_id if self.kind == "error_row" else "")
 
 
 def load_parsed_documents(input_path: Path) -> list[Document]:
@@ -168,8 +172,38 @@ def _line_records(doc: Document) -> list[tuple[str, int, int, dict, bool]]:
     return records
 
 
+def structured_units(doc, include_reserve=False):
+    """Consume actual layout blocks, never infer headings from numbered prose."""
+    units, skipped = [], 0
+    for block in doc.metadata["_block_spans"]:
+        if block["kind"] == "heading":
+            continue
+        is_table = block["kind"] == "table"
+        rows = block.get("rows",[]) if is_table else [{"text":block["extractable_text"] or block["content"]}]
+        for row in rows:
+            if row.get("continuation_of"):
+                continue
+            text = row.get("search_text") or row["text"]
+            if not include_reserve and re.search(r"(?:Reserve|not assigned|not taken)",text,re.I):
+                skipped += 1
+                continue
+            kind = "error_row" if row.get("error_number") else "table_row" if is_table else "visual_placeholder" if block["kind"] == "image" else "prose"
+            offset = block["content"].find(row["text"])
+            start = block["start"] + max(0,offset)
+            units.append(Unit(kind=kind,text=text,start=start,end=min(block["end"],start+len(row["text"])),
+                section_title=block.get("section") or "", table_title=(f"[Table {block['table_id']}: {block.get('caption') or block.get('section') or ''}]" if is_table else ""),
+                fault_heading="",error_number=row.get("error_number"),source_block_id=block["source_block_id"],
+                source_block_kind=block["kind"],source_block_order=block["order"],source_bbox=block["bbox"],
+                review_needed=block["review_needed"],review_type=block["review_type"],review_reason=block["review_reason"],
+                table_id=block.get("logical_table_id", ""),row_id=row.get("row_id", ""),
+                source_parts=tuple(row.get("source_parts") or [{"doc":block["manual_id"],"page":block["page_number"],"bbox":block["bbox"],"text":row["text"]}])))
+    return units,skipped
+
+
 def make_units(doc: Document, include_reserve: bool) -> tuple[list[Unit], int]:
     """오류 한 행, Cause/Remedy 한 행, 기타 표 한 행을 각각 원자 단위로 만든다."""
+    if doc.metadata.get("parser_version"):
+        return structured_units(doc,include_reserve)
     lines = _line_records(doc)
 
     section_ids = doc.metadata.get("section_ids") or []
@@ -291,10 +325,12 @@ def make_chunk(doc: Document, units: list[Unit], chunk_index: int,
         "fault_heading": first.fault_heading,
         "error_numbers": [unit.error_number for unit in units if unit.error_number],
         "oversized_atomic_unit": len(content) > max_chars,
+        "max_chars": max_chars,
         "review_needed": bool(review_units),
         "review_types": list(dict.fromkeys(unit.review_type for unit in review_units if unit.review_type)),
         "review_reasons": list(dict.fromkeys(unit.review_reason for unit in review_units if unit.review_reason)),
         "source_page": doc.metadata["page_number"],
+        "source_pages": sorted({p["page"] for unit in units for p in unit.source_parts} or {doc.metadata["page_number"]}),
         "review_sources": review_sources,
         "unit_sources": [{
             "text": unit.text,
@@ -307,6 +343,9 @@ def make_chunk(doc: Document, units: list[Unit], chunk_index: int,
             "review_needed": unit.review_needed,
             "review_type": unit.review_type,
             "review_reason": unit.review_reason,
+            "table_id": unit.table_id, "row_id": unit.row_id,
+            "source_parts": list(unit.source_parts),
+            "bbox": unit.source_bbox,
         } for unit in units],
     })
     raw = f"{metadata['parent_doc_id']}\0{first.start}\0{last.end}\0{content}"

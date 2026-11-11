@@ -1,0 +1,3 @@
+# Offline document preparation only; not required by the API service.
+-r requirements.txt
+docling==2.146.0

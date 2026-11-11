@@ -50,6 +50,17 @@ def openai_client():
                   http_client=httpx.Client(verify=ssl_context()))
 
 
+def anthropic_client():
+    """Claude generates answers; OpenAI is used separately for embeddings."""
+    import httpx2 as httpx
+    from anthropic import Anthropic
+    load_environment()
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise RuntimeError("rag/.env의 ANTHROPIC_API_KEY가 필요합니다.")
+    return Anthropic(timeout=90, max_retries=0,
+                     http_client=httpx.Client(verify=ssl_context()))
+
+
 def get_database(database: str | None = None) -> str:
     load_environment()
     value = database if database is not None else os.getenv("NEO4J_DATABASE", "neo4j")

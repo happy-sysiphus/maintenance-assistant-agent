@@ -19,7 +19,7 @@ def main():
     model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
     calls, tokens = 0, 0
     with graph_driver() as driver, driver.session(database=get_database(args.database)) as session:
-        kb = session.run("MATCH (k:RagKnowledgeBase {id:$id}) RETURN k.ready AS ready", id=KB_ID).single()
+        kb = session.run("MATCH (k:RagKnowledgeBase {id:$id}) RETURN coalesce(k.graph_ready,k.ready) AS ready", id=KB_ID).single()
         if not kb or not kb["ready"]:
             raise ValueError("build를 먼저 실행하세요.")
         source_rows = session.run("""MATCH (c:Rag:Chunk)
@@ -59,7 +59,7 @@ def main():
         session.run(f"CREATE FULLTEXT INDEX {TEXT_INDEX} IF NOT EXISTS FOR (c:Chunk) ON EACH [c.text]").consume()
         session.run("CALL db.awaitIndexes(60)").consume()
         session.run("""MATCH (k:RagKnowledgeBase {id:$id})
-            SET k.embedding_model=$model,k.embedding_dimensions=$dims""",
+            SET k.embedding_model=$model,k.embedding_dimensions=$dims,k.ready=true""",
             id=KB_ID, model=model, dims=dimension).consume()
     print(f"인덱스 완료: {dimension}차원 / API {calls}회 / 입력 {tokens}토큰")
 

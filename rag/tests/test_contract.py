@@ -56,10 +56,10 @@ class ResponseContract(unittest.TestCase):
     def test_service_reports_validation_reason_without_exposing_raw_reply(self):
         item,payload,evidence = example()
         payload["causes"][0]["checks"] = [{"id":"E012-K3"}]
-        response = SimpleNamespace(status="completed",output_text=json.dumps(payload),
+        response = SimpleNamespace(stop_reason="end_turn",content=[SimpleNamespace(type="text",text=json.dumps(payload))],
                                    usage=SimpleNamespace(input_tokens=0,output_tokens=0,total_tokens=0))
-        with patch("rag.service.retrieve",return_value={"evidence":evidence,"situations":[item],"embedding_tokens":0}), patch("rag.service.openai_client") as client:
-            client.return_value.__enter__.return_value.responses.create.return_value = response
+        with patch("rag.service.retrieve",return_value={"evidence":evidence,"situations":[item],"embedding_tokens":0}), patch("rag.service.anthropic_client") as client:
+            client.return_value.__enter__.return_value.messages.create.return_value = response
             result = answer_question("질문",error_code="E012")
         self.assertEqual(result["status"],"needs_citation_review")
         self.assertEqual(result["validation_errors"][0]["code"],"unknown_check_id")
@@ -135,7 +135,7 @@ class ResponseContract(unittest.TestCase):
 
     def test_retrieval_only_does_not_call_openai(self):
         item,payload,evidence = example()
-        with patch("rag.service.retrieve",return_value={"evidence":evidence,"situations":[item],"embedding_tokens":0}) as retrieve, patch("rag.service.openai_client") as client:
+        with patch("rag.service.retrieve",return_value={"evidence":evidence,"situations":[item],"embedding_tokens":0}) as retrieve, patch("rag.service.anthropic_client") as client:
             result = answer_question("점검",error_code="E012",use_llm=False)
             self.assertEqual(result["status"],"retrieval_only")
             self.assertFalse(retrieve.call_args.kwargs["use_vectors"])

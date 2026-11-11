@@ -1,0 +1,6 @@
+{
+  "claude_generation": "ok",
+  "openai_embedding": "ok",
+  "claude_model": "claude-sonnet-5-5",
+  "embedding_dimensions": 1536
+}

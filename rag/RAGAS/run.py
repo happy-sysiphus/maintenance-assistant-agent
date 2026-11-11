@@ -27,13 +27,15 @@ os.environ["LANGCHAIN_TRACING_V2"] = "false"
 os.environ["RAG_RUNTIME_DIR"] = str(HERE / "var" / "rag-runtime")
 sys.stdout.reconfigure(encoding="utf-8")
 
-from budget import Budget, PHASE, SAMPLE, MeteredTransport, AsyncMeteredTransport
+from budget import Budget, PHASE, SAMPLE, MeteredTransport, AsyncMeteredTransport, MeteredAnthropicTransport
 from rag.config import load_environment, ssl_context
 from rag.documents import manuals, manual_path, fingerprint
 import rag.service as service
 import rag.retrieval as retrieval
 import httpx
+import httpx2
 from openai import OpenAI, AsyncOpenAI
+from anthropic import Anthropic
 from pydantic import BaseModel, Field, create_model
 
 JUDGE = "gpt-4.1-mini"
@@ -71,6 +73,11 @@ def sync_client(budget):
 def async_client(budget):
     return AsyncOpenAI(max_retries=0, timeout=120,
                        http_client=httpx.AsyncClient(transport=AsyncMeteredTransport(budget, ssl_context())))
+
+
+def claude_client(budget):
+    return Anthropic(max_retries=0, timeout=120,
+                     http_client=httpx2.Client(transport=MeteredAnthropicTransport(budget,ssl_context())))
 
 
 class Citation(BaseModel):
@@ -300,7 +307,7 @@ async def generate_answers(rows, out, budget, concurrency):
             print(f"answered {row['id']}: {result['status']}, {result['seconds']}s; ${budget.spent:.4f}", flush=True)
 
     # Intercept clients only within this evaluator process, without source edits.
-    with patch.object(service, "openai_client", lambda: sync_client(budget)), \
+    with patch.object(service, "anthropic_client", lambda: claude_client(budget)), \
          patch.object(retrieval, "openai_client", lambda: sync_client(budget)):
         await asyncio.gather(*(one(row) for row in rows))
 
@@ -409,7 +416,7 @@ def main():
         save(out / "run_manifest.json", {"started_at": datetime.now(timezone.utc).isoformat(),
              "ragas": importlib.metadata.version("ragas"), "production_code_sha256": before,
              "document_fingerprint": fingerprint(), "generator_model": GENERATOR, "judge_model": JUDGE,
-             "rag_model": os.getenv("OPENAI_MODEL", "gpt-5.4-mini"), "budget_usd": args.budget_usd,
+             "rag_model": os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5"), "budget_usd": args.budget_usd,
              "no_history": True, "cache": False, "metrics": METRICS})
     budget = Budget(out / "costs.jsonl", args.budget_usd)
     failed = None
@@ -432,8 +439,11 @@ def main():
         if args.stage != "report":
             metric_rows = read_rows(out / "metrics.jsonl")
             unique_metrics = {(r["id"], r["metric"]) for r in metric_rows}
-            save(out / "run_status.json", {"status": "complete" if len(unique_metrics) == 250 else "partial",
+            valid_latest = {(r["id"], r["metric"]):r for r in metric_rows}
+            valid_count = sum(r.get("value") is not None for r in valid_latest.values())
+            save(out / "run_status.json", {"status": "complete" if len(unique_metrics) == 250 and valid_count==250 else "partial",
                  "stage": args.stage, "metric_records": len(unique_metrics),
+                 "valid_metric_records":valid_count,
                  "production_code_unchanged": code_snapshot() == before})
     except Exception as exc:
         failed = type(exc).__name__

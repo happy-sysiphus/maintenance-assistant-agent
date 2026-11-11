@@ -47,7 +47,8 @@ def resolve_mapping():
             if not page or not quote:
                 raise ValueError(f"{code}: 출처가 없습니다: {ref}")
             candidates = [c for c in chunks
-                          if (c["metadata"]["manual_id"], c["metadata"]["page_number"]) == key]
+                          if c["metadata"]["manual_id"] == ref["doc"]
+                          and ref["page"] in c["metadata"].get("source_pages",[c["metadata"]["page_number"]])]
             matches = [c for c in candidates if quote in normalized(c["page_content"])]
             raw = normalized(page["raw_text"])
             if not matches and quote not in raw:
@@ -57,8 +58,8 @@ def resolve_mapping():
                 text = chosen["page_content"]
                 review = chosen["metadata"]["review_needed"]
             else:
-                offset = raw.index(quote)
-                text = raw[max(0, offset-200):offset+len(quote)+500]
+                # An exact verified quote is safer than a slice containing neighbouring errors.
+                text = ref["quote"]
                 review = False  # Text only; never use inferred visual content.
             resolved[reference_id(ref)] = {
                 "id": reference_id(ref), "doc": ref["doc"], "page": ref["page"],
@@ -133,17 +134,8 @@ def write_graph(tx, errors, evidence):
                     id=f"{cause['id']}-A{index}", text=action["text"],
                     when=action["when"]).consume()
     # Remove the retired graph only after all new references have resolved.
-    tx.run("""MATCH (d:FestoManual {id:'festo:servopneumatic'})
-        OPTIONAL MATCH (d)-[:HAS_PAGE]->(p)
-        OPTIONAL MATCH (p)-[:HAS_CHUNK]->(c)
-        WITH collect(DISTINCT c)+collect(DISTINCT p)+collect(DISTINCT d) AS old
-        UNWIND old AS n WITH n WHERE n IS NOT NULL AND NOT n:Rag
-        DETACH DELETE n""").consume()
-    tx.run("""MATCH (n) WHERE NOT n:Rag AND
-        (n.manual_id='festo' OR (n:Situation AND n.id IN $ids))
-        DETACH DELETE n""", ids=[f"S{i:02}" for i in range(1,11)]).consume()
     tx.run("""MATCH (k:RagKnowledgeBase {id:$id})
-        SET k.ready=true,k.version=$version""", id=KB_ID, version=fingerprint()).consume()
+        SET k.graph_ready=true,k.ready=false,k.version=$version""", id=KB_ID, version=fingerprint()).consume()
 
 
 def main():

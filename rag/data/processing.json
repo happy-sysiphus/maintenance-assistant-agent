@@ -1,0 +1,6 @@
+{
+  "parser": "docling-table-structure-v1",
+  "docling": "2.146.0",
+  "chunk_policy": "layout-atomic-rows-v1",
+  "max_chars": 1200
+}

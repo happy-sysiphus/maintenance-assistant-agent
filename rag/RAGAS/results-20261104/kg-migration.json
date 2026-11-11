@@ -1,0 +1,26 @@
+{
+  "backup": "aura-20261104T081002911059Z.json",
+  "status": "complete",
+  "corpus_version": "aa8ffc598911968957f372ab87fb359817623b1827a41c1c534d0a8f902b13d9",
+  "counts": {
+    "rag_nodes": 1197,
+    "chunks": 965,
+    "pages": 198
+  },
+  "indexes": [
+    {
+      "name": "rag_chunk_text",
+      "state": "ONLINE"
+    },
+    {
+      "name": "rag_chunk_vector",
+      "state": "ONLINE"
+    }
+  ],
+  "situation_ids": [
+    "E012",
+    "E016",
+    "E028",
+    "E029"
+  ]
+}

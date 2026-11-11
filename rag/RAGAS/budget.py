@@ -1,7 +1,7 @@
-"""Meter every OpenAI HTTP response; block requests before exceeding the budget.
+"""Meter Claude/OpenAI HTTP responses; block requests before exceeding the budget.
 
 Ledger contains token counts, never keys or request text. Unknown usage is charged
-at its reserved upper bound. Prices are USD/1M tokens, checked 2026-10-28.
+at its reserved upper bound. Prices are USD/1M tokens, checked 2026-11-04.
 One runner process per results directory; threads share the reservation lock.
 """
 import contextvars
@@ -11,6 +11,7 @@ from pathlib import Path
 import threading
 
 import httpx
+import httpx2
 
 PHASE = contextvars.ContextVar("phase", default="setup")
 SAMPLE = contextvars.ContextVar("sample", default="")
@@ -18,6 +19,7 @@ PRICES = {
     "gpt-5.4-mini": (0.75, 4.50),
     "gpt-4.1-mini": (0.40, 1.60),
     "text-embedding-3-small": (0.02, 0.0),
+    "claude-sonnet-5-5": (2.0, 10.0),
 }
 
 
@@ -47,15 +49,17 @@ class Budget:
         input_rate, output_rate = PRICES[model]
         max_output = data.get("max_output_tokens", data.get("max_completion_tokens", data.get("max_tokens", 4096)))
         # UTF-8 byte count is a conservative token upper bound, plus framing.
-        reserve = ((len(request.content) + 2048) * input_rate + max_output * output_rate) / 1e6
+        reserve = ((len(request.content) + 2048) * input_rate * 1.25 + max_output * output_rate) / 1e6
         with self.lock:
             if self.auth_failed:
-                raise RuntimeError("OpenAI authentication failed; update key before resuming")
+                raise RuntimeError("API authentication failed; update key before resuming")
             if self.spent + self.reserved + reserve > self.limit:
                 raise BudgetExceeded("Evaluation budget would be exceeded")
             self.reserved += reserve
             if PHASE.get() == "rag" and request.url.path.endswith("/responses"):
                 self.contexts[SAMPLE.get()] = json.loads(data["input"][-1]["content"])
+            if PHASE.get() == "rag" and request.url.path.endswith("/messages"):
+                self.contexts[SAMPLE.get()] = json.loads(data["messages"][-1]["content"])
         return data, reserve
 
     def settle(self, data, reserve, response=None):
@@ -69,7 +73,9 @@ class Budget:
             inp = usage.get("input_tokens", usage.get("prompt_tokens", usage.get("total_tokens", 0)))
             out = usage.get("output_tokens", usage.get("completion_tokens", 0))
             rates = PRICES[data["model"]]
-            usd = (inp * rates[0] + out * rates[1]) / 1e6
+            cache_write = usage.get("cache_creation_input_tokens",0) or 0
+            cache_read = usage.get("cache_read_input_tokens",0) or 0
+            usd = ((inp + cache_write * 1.25 + cache_read * .05) * rates[0] + out * rates[1]) / 1e6
         else:
             inp = out = None
             usd = reserve  # conservative even if a network failure was not billed
@@ -135,3 +141,13 @@ class AsyncMeteredTransport(httpx.AsyncBaseTransport):
 
     async def aclose(self):
         await self.inner.aclose()
+
+
+class MeteredAnthropicTransport(httpx2.BaseTransport):
+    """Current Claude SDK uses HTTPX2; share the same budget and settlement."""
+    def __init__(self,budget,verify):
+        self.budget=budget
+        self.inner=httpx2.HTTPTransport(verify=verify,retries=0)
+
+    handle_request=MeteredTransport.handle_request
+    close=MeteredTransport.close

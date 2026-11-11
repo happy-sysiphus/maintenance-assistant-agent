@@ -1,0 +1,601 @@
+{
+  "method": "FastAPI TestClient, real Aura/Claude/OpenAI, isolated synthetic SQLite records",
+  "handoff": "ok",
+  "pdf": "ok",
+  "record_preservation": "ok",
+  "cache": "ok",
+  "case_guidance": {
+    "status": "ok",
+    "error_code": "E012",
+    "question": "이 오류의 의미와 근거가 있는 원인 후보, 점검 순서, 정상 기준 및 조치를 알려주세요.",
+    "answer": "E012는 manual82의 오류 번호 표에서 '보정 타임아웃(Timeout compensation)'으로 정의됩니다 [manual82 p.78]. diagnostic4의 상세 설명은 다음과 같습니다. 이 오류는 보정이 활성일 때와 비활성일 때 모두 감시됩니다. 지정한 보정 압력(허용 오차 ±600 mbar)에 1800 ms 동안 도달하지 못하면 출력됩니다 [diagnostic4 p.1]. 보정은 최소 300 ms 동안 활성이어야 하며, 힘 형성이 그보다 짧으면 오류가 나오지 않습니다 [diagnostic4 p.1]. 설정 압력이 공급 압력보다 높을 때도 이 오류가 출력됩니다 [diagnostic4 p.1]. 다만 diagnostic4의 발행 주체와 펌웨어 적용 여부는 아직 확인 전입니다.\n\n점검 순서는 다음과 같습니다. 1) E012-K1: 현재 보정 설정 압력과 실제 공급 압력을 대조합니다 [diagnostic4 p.1]. 확인 기준은 설정 압력이 공급 압력보다 높은지 여부입니다. 이 조건만으로 전체 정상 여부를 판정하지는 않습니다. 2) E012-K2: 현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다. 이 항목은 구판 festo 자료의 '보정 압력 2초 내 미도달' 행에서 나온 보충 후보입니다 [festo p.90]. 구판의 2초와 5 bar 참고값은 신형 문서의 1800 ms 조건과 출처가 다릅니다. 구판 값은 신형 설비의 정상 기준이나 확정 원인으로 쓰면 안 되며, 설비 적용 여부를 먼저 확인해야 합니다. E012-K2에는 제시된 정상 수치나 확인 기준이 없습니다.\n\n현재 근거로 연결되는 조치는 없습니다. 오류가 발생했다는 사실만으로 부품 교체, 재보정, 분해, 파라미터 변경이 필요하다고 판단할 수 없습니다. 입력에 센서나 실제 측정값이 없으므로 현재 부품 고장도 확정할 수 없습니다. 보정 파라미터 표(manual82 p.38)와 보정 관련 표(manual82 p.74)에는 그림·수식 구조 검토가 필요한 부분이 있어, 보이는 텍스트 외의 연결이나 수치는 사용하지 않았습니다.\n\n원인·확인 후보: 보정 설정 압력과 공급 압력의 관계\n진단 문서는 설정 압력이 공급 압력보다 높은 경우에도 이 오류가 발생한다고 설명합니다.\n\n- 현재 보정 설정 압력과 실제 공급 압력을 대조합니다. [diagnostic4 p.1]\n  기준·확인 방법: 설정 압력이 공급 압력보다 높은지 확인합니다. 이 조건만으로 전체 정상 여부를 판정하지 않습니다. [diagnostic4 p.1]\n\n원인·확인 후보: MPYD 케이블과 공급 압력 점검 후보 (구판 보충)\n구판의 보정 압력 시간 초과 행은 MPYD 케이블과 공급 압력 점검을 제시합니다. 신형 오류의 확정 원인이 아닙니다.\n\n- 현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다. [festo p.90]\n\n요약: E012는 보정 타임아웃이며, 신형 상세 조건은 1800 ms 내 보정 압력 미도달과 설정 압력이 공급 압력보다 높은 경우입니다 [manual82 p.78][diagnostic4 p.1]. 먼저 설정 압력과 공급 압력을 대조하고, 구판 보충 후보인 MPYD 케이블은 적용 여부를 확인한 뒤 점검하세요.\n\n정비 이력 참고(매뉴얼 근거와 구분): CASE-0001에는 케이블 점검 후에도 오류가 재발했고 E012-K2는 normal로 기록되어 있으며, 압력 대조는 하지 않았다고 되어 있습니다. 이 기록은 현재 설비의 원인을 확정하지 않습니다. 다만 케이블 점검이 이미 정상이었으므로, 아직 수행하지 않은 등록 점검인 E012-K1(설정 압력과 공급 압력 대조)을 먼저 검토할 이유가 됩니다. 이 제안은 점검 우선순위일 뿐이며 수리 조치나 정상 기준을 새로 정하지 않습니다.\n참고 사례: CASE-0001",
+    "sections": {
+      "interpretation": "E012는 manual82의 오류 번호 표에서 '보정 타임아웃(Timeout compensation)'으로 정의됩니다 [manual82 p.78]. diagnostic4의 상세 설명은 다음과 같습니다. 이 오류는 보정이 활성일 때와 비활성일 때 모두 감시됩니다. 지정한 보정 압력(허용 오차 ±600 mbar)에 1800 ms 동안 도달하지 못하면 출력됩니다 [diagnostic4 p.1]. 보정은 최소 300 ms 동안 활성이어야 하며, 힘 형성이 그보다 짧으면 오류가 나오지 않습니다 [diagnostic4 p.1]. 설정 압력이 공급 압력보다 높을 때도 이 오류가 출력됩니다 [diagnostic4 p.1]. 다만 diagnostic4의 발행 주체와 펌웨어 적용 여부는 아직 확인 전입니다.\n\n점검 순서는 다음과 같습니다. 1) E012-K1: 현재 보정 설정 압력과 실제 공급 압력을 대조합니다 [diagnostic4 p.1]. 확인 기준은 설정 압력이 공급 압력보다 높은지 여부입니다. 이 조건만으로 전체 정상 여부를 판정하지는 않습니다. 2) E012-K2: 현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다. 이 항목은 구판 festo 자료의 '보정 압력 2초 내 미도달' 행에서 나온 보충 후보입니다 [festo p.90]. 구판의 2초와 5 bar 참고값은 신형 문서의 1800 ms 조건과 출처가 다릅니다. 구판 값은 신형 설비의 정상 기준이나 확정 원인으로 쓰면 안 되며, 설비 적용 여부를 먼저 확인해야 합니다. E012-K2에는 제시된 정상 수치나 확인 기준이 없습니다.\n\n현재 근거로 연결되는 조치는 없습니다. 오류가 발생했다는 사실만으로 부품 교체, 재보정, 분해, 파라미터 변경이 필요하다고 판단할 수 없습니다. 입력에 센서나 실제 측정값이 없으므로 현재 부품 고장도 확정할 수 없습니다. 보정 파라미터 표(manual82 p.38)와 보정 관련 표(manual82 p.74)에는 그림·수식 구조 검토가 필요한 부분이 있어, 보이는 텍스트 외의 연결이나 수치는 사용하지 않았습니다.",
+      "summary": "E012는 보정 타임아웃이며, 신형 상세 조건은 1800 ms 내 보정 압력 미도달과 설정 압력이 공급 압력보다 높은 경우입니다 [manual82 p.78][diagnostic4 p.1]. 먼저 설정 압력과 공급 압력을 대조하고, 구판 보충 후보인 MPYD 케이블은 적용 여부를 확인한 뒤 점검하세요."
+    },
+    "causes": [
+      {
+        "situation_id": "E012",
+        "name": "보정 설정 압력과 공급 압력의 관계",
+        "why": "진단 문서는 설정 압력이 공급 압력보다 높은 경우에도 이 오류가 발생한다고 설명합니다.",
+        "checks": [
+          {
+            "id": "E012-K1",
+            "text": "현재 보정 설정 압력과 실제 공급 압력을 대조합니다.",
+            "cite": {
+              "doc": "diagnostic4",
+              "page": 1
+            },
+            "criterion": {
+              "text": "설정 압력이 공급 압력보다 높은지 확인합니다. 이 조건만으로 전체 정상 여부를 판정하지 않습니다.",
+              "cite": {
+                "doc": "diagnostic4",
+                "page": 1
+              }
+            }
+          }
+        ],
+        "actions": []
+      },
+      {
+        "situation_id": "E012",
+        "name": "MPYD 케이블과 공급 압력 점검 후보 (구판 보충)",
+        "why": "구판의 보정 압력 시간 초과 행은 MPYD 케이블과 공급 압력 점검을 제시합니다. 신형 오류의 확정 원인이 아닙니다.",
+        "checks": [
+          {
+            "id": "E012-K2",
+            "text": "현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다.",
+            "cite": {
+              "doc": "festo",
+              "page": 90
+            },
+            "criterion": null
+          }
+        ],
+        "actions": []
+      }
+    ],
+    "evidence": [
+      {
+        "id": "rag:evidence:1e09156ded7e9dba64e2",
+        "doc": "diagnostic4",
+        "page": 1,
+        "quote": "This error is also output when the set pressure is higher than the supply pressure.",
+        "text": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\n[Table diagnostic4:tables:0: 7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA]\nNr: 12 | Error: Counterbalance Timeout | Description: The error is monitored in active as well as inactive compensation. The error is output if the specified compensation pressure is not reached for 1800ms (tolerance + -600mbar). If compensation is activated, the pressure must be reached for a certain time (+ -600mbar for > = 10ms). If this is reached, an OK flag is set internally. This monitoring was additionally introduced because the force build-up time is typically shorter than 1800ms. Balance must be active for at least 300ms. If the force buildup is shorter, no error is output. This error is also output when the set pressure is higher than the supply pressure. | Monitoring / CPX: X",
+        "review_needed": false
+      },
+      {
+        "id": "rag:evidence:b066a2f60fee01b52994",
+        "doc": "festo",
+        "page": 90,
+        "quote": "Check cable to the MPYD.",
+        "text": "Error number: 12 | Error text: Timeout equalizer | Ready signal: 1 | Description: Equalizer pressure was not reached within 2 seconds. | Error elimination: Check cable to the MPYD. Check supply pressure at least 5 bar.",
+        "review_needed": false
+      },
+      {
+        "id": "rag:evidence:4491a1a18b75c33a0854",
+        "doc": "manual82",
+        "page": 78,
+        "quote": "12 Timeout compensation",
+        "text": "12 Timeout compensation",
+        "review_needed": false
+      },
+      {
+        "id": "rag:chunk-bba56f6e020bc16efe33",
+        "doc": "manual82",
+        "page": 38,
+        "quote": "Compensation\n[Table manual82:tables:26: Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nParameter: Rise of pressure | Unit: bar | Significance: When the compensating pressure is changed Activated pressure: [Formula layout requires original PDF]\nParameter: Duration of rise of pressure | Un",
+        "text": "Compensation\n[Table manual82:tables:26: Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nParameter: Rise of pressure | Unit: bar | Significance: When the compensating pressure is changed Activated pressure: [Formula layout requires original PDF]\nParameter: Duration of rise of pressure | Unit: ms | Significance: Time for which the pressure overshoot is in effect.\nParameter: Pressure reduction | Unit: bar | Significance: When the compensating pressure is changed Set pressure: [Formula layout requires original PDF]\nParameter: Duration of pressure reduction | Unit: ms | Significance: Time for which the pressure reduction is in effect.",
+        "review_needed": true
+      },
+      {
+        "id": "rag:chunk-11e5b518dc46b59554f9",
+        "doc": "manual82",
+        "page": 78,
+        "quote": "A.2 Error numbers\n[Table manual82:tables:52: A.2 Error numbers]\nNo.: 12 | Error: Timeout compensation | Detection / CPX: X",
+        "text": "A.2 Error numbers\n[Table manual82:tables:52: A.2 Error numbers]\nNo.: 12 | Error: Timeout compensation | Detection / CPX: X",
+        "review_needed": false
+      },
+      {
+        "id": "rag:chunk-975b2c5e9edc67b07686",
+        "doc": "manual82",
+        "page": 39,
+        "quote": "Compensation\nFigure 6-13 Pressure overshoot and pressure reduction",
+        "text": "Compensation\nFigure 6-13 Pressure overshoot and pressure reduction",
+        "review_needed": false
+      },
+      {
+        "id": "rag:chunk-856a6b73ddc29512f676",
+        "doc": "manual82",
+        "page": 74,
+        "quote": "7.2.7 Compensation\n[Table manual82:tables:50: 7.2.7 Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nUnmapped column 1: 2 | Unmapped column 2: [E3.00 ... 3.15] Setpoint value, compensating | Unmapped column 3: 3 | Unmapped column 4: Pressure in compensating cylinder",
+        "text": "7.2.7 Compensation\n[Table manual82:tables:50: 7.2.7 Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nUnmapped column 1: 2 | Unmapped column 2: [E3.00 ... 3.15] Setpoint value, compensating | Unmapped column 3: 3 | Unmapped column 4: Pressure in compensating cylinder",
+        "review_needed": true
+      },
+      {
+        "id": "rag:chunk-1212d0ca8a0f90cf3fbe",
+        "doc": "manual82",
+        "page": 38,
+        "quote": "Compensation\nThe overshoot or reduction is generated in the case of pressure changes of 1 bar or greater. Teaching of the compensation is therefore not affected.",
+        "text": "Compensation\nThe overshoot or reduction is generated in the case of pressure changes of 1 bar or greater. Teaching of the compensation is therefore not affected.",
+        "review_needed": false
+      }
+    ],
+    "review_notes": [
+      "신형 문서의 1800 ms 조건과 구판 오류 12의 2초·5 bar 참고값은 서로 다른 출처입니다. 구판의 케이블·압력 점검은 현 설비 적용 여부를 확인한 보충 후보입니다.",
+      "시각 정보·표 구조 원본 확인 필요: manual82 p.38, manual82 p.74"
+    ],
+    "model": "claude-sonnet-5-5",
+    "usage": {
+      "input_tokens": 6297,
+      "output_tokens": 1933,
+      "total_tokens": 8230,
+      "embedding_tokens": 80
+    },
+    "api_calls_this_run": 2,
+    "cache_hit": false,
+    "validation_errors": [],
+    "response_version": "claude-layout-memory-v3",
+    "provider": "anthropic",
+    "maintenance_advice": {
+      "text": "CASE-0001에는 케이블 점검 후에도 오류가 재발했고 E012-K2는 normal로 기록되어 있으며, 압력 대조는 하지 않았다고 되어 있습니다. 이 기록은 현재 설비의 원인을 확정하지 않습니다. 다만 케이블 점검이 이미 정상이었으므로, 아직 수행하지 않은 등록 점검인 E012-K1(설정 압력과 공급 압력 대조)을 먼저 검토할 이유가 됩니다. 이 제안은 점검 우선순위일 뿐이며 수리 조치나 정상 기준을 새로 정하지 않습니다.",
+      "check_ids": [
+        "E012-K1"
+      ],
+      "case_ids": [
+        "CASE-0001"
+      ]
+    },
+    "maintenance_context_hash": "b128b3ae955070b67398e422418cf87cd081f069e66432d901834b5b788d8b15",
+    "seconds": 19.76,
+    "candidates": [
+      {
+        "situation_id": "E012",
+        "rank": 1,
+        "name": "보정 압력 도달 시간 초과",
+        "definition": "설정 보정 압력 도달을 감시하는 오류입니다. 상세 감시 조건은 진단 첨부 문서에서 확인합니다.",
+        "coverage_note": "신형 문서의 1800 ms 조건과 구판 오류 12의 2초·5 bar 참고값은 서로 다른 출처입니다. 구판의 케이블·압력 점검은 현 설비 적용 여부를 확인한 보충 후보입니다.",
+        "checks": [
+          {
+            "id": "E012-K1",
+            "title": "현재 보정 설정 압력과 실제 공급 압력을 대조합니다.",
+            "cite": {
+              "doc": "diagnostic4",
+              "page": 1
+            },
+            "criterion": {
+              "kind": "how",
+              "text": "설정 압력이 공급 압력보다 높은지 확인합니다. 이 조건만으로 전체 정상 여부를 판정하지 않습니다.",
+              "quote": "This error is also output when the set pressure is higher than the supply pressure.",
+              "doc": "diagnostic4",
+              "page": 1
+            }
+          },
+          {
+            "id": "E012-K2",
+            "title": "현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다.",
+            "cite": {
+              "doc": "festo",
+              "page": 90
+            }
+          }
+        ],
+        "diagnostics": [],
+        "evidence": [
+          {
+            "id": "rag:evidence:1e09156ded7e9dba64e2",
+            "doc": "diagnostic4",
+            "page": 1,
+            "quote": "This error is also output when the set pressure is higher than the supply pressure.",
+            "text": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\n[Table diagnostic4:tables:0: 7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA]\nNr: 12 | Error: Counterbalance Timeout | Description: The error is monitored in active as well as inactive compensation. The error is output if the specified compensation pressure is not reached for 1800ms (tolerance + -600mbar). If compensation is activated, the pressure must be reached for a certain time (+ -600mbar for > = 10ms). If this is reached, an OK flag is set internally. This monitoring was additionally introduced because the force build-up time is typically shorter than 1800ms. Balance must be active for at least 300ms. If the force buildup is shorter, no error is output. This error is also output when the set pressure is higher than the supply pressure. | Monitoring / CPX: X",
+            "review_needed": false
+          },
+          {
+            "id": "rag:evidence:b066a2f60fee01b52994",
+            "doc": "festo",
+            "page": 90,
+            "quote": "Check cable to the MPYD.",
+            "text": "Error number: 12 | Error text: Timeout equalizer | Ready signal: 1 | Description: Equalizer pressure was not reached within 2 seconds. | Error elimination: Check cable to the MPYD. Check supply pressure at least 5 bar.",
+            "review_needed": false
+          },
+          {
+            "id": "rag:evidence:4491a1a18b75c33a0854",
+            "doc": "manual82",
+            "page": 78,
+            "quote": "12 Timeout compensation",
+            "text": "12 Timeout compensation",
+            "review_needed": false
+          },
+          {
+            "id": "rag:chunk-bba56f6e020bc16efe33",
+            "doc": "manual82",
+            "page": 38,
+            "quote": "Compensation\n[Table manual82:tables:26: Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nParameter: Rise of pressure | Unit: bar | Significance: When the compensating pressure is changed Activated pressure: [Formula layout requires original PDF]\nParameter: Duration of rise of pressure | Un",
+            "text": "Compensation\n[Table manual82:tables:26: Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nParameter: Rise of pressure | Unit: bar | Significance: When the compensating pressure is changed Activated pressure: [Formula layout requires original PDF]\nParameter: Duration of rise of pressure | Unit: ms | Significance: Time for which the pressure overshoot is in effect.\nParameter: Pressure reduction | Unit: bar | Significance: When the compensating pressure is changed Set pressure: [Formula layout requires original PDF]\nParameter: Duration of pressure reduction | Unit: ms | Significance: Time for which the pressure reduction is in effect.",
+            "review_needed": true
+          },
+          {
+            "id": "rag:chunk-11e5b518dc46b59554f9",
+            "doc": "manual82",
+            "page": 78,
+            "quote": "A.2 Error numbers\n[Table manual82:tables:52: A.2 Error numbers]\nNo.: 12 | Error: Timeout compensation | Detection / CPX: X",
+            "text": "A.2 Error numbers\n[Table manual82:tables:52: A.2 Error numbers]\nNo.: 12 | Error: Timeout compensation | Detection / CPX: X",
+            "review_needed": false
+          },
+          {
+            "id": "rag:chunk-975b2c5e9edc67b07686",
+            "doc": "manual82",
+            "page": 39,
+            "quote": "Compensation\nFigure 6-13 Pressure overshoot and pressure reduction",
+            "text": "Compensation\nFigure 6-13 Pressure overshoot and pressure reduction",
+            "review_needed": false
+          },
+          {
+            "id": "rag:chunk-856a6b73ddc29512f676",
+            "doc": "manual82",
+            "page": 74,
+            "quote": "7.2.7 Compensation\n[Table manual82:tables:50: 7.2.7 Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nUnmapped column 1: 2 | Unmapped column 2: [E3.00 ... 3.15] Setpoint value, compensating | Unmapped column 3: 3 | Unmapped column 4: Pressure in compensating cylinder",
+            "text": "7.2.7 Compensation\n[Table manual82:tables:50: 7.2.7 Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nUnmapped column 1: 2 | Unmapped column 2: [E3.00 ... 3.15] Setpoint value, compensating | Unmapped column 3: 3 | Unmapped column 4: Pressure in compensating cylinder",
+            "review_needed": true
+          },
+          {
+            "id": "rag:chunk-1212d0ca8a0f90cf3fbe",
+            "doc": "manual82",
+            "page": 38,
+            "quote": "Compensation\nThe overshoot or reduction is generated in the case of pressure changes of 1 bar or greater. Teaching of the compensation is therefore not affected.",
+            "text": "Compensation\nThe overshoot or reduction is generated in the case of pressure changes of 1 bar or greater. Teaching of the compensation is therefore not affected.",
+            "review_needed": false
+          }
+        ],
+        "causes": [
+          {
+            "situation_id": "E012",
+            "name": "보정 설정 압력과 공급 압력의 관계",
+            "why": "진단 문서는 설정 압력이 공급 압력보다 높은 경우에도 이 오류가 발생한다고 설명합니다.",
+            "checks": [
+              {
+                "id": "E012-K1",
+                "text": "현재 보정 설정 압력과 실제 공급 압력을 대조합니다.",
+                "cite": {
+                  "doc": "diagnostic4",
+                  "page": 1
+                },
+                "criterion": {
+                  "text": "설정 압력이 공급 압력보다 높은지 확인합니다. 이 조건만으로 전체 정상 여부를 판정하지 않습니다.",
+                  "cite": {
+                    "doc": "diagnostic4",
+                    "page": 1
+                  }
+                }
+              }
+            ],
+            "actions": []
+          },
+          {
+            "situation_id": "E012",
+            "name": "MPYD 케이블과 공급 압력 점검 후보 (구판 보충)",
+            "why": "구판의 보정 압력 시간 초과 행은 MPYD 케이블과 공급 압력 점검을 제시합니다. 신형 오류의 확정 원인이 아닙니다.",
+            "checks": [
+              {
+                "id": "E012-K2",
+                "text": "현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다.",
+                "cite": {
+                  "doc": "festo",
+                  "page": 90
+                },
+                "criterion": null
+              }
+            ],
+            "actions": []
+          }
+        ]
+      }
+    ]
+  },
+  "chat": {
+    "status": "ok",
+    "error_code": "E012",
+    "question": "E012가 계속 재발합니다. 과거 정비를 참고해 무엇부터 확인할까요?",
+    "answer": "E012는 manual82의 오류 번호 표에서 'Timeout compensation'(보정 시간 초과)으로 기재되어 있습니다 [manual82 p.78]. diagnostic4는 보정 압력이 1800 ms(허용오차 ±600 mbar) 안에 도달하지 못하면 이 오류가 출력된다고 설명하며, 설정 압력이 공급 압력보다 높을 때도 출력된다고 합니다 [diagnostic4 p.1]. 다만 diagnostic4의 발행 주체와 펌웨어 적용 여부는 확인 전이므로 출처를 구분해서 보시기 바랍니다.\n\n과거 기록 CASE-0001은 E012에 대해 케이블 연결을 점검했고(E012-K2 결과 normal) 오류가 재발했으며 압력 대조는 하지 않았다고 남겼습니다. 이 기록을 현재 설비의 원인으로 단정할 수는 없습니다. 다만 같은 케이블 점검을 반복하기보다, 아직 수행되지 않은 E012-K1(현재 보정 설정 압력과 실제 공급 압력 대조)을 먼저 검토할 이유가 됩니다. K1에서는 설정 압력이 공급 압력보다 높은지 확인하되, 이 조건만으로 전체 정상 여부를 판정하지는 않습니다 [diagnostic4 p.1].\n\nE012-K2의 MPYD 케이블 점검은 구판(festo) 보충 자료에서 나온 후보입니다 [festo p.90]. 구판은 2초 이내 미도달과 최소 5 bar 공급 압력 확인을 언급하지만, 신형 1800 ms 조건과는 출처가 달라 신형 E012의 확정 원인이나 합격 기준으로 쓰면 안 됩니다. 현 설비에 적용되는지 먼저 확인해야 합니다.\n\n보정 파라미터 표(manual82 p.38)와 보정 설정값 표(manual82 p.74)에는 그림·표 구조 검토가 필요하다는 표시가 있어, 보이는 텍스트 이상의 연결이나 수치는 추측하지 않았습니다. 이번 근거에는 오류 발생만으로 필요한 수리 조치나 파라미터 변경을 명시한 내용이 없습니다. 관련 근거가 부족한 범위는 원본 PDF와 설비 구성으로 확인해야 합니다.\n\n원인·확인 후보: 보정 설정 압력과 공급 압력의 관계\n진단 문서는 설정 압력이 공급 압력보다 높은 경우에도 이 오류가 발생한다고 설명합니다.\n\n- 현재 보정 설정 압력과 실제 공급 압력을 대조합니다. [diagnostic4 p.1]\n  기준·확인 방법: 설정 압력이 공급 압력보다 높은지 확인합니다. 이 조건만으로 전체 정상 여부를 판정하지 않습니다. [diagnostic4 p.1]\n\n원인·확인 후보: MPYD 케이블과 공급 압력 점검 후보 (구판 보충)\n구판의 보정 압력 시간 초과 행은 MPYD 케이블과 공급 압력 점검을 제시합니다. 신형 오류의 확정 원인이 아닙니다.\n\n- 현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다. [festo p.90]\n\n요약: CASE-0001에서 케이블 점검(E012-K2)은 정상이었는데도 재발했고 압력 대조는 미실시였으므로, E012-K1(설정 압력과 공급 압력 대조)을 먼저 검토해 볼 수 있습니다. 이는 우선순위 제안일 뿐 현재 원인의 확정이 아닙니다.\n\n정비 이력 참고(매뉴얼 근거와 구분): CASE-0001에서는 케이블 연결 점검(E012-K2)이 normal이었지만 오류가 재발했고 압력 대조는 하지 않았다고 기록되어 있습니다. 이 기록만으로 원인을 확정할 수는 없지만, 같은 케이블 점검을 반복하기 전에 아직 기록이 없는 E012-K1(보정 설정 압력과 실제 공급 압력 대조)을 먼저 검토할 만합니다. 이는 점검 우선순위 제안이며 수리 조치나 정상 기준을 새로 정하는 것이 아닙니다.\n참고 사례: CASE-0001",
+    "sections": {
+      "interpretation": "E012는 manual82의 오류 번호 표에서 'Timeout compensation'(보정 시간 초과)으로 기재되어 있습니다 [manual82 p.78]. diagnostic4는 보정 압력이 1800 ms(허용오차 ±600 mbar) 안에 도달하지 못하면 이 오류가 출력된다고 설명하며, 설정 압력이 공급 압력보다 높을 때도 출력된다고 합니다 [diagnostic4 p.1]. 다만 diagnostic4의 발행 주체와 펌웨어 적용 여부는 확인 전이므로 출처를 구분해서 보시기 바랍니다.\n\n과거 기록 CASE-0001은 E012에 대해 케이블 연결을 점검했고(E012-K2 결과 normal) 오류가 재발했으며 압력 대조는 하지 않았다고 남겼습니다. 이 기록을 현재 설비의 원인으로 단정할 수는 없습니다. 다만 같은 케이블 점검을 반복하기보다, 아직 수행되지 않은 E012-K1(현재 보정 설정 압력과 실제 공급 압력 대조)을 먼저 검토할 이유가 됩니다. K1에서는 설정 압력이 공급 압력보다 높은지 확인하되, 이 조건만으로 전체 정상 여부를 판정하지는 않습니다 [diagnostic4 p.1].\n\nE012-K2의 MPYD 케이블 점검은 구판(festo) 보충 자료에서 나온 후보입니다 [festo p.90]. 구판은 2초 이내 미도달과 최소 5 bar 공급 압력 확인을 언급하지만, 신형 1800 ms 조건과는 출처가 달라 신형 E012의 확정 원인이나 합격 기준으로 쓰면 안 됩니다. 현 설비에 적용되는지 먼저 확인해야 합니다.\n\n보정 파라미터 표(manual82 p.38)와 보정 설정값 표(manual82 p.74)에는 그림·표 구조 검토가 필요하다는 표시가 있어, 보이는 텍스트 이상의 연결이나 수치는 추측하지 않았습니다. 이번 근거에는 오류 발생만으로 필요한 수리 조치나 파라미터 변경을 명시한 내용이 없습니다. 관련 근거가 부족한 범위는 원본 PDF와 설비 구성으로 확인해야 합니다.",
+      "summary": "CASE-0001에서 케이블 점검(E012-K2)은 정상이었는데도 재발했고 압력 대조는 미실시였으므로, E012-K1(설정 압력과 공급 압력 대조)을 먼저 검토해 볼 수 있습니다. 이는 우선순위 제안일 뿐 현재 원인의 확정이 아닙니다."
+    },
+    "causes": [
+      {
+        "situation_id": "E012",
+        "name": "보정 설정 압력과 공급 압력의 관계",
+        "why": "진단 문서는 설정 압력이 공급 압력보다 높은 경우에도 이 오류가 발생한다고 설명합니다.",
+        "checks": [
+          {
+            "id": "E012-K1",
+            "text": "현재 보정 설정 압력과 실제 공급 압력을 대조합니다.",
+            "cite": {
+              "doc": "diagnostic4",
+              "page": 1
+            },
+            "criterion": {
+              "text": "설정 압력이 공급 압력보다 높은지 확인합니다. 이 조건만으로 전체 정상 여부를 판정하지 않습니다.",
+              "cite": {
+                "doc": "diagnostic4",
+                "page": 1
+              }
+            }
+          }
+        ],
+        "actions": []
+      },
+      {
+        "situation_id": "E012",
+        "name": "MPYD 케이블과 공급 압력 점검 후보 (구판 보충)",
+        "why": "구판의 보정 압력 시간 초과 행은 MPYD 케이블과 공급 압력 점검을 제시합니다. 신형 오류의 확정 원인이 아닙니다.",
+        "checks": [
+          {
+            "id": "E012-K2",
+            "text": "현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다.",
+            "cite": {
+              "doc": "festo",
+              "page": 90
+            },
+            "criterion": null
+          }
+        ],
+        "actions": []
+      }
+    ],
+    "evidence": [
+      {
+        "id": "rag:evidence:1e09156ded7e9dba64e2",
+        "doc": "diagnostic4",
+        "page": 1,
+        "quote": "This error is also output when the set pressure is higher than the supply pressure.",
+        "text": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\n[Table diagnostic4:tables:0: 7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA]\nNr: 12 | Error: Counterbalance Timeout | Description: The error is monitored in active as well as inactive compensation. The error is output if the specified compensation pressure is not reached for 1800ms (tolerance + -600mbar). If compensation is activated, the pressure must be reached for a certain time (+ -600mbar for > = 10ms). If this is reached, an OK flag is set internally. This monitoring was additionally introduced because the force build-up time is typically shorter than 1800ms. Balance must be active for at least 300ms. If the force buildup is shorter, no error is output. This error is also output when the set pressure is higher than the supply pressure. | Monitoring / CPX: X",
+        "review_needed": false,
+        "title": "diagnostic4 PDF p.1"
+      },
+      {
+        "id": "rag:evidence:b066a2f60fee01b52994",
+        "doc": "festo",
+        "page": 90,
+        "quote": "Check cable to the MPYD.",
+        "text": "Error number: 12 | Error text: Timeout equalizer | Ready signal: 1 | Description: Equalizer pressure was not reached within 2 seconds. | Error elimination: Check cable to the MPYD. Check supply pressure at least 5 bar.",
+        "review_needed": false,
+        "title": "festo PDF p.90"
+      },
+      {
+        "id": "rag:evidence:4491a1a18b75c33a0854",
+        "doc": "manual82",
+        "page": 78,
+        "quote": "12 Timeout compensation",
+        "text": "12 Timeout compensation",
+        "review_needed": false,
+        "title": "manual82 PDF p.78"
+      },
+      {
+        "id": "rag:chunk-bba56f6e020bc16efe33",
+        "doc": "manual82",
+        "page": 38,
+        "quote": "Compensation\n[Table manual82:tables:26: Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nParameter: Rise of pressure | Unit: bar | Significance: When the compensating pressure is changed Activated pressure: [Formula layout requires original PDF]\nParameter: Duration of rise of pressure | Un",
+        "text": "Compensation\n[Table manual82:tables:26: Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nParameter: Rise of pressure | Unit: bar | Significance: When the compensating pressure is changed Activated pressure: [Formula layout requires original PDF]\nParameter: Duration of rise of pressure | Unit: ms | Significance: Time for which the pressure overshoot is in effect.\nParameter: Pressure reduction | Unit: bar | Significance: When the compensating pressure is changed Set pressure: [Formula layout requires original PDF]\nParameter: Duration of pressure reduction | Unit: ms | Significance: Time for which the pressure reduction is in effect.",
+        "review_needed": true,
+        "title": "manual82 PDF p.38"
+      },
+      {
+        "id": "rag:chunk-11e5b518dc46b59554f9",
+        "doc": "manual82",
+        "page": 78,
+        "quote": "A.2 Error numbers\n[Table manual82:tables:52: A.2 Error numbers]\nNo.: 12 | Error: Timeout compensation | Detection / CPX: X",
+        "text": "A.2 Error numbers\n[Table manual82:tables:52: A.2 Error numbers]\nNo.: 12 | Error: Timeout compensation | Detection / CPX: X",
+        "review_needed": false,
+        "title": "manual82 PDF p.78"
+      },
+      {
+        "id": "rag:chunk-f2b795d02ea4deea1186",
+        "doc": "festo",
+        "page": 90,
+        "quote": "10.1 Error messages\n[Table festo:tables:80: 10.1 Error messages]\nError number: 12 | Error text: Timeout equalizer | Ready signal: 1 | Description: Equalizer pressure was not reached within 2 seconds. | Error elimination: Check cable to the MPYD. Check supply pressure at least 5 bar.",
+        "text": "10.1 Error messages\n[Table festo:tables:80: 10.1 Error messages]\nError number: 12 | Error text: Timeout equalizer | Ready signal: 1 | Description: Equalizer pressure was not reached within 2 seconds. | Error elimination: Check cable to the MPYD. Check supply pressure at least 5 bar.",
+        "review_needed": false,
+        "title": "festo PDF p.90"
+      },
+      {
+        "id": "rag:chunk-856a6b73ddc29512f676",
+        "doc": "manual82",
+        "page": 74,
+        "quote": "7.2.7 Compensation\n[Table manual82:tables:50: 7.2.7 Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nUnmapped column 1: 2 | Unmapped column 2: [E3.00 ... 3.15] Setpoint value, compensating | Unmapped column 3: 3 | Unmapped column 4: Pressure in compensating cylinder",
+        "text": "7.2.7 Compensation\n[Table manual82:tables:50: 7.2.7 Compensation]\n[검토 필요: 자동으로 해석되지 않은 시각 정보가 있습니다. 원본 PDF 확인]\nUnmapped column 1: 2 | Unmapped column 2: [E3.00 ... 3.15] Setpoint value, compensating | Unmapped column 3: 3 | Unmapped column 4: Pressure in compensating cylinder",
+        "review_needed": true,
+        "title": "manual82 PDF p.74"
+      },
+      {
+        "id": "rag:chunk-1212d0ca8a0f90cf3fbe",
+        "doc": "manual82",
+        "page": 38,
+        "quote": "Compensation\nThe overshoot or reduction is generated in the case of pressure changes of 1 bar or greater. Teaching of the compensation is therefore not affected.",
+        "text": "Compensation\nThe overshoot or reduction is generated in the case of pressure changes of 1 bar or greater. Teaching of the compensation is therefore not affected.",
+        "review_needed": false,
+        "title": "manual82 PDF p.38"
+      },
+      {
+        "id": "rag:chunk-975b2c5e9edc67b07686",
+        "doc": "manual82",
+        "page": 39,
+        "quote": "Compensation\nFigure 6-13 Pressure overshoot and pressure reduction",
+        "text": "Compensation\nFigure 6-13 Pressure overshoot and pressure reduction",
+        "review_needed": false,
+        "title": "manual82 PDF p.39"
+      }
+    ],
+    "review_notes": [
+      "신형 문서의 1800 ms 조건과 구판 오류 12의 2초·5 bar 참고값은 서로 다른 출처입니다. 구판의 케이블·압력 점검은 현 설비 적용 여부를 확인한 보충 후보입니다.",
+      "시각 정보·표 구조 원본 확인 필요: manual82 p.38, manual82 p.74"
+    ],
+    "model": "claude-sonnet-5-5",
+    "usage": {
+      "input_tokens": 6583,
+      "output_tokens": 1292,
+      "total_tokens": 7875,
+      "embedding_tokens": 70
+    },
+    "api_calls_this_run": 2,
+    "cache_hit": false,
+    "validation_errors": [],
+    "response_version": "claude-layout-memory-v3",
+    "provider": "anthropic",
+    "maintenance_advice": {
+      "text": "CASE-0001에서는 케이블 연결 점검(E012-K2)이 normal이었지만 오류가 재발했고 압력 대조는 하지 않았다고 기록되어 있습니다. 이 기록만으로 원인을 확정할 수는 없지만, 같은 케이블 점검을 반복하기 전에 아직 기록이 없는 E012-K1(보정 설정 압력과 실제 공급 압력 대조)을 먼저 검토할 만합니다. 이는 점검 우선순위 제안이며 수리 조치나 정상 기준을 새로 정하는 것이 아닙니다.",
+      "check_ids": [
+        "E012-K1",
+        "E012-K2"
+      ],
+      "case_ids": [
+        "CASE-0001"
+      ]
+    },
+    "maintenance_context_hash": "b128b3ae955070b67398e422418cf87cd081f069e66432d901834b5b788d8b15",
+    "seconds": 13.506,
+    "situation_ids": [
+      "E012"
+    ],
+    "blocks": [
+      {
+        "type": "p",
+        "parts": [
+          {
+            "text": "E012는 manual82의 오류 번호 표에서 'Timeout compensation'(보정 시간 초과)으로 기재되어 있습니다 "
+          },
+          {
+            "cite": {
+              "doc": "manual82",
+              "page": 78
+            }
+          },
+          {
+            "text": ". diagnostic4는 보정 압력이 1800 ms(허용오차 ±600 mbar) 안에 도달하지 못하면 이 오류가 출력된다고 설명하며, 설정 압력이 공급 압력보다 높을 때도 출력된다고 합니다 "
+          },
+          {
+            "cite": {
+              "doc": "diagnostic4",
+              "page": 1
+            }
+          },
+          {
+            "text": ". 다만 diagnostic4의 발행 주체와 펌웨어 적용 여부는 확인 전이므로 출처를 구분해서 보시기 바랍니다."
+          }
+        ]
+      },
+      {
+        "type": "p",
+        "parts": [
+          {
+            "text": "과거 기록 CASE-0001은 E012에 대해 케이블 연결을 점검했고(E012-K2 결과 normal) 오류가 재발했으며 압력 대조는 하지 않았다고 남겼습니다. 이 기록을 현재 설비의 원인으로 단정할 수는 없습니다. 다만 같은 케이블 점검을 반복하기보다, 아직 수행되지 않은 E012-K1(현재 보정 설정 압력과 실제 공급 압력 대조)을 먼저 검토할 이유가 됩니다. K1에서는 설정 압력이 공급 압력보다 높은지 확인하되, 이 조건만으로 전체 정상 여부를 판정하지는 않습니다 "
+          },
+          {
+            "cite": {
+              "doc": "diagnostic4",
+              "page": 1
+            }
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "type": "p",
+        "parts": [
+          {
+            "text": "E012-K2의 MPYD 케이블 점검은 구판(festo) 보충 자료에서 나온 후보입니다 "
+          },
+          {
+            "cite": {
+              "doc": "festo",
+              "page": 90
+            }
+          },
+          {
+            "text": ". 구판은 2초 이내 미도달과 최소 5 bar 공급 압력 확인을 언급하지만, 신형 1800 ms 조건과는 출처가 달라 신형 E012의 확정 원인이나 합격 기준으로 쓰면 안 됩니다. 현 설비에 적용되는지 먼저 확인해야 합니다."
+          }
+        ]
+      },
+      {
+        "type": "p",
+        "parts": [
+          {
+            "text": "보정 파라미터 표(manual82 p.38)와 보정 설정값 표(manual82 p.74)에는 그림·표 구조 검토가 필요하다는 표시가 있어, 보이는 텍스트 이상의 연결이나 수치는 추측하지 않았습니다. 이번 근거에는 오류 발생만으로 필요한 수리 조치나 파라미터 변경을 명시한 내용이 없습니다. 관련 근거가 부족한 범위는 원본 PDF와 설비 구성으로 확인해야 합니다."
+          }
+        ]
+      },
+      {
+        "type": "p",
+        "parts": [
+          {
+            "text": "원인·확인 후보: 보정 설정 압력과 공급 압력의 관계\n진단 문서는 설정 압력이 공급 압력보다 높은 경우에도 이 오류가 발생한다고 설명합니다."
+          }
+        ]
+      },
+      {
+        "type": "p",
+        "parts": [
+          {
+            "text": "- 현재 보정 설정 압력과 실제 공급 압력을 대조합니다. "
+          },
+          {
+            "cite": {
+              "doc": "diagnostic4",
+              "page": 1
+            }
+          },
+          {
+            "text": "\n  기준·확인 방법: 설정 압력이 공급 압력보다 높은지 확인합니다. 이 조건만으로 전체 정상 여부를 판정하지 않습니다. "
+          },
+          {
+            "cite": {
+              "doc": "diagnostic4",
+              "page": 1
+            }
+          }
+        ]
+      },
+      {
+        "type": "p",
+        "parts": [
+          {
+            "text": "원인·확인 후보: MPYD 케이블과 공급 압력 점검 후보 (구판 보충)\n구판의 보정 압력 시간 초과 행은 MPYD 케이블과 공급 압력 점검을 제시합니다. 신형 오류의 확정 원인이 아닙니다."
+          }
+        ]
+      },
+      {
+        "type": "p",
+        "parts": [
+          {
+            "text": "- 현 설비에 적용되는 MPYD 케이블 연결 상태를 확인합니다. "
+          },
+          {
+            "cite": {
+              "doc": "festo",
+              "page": 90
+            }
+          }
+        ]
+      },
+      {
+        "type": "p",
+        "parts": [
+          {
+            "text": "요약: CASE-0001에서 케이블 점검(E012-K2)은 정상이었는데도 재발했고 압력 대조는 미실시였으므로, E012-K1(설정 압력과 공급 압력 대조)을 먼저 검토해 볼 수 있습니다. 이는 우선순위 제안일 뿐 현재 원인의 확정이 아닙니다."
+          }
+        ]
+      },
+      {
+        "type": "p",
+        "parts": [
+          {
+            "text": "정비 이력 참고(매뉴얼 근거와 구분): CASE-0001에서는 케이블 연결 점검(E012-K2)이 normal이었지만 오류가 재발했고 압력 대조는 하지 않았다고 기록되어 있습니다. 이 기록만으로 원인을 확정할 수는 없지만, 같은 케이블 점검을 반복하기 전에 아직 기록이 없는 E012-K1(보정 설정 압력과 실제 공급 압력 대조)을 먼저 검토할 만합니다. 이는 점검 우선순위 제안이며 수리 조치나 정상 기준을 새로 정하는 것이 아닙니다.\n참고 사례: CASE-0001"
+          }
+        ]
+      }
+    ],
+    "caution": "신형 문서의 1800 ms 조건과 구판 오류 12의 2초·5 bar 참고값은 서로 다른 출처입니다. 구판의 케이블·압력 점검은 현 설비 적용 여부를 확인한 보충 후보입니다. 시각 정보·표 구조 원본 확인 필요: manual82 p.38, manual82 p.74"
+  }
+}

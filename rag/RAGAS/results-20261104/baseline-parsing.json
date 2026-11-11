@@ -1,0 +1,8 @@
+{
+  "source": "pre-improvement local parsing artifact, verified against pre-change parser",
+  "sha256": "c3e8b855170e864cf05a702435fcc0dd5dd21a8f90f75238679e877364bd66e5",
+  "original_chunks": 882,
+  "searchable_original_chunks": 661,
+  "median_searchable_chars": 253,
+  "mixed_table_chunks": 5
+}

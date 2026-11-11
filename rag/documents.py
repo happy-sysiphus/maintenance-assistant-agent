@@ -37,7 +37,8 @@ def searchable_chunk(text, source_json=None):
 
 
 def fingerprint() -> str:
-    return hashlib.sha256(DOCUMENTS_PATH.read_bytes() + MAPPING_PATH.read_bytes()).hexdigest()
+    return hashlib.sha256(DOCUMENTS_PATH.read_bytes() + MAPPING_PATH.read_bytes()
+                          + (DATA / "processing.json").read_bytes()).hexdigest()
 
 
 def verify_manuals() -> None:

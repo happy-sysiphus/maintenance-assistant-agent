@@ -1,0 +1,8 @@
+{
+  "baseline_commit": "c498565",
+  "source_dataset_sha256": "be3762c2a9be90ddc760cedd28407597688defba57b7d8916e14b1007157eb36",
+  "same_reference_dataset": true,
+  "same_judge": "gpt-4.1-mini",
+  "changes_compared": "combined parser/chunker/retrieval/Claude answer generation; field records evaluated separately",
+  "tuning_overlap": "The 18 general questions also select chunk size; this is a development-set comparison, not held-out generalization."
+}

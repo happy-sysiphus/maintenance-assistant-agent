@@ -1,17 +1,17 @@
 {
   "status": "ok",
   "error_code": "E029",
-  "question": "이 오류의 의미와 근거가 있는 원인 후보, 점검 순서, 정상 기준 및 조치를 알려주세요.",
-  "answer": "E029는 문서상 드리프트(drift) 관련 오류로 해석할 수 있습니다. manual82는 추가 공압 회로가 활성일 때의 허용 드리프트 한계를 뜻하며, 누설(leakage)로 인해 드라이브가 드리프트할 수 있다고 설명합니다. 또한 한계를 넘으면 필드버스의 ‘Setpoint/actual position comparison’ 비트가 리셋되고, 재기동 시 상위 제어기가 로봇 이동 전에 드라이브가 목표 위치에 있는지 확인해야 합니다. diagnostic4는 절대 드리프트 감시가 CPX 파라미터이며 WinSPAS로 설정되고, 초과 시 시스템 오류가 아니라 상태 워드 변화와 비교 비트 0으로 나타난다고 설명합니다. 따라서 이 코드는 부품 고장을 단정하기보다 드리프트 허용치/절대 드리프트 설정과 관련 상태 비트, 그리고 누설 여부를 함께 확인하는 해석이 맞습니다.\n\n원인·확인 후보: 누설로 인한 드리프트 한계 초과\nmanual82는 드라이브가 누설로 인해 드리프트할 수 있고, 추가 공압 회로 활성 중 허용 드리프트를 초과하면 비교 비트가 리셋된다고 설명합니다. 코드만으로 누설 부위를 특정할 수는 없습니다. [manual82 p.44]\n\n- 추가 공압 회로 활성 상태와 실제 드리프트를 설정된 허용치와 대조합니다. [manual82 p.44]\n  기준·확인 방법: 허용 드리프트는 설비에 설정된 mm 값입니다. 문서에 없는 공통 수치를 적용하지 않습니다. [manual82 p.44]\n\n- WinSPAS 절대 드리프트 설정과 목표·실제 위치 비교 상태 비트를 확인합니다. [diagnostic4 p.2]\n  기준·확인 방법: 절대 드리프트 초과 시 상태 워드 변화와 시스템 오류를 구분합니다. 문서별 비트 정의와 적용 버전을 확인합니다. [diagnostic4 p.2]\n\n- 조치: 드리프트가 설정 허용치를 넘긴 뒤 재시작할 때: 상위 제어기에서 로봇 이동 전에 드라이브가 지정된 목표 위치에 있는지 확인합니다. [manual82 p.44] [manual82 p.44]\n\n원인·확인 후보: 절대 드리프트 감시값 초과\ndiagnostic4는 절대 드리프트 한계가 CPX 파라미터이며 WinSPAS로 설정되고, 초과 시 시스템 오류가 아니라 상태 워드 변화와 비교 비트 0으로 나타난다고 설명합니다. 적용 펌웨어와 비트 정의는 문서 차이를 함께 확인해야 합니다. [diagnostic4 p.2]\n\n요약: E029는 드리프트 초과와 관련된 오류로, 누설이나 설정된 드리프트 한계 초과가 원인 후보입니다. 절대 드리프트는 시스템 오류가 아니라 상태 비트 변화로 나타날 수 있으므로, 설정값과 비교 비트를 먼저 확인하세요.",
+  "question": "E029 오류의 의미와 점검 방법을 알려주세요.",
+  "answer": "E029는 manual82의 오류 목록에서 'Drift(드리프트)'로 표시됩니다 [manual82 p.79]. manual82 p.44는 누설 때문에 드라이브가 드리프트할 수 있다고 설명합니다. 추가 공압 회로가 활성인 동안 허용되는 최대 드리프트(mm)는 'Drift tolerance' 파라미터로 지정되며, 이 한계를 넘으면 필드버스의 'Setpoint/actual position comparison' 비트가 리셋됩니다 [manual82 p.44]. 다만 코드만으로 누설 부품을 특정하거나 현재 고장을 확정할 수는 없습니다.\n\n점검 방법은 두 가지입니다. 첫째(E029-K1), 추가 공압 회로의 활성 상태와 실제 드리프트를 설비에 설정된 허용치와 대조합니다. 허용 드리프트는 설비에 설정된 mm 값이며 문서에 없는 공통 수치는 적용하지 않습니다 [manual82 p.44]. 허용치를 넘긴 뒤 재시작할 때는 로봇을 움직이기 전에 상위 제어기에서 드라이브가 지정된 목표 위치에 있는지 확인해야 합니다 [manual82 p.44].\n\n둘째(E029-K2), WinSPAS의 절대 드리프트 설정과 목표·실제 위치 비교 상태 비트를 확인합니다. diagnostic4 p.2에 따르면 절대 드리프트 감시는 US2 이후 또는 에어 절약 모드가 활성일 때 즉시 꺼지며, 한계값은 WinSPAS로 설정하는 CPX 파라미터입니다. 이를 초과하면 상대 드리프트와 달리 시스템 오류가 아니라 상태 워드만 바뀌고, 'Compare setpoint / actual position' 비트가 0이 됩니다 [diagnostic4 p.2]. 따라서 상태 워드 변화와 시스템 오류를 구분해서 보시기 바랍니다. diagnostic4의 발행 주체와 적용 펌웨어는 확인 전이므로 비트 정의와 적용 버전은 별도로 확인해야 합니다.\n\n구판 festo 자료의 오류 29(캡 마모) 정의는 신형 E029에 적용하지 않습니다. 이 오류만으로 캡 교체, 재보정, 분해, 파라미터 변경이 필요하다고 볼 근거는 제공된 자료에 없습니다.\n\n원인·확인 후보: 누설에 따른 위치 이동 가능성\n시스템 매뉴얼은 누설로 드리프트가 발생할 수 있다고 설명합니다. 코드만으로 누설 부품을 특정할 수 없습니다.\n\n- 추가 공압 회로 활성 상태와 실제 드리프트를 설정된 허용치와 대조합니다. [manual82 p.44]\n  기준·확인 방법: 허용 드리프트는 설비에 설정된 mm 값입니다. 문서에 없는 공통 수치를 적용하지 않습니다. [manual82 p.44]\n\n- 조치: 드리프트가 설정 허용치를 넘긴 뒤 재시작할 때: 로봇 이동 전에 드라이브가 지정된 목표 위치에 있도록 상위 제어기에서 확인합니다. [manual82 p.44]\n\n원인·확인 후보: 절대 드리프트 감시와 상태 비트 확인\n진단 첨부 문서는 절대 드리프트의 설정값과 상태 비트 변화를 설명하며 시스템 오류와 구분합니다.\n\n- WinSPAS 절대 드리프트 설정과 목표·실제 위치 비교 상태 비트를 확인합니다. [diagnostic4 p.2]\n  기준·확인 방법: 절대 드리프트 초과 시 상태 워드 변화와 시스템 오류를 구분합니다. 문서별 비트 정의와 적용 버전을 확인합니다. [diagnostic4 p.2]\n\n요약: E029는 드리프트 관련 오류로, 누설 등으로 드라이브가 설정 허용치 이상 이동했을 가능성을 의미합니다 [manual82 p.44, p.79]. 설정된 허용치와 실제 드리프트를 대조하고, WinSPAS의 절대 드리프트 설정과 상태 비트를 구분해 확인하세요 [diagnostic4 p.2].",
   "sections": {
-    "interpretation": "E029는 문서상 드리프트(drift) 관련 오류로 해석할 수 있습니다. manual82는 추가 공압 회로가 활성일 때의 허용 드리프트 한계를 뜻하며, 누설(leakage)로 인해 드라이브가 드리프트할 수 있다고 설명합니다. 또한 한계를 넘으면 필드버스의 ‘Setpoint/actual position comparison’ 비트가 리셋되고, 재기동 시 상위 제어기가 로봇 이동 전에 드라이브가 목표 위치에 있는지 확인해야 합니다. diagnostic4는 절대 드리프트 감시가 CPX 파라미터이며 WinSPAS로 설정되고, 초과 시 시스템 오류가 아니라 상태 워드 변화와 비교 비트 0으로 나타난다고 설명합니다. 따라서 이 코드는 부품 고장을 단정하기보다 드리프트 허용치/절대 드리프트 설정과 관련 상태 비트, 그리고 누설 여부를 함께 확인하는 해석이 맞습니다.",
-    "summary": "E029는 드리프트 초과와 관련된 오류로, 누설이나 설정된 드리프트 한계 초과가 원인 후보입니다. 절대 드리프트는 시스템 오류가 아니라 상태 비트 변화로 나타날 수 있으므로, 설정값과 비교 비트를 먼저 확인하세요."
+    "interpretation": "E029는 manual82의 오류 목록에서 'Drift(드리프트)'로 표시됩니다 [manual82 p.79]. manual82 p.44는 누설 때문에 드라이브가 드리프트할 수 있다고 설명합니다. 추가 공압 회로가 활성인 동안 허용되는 최대 드리프트(mm)는 'Drift tolerance' 파라미터로 지정되며, 이 한계를 넘으면 필드버스의 'Setpoint/actual position comparison' 비트가 리셋됩니다 [manual82 p.44]. 다만 코드만으로 누설 부품을 특정하거나 현재 고장을 확정할 수는 없습니다.\n\n점검 방법은 두 가지입니다. 첫째(E029-K1), 추가 공압 회로의 활성 상태와 실제 드리프트를 설비에 설정된 허용치와 대조합니다. 허용 드리프트는 설비에 설정된 mm 값이며 문서에 없는 공통 수치는 적용하지 않습니다 [manual82 p.44]. 허용치를 넘긴 뒤 재시작할 때는 로봇을 움직이기 전에 상위 제어기에서 드라이브가 지정된 목표 위치에 있는지 확인해야 합니다 [manual82 p.44].\n\n둘째(E029-K2), WinSPAS의 절대 드리프트 설정과 목표·실제 위치 비교 상태 비트를 확인합니다. diagnostic4 p.2에 따르면 절대 드리프트 감시는 US2 이후 또는 에어 절약 모드가 활성일 때 즉시 꺼지며, 한계값은 WinSPAS로 설정하는 CPX 파라미터입니다. 이를 초과하면 상대 드리프트와 달리 시스템 오류가 아니라 상태 워드만 바뀌고, 'Compare setpoint / actual position' 비트가 0이 됩니다 [diagnostic4 p.2]. 따라서 상태 워드 변화와 시스템 오류를 구분해서 보시기 바랍니다. diagnostic4의 발행 주체와 적용 펌웨어는 확인 전이므로 비트 정의와 적용 버전은 별도로 확인해야 합니다.\n\n구판 festo 자료의 오류 29(캡 마모) 정의는 신형 E029에 적용하지 않습니다. 이 오류만으로 캡 교체, 재보정, 분해, 파라미터 변경이 필요하다고 볼 근거는 제공된 자료에 없습니다.",
+    "summary": "E029는 드리프트 관련 오류로, 누설 등으로 드라이브가 설정 허용치 이상 이동했을 가능성을 의미합니다 [manual82 p.44, p.79]. 설정된 허용치와 실제 드리프트를 대조하고, WinSPAS의 절대 드리프트 설정과 상태 비트를 구분해 확인하세요 [diagnostic4 p.2]."
   },
   "causes": [
     {
       "situation_id": "E029",
-      "name": "누설로 인한 드리프트 한계 초과",
-      "why": "manual82는 드라이브가 누설로 인해 드리프트할 수 있고, 추가 공압 회로 활성 중 허용 드리프트를 초과하면 비교 비트가 리셋된다고 설명합니다. 코드만으로 누설 부위를 특정할 수는 없습니다. [manual82 p.44]",
+      "name": "누설에 따른 위치 이동 가능성",
+      "why": "시스템 매뉴얼은 누설로 드리프트가 발생할 수 있다고 설명합니다. 코드만으로 누설 부품을 특정할 수 없습니다.",
       "checks": [
         {
           "id": "E029-K1",
@@ -27,7 +27,24 @@
               "page": 44
             }
           }
-        },
+        }
+      ],
+      "actions": [
+        {
+          "when": "드리프트가 설정 허용치를 넘긴 뒤 재시작할 때",
+          "text": "로봇 이동 전에 드라이브가 지정된 목표 위치에 있도록 상위 제어기에서 확인합니다.",
+          "cite": {
+            "doc": "manual82",
+            "page": 44
+          }
+        }
+      ]
+    },
+    {
+      "situation_id": "E029",
+      "name": "절대 드리프트 감시와 상태 비트 확인",
+      "why": "진단 첨부 문서는 절대 드리프트의 설정값과 상태 비트 변화를 설명하며 시스템 오류와 구분합니다.",
+      "checks": [
         {
           "id": "E029-K2",
           "text": "WinSPAS 절대 드리프트 설정과 목표·실제 위치 비교 상태 비트를 확인합니다.",
@@ -44,22 +61,6 @@
           }
         }
       ],
-      "actions": [
-        {
-          "when": "드리프트가 설정 허용치를 넘긴 뒤 재시작할 때",
-          "text": "상위 제어기에서 로봇 이동 전에 드라이브가 지정된 목표 위치에 있는지 확인합니다. [manual82 p.44]",
-          "cite": {
-            "doc": "manual82",
-            "page": 44
-          }
-        }
-      ]
-    },
-    {
-      "situation_id": "E029",
-      "name": "절대 드리프트 감시값 초과",
-      "why": "diagnostic4는 절대 드리프트 한계가 CPX 파라미터이며 WinSPAS로 설정되고, 초과 시 시스템 오류가 아니라 상태 워드 변화와 비교 비트 0으로 나타난다고 설명합니다. 적용 펌웨어와 비트 정의는 문서 차이를 함께 확인해야 합니다. [diagnostic4 p.2]",
-      "checks": [],
       "actions": []
     }
   ],
@@ -69,7 +70,7 @@
       "doc": "diagnostic4",
       "page": 2,
       "quote": "Exceeding the absolute drift will only result in a status word change and not a system error",
-      "text": "Column 1: 29 | Column 2: Drift | Column 3: In addition, there is an absolute drift detection, which is switched off immediately from US2 or air saving mode is actively active. Thus, even in the first 10 seconds in which the relative drift is not measured yet. The limit value for absolute drift is a CPX parameter and can be set via WinSPAS. Exceeding the absolute drift will only result in a status word change and not a system error, as with relative drift. If the absolute drift is exceeded, the status bit Compare setpoint / actual position is set to 0. | Column 4: X",
+      "text": "7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA\n[Table diagnostic4:tables:1: 7.1 Error Numbers Servopneumatic Welding Gun System CPX-WELD-2G-SA]\nNr: 29 | Error: Drift | Description: In addition, there is an absolute drift detection, which is switched off immediately from US2 or air saving mode is actively active. Thus, even in the first 10 seconds in which the relative drift is not measured yet. The limit value for absolute drift is a CPX parameter and can be set via WinSPAS. Exceeding the absolute drift will only result in a status word change and not a system error, as with relative drift. If the absolute drift is exceeded, the status bit Compare setpoint / actual position is set to 0. | Monitoring / CPX: X",
       "review_needed": false
     },
     {
@@ -77,7 +78,7 @@
       "doc": "diagnostic4",
       "page": 2,
       "quote": "29 Drift",
-      "text": "witched off immediately from US2 or air saving mode is actively active. Thus, even in the first 10 seconds in which the relative drift is not measured yet. The limit value for absolute drift is a CPX 29 Drift X parameter and can be set via WinSPAS. Exceeding the absolute drift will only result in a status word change and not a system error, as with relative drift. If the absolute drift is exceeded, the status bit Compare setpoint / actual position is set to 0. The blocking function of the main cylinder is checked by the diagnostic function at the end of homing. Main cylinder check valves closed: Output 2 off => 1V4 not actuated => 1V6 and 1V7 not actuated => Cylinder pressures blocked. Master cylind",
+      "text": "29 Drift",
       "review_needed": false
     },
     {
@@ -85,7 +86,7 @@
       "doc": "manual82",
       "page": 44,
       "quote": "Drift tolerance Specifies the maximum permitted drift in mm while the additional pneumatic circuit is active.",
-      "text": "ion gains of the force and pressure regulator. Valve offset Offset for valve. Cylinder Drive used (from the database). Contains length and diameter information. Drift tolerance Parameter Significance Drift tolerance Specifies the maximum permitted drift in mm while the additional pneumatic circuit is active. The drive can drift due to leakage. If the drift exceeds the specified limit, the “Setpoint/actual position comparison” bit on the fieldbus is reset. In such cases, the higher-order controller must ensure when restarting that the drive is in the specified setpoint position before any robot movement is carried out. Homing Command Button Function Friction limit N If the friction measured during homing exceeds or falls below this value, an error is generated. Target pressure bar Final value of the",
+      "text": "Drift tolerance Specifies the maximum permitted drift in mm while the additional pneumatic circuit is active.",
       "review_needed": false
     },
     {
@@ -93,7 +94,7 @@
       "doc": "manual82",
       "page": 44,
       "quote": "The drive can drift due to leakage.",
-      "text": "Column 1: Drift tolerance | Column 2: Specifies the maximum permitted drift in mm while the addi- tional pneumatic circuit is active. The drive can drift due to leakage. If the drift exceeds the specified limit, the “Set- point/actual position comparison” bit on the fieldbus is re- set. In such cases, the higher-order controller must ensure when restarting that the drive is in the specified setpoint position before any robot movement is carried out.",
+      "text": "Drift tolerance\n[Table manual82:tables:31: Drift tolerance]\nParameter: Drift tolerance | Significance: Specifies the maximum permitted drift in mm while the additional pneumatic circuit is active. The drive can drift due to leakage. If the drift exceeds the specified limit, the “Setpoint/actual position comparison” bit on the fieldbus is reset. In such cases, the higher-order controller must ensure when restarting that the drive is in the specified setpoint position before any robot movement is carried out.",
       "review_needed": false
     },
     {
@@ -101,55 +102,34 @@
       "doc": "manual82",
       "page": 79,
       "quote": "29 Drift",
-      "text": "Detection CPX MPYE MPYD Cylinder 23 Short circuit air saving control valve X (output 3) 24 – (not assigned) 25 – (not assigned) 26 Parameterisation X 27 Welding position X 28 Unintentional movement X 29 Drift X 30 Blocking function of main cylinder X 31 – (not assigned) 32 – (not assigned) 33 Drive CAN communication X 34 Drive position sensor X 35 Drive pressure sensor LD (P4) X 36 Drive pressure sensor AD (P2) X 37 Drive voltage X 38 Drive diagnostic memory X 39 Drive parameter memory X 40 – (not assigned) 41 – (not assigned) 42 – (not assigned) 43 Drive valve CAN communication X 44 Drive valve clamping X 45 Drive valve temperature X 46 Drive valve voltage X 47 – (not assigned) 48 – (not assigned) ",
+      "text": "29 Drift",
       "review_needed": false
     },
     {
-      "id": "rag:chunk-5878dc6ff3138ec4b678",
-      "doc": "diagnostic4",
-      "page": 2,
-      "quote": "Section 7.1\n[Table; PDF page 2]\nColumn 1: 29 | Column 2: Drift | Column 3: In addition, there is an absolute drift detection, which is switched off immediately from US2 or air saving mode is actively active. Thus, even in the first 10 seconds in which the relative drift is not measured yet. The limi",
-      "text": "Section 7.1\n[Table; PDF page 2]\nColumn 1: 29 | Column 2: Drift | Column 3: In addition, there is an absolute drift detection, which is switched off immediately from US2 or air saving mode is actively active. Thus, even in the first 10 seconds in which the relative drift is not measured yet. The limit value for absolute drift is a CPX parameter and can be set via WinSPAS. Exceeding the absolute drift will only result in a status word change and not a system error, as with relative drift. If the absolute drift is exceeded, the status bit Compare setpoint / actual position is set to 0. | Column 4: X",
-      "review_needed": false
-    },
-    {
-      "id": "rag:chunk-adf2c87ba4b3f1eadf4c",
+      "id": "rag:chunk-cd62ba170644efe0e51f",
       "doc": "manual82",
-      "page": 44,
-      "quote": "Section 6.9.5\nDrift tolerance\nParameter Significance",
-      "text": "Section 6.9.5\nDrift tolerance\nParameter Significance",
-      "review_needed": false
-    },
-    {
-      "id": "rag:chunk-a18e20e88ff69edbcf47",
-      "doc": "manual82",
-      "page": 44,
-      "quote": "Section 6.9.5\n[Table; PDF page 44]\nColumn 1: Drift tolerance | Column 2: Specifies the maximum permitted drift in mm while the addi- tional pneumatic circuit is active. The drive can drift due to leakage. If the drift exceeds the specified limit, the “Set- point/actual position comparison” bit on th",
-      "text": "Section 6.9.5\n[Table; PDF page 44]\nColumn 1: Drift tolerance | Column 2: Specifies the maximum permitted drift in mm while the addi- tional pneumatic circuit is active. The drive can drift due to leakage. If the drift exceeds the specified limit, the “Set- point/actual position comparison” bit on the fieldbus is re- set. In such cases, the higher-order controller must ensure when restarting that the drive is in the specified setpoint position before any robot movement is carried out.",
-      "review_needed": false
-    },
-    {
-      "id": "rag:evidence:4ea5baa6b92cecfae128",
-      "doc": "diagnostic4",
-      "page": 2,
-      "quote": "28 Unwanted Movement",
-      "text": ", after reaching MC_Position in State HoldPosition or State Work, the control difference becomes greater than 10mm, the error is triggered (error reaction) but not yet reported. There must not be any 28 Unwanted Movement X error in the pressure supply and the check valves must not be switched. After 10s, the error is reported if no other error is present. If another error occurs in the meantime, the monitoring is restarted again. In addition, there is an absolute drift detection, which is switched off immediately from US2 or air saving mode is actively active. Thus, even in the first 10 seconds in which the relative drift is not measured yet. The limit value for absolute drift is a CPX 29 Drift X parameter and ",
+      "page": 79,
+      "quote": "A Technical data\n[Table manual82:tables:53: A Technical data]\nNo.: 29 | Error: Drift | Detection / CPX: X",
+      "text": "A Technical data\n[Table manual82:tables:53: A Technical data]\nNo.: 29 | Error: Drift | Detection / CPX: X",
       "review_needed": false
     }
   ],
   "review_notes": [
     "드리프트 허용치는 CPX·WinSPAS의 실제 설정을 확인합니다. 절대 드리프트 상태 비트와 시스템 오류를 구분하며, 구판 오류 29의 캡 마모 정의를 적용하지 않습니다. 진단 첨부 문서의 적용 펌웨어는 별도 확인이 필요합니다."
   ],
-  "model": "gpt-5.4-mini",
+  "model": "claude-sonnet-5-5",
   "usage": {
-    "input_tokens": 3499,
-    "output_tokens": 590,
-    "total_tokens": 4089,
-    "embedding_tokens": 64
+    "input_tokens": 5405,
+    "output_tokens": 1086,
+    "total_tokens": 6491,
+    "embedding_tokens": 43
   },
   "api_calls_this_run": 2,
   "cache_hit": false,
   "validation_errors": [],
-  "response_version": "e-code-ui-json-v2",
-  "seconds": 6.056
+  "response_version": "claude-layout-memory-v3",
+  "provider": "anthropic",
+  "maintenance_advice": null,
+  "maintenance_context_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "seconds": 11.976
 }

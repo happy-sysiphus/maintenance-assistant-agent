@@ -1,0 +1,25 @@
+{
+  "method": "Selected PDF text, headers and row boundaries checked against rendered originals; not a complete transcription accuracy benchmark.",
+  "pages": [
+    {"doc":"festo","page":18,"text":["Pilot pressure","12/14 mm","Front chamber","Rear chamber"]},
+    {"doc":"festo","page":89,"text":["Measuring system error","Check drive cable"]},
+    {"doc":"festo","page":90,"text":["Timeout equalizer","2 seconds","at least 5 bar","Incorrect program number","Cap dressing","Cap abrasion"]},
+    {"doc":"festo","page":91,"text":["Milling not OK","Cap loss","Check whether the cap is missing"]},
+    {"doc":"festo","page":92,"matrix_review":true},
+    {"doc":"festo","page":93,"matrix_review":true},
+    {"doc":"manual82","page":23,"text":["Input x+1","Input x+3","Control of air supply shutdown"],"tables":4},
+    {"doc":"manual82","page":24,"text":["Analogue input 1","electronics/sensors"],"tables":2},
+    {"doc":"manual82","page":38,"headers":[["Command","Button","Function"],["Parameter","Unit","Significance"]],"text":["electrode breaks/cap loss","1 bar or greater"]},
+    {"doc":"manual82","page":59,"text":["values set through the fieldbus apply immediately","great force and at high speed","nobody can enter the positioning range"]},
+    {"doc":"manual82","page":66,"text":["US1 must not be switched off","switch off the compressed air supply","Click Open","Click Start"]},
+    {"doc":"manual82","page":78,"text":["Timeout compensation","Electrode monitoring"]},
+    {"doc":"manual82","page":79,"text":["Unintentional movement","Drift"]},
+    {"doc":"manual82","page":80,"text":["Configuration"]},
+    {"doc":"diagnostic4","page":1,"text":["1800ms","600mbar","12ms"]},
+    {"doc":"diagnostic4","page":2,"text":["10mm","10s","not a system error"]},
+    {"doc":"diagnostic4","page":3,"text":["240 minutes","stored persistently"]},
+    {"doc":"diagnostic4","page":4,"text":["Configuration Error","unequal part number"]},
+    {"doc":"whitepaper11","page":5,"text":["Drive cylinder with integrated pressure and position sensors","Controller with fieldbus connection"]},
+    {"doc":"whitepaper11","page":6,"text":["outside of productive operation","firmware version","serial number"]}
+  ]
+}

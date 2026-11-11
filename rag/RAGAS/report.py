@@ -1,5 +1,7 @@
 """Offline, repeatable aggregation; failed/undefined scores remain visible."""
 from collections import Counter, defaultdict
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import csv
 import json
 from pathlib import Path
@@ -66,6 +68,10 @@ def build_report(out):
     costs = rows(out / "costs.jsonl")
     audits = rows(out / "reference_audit.jsonl")
     run_status = json.loads((out / "run_status.json").read_text(encoding="utf-8")) if (out / "run_status.json").exists() else {}
+    manifest = json.loads((out / "run_manifest.json").read_text(encoding="utf-8")) if (out / "run_manifest.json").exists() else {}
+    rag_model = manifest.get("rag_model", "gpt-5.4-mini")
+    evaluated_at = (datetime.fromisoformat(manifest["started_at"]).astimezone(ZoneInfo("Asia/Seoul")).date().isoformat()
+                    if manifest.get("started_at") else "2026-10-28")
     phases = defaultdict(float)
     for c in costs:
         phases[c["phase"]] += c["usd"]
@@ -76,7 +82,8 @@ def build_report(out):
         usage = result.get("usage", {})
         rate = PRICES.get(result.get("model"))
         if rate:
-            answer_usd.append((usage.get("input_tokens", 0) * rate[0]
+            billed=[c["usd"] for c in costs if c["phase"]=="rag" and c["sample_id"]==a["id"]]
+            answer_usd.append(sum(billed) if billed else (usage.get("input_tokens", 0) * rate[0]
                                + usage.get("output_tokens", 0) * rate[1]
                                + usage.get("embedding_tokens", 0) * PRICES["text-embedding-3-small"][0]) / 1e6)
     metric_names = ["faithfulness", "answer_relevancy", "context_precision", "context_recall", "factual_correctness"]
@@ -127,7 +134,7 @@ def build_report(out):
                              "reference_sources": "; ".join(f"{s['doc']} p.{s['page']}" for s in r.get("sources", [])),
                              "reference_audit": audit_by_id.get(r["id"], "pending"),
                              **{m: lookup.get((r["id"], m)) for m in metric_names}})
-    text = ["# RAGAS 평가 결과", "", "평가일: 2026-10-28 (Asia/Seoul)", "",
+    text = ["# RAGAS 평가 결과", "", f"평가일: {evaluated_at} (Asia/Seoul)", "",
             f"- 실행 상태: **{run_status.get('status', 'partial')}**. {run_status.get('reason', '')}".rstrip(),
             f"- 데이터셋: {len(dataset)}/50문항, 실제 답변: {len(answers)}건, 채점 기록: {len(scores)}/250건.",
             f"- 답변 상태: {summary['answer_statuses']}",
@@ -153,7 +160,7 @@ def build_report(out):
             std = f"{v['std']:.4f}" if v["std"] is not None else "—"
             text.append(f"| {group} | {metric} | {mean} | {std} | {v['valid']} | {v['failed_or_undefined']} | {v['pending']} |")
     text += ["", "## 시간 및 비용", "", f"- RAG 응답 평균: {summary['rag_seconds_mean']}초.",
-             f"- RAG 응답 p95: {summary['rag_seconds_p95']}초. 예비 2건·확대 3건 병렬 환경에서 측정했으며 단일 사용자 지연과 다를 수 있습니다.", "",
+             f"- RAG 응답 p95: {summary['rag_seconds_p95']}초. 병렬 평가 환경의 측정이며 단일 사용자 지연과 다를 수 있습니다.", "",
              f"- 최종 데이터셋 답변 생성 비용: ${summary['final_answer_cost_usd']:.6f}, 답변 1건 평균: {summary['final_answer_mean_cost_usd']} USD. 평가자 비용·제외한 초안 비용은 이 평균에서 제외했습니다.", "",
              "| 단계 | 비용(USD) |", "|---|---:|"]
     text += [f"| {phase} | ${value:.6f} |" for phase, value in sorted(phases.items())]
@@ -180,8 +187,8 @@ def build_report(out):
     text += ["", "표시된 문항도 삭제·수정하지 않고 전체 점수에 포함했습니다. 해당 reference를 먼저 검토해야 합니다.", "", "## 평가 해석과 한계", "",
         "- 기준 답변은 PDF 원문에서 별도로 생성한 합성 reference입니다. 사람이 검증한 gold GT가 아닙니다.",
         "- 생성기는 층화 비율을 맞추는 자체 PDF 기반 생성기이며 RAGAS TestsetGenerator를 실행한 결과는 아닙니다. 채점은 설치한 공식 ragas 라이브러리의 지표를 그대로 사용합니다.",
-        "- 최종 질문·기준 답변 생성기는 gpt-5.4-mini, 평가자는 gpt-4.1-mini입니다. 생성기와 RAG가 같은 모델 계열이며 자동 평가의 편향이 가능하고 독립 전문가 평가가 아닙니다.",
-        "- 사전 품질검사에서 다른 코드 질문·불완전한 기준 답변·시간 임계값 오독이 발견된 초기 초안은 최종 평가 전에 제외했습니다. 생성기를 강화하고 오류별 표 행만 추출했으며, 제외된 초안의 API 비용도 모두 포함했습니다.",
+        f"- 합성 질문·기준 답변 생성기는 gpt-5.4-mini, 평가자는 gpt-4.1-mini, 이번 RAG 답변 모델은 {rag_model}입니다. 자동 평가의 편향이 가능하고 독립 전문가 평가가 아닙니다.",
+        "- 초기 데이터셋 생성에서 제외한 초안과 그 생성 비용은 기존 평가 결과에 보존되어 있습니다. 비교 평가에서는 같은 최종 50문항을 재사용하며 비용 집계는 이번 결과 디렉터리의 호출만 포함합니다.",
         "- E 코드 32건, 일반 질문 18건이며 history·사진·센서·미지원 질문·답변 보류 전용 세트는 평가하지 않습니다.",
         "- 같은 오류 코드를 반복하는 질문들은 상관되어 있습니다. 50문항을 완전히 독립인 50개 문제로 해석하지 않습니다.",
         "- 기준 답변 원문 인용이 해당 PDF 페이지에 존재하는지는 자동 검사했습니다. 이것만으로 기준 답변 전체의 정확성을 보증하지 않습니다.",
@@ -189,7 +196,7 @@ def build_report(out):
         "- Context Precision은 reference 기준, Context Recall은 reference의 사실 회수율입니다. Factual Correctness는 짧은 reference와의 F1으로, 정당한 보충 설명도 감점될 수 있습니다.",
         "- 공식 기본 영문 평가 프롬프트를 유지했습니다. Answer Relevancy의 역생성 질문은 영어로 출력되는 경우가 있어 한국어 질문과의 다국어 임베딩 유사도 영향을 받습니다. 이 점수를 단독으로 한국어 답변 품질의 절대 척도로 해석하지 않습니다.",
         "- 사용자에게 전달되는 전체 answer(점검·기준·조치 포함)를 평가합니다. 일부만 골라 점수를 높이지 않습니다.",
-        "- 캐시는 사용하지 않았고, 기존 서비스의 실패는 그대로 보존합니다. 점수에 맞춰 프롬프트나 KG를 수정하지 않았습니다.",
+        "- 캐시는 사용하지 않았고, 서비스 실패도 보존합니다. 이 실행의 채점 도중 점수에 맞춰 답변을 수정하지 않습니다. 개선 전후의 파싱·검색·모델 차이는 별도 비교 보고서에서 설명합니다.",
         "- 숫자는 LLM 기반 자동 평가의 추정치이며 0.9 같은 보편적 합격선은 적용하지 않았습니다.",
         "- 지표별 점수는 metrics.jsonl, 평가자 판단 원문은 judge_traces.jsonl, 질문·합성 기준은 dataset.jsonl, RAG 원본 응답은 responses.jsonl, 비용은 costs.jsonl에 있습니다.",
         "", "## 공식 근거", "",
