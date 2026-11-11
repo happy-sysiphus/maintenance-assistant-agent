@@ -14,6 +14,7 @@ type Card = { manual_case_id: string; title: string; reason?: string; origin: st
 type Selection = { manual_case_id?: string; manual_source?: Source }
 type Draft = { actual_action: string; worker: string; checks: Record<string, 'normal' | 'abnormal' | 'unchecked'>; selection?: Selection }
 type Response = { event_id: string; status: string; recording_status?: string; feedback_enabled?: boolean; automatic_card?: Card | null;
+  rejected_auto_case_id?: string;
   observations?: { channel: string; name: string; direction: string | null; observed_seconds: number;
     transitions?: { last_before_offset_s: number; first_after_offset_s: number; from: number; to: number }[] }[];
   history_candidates?: Card[]; candidates?: Card[]; hits?: { source: Source }[];
@@ -24,12 +25,19 @@ const states: Record<string, string> = {
   insufficient_channels: '비교 가능한 센서가 3개 미만이어서 이전 사례 자동 표시는 보류합니다.',
   new_pattern: '같은 센서 패턴의 해결 이력이 없습니다.', candidates: '이전 해결 사례를 확인해 주세요.',
   automatic: '같은 패턴에서 확인된 이전 해결 사례입니다. 현재 설비에도 적용되는지 확인해 주세요.',
+  pending: '같은 센서 패턴의 해결 기록을 반영 중이어서 이전 사례 자동 표시를 보류합니다.',
   counterexample: '다른 사례로 해결된 기록이 있어 자동 표시를 보류합니다.',
   conflict: '여러 해결 사례가 있어 자동 표시를 보류합니다.', memory_unavailable: '이전 이력을 조회하지 못했습니다.',
   invalid_input: '이 경보의 센서 데이터 형식을 확인해 주세요. v1.4 원본이 필요합니다.',
   no_evidence: '맞는 매뉴얼 근거가 부족합니다. 직접 검색해 주세요.',
   generation_error: '후보를 생성하지 못했습니다. 다시 시도하거나 직접 검색해 주세요.',
   search_error: '매뉴얼을 검색하지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.',
+}
+const recordingStates: Record<string, string> = {
+  pending: '해결 기록을 공용 이력에 반영 중입니다.',
+  pending_review: '해결 기록 반영 완료 · 수동 근거 검토 대기',
+  saved: '공용 해결 이력 반영 완료',
+  failed: '공용 해결 이력을 반영하지 못했습니다. 관리자 확인이 필요합니다.',
 }
 
 export default function WarningPage() {
@@ -48,6 +56,11 @@ export default function WarningPage() {
   const key = ['warning', d.case_id, eventId]
   const query = useQuery({ queryKey: key,
     queryFn: () => apiGet<Response>(`/cases/${d.case_id}/warning?event_id=${encodeURIComponent(eventId)}`),
+    refetchInterval: query => {
+      const result = query.state.data
+      if (result?.recording_status === 'pending' || result?.status === 'pending') return 2000
+      return result?.recording_status === 'pending_review' ? 5000 : false
+    },
     refetchOnWindowFocus: false })
   const w = query.data
   // Restore only on event switch / initial arrival, not on background refetch.
@@ -74,6 +87,7 @@ export default function WarningPage() {
   const search = w?.search_manuals
   const allCards = [...(w?.history_candidates ?? []), ...(generated?.history_candidates ?? []), ...(generated?.candidates ?? [])]
   const cards = [...new Map(allCards.map(c => [c.manual_case_id, c])).values()]
+    .filter(c => c.manual_case_id !== w?.rejected_auto_case_id)
   const selected = w?.selection
   const selectedCard = selected?.manual_case_id ? w?.shown_cards?.[selected.manual_case_id] : undefined
   const selectedName = selectedCard?.title ?? (selected?.manual_source ? `${selected.manual_source.doc} p.${selected.manual_source.page}` : '')
@@ -91,7 +105,7 @@ export default function WarningPage() {
       <div className="mt-2 text-sm">{cite(c.source)}<blockquote className="mt-1 text-sub">{c.source.quote}</blockquote></div>
       {c.checks.map((s, i) => <p key={s.id ?? i} className="mt-2 text-sm">점검 · {s.text}{s.criterion && ` (${s.criterion.text})`}</p>)}
       {c.actions.map((s, i) => <p key={i} className="mt-2 text-sm">매뉴얼 조치 · {s.when && `${s.when}: `}{s.text}</p>)}
-      {c.repairs?.map(r => <p key={r.case_id} className="mt-2 text-sm">과거 실제 조치 · {r.actual_action} ({r.case_id})</p>)}
+      {c.repairs?.map(r => <p key={r.case_id} className="mt-2 text-sm">과거 실제 조치 · {r.actual_action}</p>)}
       {!closed && <div className="mt-3 flex gap-2">
         <button className={btnPrimary} disabled={busy} onClick={() => select({ manual_case_id: c.manual_case_id })}>
           {selected?.manual_case_id === c.manual_case_id ? '선택됨' : automatic ? '맞아요 · 이 사례 선택' : '이 사례 선택'}
@@ -167,7 +181,8 @@ export default function WarningPage() {
         </>}
         <p className="text-xs text-sub">{feedback ? '확인된 해결 이력을 다음 경보에 재사용합니다.' : '이력 재사용은 꺼져 있습니다. 해결 기록은 저장합니다.'}</p>
         {closed && <><p role="status" className="text-sm">종료된 경보입니다. 기록은 읽기 전용입니다.</p>
-          <p className="text-xs text-sub">{w?.recording_status === 'pending_review' ? '해결 기록 저장 완료 · 수동 근거 검토 대기' : '해결 기록 저장 완료'}</p></>}
+          {w?.recording_status && recordingStates[w.recording_status] &&
+            <p className="text-xs text-sub">{recordingStates[w.recording_status]}</p>}</>}
       </aside>
     </div>
   </>

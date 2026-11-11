@@ -7,7 +7,9 @@ import tempfile
 _temp = tempfile.TemporaryDirectory(prefix='warning-ui-test-')
 os.environ['API_DB']=str(Path(_temp.name)/'api.db')
 os.environ['RAG_WARNING_FEEDBACK']='0'
-import main, store
+os.environ['RAG_WARNING_NAMESPACE']='test-ui'
+import main, store, warning_bridge
+from warning_test_memory import TestWarningMemory
 from rag import early_warning as ew
 from rag.warning_catalog import initial_catalog
 from fastapi import HTTPException
@@ -22,8 +24,10 @@ def claude(prompt, context, model, **kw):
     return ew._ManualReply(notes=[ew._ManualNote(evidence_id='demo-proof',text='검색된 매뉴얼의 공급 계통 점검 항목을 확인하세요.')])
 ew.retrieve=retrieve
 ew._claude=claude
+memory=TestWarningMemory()
+warning_bridge.memory=lambda _: memory
 main.ml_get=lambda path: {'points':[]} if '/trace' in path else []
-event=json.loads((root/'rag/tests/fixtures/early_warning_v14.json').read_text())
+event=json.loads((root/'rag/tests/fixtures/early_warning_v14.json').read_text(encoding='utf-8'))
 event.update(event_id='EW-DEMO-0001',gun_id='DEMO-GUN-01')
 event['sensor_features']['channels']={'c3':[[0,10],[40,12]],'c5':[[0,4.5],[30,3.2]],'c10':[[0,0],[40,1]]}
 event['contributing_features']=[{'sensor':c,'feature':c+'_mean'} for c in ('c3','c5','c10')]

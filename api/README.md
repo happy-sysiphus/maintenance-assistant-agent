@@ -1,4 +1,4 @@
-> WARNING API·UI 구현본: [기능·계약·실행 설정](docs/warning-api-20261111.md). 피드백 기본 OFF, SQLite 해결 기록 저장.
+> WARNING API·UI는 공용 Aura의 해결 이력을 사용합니다. [기능·계약·실행 설정](docs/warning-api-20261111.md)
 
 # 정비 지원 API
 

@@ -1,31 +1,44 @@
-"""Early-warning API adapter. SQLite owns field history; Neo4j only supplies manuals.
-
-RAG_WARNING_FEEDBACK=0: record resolutions, but never reuse them as recommendations.
-"""
+"""WARNING API integration with the shared Aura history and a durable local outbox."""
+import asyncio
 import copy
+import logging
 import os
 import threading
-from fastapi import HTTPException
-import store
-from rag.warning_input import analyze_warning
+import time
 
+from fastapi import HTTPException
+
+import store
+from rag.config import get_database, graph_driver, load_environment
+from rag.early_warning import MEMORY_ERRORS, EarlyWarningRag
+from rag.warning_catalog import validate_manual_selection
+from rag.warning_input import analyze_warning, required_text
+from rag.warning_memory import WarningMemory
+
+log = logging.getLogger(__name__)
 _driver = None
 _driver_lock = threading.Lock()
+_INSPECTION_FIELDS = (
+    "event_id", "gun_id", "onset_at", "pattern_version", "pattern_key", "selected_channels",
+    "observations", "derived_features", "equipment_scope", "automatic_card",
+    "history_candidates", "counterexample_event_ids", "status",
+)
 
 
 def feedback_enabled():
-    return os.getenv('RAG_WARNING_FEEDBACK', '0').lower() in ('1', 'true', 'on', 'yes')
+    load_environment()
+    return os.getenv("RAG_WARNING_FEEDBACK", "1").lower() in ("1", "true", "on", "yes")
 
 
 def scope():
-    return os.getenv('RAG_WARNING_EQUIPMENT_SCOPE') or None
+    load_environment()
+    return os.getenv("RAG_WARNING_EQUIPMENT_SCOPE") or None
 
 
 def driver():
     global _driver
     with _driver_lock:
         if _driver is None:
-            from rag.config import graph_driver
             _driver = graph_driver()
         return _driver
 
@@ -38,96 +51,78 @@ def shutdown():
             _driver = None
 
 
-class SqliteWarningMemory:
-    """Implements the existing RAG memory contract without duplicating field data.
-
-    record() stages one immutable resolution; the route commits it together with
-    the closed case in store.put. Nothing is written before case validation.
-    """
-    def __init__(self):
-        from rag.config import get_database
-        self.database = get_database()
-        self.staged = None
-
-    def lookup(self, pattern_key):
-        if not feedback_enabled():
-            return []
-        return [r for r in store.warning_resolutions()
-                if r.get('pattern_key') == pattern_key]
-
-    def catalog(self):
-        # Catalog definitions remain usable when feedback reuse is disabled.
-        return list({r['manual_case']['manual_case_id']: r['manual_case']
-                     for r in store.warning_resolutions() if r.get('manual_case')}.values())
-
-    def resolution(self, event_id):
-        return next((r for r in store.warning_resolutions() if r['event_id'] == event_id), None)
-
-    def record(self, resolution, case=None):
-        previous = self.resolution(resolution['event_id'])
-        value = {**resolution, 'manual_case': case, 'counterexample_reviewed': False}
-        if previous and previous != value:
-            raise ValueError('event_id already has a different resolution')
-        self.staged = value
-        return value
-
-    def approve(self, event_id, case):
-        value = self.resolution(event_id)
-        if not value or not value.get('manual_source') or value.get('manual_case_id'):
-            raise ValueError('manual review submission required')
-        if value.get('manual_case') and value['manual_case'] != case:
-            raise ValueError('already reviewed with a different case')
-        value['manual_case'] = case
-        store.review_warning_resolution(value)
-        return value
-
-    def acknowledge_counterexample(self, event_id):
-        value = self.resolution(event_id)
-        if (not value or not value.get('manual_case') or not value.get('pattern_key')
-                or not value.get('rejected_auto_case_id')
-                or value['rejected_auto_case_id'] == value['manual_case']['manual_case_id']):
-            raise ValueError('reviewed counterexample required')
-        value['counterexample_reviewed'] = True
-        store.review_warning_resolution(value)
-
-    def manual_chunk(self, chunk_id):
-        with driver().session(database=self.database) as session:
-            row = session.run('''MATCH (c:Rag:Chunk {id:$id}) WHERE c.searchable=true
-                RETURN c.id AS id, c.doc AS doc, c.page_number AS page, c.text AS text,
-                c.quote AS quote, c.review_needed AS review_needed, c.source_json AS source_json''',
-                id=chunk_id).single()
-            return row.data() if row else None
+def target():
+    database = get_database()
+    return {"database": database,
+            "namespace": required_text(os.getenv("RAG_WARNING_NAMESPACE"), "RAG_WARNING_NAMESPACE")}
 
 
-def service():
-    from rag.early_warning import EarlyWarningRag
-    from rag.warning_catalog import validate_manual_selection
+class ApiWarningRag(EarlyWarningRag):
+    # Only the outbox worker passes a source that was validated and saved by this API.
+    trusted_source = None
 
-    class ApiWarningRag(EarlyWarningRag):
-        # Search sources are persisted by this API, never accepted from request bodies.
-        # Checking current manifest revision/hash keeps close independent of graph availability.
-        trusted_sources = None
-
-        def _verify_manual_hit(self, selection):
-            if self.trusted_sources is not None:
-                verified = validate_manual_selection(selection)
-                if self.trusted_sources.get(verified['evidence_id']) != verified:
-                    raise ValueError('source was not returned by the event search')
-                return
+    def _verify_manual_hit(self, selection):
+        if self.trusted_source is None:
             return super()._verify_manual_hit(selection)
+        if selection != self.trusted_source:
+            raise ValueError("source was not returned by the event search")
 
-    return ApiWarningRag(SqliteWarningMemory(),
-        use_vectors=os.getenv('RAG_WARNING_VECTORS', '1') != '0', equipment_scope=scope())
+
+def memory(target_config):
+    return WarningMemory(driver(), **target_config)
+
+
+def service(target_config=None):
+    return ApiWarningRag(memory(target_config if target_config is not None else target()),
+                         use_vectors=os.getenv("RAG_WARNING_VECTORS", "1") != "0",
+                         equipment_scope=scope(), reuse_history=feedback_enabled())
+
+
+def deliver_next(now=None):
+    timestamp = time.time() if now is None else now
+    job = store.claim_warning_delivery(timestamp, timestamp + 120)
+    if job is None:
+        return False
+    event_id, attempt, payload = job
+    try:
+        rag = ApiWarningRag(memory(payload["target"]),
+                            equipment_scope=payload["resolution"]["equipment_scope"])
+        rag.trusted_source = payload["resolution"].get("manual_source")
+        result = rag.record_resolution(payload["handoff"], **payload["resolution"])
+    except (ValueError, TypeError, KeyError) as exc:
+        log.warning("WARNING delivery rejected for %s (%s)", event_id, type(exc).__name__)
+        store.finish_warning_delivery(event_id, attempt, "failed")
+    except Exception as exc:
+        delay = min(300, 2 ** min(attempt, 9))
+        log.warning("WARNING delivery retry for %s in %ss (%s)", event_id, delay, type(exc).__name__)
+        store.finish_warning_delivery(event_id, attempt, "pending",
+                                      next_attempt_at=(time.time() if now is None else now) + delay)
+    else:
+        store.finish_warning_delivery(event_id, attempt, result["status"])
+    return True
+
+
+async def deliver_until_stopped(stop):
+    while not stop.is_set():
+        try:
+            if await asyncio.to_thread(deliver_next):
+                continue
+        except Exception:
+            log.exception("Could not process the WARNING outbox")
+        try:
+            await asyncio.wait_for(stop.wait(), timeout=1)
+        except TimeoutError:
+            pass
 
 
 def event_for(case, event_id=None):
-    if case['event'].get('event_type') != 'early_warning':
-        raise HTTPException(409, 'early_warning case required')
-    events = [case['event']] + [r['handoff'] for r in case.get('repeats', []) if 'handoff' in r]
-    eid = event_id or case['event']['event_id']
-    event = next((e for e in events if e['event_id'] == eid), None)
+    if case["event"].get("event_type") != "early_warning":
+        raise HTTPException(409, "early_warning case required")
+    events = [case["event"]] + [r["handoff"] for r in case.get("repeats", []) if "handoff" in r]
+    eid = event_id or case["event"]["event_id"]
+    event = next((e for e in events if e["event_id"] == eid), None)
     if event is None:
-        raise HTTPException(404, 'event does not belong to this case or its raw payload is unavailable')
+        raise HTTPException(404, "event does not belong to this case or its raw payload is unavailable")
     try:
         analyze_warning(event)
     except (ValueError, TypeError, KeyError) as exc:
@@ -135,32 +130,69 @@ def event_for(case, event_id=None):
     return event
 
 
+def without_rejected(result, state):
+    rejected = state.get("rejected_auto_case_id")
+    if not rejected:
+        return result
+    cleaned = {**result}
+    if (cleaned.get("selection") or {}).get("manual_case_id") == rejected:
+        cleaned.pop("selection")
+    if "shown_cards" in cleaned:
+        cleaned["shown_cards"] = {key: card for key, card in cleaned["shown_cards"].items() if key != rejected}
+    if "generate_candidates" in cleaned:
+        cleaned["generate_candidates"] = without_rejected(cleaned["generate_candidates"], state)
+    for key in ("history_candidates", "candidates"):
+        if key in cleaned:
+            cleaned[key] = [card for card in cleaned[key] if card["manual_case_id"] != rejected]
+    if (cleaned.get("automatic_card") or {}).get("manual_case_id") == rejected:
+        cleaned.update(automatic_card=None, status="candidates")
+    if result.get("status") == "ok" and "candidates" in cleaned and not cleaned["candidates"]:
+        cleaned["status"] = "no_evidence"
+    return cleaned
+
+
 def inspect(case, event_id=None):
     event = event_for(case, event_id)
-    saved = copy.deepcopy(case.get('warning_events', {}).get(event['event_id'], {}))
-    if case['status'] in ('resolved', 'false_alarm') and saved.get('inspection'):
-        response = copy.deepcopy(saved['inspection'])
+    state = case.get("warning_events", {}).get(event["event_id"], {})
+    saved = {key: copy.deepcopy(value) for key, value in state.items() if key != "inspection"}
+    previous = state.get("inspection")
+    delivery = store.warning_delivery_for_case(case["case_id"])
+    status = delivery["status"] if delivery else "not_resolved"
+    enabled = feedback_enabled()
+
+    if case["status"] in ("resolved", "false_alarm", "unresolved") and previous:
+        response = {key: previous[key] for key in _INSPECTION_FIELDS if key in previous}
     else:
-        response = service().inspect(event)
-    if not feedback_enabled() and response['status'] not in ('insufficient_channels',):
-        response['status'] = 'feedback_disabled'
-    # A rejection is per-event; do not show a rejected card as automatic again.
-    if saved.get('rejected_auto_case_id'):
-        response['automatic_card'] = None
-        if response['status'] == 'automatic':
-            response['status'] = 'candidates'
-    resolution = store.warning_resolution_for_case(case['case_id'])
-    status = ('saved' if resolution.get('manual_case') else 'pending_review') if resolution else 'not_resolved'
-    return {**saved, **response, 'feedback_enabled': feedback_enabled(), 'recording_status': status}
+        pending = store.warning_pending(analyze_warning(event)["pattern_key"])
+        try:
+            response = service().inspect(event, pending=pending)
+        except (RuntimeError, ValueError):
+            response = EarlyWarningRag(None, reuse_history=False).inspect(event)
+            if enabled and response["pattern_key"]:
+                response["status"] = "pending" if pending else "memory_unavailable"
+
+    if status == "pending_review":
+        try:
+            record = memory(target()).resolution(delivery["event_id"])
+            if record and record["manual_case"]:
+                status = "saved"
+        except (*MEMORY_ERRORS, RuntimeError, ValueError):
+            pass
+
+    return without_rejected(
+        {**saved, **response, "feedback_enabled": enabled, "recording_status": status}, state,
+    )
 
 
 def snapshot(case, event_id, result, kind):
-    state = case.setdefault('warning_events', {}).setdefault(event_id, {})
-    state[kind] = copy.deepcopy(result)
-    cards = ([result.get('automatic_card')] + result.get('history_candidates', []) + result.get('candidates', []))
+    state = case.setdefault("warning_events", {}).setdefault(event_id, {})
+    result = without_rejected(result, state)
+    stored = {key: result[key] for key in _INSPECTION_FIELDS if key in result} if kind == "inspection" else result
+    state[kind] = copy.deepcopy(stored)
+    cards = [result.get("automatic_card"), *result.get("history_candidates", []), *result.get("candidates", [])]
     for card in cards:
         if card:
-            state.setdefault('shown_cards', {})[card['manual_case_id']] = copy.deepcopy(card)
-    for hit in result.get('hits', []):
-        state.setdefault('shown_sources', {})[hit['source']['evidence_id']] = copy.deepcopy(hit['source'])
-    return state
+            state.setdefault("shown_cards", {})[card["manual_case_id"]] = copy.deepcopy(card)
+    for hit in result.get("hits", []):
+        state.setdefault("shown_sources", {})[hit["source"]["evidence_id"]] = copy.deepcopy(hit["source"])
+    return result

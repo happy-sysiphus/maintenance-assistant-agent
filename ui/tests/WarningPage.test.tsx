@@ -80,5 +80,6 @@ test('real API: observations → candidate → selection → draft reload → ma
   view.unmount()
   await mount()
   await screen.findByText('종료된 경보입니다. 기록은 읽기 전용입니다.')
+  await screen.findByText('해결 기록 반영 완료 · 수동 근거 검토 대기')
   expect((screen.getByLabelText('실제 수행한 조치', { exact: true }) as HTMLTextAreaElement).disabled).toBe(true)
 }, 20000)
