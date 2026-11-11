@@ -1,6 +1,6 @@
 # RAG 개발 보고 및 실행 안내
 
-2026-11-11 버전의 변경과 검증 결과는 [RAG 변경 보고서](docs/rag-release-20261111.md)에 정리했습니다. 조기 경보 로컬 실행은 [연동 안내](docs/early-warning-integration.md), 화면 작업은 [UI 개발 안내](../ui/docs/10-early-warning-rag-ui.md)를 참고하세요.
+2026-11-11 버전의 변경과 검증 결과는 [RAG 변경 보고서](docs/rag-release-20261111.md)에 정리했습니다. 팀원의 조기 경보 실행과 검증은 [공용 Aura 실행 안내](docs/early-warning-integration.md#공용-aura에서-실행하기), 화면 작업은 [UI 개발 안내](../ui/docs/10-early-warning-rag-ui.md)를 참고하세요.
 
 2026-11-04 · E 코드 기반 정비 안내 RAG
 
@@ -193,6 +193,7 @@ maintenance-assistant-agent/
 | NEO4J_URI | Aura 접속 주소 |
 | NEO4J_USERNAME / NEO4J_PASSWORD | DB 접속 사용자명·비밀번호 |
 | NEO4J_DATABASE | 실제 DB 이름 |
+| RAG_WARNING_NAMESPACE | 팀 공용 조기 경보 이력 이름 |
 | ANTHROPIC_MODEL | claude-sonnet-5-5 |
 | OPENAI_EMBEDDING_MODEL | text-embedding-3-small |
 | RAG_SYSTEM_TRUST | OS 인증서 사용 여부. 전달받은 설정을 기준으로 사용 |

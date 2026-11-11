@@ -4,28 +4,50 @@
 
 # 조기 경보 RAG 연동
 
-## 로컬에서 호출하기
+## 공용 Aura에서 실행하기
 
-저장소 루트에서 기존 RAG 가상환경을 사용합니다.
+팀원은 GitHub의 같은 버전과 팀 공용 Neo4j Aura를 사용합니다. 저장소의 `rag/.env.example`을 `rag/.env`로 복사하고 아래 설정을 팀이 전달한 값으로 채웁니다. CLI는 각자의 PC에서 실행하고 매뉴얼과 조기 경보 이력은 Aura에서 읽고 씁니다.
+
+| 설정 | 값 |
+|---|---|
+| `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD` | 팀 Aura의 접속 주소와 사용자 인증 |
+| `NEO4J_DATABASE` | 공용 매뉴얼 KG가 있는 DB 이름 |
+| `RAG_WARNING_NAMESPACE` | 팀 공용 조기 경보 이력 이름. 팀 설정 예시 `team-rag` |
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | 기본 하이브리드 검색의 임베딩과 Claude 답변 생성에 사용 |
+
+### 처음 한 번 준비
+
+DB 담당자는 공용 Aura에 매뉴얼 KG와 텍스트·벡터 인덱스가 준비됐는지 확인하고, 조기 경보 이력 스키마를 한 번 초기화합니다. 저장소 루트에서 RAG 가상환경을 사용합니다.
 
 ```powershell
 $ragPython = '.\rag\.venv\Scripts\python.exe'
-& $ragPython -B -m rag.early_warning analyze --input rag/tests/fixtures/early_warning_v14.json
+& $ragPython -B -m rag.service --error-code E012 --question 'E012 Timeout compensation' --no-llm --json
+& $ragPython -B -m rag.early_warning init
 ```
 
-위 예시는 GitHub `develop-loop`의 [v1.4 조기 경보 문서](https://github.com/happy-sysiphus/maintenance-assistant-agent/blob/develop-loop/ml/docs/rag_handoff_early_warning.example.json)입니다. 기여 피처는 3개지만 실제 채널은 `c10` 하나입니다. c10은 40초에서 0에서 1로 바뀝니다. `pattern_key=null`이라 자동 조회를 보류하고, 센서 관측은 후보 검색에서 쓸 수 있습니다.
+첫 명령은 공용 KG와 키워드 검색을 읽기 전용으로 확인합니다. `retrieval_only`와 PDF 근거를 확인합니다. 두 번째 명령은 조기 경보 이력의 제약과 인덱스를 추가합니다. 팀원은 준비된 KG를 그대로 사용합니다. 접속 자체에 실패하면 Aura 콘솔에서 인스턴스 상태와 최신 주소부터 확인합니다.
 
-Neo4j를 연결할 때는 기존 환경 설정의 Neo4j 주소와 인증을 사용합니다. 호출자가 대상 DB와 이력 구역을 명시합니다. 초기화는 별도 명령으로 새 제약과 인덱스를 추가합니다. 조회나 실행 시마다 초기화하지 않습니다.
+### 팀원이 조회와 검색 확인
 
 ```powershell
-& $ragPython -B -m rag.early_warning init --database neo4j --namespace local-demo
+& $ragPython -B -m rag.early_warning analyze --input rag/tests/fixtures/early_warning_v14.json
+$handoff = Get-Content -Raw -Encoding utf8 ml/docs/rag_handoff_early_warning.example.json | ConvertFrom-Json
+$request = @{handoff = $handoff; question = 'E012 Timeout compensation'}
+$requestPath = [IO.Path]::GetTempFileName()
+[IO.File]::WriteAllText($requestPath, ($request | ConvertTo-Json -Depth 100))
+& $ragPython -B -m rag.early_warning manual --input $requestPath --keyword-only
+$request.Remove('question')
+[IO.File]::WriteAllText($requestPath, ($request | ConvertTo-Json -Depth 100))
+& $ragPython -B -m rag.early_warning inspect --input $requestPath
+& $ragPython -B -m rag.early_warning candidates --input $requestPath
+Remove-Item -LiteralPath $requestPath
 ```
 
-`init`은 현장 이력 스키마만 만듭니다. 후보·수동 검색에는 해당 DB에 기존 문서 KG와 검색 인덱스가 준비돼 있어야 합니다. 기본 검색은 기존 키워드와 OpenAI 임베딩을 함께 쓰고, 후보 생성과 명시적인 수동 질문 답변은 Claude를 씁니다. 로컬 문서 키워드 검색만 확인하려면 `manual --keyword-only`를 사용하고 `explain`을 생략합니다. 격리 테스트와 실제 서비스의 DB 및 namespace는 따로 지정합니다.
+ML v1.4 예시는 기여 피처가 3개이고 물리 채널은 `c10` 하나입니다. c10은 40초에서 0에서 1로 바뀝니다. `pattern_key=null`이라 자동 조회를 보류하고, 센서 관측은 후보 검색에서 쓸 수 있습니다. `manual --keyword-only`는 Aura의 매뉴얼을 키워드로 조회합니다. `candidates`는 키워드와 벡터 검색을 함께 쓰며 매칭 근거를 찾았을 때 Claude를 호출합니다. 해결 기록부터 자동 카드까지 확인하는 명령은 [공용 Aura 통합 검증](#공용-aura-통합-검증)에 있습니다.
 
 ## RAG 호출 계약
 
-공통 Python 객체는 `EarlyWarningRag(WarningMemory(driver, database=..., namespace=...))`입니다. API 프로세스에서 Neo4j 드라이버를 재사용합니다. CLI에서는 아래 호출에 대응하는 명령과 `--input`의 JSON 객체를 사용합니다. `analyze`만 핸드오프 자체를 받습니다.
+공통 Python 객체는 `EarlyWarningRag(WarningMemory(driver, database=..., namespace=...))`입니다. API 프로세스에서 공용 Aura에 연결한 Neo4j 드라이버를 재사용합니다. CLI에서는 아래 호출에 대응하는 명령과 `--input`의 JSON 객체를 사용합니다. `analyze`만 핸드오프 자체를 받습니다.
 
 | 호출 | 주요 입력 | 결과 |
 |---|---|---|
@@ -83,13 +105,25 @@ API의 케이스 상세 조회에서는 `inspect`만 호출합니다. UI는 `aut
 3. 별도 작업이 바로 전송하고 연결 실패는 지수 백오프로 재시도합니다. 재시도는 종료 시각과 본문까지 같은 데이터를 전달합니다. 같은 경보에 내용이 다른 요청이 오면 기존 기록이 변경되지 않으므로 운영자가 충돌을 검토합니다.
 4. 해당 패턴의 전송 대기 기록이 남아 있으면 `inspect(pending=True)`로 자동 카드를 잠시 보류합니다. Neo4j 반영을 확인한 뒤 다음 조회에서 최신 결과를 표시합니다. 문서 그래프 재구축과 해결 이력 반영은 독립적입니다.
 
-## 검증
+## 공용 Aura 통합 검증
+
+DB 담당자가 이력 스키마를 준비한 뒤, 조회·쓰기 권한이 있는 팀원은 아래 테스트를 실행합니다. 테스트는 매번 새 이름의 이력 구역을 생성합니다. 같은 Aura에서 매뉴얼 검색, 실제 PDF 근거로 해결 기록 저장·검토, 해결 두 건 이후 자동 카드, 반례 보류를 확인합니다. 종료 시 테스트가 만든 이력 노드만 정리합니다.
+
+```powershell
+$env:RAG_WARNING_TEST_AURA = '1'
+& $ragPython -B -m pytest rag/tests/test_early_warning.py -q -p no:cacheprovider -k aura
+Remove-Item Env:RAG_WARNING_TEST_AURA
+```
+
+이 검증은 매뉴얼 그래프를 읽고 조기 경보 테스트 이력만 씁니다. 실제 모델 응답은 위의 `candidates` 또는 `explain=true`를 전달한 `manual`로 확인합니다.
+
+### 코드 회귀 검사
 
 ```powershell
 & $ragPython -B -m pytest rag/tests api/tests -q -p no:cacheprovider
 ```
 
-빈 데이터 디렉터리로 격리된 Neo4j를 띄운 뒤 아래 테스트를 실행합니다. 매뉴얼 검색 테스트는 전용 샘플 청크로 검색과 후보 선택을 검증합니다. 통합 테스트는 실제 매뉴얼 그래프 재구축 경로도 실행하므로 전용 로컬 DB를 사용합니다.
+매뉴얼 그래프 재구축 코드 자체를 바꿀 때만 아래 전용 테스트를 사용합니다. 빈 일회용 Neo4j에 테스트용 매뉴얼을 쓰고 재구축하므로 공용 Aura 팀 테스트에는 위 명령을 사용합니다.
 
 ```powershell
 $env:RAG_WARNING_TEST_BOLT = 'bolt://127.0.0.1:17687'
