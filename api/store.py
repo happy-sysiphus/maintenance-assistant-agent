@@ -1,7 +1,7 @@
 """케이스 저장소: SQLite 파일 하나. 케이스 한 건을 FE `CaseDetail` 모양 JSON으로 통째로 저장한다.
 
-데모 규모(케이스 수십 개)라 표 하나로 충분하다. 사람 기록(records)은 ML · RAG에 보내지 않는다.
-FIELD_MEMORY=1이면 api 안에서만 이 기록을 다시 읽어 케이스 조회에 참고 문장을 붙인다(field_memory.py. R2로 순서를 정한 케이스는 field_order와 옮긴 카드를 저장한다). 그때도 ML · rag/에는 보내지 않는다.
+데모 규모(케이스 수십 개)라 표 하나로 충분하다. 사람 기록(records)은 SQLite에 보존한다. WARNING 해결 이력은 warning_bridge가 선택적으로 재사용한다.
+FIELD_MEMORY=1은 기존 코드별 현장 기억을 제어한다. 별도로 WARNING 해결 이력은 warning_resolutions에 케이스 종료와 함께 저장하며, RAG_WARNING_FEEDBACK=1일 때 warning_bridge를 통해 재사용한다.
 """
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ def _conn() -> Iterator[sqlite3.Connection]:
         " conversation_id TEXT, message_index INTEGER, helpful INTEGER, at TEXT, data TEXT,"
         " PRIMARY KEY (conversation_id, message_index))"
     )
+    c.execute("CREATE TABLE IF NOT EXISTS warning_resolutions (event_id TEXT PRIMARY KEY, case_id TEXT UNIQUE, data TEXT)")
     try:
         with c:
             yield c
@@ -64,7 +65,7 @@ def group_key(e: dict[str, Any]) -> str | None:
     return "early_warning" if e.get("event_type") == "early_warning" else None
 
 
-def put(d: dict[str, Any]) -> None:
+def put(d: dict[str, Any], warning_resolution=None) -> None:
     e = d["event"]
     code = group_key(e)
     with _lock, _conn() as c:
@@ -72,6 +73,24 @@ def put(d: dict[str, Any]) -> None:
             "INSERT OR REPLACE INTO cases VALUES (?, ?, ?, ?, ?, ?)",
             (d["case_id"], e["gun_id"], code, d["status"], e["detected_at"], json.dumps(d, ensure_ascii=False)),
         )
+
+        if warning_resolution is not None:
+            existing = c.execute("SELECT data FROM warning_resolutions WHERE event_id = ? OR case_id = ?",
+                                 (warning_resolution['event_id'], d['case_id'])).fetchone()
+            payload = json.dumps(warning_resolution, ensure_ascii=False, sort_keys=True)
+            if existing and existing[0] != payload:
+                raise ValueError('immutable warning resolution conflict')
+            c.execute("INSERT OR IGNORE INTO warning_resolutions VALUES (?, ?, ?)",
+                      (warning_resolution['event_id'], d['case_id'], payload))
+
+
+def warning_resolutions():
+    with _lock, _conn() as c:
+        return [json.loads(r[0]) for r in c.execute("SELECT data FROM warning_resolutions")]
+
+
+def warning_resolution_for_case(case_id):
+    return next((r for r in warning_resolutions() if r['case_id'] == case_id), None)
 
 
 def seen(event_id: str) -> bool:
@@ -113,3 +132,17 @@ def next_id() -> str:
     with _lock, _conn() as c:
         n = c.execute("SELECT COUNT(*) FROM cases").fetchone()[0]
     return f"CASE-{n + 1:04d}"
+
+
+def review_warning_resolution(value):
+    """Only review metadata may change after closure; actions and event stay immutable."""
+    with _lock, _conn() as c:
+        row = c.execute('SELECT data FROM warning_resolutions WHERE event_id=?', (value['event_id'],)).fetchone()
+        if not row:
+            raise ValueError('resolution not found')
+        original = json.loads(row[0])
+        immutable = lambda r: {k: v for k, v in r.items() if k not in ('manual_case', 'counterexample_reviewed')}
+        if immutable(original) != immutable(value):
+            raise ValueError('cannot alter recorded resolution')
+        c.execute('UPDATE warning_resolutions SET data=? WHERE event_id=?',
+                  (json.dumps(value, ensure_ascii=False, sort_keys=True), value['event_id']))

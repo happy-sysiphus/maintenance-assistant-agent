@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import WarningPage from './WarningPage'
 import { Link } from 'react-router'
 import { SignalChart } from '../../components/SignalChart'
 import { btnLarge, btnPrimary, card } from '../../components/ui'
@@ -10,6 +11,11 @@ import { BackLink, CaseFacts, CauseList, FalseAlarmButton, FieldMemoryNote } fro
 
 // 상황 (wireframe/boards/V2Case.dc.html): 고장 전후 30분 그래프 + 확인할 원인
 export default function OverviewPage() {
+  const d = useCaseDetail()
+  return d.event.event_type === 'early_warning' ? <WarningPage /> : <CriticalOverview />
+}
+
+function CriticalOverview() {
   const d = useCaseDetail()
   const trends = d.event.sensor_trend
   // ML은 sensor_trend를 이번 고장에 기여가 큰 신호부터 준다 → 첫 번째를 먼저 보여준다
