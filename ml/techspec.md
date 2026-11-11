@@ -33,6 +33,7 @@ ID는 영역 + 번호(A 데이터·전처리, B 모델·평가, C 서빙, D RAG 
 | C-3 | 건 프로파일 **실데이터 입력**(기능은 구현됨, `history.md` 30절) | 품질 | 건별 고장 유형 정보(현장) | 소 |
 | D-3 | 핸드오프 v1.1 — 맥락 확장 (**일부 완료 2026-10-08**: `error_timeline` 30분·`sensor_trend`·Z; 남음: 1h 코드 이력·`recent_events`·`rule_repeat_suppressed`·`detector.reliability`) | 품질 | — | 소~중 |
 | D-8 | HITL 피드백 루프 시연 (**시연 구현 2026-10-28**, `history.md` 36절; RAG E 코드 전환 뒤 현장 기억은 참고 문장(R1); **2026-11-07 카드 점검 순서도 현장 기록으로 바꿈(R2, `history.md` 48절)**, 글은 RAG 그대로; 실제 서버 리허설 2026-10-29 통과; 남음: FE · api 요청(`docs/hitl-loop.md` ④, R2는 `docs/card-order-requests.md`) · RAG 합의(⑤) · 화면 시연) | 품질 | FE·RAG 담당 합의 | 소~중 |
+| D-9 | ML 피드백 루프 (**1단계 구현 2026-11-08(보고서만), 2단계 설계만**, `history.md` 49절; 창 기록 + 닫힌 케이스 → ML 운영 규칙 판정 보고서, 사람이 반영; 실서버 확인 2026-11-09 통과, 피드백 전후 점검은 D-10(`history.md` 50절); 남음: FE 요청(`docs/feedback-loop-requests.md`) · 현장 고장 10건 이상) | 품질 | 현장 라벨, 조기 경보 핸드오프 켜기 | 중 |
 
 우선순위: 필수 = 운영 투입 전에 반드시, 품질 = 운영 품질, 개선 = 성능·정확도 개선.
 

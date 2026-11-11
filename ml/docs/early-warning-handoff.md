@@ -5,9 +5,9 @@
 요약: ML이 몇십 분 전 **조기 경보**를 낸다.
 - **critical 이벤트와 구분**: 핸드오프로 보낼 때는 `event_type: "early_warning"`을 단다. 종료 코드와 고장 유형이 없다.
 - **ML 기본값은 보내지 않음**: 서버를 `RSW_EARLY_WARNING_HANDOFFS=1`로 켜야 나간다.
-- **api를 고치기 전에는 켜지 말 것**: 지금 api는 받은 핸드오프를 모두 "긴급" 케이스로 만든다.
+- **api는 2026-11-08에 고쳤다(D-9)**: 조기 경보는 "주의"(`warning`) 케이스가 되고, 모델 단독 critical과 따로 묶인다(4절). 화면 문구와 닫기 선택지는 FE 요청 중이다(`docs/feedback-loop-requests.md`).
 
-ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
+C-8에서는 ML 쪽 코드만 바뀌었다. api 변경은 11-08(D-9)이고, RAG·UI는 손대지 않았다.
 
 **모델 파일**: 조기 경보는 2026-11-01 번들에만 있다(`GET /health`의 `model.created`가 `2026-11-01T18:46:47`, `early_warning.model`이 `true`). 10/06 번들도 그대로 돌아가지만 조기 경보가 없다. 고장 감지 결과는 두 번들이 같다.
 
@@ -16,7 +16,7 @@ ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
 | 무엇인가 | 정밀도가 낮은 "수십 분 안 고장 가능성" 표시 | 1 |
 | 언제 오나 | 에피소드 시작에 1회, 건별 60분 쿨다운, critical·종료 코드가 있으면 안 옴 | 2 |
 | 어떻게 구분하나 | `event_type`, `trigger.source`, `early_warning` 블록 | 3 |
-| 지금 api가 그대로 받으면 | 긴급으로 표시되고, 코드 없는 케이스로 묶이며, RAG 안내가 없음 | 4 |
+| 지금 api가 받으면 | 주의로 표시되고, 조기 경보끼리 묶이며, RAG 안내가 없음 | 4 |
 | 얼마나 오나 | 건당 하루 ~16회 켜짐, 보내는 것은 그중 일부(쿨다운) | 5 |
 
 ## 1. 무엇인가
@@ -70,15 +70,15 @@ ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
 | `candidate_fault_classes`, `candidate_terminal_codes` | 건 프로파일이 있으면 그 유형과 종료 코드(예: `["E04"]`, `["E029"]`), 없으면 `null` |
 | `note_ko` | 화면용 한 줄 |
 
-## 4. 지금 api가 그대로 받으면 (플래그를 켰을 때)
+## 4. 지금 api가 받으면 (플래그를 켰을 때)
 
-`api/main.py ingest` 기준이다. 이 동작을 바꿀지는 api 담당이 정한다.
-- `severity`가 `"critical"`로 고정이라 화면에 "긴급"으로 나온다.
-- 케이스 묶음 키가 `(gun_id, trigger.rule_code)`다. 조기 경보는 `rule_code`가 `null`이라 같은 건의 모델 단독 critical 케이스(역시 `null`)와 같은 열린 케이스로 묶일 수 있다.
+`api/main.py ingest` 기준이다(2026-11-08 D-9에서 고쳤다, `api/README.md`).
+- `severity`는 `"warning"`이라 화면에 "주의"로 나온다. critical은 그대로 `"critical"`이다.
+- 케이스 묶음 키는 `store.group_key`다. 코드가 있으면 코드, 코드 없는 조기 경보는 `early_warning`, 코드 없는 모델 critical은 `null`이다. 그래서 조기 경보와 모델 단독 critical은 같은 케이스로 묶이지 않는다.
 - RAG 키는 `trigger.rule_code` → `fault_class.terminal_code`다. 둘 다 `null`이라 `guidance`가 `no_evidence`가 된다.
 - 인박스는 코드가 없는 행을 점선 "모델 신호만"으로 보여 준다. 이 표시는 조기 경보에도 맞는다.
 
-구분해서 처리하려면 `event_type`을 읽으면 된다. 예: 별도 등급("주의"), 별도 케이스 묶음, 후보 코드로 RAG 조회 여부. 어떻게 할지는 api·RAG 쪽 결정이다.
+화면 문구("조기 경보 · 확정 아님")와 닫기 선택지는 FE 요청이다(`docs/feedback-loop-requests.md`). 후보 코드로 RAG를 조회할지는 RAG 쪽 결정이다.
 
 v1.4의 두 필드(`contributing_features`, `sensor_features`)에 필요한 일이다. 조기경보와 치명 두 이벤트에 모두 해당한다(2026-11-06, 설계 `docs/superpowers/specs/2026-11-06-handoff-v1-4-design.md` 12절). ML 구현은 이 일을 기다리지 않는다. 다만 끝나기 전에는 두 필드를 읽는 곳이 없다.
 
@@ -96,11 +96,11 @@ v1.4의 두 필드(`contributing_features`, `sensor_features`)에 필요한 일�
   - 설명은 `docs/handoff_sensor_features_for_rag.md` 한 곳에 있다.
 - api
   - 두 필드를 RAG로 넘긴다. 지금 `enrich`는 코드만 넘긴다(`api/guidance.py:91`). RAG가 별도 입력을 정하면 `case["event"]`의 두 필드를 그 입력으로 넘긴다.
-  - `event_type`을 읽는다. 지금은 `severity`가 `critical`로 고정이다.
+  - `event_type`을 읽는다: 2026-11-08(D-9)에 반영했다. 조기경보의 `severity`는 `warning`이다.
   - 조기경보에는 E 코드가 없어 `enrich`가 RAG를 호출하지 않는다(`api/guidance.py:19-20`, `:80-91`).
-  - 조기경보는 코드가 `null`인 열린 케이스에 합쳐지고, 이때 `event_id`와 `detected_at`만 남아 블록이 버려진다(`api/main.py:110-112`). 같은 건, 같은 코드의 치명도 열린 케이스가 있으면 마찬가지다.
+  - 조기경보는 같은 건의 열린 조기경보 케이스에 합쳐지고(D-9부터 모델 단독 치명과는 따로 묶인다), 이때 `event_id`와 `detected_at`만 남아 블록이 버려진다(`api/main.py:110-112`). 같은 건, 같은 코드의 치명도 열린 케이스가 있으면 마찬가지다.
   - 케이스가 2시간, 4시간, 8시간, 24시간 뒤에 닫힌다고 가정하면 조기경보 블록이 남는 비율은 69%, 52%, 37%, 18%다. 치명 20건은 같은 가정에서 모두 남는다. 코드로 발생한 치명은 같은 코드가 24시간 안에 다시 뜨면 반복이라 치명이 아니고, 모델 단독 1건은 `rule_code`가 없어 코드 케이스에 합쳐지지 않는다.
-  - 조기경보 핸드오프는 api가 처리할 때까지 꺼 둔다(`RSW_EARLY_WARNING_HANDOFFS`). 치명 핸드오프는 플래그와 상관없이 두 필드를 싣는다. api는 받은 문서를 그대로 저장하므로 크기만 늘고 동작은 바뀌지 않는다.
+  - 조기경보 핸드오프는 화면 문구와 닫기 선택지가 준비될 때까지 꺼 둔다(`RSW_EARLY_WARNING_HANDOFFS`). 치명 핸드오프는 플래그와 상관없이 두 필드를 싣는다. api는 받은 문서를 그대로 저장하므로 크기만 늘고 동작은 바뀌지 않는다.
   - 줄 번호는 origin/main 기준이다.
 
 ## 5. 얼마나 오나

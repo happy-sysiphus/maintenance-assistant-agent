@@ -120,11 +120,12 @@
   - 임계값은 `train.py --cv`의 폴드 밖 정상 점수 분위수로 정한다(없으면 val 파일). 운영 모델 자신의 fit 점수로 정하면 B-18이 쓴 모집단과 달라진다.
   - 상태 기계 `train.early_warning_step` 하나를 오프라인(`early_warning_flags`)·온라인(`Detector.judge`)이 같이 쓴다.
   - 응답·trace·`/guns`·`/stats`에는 필드만 추가했다(`early_warning*`).
-  - 핸드오프는 `RSW_EARLY_WARNING_HANDOFFS=1`일 때만 보낸다(기본 끔). 지금 api는 모든 핸드오프를 "긴급" 케이스로 받기 때문이다.
+  - 핸드오프는 `RSW_EARLY_WARNING_HANDOFFS=1`일 때만 보낸다(기본 끔). 2026-11-08(D-9)부터 api는 이 문서를 "주의"(warning) 케이스로 받지만, 화면 문구와 닫기 선택지가 FE 요청 중이라(`docs/feedback-loop-requests.md`) 기본값은 그대로다.
     - 보내는 시점은 에피소드 시작이다. 건별 쿨다운 60분이 있고, critical·종료 코드가 있는 요청에서는 보내지 않는다(`early_warning_handoff_suppressed`).
     - 문서는 v1.4다(v1.3의 `event_type` 위에 필드만 더했다). `event_type: "early_warning"`, `trigger.source: "early_warning"`이고, `rule_code`·`fault_class`는 없다. 건 프로파일은 `early_warning.candidate_*`에 후보로만 싣는다(진단 아님).
   - api·RAG 담당용 안내는 `docs/early-warning-handoff.md`, HITL 리허설은 플래그 끔으로 한다.
   - 옛 번들(블록 없음)은 조기 경보 없이 그대로 동작한다.
+- **창 기록(D-9, 2026-11-08, `history.md` 49절)**: `RSW_WINDOW_LOG=1`이고 상태 폴더가 있으면 새로 채점한 창마다 `windows/<gun>/<UTC 날짜>.jsonl`에 한 줄(스펙 5.4 필드, 피처 벡터 `vec` 포함)을 쓴다. 기본 끔이고, 켜도 응답은 같다. 피드백 루프(`.py/feedback_loop.py`)의 입력이다.
 - 서빙은 게이트도 번들(`alarm_max_non_welding`)에서 읽는다. 보류 윈도우는 `is_anomaly`는 그대로 두고 `alarm_held=true`·`hold_reason`을 붙이며 `severity=normal`, `consecutive_alarms`를 0으로 리셋한다(비용접 중 점수는 신뢰하지 않으므로 지속 알람 카운트를 이어가지 않는다). `AnomalyResult`에는 필드 추가만 했다.
 - 서빙은 번들의 `preprocess_config`에서 gap 한도·c16 임계를 읽고(없으면 기본값 + 경고; `outlier_hi`는 None 허용), `per-file` 스케일이나 `--resample`로 만든 번들은 기동 시 거부한다 — 온라인으로 재현할 수 없는 변환이라 조용히 틀린 점수를 내느니 실패하는 쪽을 택했다.
 - 비용접 행은 **버퍼에서 밀려난 마지막 용접 행**(`GunState.carry`)을 버퍼 시작에 채우고 ffill한다. 버퍼 안에서만 ffill하면 30분보다 긴 캡 드레싱/대기 구간에서 버퍼 전체가 NaN → HTTP 500(2026-09-24), 버퍼 안의 최신 용접값을 쓰면 앞쪽 행이 미래 값으로 채워진다(2026-09-29). 한 번도 용접 행을 못 본 스트림은 202.
@@ -220,3 +221,5 @@
 - 2026-11-06: **핸드오프 v1.4**(`history.md` 47절, 설계 `docs/superpowers/specs/2026-11-06-handoff-v1-4-design.md`): 조기경보와 치명 핸드오프에 `contributing_features`(시각 피처 제외 상위 3개)와 `sensor_features`(이벤트 1분의 초당 원시값)를 추가했다. 필드 추가만이라 1.3과 호환된다. RAG용 설명은 `docs/handoff_sensor_features_for_rag.md`, README 5.10, `docs/early-warning-handoff.md`, techspec 3절.
 - 2026-11-07: **D-8 R2 카드 점검 순서**(`history.md` 48절, 설계 `docs/superpowers/specs/2026-11-07-feedback-card-order-design.md`): `FIELD_MEMORY=1`일 때 api가 해결 종료된 케이스의 '이상' 점검 기록으로 새 케이스 카드의 점검 순서를 바꾼다(같은 코드 전체 설비, 앞의 모든 항목보다 3건 이상, 설비 2대 이상; 조치 보호, 카드 고정, 카드 밖 원인 제외). 10-28의 '카드 순서는 그대로'를 순서만 뒤집었다(사용자 결정 11-07). 다른 파트 요청은 `docs/card-order-requests.md`. ML 코드 · 계약은 그대로이고 드라이버 표시만 바뀌었다.
 - 2026-11-08: **R2 마무리 · 문서 정리**(`history.md` 48절 '11-08 추가'): 조치 보호 완화(앞세울 원인이 앞 원인의 조치를 같은 항목으로 모두 가지면 옮긴다, 사용자 결정). 고장 시점 표기를 정했다: 파일 = 에러 T 앞 7일 + 뒤 10분, '고장' · `ttf_s`는 파일 끝 기준, 조기 경보 창은 T 기준(2절, 사용자 결정). 문서 불일치 125건을 정리했다(쿨다운 코드별, 청크와 이벤트 수, 시험 수 130, `detector.created` 시각, c19 설명 등).
+- 2026-11-08: **D-9 ML 피드백 루프**(`history.md` 49절, 설계 `docs/superpowers/specs/2026-11-08-ml-feedback-loop-design.md`): 창 기록(`RSW_WINDOW_LOG`, 기본 끔)과 닫힌 케이스로 ML 운영 규칙을 판정하는 보고서(`.py/feedback_eval.py`·`feedback_loop.py`)를 만들었다. 제안만 하고 반영은 사람이 한다. api는 조기 경보를 "주의" 케이스로 받고 따로 묶는다(`api/README.md`). 번들·서빙 판정·핸드오프 계약은 그대로다.
+- 2026-11-09: **D-9 현장 Q+ · Q− 평가 임계값**(`history.md` 49절, 스펙 7.2): 현장 분위수 대신 적용 명령이 만들 임계값의 추정(실험실 8회 평균)으로 평가한다(사용자 결정 "바꾸기"). `--lab`이 없으면 현장 분위수로 평가하고 경고한다. `MIN_FAILURES` 10은 재검사에서 그대로다(`results/D-9/apply_threshold_check.py`).

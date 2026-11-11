@@ -1,0 +1,498 @@
+{
+ "criteria": "before computing any result below (2026-11-09):\n    feedback    SIMULATED from the data's own answer, nobody's judgment. A critical alarm is real if its class is the class\n                of one of the physical gun's files and it fires 0-3600 s before that file's end, else false (the rule of\n                results/D-9/calibrate.py part 4). Every alarm is closed correctly before the next one\n    data        terminal-code triggers at row level (main.Detector.rule_check through results/C-6/rule_rowlevel.py; repeats\n                never become cases), 64 preprocessed train files + 8 test files, physical guns per split, walked in time\n                order: a decision at an alarm uses only the closures before it\n    1 profile   spec 7.6 with the D-9 constants (2 cases on 2 days, applied at once): once a class is excluded its later\n                alarms make no case. Before = no profile. Benefit = saved share of the false-alarm cases\n    2 R1        api/field_memory.py: same gun and code, past false alarms > past real ones. Every alarm makes a case here.\n                Benefit = share of the alarms with the sentence that were false (precision) minus the share of all alarms\n                that were false (base rate). Also: share of the false alarms covered, real alarms that got the sentence\n    significant gun bootstrap (physical guns, 2000 draws, seed 7) pooled over both splits; each split reported too. \"improved\"\n                needs (a) the benefit's 95% CI above 0 and (b) harm that can be measured: at least 29 exposures = real alarms\n                preceded by a false alarm of the same gun and class, with a one-sided 95% upper bound of the wrong rate\n                <= 10% (0 wrong of 29 gives 9.8%). Fewer exposures -> \"cannot_judge\", not \"no_improvement\"\n    3 early warning  the D-9 verdicts unchanged (spec 7.4 / 7.5; B-19 lab, results/D-9/runs/offline-1 with simulated labels):\n                \"after\" = the rules the loop proposes. What-if on the 8 test files at the threshold the apply command would\n                produce = the mean of the 8 lab runs' thresholds at that quantile (GATE: the served threshold): false alarms\n                per gun-day, recall, excess, D and recall change against the served rule (paired gun bootstrap, seed 7)\n    4 sample sizes  two-sided 5%, power 80%, normal approximation.\n                Early warning: failures needed for a paired D of 0.05, 0.10 and each challenger's lab |D|; sigma = per-failure\n                SD of the paired excess difference in one run, mean over the 8 runs.\n                Profile and R1: guns that must benefit so that a gun resample holds none with probability < 2.5%, plus the 29\n                exposures above. R1 precision: smallest n from which an exact one-sided binomial test at 2.5% keeps power\n                >= 80% for base rate + 0.30",
+ "critical": {
+  "pooled": {
+   "guns": 66,
+   "alarms": 116,
+   "real": 72,
+   "false": 44,
+   "saved": 4,
+   "wrong": 0,
+   "exposed": 0,
+   "r1_fires": 16,
+   "r1_right": 16,
+   "r1_wrong": 0,
+   "profile": {
+    "false_before": 44,
+    "false_after": 40,
+    "saved_share": 0.09090909090909091,
+    "ci": [
+     0.0,
+     0.21739130434782608
+    ],
+    "guns_benefiting": 2,
+    "real_suppressed": 0,
+    "exposed": 0,
+    "wrong_upper": 1.0,
+    "verdict": "cannot_judge"
+   },
+   "r1": {
+    "fires": 16,
+    "guns_fired": 11,
+    "precision": 1.0,
+    "base_rate": 0.3793103448275862,
+    "gain": 0.6206896551724138,
+    "ci": [
+     0.5384482758620689,
+     0.7272727272727273
+    ],
+    "coverage_of_false": 0.36363636363636365,
+    "coverage_ci": [
+     0.21621621621621623,
+     0.4772727272727273
+    ],
+    "wrong": 0,
+    "exposed": 0,
+    "wrong_upper": 1.0,
+    "verdict": "cannot_judge"
+   }
+  },
+  "train": {
+   "guns": 58,
+   "alarms": 97,
+   "real": 64,
+   "false": 33,
+   "saved": 1,
+   "wrong": 0,
+   "exposed": 0,
+   "r1_fires": 11,
+   "r1_right": 11,
+   "r1_wrong": 0,
+   "profile": {
+    "false_before": 33,
+    "false_after": 32,
+    "saved_share": 0.030303030303030304,
+    "ci": [
+     0.0,
+     0.09808823529411738
+    ],
+    "guns_benefiting": 1,
+    "real_suppressed": 0,
+    "exposed": 0,
+    "wrong_upper": 1.0,
+    "verdict": "cannot_judge"
+   },
+   "r1": {
+    "fires": 11,
+    "guns_fired": 9,
+    "precision": 1.0,
+    "base_rate": 0.3402061855670103,
+    "gain": 0.6597938144329897,
+    "ci": [
+     0.5652173913043479,
+     0.7683161350844276
+    ],
+    "coverage_of_false": 0.3333333333333333,
+    "coverage_ci": [
+     0.21428571428571427,
+     0.43333333333333335
+    ],
+    "wrong": 0,
+    "exposed": 0,
+    "wrong_upper": 1.0,
+    "verdict": "cannot_judge"
+   }
+  },
+  "test": {
+   "guns": 8,
+   "alarms": 19,
+   "real": 8,
+   "false": 11,
+   "saved": 3,
+   "wrong": 0,
+   "exposed": 0,
+   "r1_fires": 5,
+   "r1_right": 5,
+   "r1_wrong": 0,
+   "profile": {
+    "false_before": 11,
+    "false_after": 8,
+    "saved_share": 0.2727272727272727,
+    "ci": [
+     0.0,
+     0.5
+    ],
+    "guns_benefiting": 1,
+    "real_suppressed": 0,
+    "exposed": 0,
+    "wrong_upper": 1.0,
+    "verdict": "cannot_judge"
+   },
+   "r1": {
+    "fires": 5,
+    "guns_fired": 2,
+    "precision": 1.0,
+    "base_rate": 0.5789473684210527,
+    "gain": 0.42105263157894735,
+    "ci": [
+     0.27586206896551724,
+     0.6153846153846154
+    ],
+    "coverage_of_false": 0.45454545454545453,
+    "coverage_ci": [
+     0.0,
+     0.7058823529411765
+    ],
+    "wrong": 0,
+    "exposed": 0,
+    "wrong_upper": 1.0,
+    "verdict": "cannot_judge"
+   }
+  },
+  "guns_with_r1": [
+   {
+    "split": "train",
+    "files": "E01_15,E03_2,E04_0",
+    "alarms": 6,
+    "false": 3,
+    "r1_fires": 1,
+    "r1_right": 1,
+    "saved": 0
+   },
+   {
+    "split": "train",
+    "files": "E04_14",
+    "alarms": 4,
+    "false": 3,
+    "r1_fires": 2,
+    "r1_right": 2,
+    "saved": 1
+   },
+   {
+    "split": "train",
+    "files": "E03_13",
+    "alarms": 3,
+    "false": 2,
+    "r1_fires": 1,
+    "r1_right": 1,
+    "saved": 0
+   },
+   {
+    "split": "train",
+    "files": "E03_6",
+    "alarms": 3,
+    "false": 2,
+    "r1_fires": 1,
+    "r1_right": 1,
+    "saved": 0
+   },
+   {
+    "split": "train",
+    "files": "E01_2",
+    "alarms": 3,
+    "false": 2,
+    "r1_fires": 1,
+    "r1_right": 1,
+    "saved": 0
+   },
+   {
+    "split": "train",
+    "files": "E01_12,E04_16",
+    "alarms": 7,
+    "false": 5,
+    "r1_fires": 2,
+    "r1_right": 2,
+    "saved": 0
+   },
+   {
+    "split": "train",
+    "files": "E04_13",
+    "alarms": 3,
+    "false": 2,
+    "r1_fires": 1,
+    "r1_right": 1,
+    "saved": 0
+   },
+   {
+    "split": "train",
+    "files": "E03_4",
+    "alarms": 3,
+    "false": 2,
+    "r1_fires": 1,
+    "r1_right": 1,
+    "saved": 0
+   },
+   {
+    "split": "train",
+    "files": "E02_10",
+    "alarms": 4,
+    "false": 3,
+    "r1_fires": 1,
+    "r1_right": 1,
+    "saved": 0
+   },
+   {
+    "split": "test",
+    "files": "test_4",
+    "alarms": 3,
+    "false": 2,
+    "r1_fires": 1,
+    "r1_right": 1,
+    "saved": 0
+   },
+   {
+    "split": "test",
+    "files": "test_0",
+    "alarms": 6,
+    "false": 5,
+    "r1_fires": 4,
+    "r1_right": 4,
+    "saved": 3
+   }
+  ]
+ },
+ "early_warning": {
+  "loop_decision": {
+   "GATE": {
+    "verdict": "reject",
+    "verdict_ko": "반영 안 함"
+   },
+   "Q+": {
+    "verdict": "hold",
+    "verdict_ko": "보류(현장 증거 쌓는 중)"
+   },
+   "Q-": {
+    "verdict": "reject",
+    "verdict_ko": "반영 안 함"
+   },
+   "Q0.975": {
+    "verdict": "hold",
+    "verdict_ko": "보류"
+   }
+  },
+  "lab": {
+   "champion": {
+    "fa_per_day": 16.395329034584776,
+    "recall": 0.48828125,
+    "chance": 0.34251302083333335,
+    "excess": 0.14576822916666665,
+    "ci": [
+     0.05917968750000002,
+     0.2206624348958332
+    ],
+    "failures": 64,
+    "guns": 64
+   },
+   "GATE": {
+    "summary": {
+     "fa_per_day": 15.09642130852481,
+     "recall": 0.37109375,
+     "chance": 0.29140625,
+     "excess": 0.07968750000000002,
+     "ci": [
+      -0.008663736979166673,
+      0.16230631510416665
+     ],
+     "failures": 64,
+     "guns": 64
+    },
+    "vs_champion": {
+     "D": -0.06608072916666663,
+     "ci": [
+      -0.12760416666666663,
+      -0.01301269531250008
+     ],
+     "recall_change": -0.1171875,
+     "recall_change_ci": [
+      -0.1796875,
+      -0.0625
+     ]
+    }
+   },
+   "Q+": {
+    "summary": {
+     "fa_per_day": 13.588642488153951,
+     "recall": 0.42578125,
+     "chance": 0.3022786458333333,
+     "excess": 0.1235026041666667,
+     "ci": [
+      0.0443766276041667,
+      0.198046875
+     ],
+     "failures": 64,
+     "guns": 64
+    },
+    "vs_champion": {
+     "D": -0.022265624999999956,
+     "ci": [
+      -0.0501969401041667,
+      0.001961263020833287
+     ],
+     "recall_change": -0.0625,
+     "recall_change_ci": [
+      -0.08984375,
+      -0.0390625
+     ]
+    }
+   },
+   "Q-": {
+    "summary": {
+     "fa_per_day": 23.875318482503914,
+     "recall": 0.5625,
+     "chance": 0.43271484374999997,
+     "excess": 0.12978515625000003,
+     "ci": [
+      0.03662109375,
+      0.21179524739583327
+     ],
+     "failures": 64,
+     "guns": 64
+    },
+    "vs_champion": {
+     "D": -0.01598307291666662,
+     "ci": [
+      -0.04378255208333337,
+      0.012500813802083338
+     ],
+     "recall_change": 0.07421875,
+     "recall_change_ci": [
+      0.05078125,
+      0.1015625
+     ]
+    }
+   }
+  },
+  "lab_mean_thresholds": {
+   "champion": 0.9459582742491051,
+   "Q+": 0.9541585851121392,
+   "Q-": 0.9250408855308573
+  },
+  "test_what_if": {
+   "served": {
+    "threshold": 0.9464368224143982,
+    "summary": {
+     "fa_per_day": 8.33158201984822,
+     "recall": 0.5,
+     "chance": 0.2037037037037037,
+     "excess": 0.2962962962962963,
+     "ci": [
+      -0.16666666666666663,
+      0.7584722222222214
+     ],
+     "failures": 8,
+     "guns": 8
+    }
+   },
+   "GATE": {
+    "threshold": 0.9464368224143982,
+    "summary": {
+     "fa_per_day": 7.0426152948044365,
+     "recall": 0.5,
+     "chance": 0.16666666666666666,
+     "excess": 0.33333333333333337,
+     "ci": [
+      -0.08333333333333331,
+      0.775
+     ],
+     "failures": 8,
+     "guns": 8
+    },
+    "vs_served": {
+     "D": 0.03703703703703709,
+     "ci": [
+      0.0,
+      0.125
+     ],
+     "recall_change": 0.0,
+     "recall_change_ci": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "Q+": {
+    "threshold": 0.9541585851121392,
+    "summary": {
+     "fa_per_day": 6.8744892002335085,
+     "recall": 0.375,
+     "chance": 0.14814814814814814,
+     "excess": 0.22685185185185186,
+     "ci": [
+      -0.1875,
+      0.6875
+     ],
+     "failures": 8,
+     "guns": 8
+    },
+    "vs_served": {
+     "D": -0.06944444444444442,
+     "ci": [
+      -0.35416666666666663,
+      0.10606060606060608
+     ],
+     "recall_change": -0.125,
+     "recall_change_ci": [
+      -0.375,
+      0.0
+     ]
+    }
+   },
+   "Q-": {
+    "threshold": 0.9250408855308573,
+    "summary": {
+     "fa_per_day": 13.300642148277875,
+     "recall": 0.625,
+     "chance": 0.3148148148148148,
+     "excess": 0.3101851851851852,
+     "ci": [
+      -0.24999999999999994,
+      0.7916666666666666
+     ],
+     "failures": 8,
+     "guns": 8
+    },
+    "vs_served": {
+     "D": 0.013888888888888895,
+     "ci": [
+      -0.15151515151515155,
+      0.27083333333333337
+     ],
+     "recall_change": 0.125,
+     "recall_change_ci": [
+      0.0,
+      0.375
+     ]
+    }
+   }
+  },
+  "sample_sizes": {
+   "GATE": {
+    "sigma": 0.3120205382973767,
+    "lab_abs_D": 0.06608072916666663,
+    "failures_for": {
+     "0.050": 306,
+     "0.100": 77,
+     "0.066": 175
+    },
+    "power_at_64_for_lab_D": 0.39523596215646495
+   },
+   "Q+": {
+    "sigma": 0.24788665118182165,
+    "lab_abs_D": 0.022265624999999956,
+    "failures_for": {
+     "0.050": 193,
+     "0.100": 49,
+     "0.022": 973
+    },
+    "power_at_64_for_lab_D": 0.10723093122573507
+   },
+   "Q-": {
+    "sigma": 0.2684629874448676,
+    "lab_abs_D": 0.01598307291666662,
+    "failures_for": {
+     "0.050": 227,
+     "0.100": 57,
+     "0.016": 2215
+    },
+    "power_at_64_for_lab_D": 0.06894689850094834
+   }
+  },
+  "notes": []
+ },
+ "needed": {
+  "exposures_for_wrong_rate_under_10pct": 29,
+  "guns_benefiting_pooled": 4,
+  "r1_alarms_for_base_plus_30pts": 25
+ },
+ "seconds": 20
+}
