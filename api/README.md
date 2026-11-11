@@ -110,7 +110,7 @@ py -3.11 -m pytest tests -q -p no:cacheprovider                     # langgraph�
 - 챗봇 피드백: POST /api/assistant/feedback가 질문·답·상태·코드와 함께 SQLite `feedback` 표에 저장합니다
   (같은 답은 마지막 평가만). GET /api/assistant/feedback로 최근 순 목록을 봅니다. 현장 기억·RAG에는 아직 쓰지 않습니다.
 
-  6-11-11 · UI 변경 제외 API 패치
+## 11/11 · UI 변경 제외 API 패치
 
 ## 이번 변경의 목적
 
