@@ -27,10 +27,7 @@ ML이 꺼져 있어도 챗봇·PDF와 저장된 케이스는 사용할 수 있�
 - guidance에는 status·candidates와 함께 sections·causes·evidence·answer 등 실제 RAG 필드가 있습니다.
 - 기존 S 기반 저장 케이스의 기록 키는 자동 변환하지 않습니다. 새 케이스부터 E 코드 키를 사용합니다.
 - 점검·판단·조치·결과·일지·도움 요청은 기존 SQLite에 저장합니다. 생성 중 추가된 기록도 보존합니다.
-- 같은 event_id는 중복 처리하지 않고, 같은 설비·묶음 키의 열린 케이스는 반복으로 묶습니다. 묶음 키(`store.group_key`)는 종료 코드이고, 코드 없는 조기 경보는 `early_warning`, 코드 없는 모델 단독 critical은 비어 있습니다.
-- 조기 경보 핸드오프(event_type `early_warning`, ML `RSW_EARLY_WARNING_HANDOFFS=1`)로 만든 케이스의 severity는 `warning`(화면의 "주의")이고, 나머지는 `critical`입니다.
-- 케이스 목록의 `event`에 `event_type`(없으면 `critical`)을, `/api/history` 항목에 `repeat_event_ids`(반복으로 묶인 알림의 event_id)를 함께 줍니다. ML 피드백 루프(ml D-9)가 케이스와 ML 알림을 잇는 데 씁니다.
-- 조기 경보 핸드오프를 켜지 않으면(ML 기본값) 응답에 이 두 필드가 늘 뿐입니다. 이 변경 전에 만든 DB의 조기 경보 케이스는 `code`가 비어 있어 예전 묶음에 남습니다.
+- 같은 event_id는 중복 처리하지 않고, 같은 설비·코드의 열린 케이스는 반복으로 묶습니다.
 
 ## 챗봇·문서
 

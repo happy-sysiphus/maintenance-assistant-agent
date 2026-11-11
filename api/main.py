@@ -106,7 +106,8 @@ def ingest(handoff: dict[str, Any]) -> str:
         eid = handoff["event_id"]
         if store.seen(eid):
             return "duplicate"
-        same = store.open_case(handoff["gun_id"], store.group_key(handoff))
+        code = handoff["trigger"].get("rule_code")
+        same = store.open_case(handoff["gun_id"], code)
         if same:
             same.setdefault("repeats", []).append({"event_id": eid, "detected_at": handoff["detected_at"]})
             store.put(same)
@@ -120,8 +121,8 @@ def ingest(handoff: dict[str, Any]) -> str:
         d = {
             "case_id": store.next_id(),
             "status": "new",
-            # 조기 경보 핸드오프(event_type early_warning, ML RSW_EARLY_WARNING_HANDOFFS=1)는 주의, 나머지는 긴급
-            "severity": "warning" if handoff.get("event_type") == "early_warning" else "critical",
+            # 알림은 ML이 critical일 때만 보낸다 (ml/README 5.10.2)
+            "severity": "critical",
             "assignee": None,
             "event": handoff,
             "score_trace": score_trace(handoff["gun_id"], handoff["detected_at"]),
@@ -182,8 +183,6 @@ def summary(d: dict[str, Any]) -> dict[str, Any]:
             "event_id": e["event_id"],
             "gun_id": e["gun_id"],
             "detected_at": e["detected_at"],
-            # v1.2까지의 핸드오프에는 event_type이 없다: 모두 critical
-            "event_type": e.get("event_type") or "critical",
             "trigger": {k: e["trigger"].get(k) for k in ("source", "rule_code", "rule_trigger_time")},
             "fault_class": {"code": fc["code"], "name_ko": fc["name_ko"]} if fc else None,
             "summary_ko": e.get("summary_ko"),
@@ -439,8 +438,6 @@ def history():
                 "cause": cause_name(d),
                 "action_kind": action.get("kind"),
                 "worker": action.get("worker"),
-                # 반복으로 묶인 알림 (ml/.py/feedback_loop.py가 케이스와 ML 알림을 잇는다)
-                "repeat_event_ids": [r["event_id"] for r in d.get("repeats", [])],
             }
         )
     items.sort(key=lambda i: i["closure"]["at"], reverse=True)
