@@ -7,7 +7,7 @@ from pathlib import Path
 from neo4j.exceptions import DriverError, Neo4jError
 from pydantic import BaseModel, ConfigDict, Field
 
-from .config import anthropic_client, graph_driver, load_environment
+from .config import anthropic_client, get_database, graph_driver, load_environment
 from .retrieval import evidence_parts, retrieve
 from .service import normalize_history
 from .warning_catalog import (case_is_current, initial_catalog, reviewed_case,
@@ -297,18 +297,20 @@ def main():
     parser.add_argument("operation", choices=("analyze", "init", "inspect", "candidates", "manual",
                                                "record", "review", "acknowledge"))
     parser.add_argument("--input", type=Path, help="JSON object of keyword arguments (analyze: raw handoff)")
-    parser.add_argument("--database")
-    parser.add_argument("--namespace")
+    parser.add_argument("--database", help="override NEO4J_DATABASE")
+    parser.add_argument("--namespace", help="override RAG_WARNING_NAMESPACE")
     parser.add_argument("--keyword-only", action="store_true", help="skip OpenAI embeddings in manual search")
     args = parser.parse_args()
     payload = json.loads(args.input.read_text(encoding="utf-8")) if args.input else {}
     if args.operation == "analyze":
         result = analyze_warning(payload)
     else:
-        if not args.database or not args.namespace:
-            parser.error("provide --database and --namespace for graph operations")
+        load_environment()
+        namespace = args.namespace if args.namespace is not None else os.getenv("RAG_WARNING_NAMESPACE", "")
+        if not namespace.strip():
+            parser.error("set RAG_WARNING_NAMESPACE or provide --namespace for graph operations")
         with graph_driver() as driver:
-            memory = WarningMemory(driver, database=args.database, namespace=args.namespace)
+            memory = WarningMemory(driver, database=get_database(args.database), namespace=namespace)
             service = EarlyWarningRag(memory, use_vectors=not args.keyword_only)
             operation = {"init": memory.initialize, "inspect": service.inspect,
                          "candidates": service.generate_candidates, "manual": service.search_manuals,

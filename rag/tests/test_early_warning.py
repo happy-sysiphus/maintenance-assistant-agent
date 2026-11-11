@@ -1,15 +1,19 @@
-"""v1.4 contract tests and an opt-in run against the disposable loopback DB."""
+"""v1.4 contract tests and opt-in Neo4j checks for shared Aura or disposable fixtures."""
 import json
 import os
+import sys
+from contextlib import nullcontext
 from pathlib import Path
 from unittest.mock import Mock
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 import pytest
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable
 
-from rag import early_warning as ew
+from rag import documents, early_warning as ew
+from rag.config import get_database, graph_driver, load_environment
 from rag.documents import fingerprint, normalized
 from rag.pipeline.build import write_graph
 from rag.pipeline.ingest import KB_ID
@@ -25,6 +29,38 @@ OTHER = "manual:E012-C2"
 @pytest.fixture
 def public_warning():
     return json.loads((Path(__file__).parent / "fixtures" / "early_warning_v14.json").read_text(encoding="utf-8"))
+
+
+def test_corpus_version_matches_aura_across_checkout_line_endings(tmp_path, monkeypatch):
+    manifest, mapping, processing = documents.DOCUMENTS_PATH, documents.MAPPING_PATH, documents.DATA / "processing.json"
+    expected = fingerprint()
+    for path in (manifest, mapping, processing):
+        (tmp_path / path.name).write_bytes(path.read_bytes().replace(b"\r\n", b"\n"))
+    monkeypatch.setattr(documents, "DOCUMENTS_PATH", tmp_path / manifest.name)
+    monkeypatch.setattr(documents, "MAPPING_PATH", tmp_path / mapping.name)
+    monkeypatch.setattr(documents, "DATA", tmp_path)
+    assert fingerprint() == expected
+    for path in tmp_path.iterdir():
+        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    assert fingerprint() == expected
+
+
+def test_warning_cli_uses_shared_connection_settings(public_warning, tmp_path, monkeypatch):
+    path = tmp_path / "inspect.json"
+    path.write_text(json.dumps({"handoff": public_warning}), encoding="utf-8")
+    monkeypatch.setenv("RAG_WARNING_NAMESPACE", "team-rag")
+    monkeypatch.setenv("NEO4J_DATABASE", "team-cloud")
+    monkeypatch.setattr(sys, "argv", ["early_warning", "inspect", "--input", str(path)])
+    driver = Mock()
+    graph = Mock(return_value=nullcontext(driver))
+    monkeypatch.setattr(ew, "graph_driver", graph)
+    memory = Mock()
+    monkeypatch.setattr(ew, "WarningMemory", memory)
+
+    ew.main()
+
+    memory.assert_called_once_with(driver, database="team-cloud", namespace="team-rag")
+    memory.return_value.lookup.assert_not_called()
 
 
 def warning(event_id, gun_id):
@@ -137,6 +173,32 @@ def graph_service():
         yield ew.EarlyWarningRag(memory)
 
 
+@pytest.fixture
+def aura_graph_service():
+    if os.getenv("RAG_WARNING_TEST_AURA") != "1":
+        pytest.skip("set RAG_WARNING_TEST_AURA=1 to verify the configured team Aura")
+    load_environment()
+    uri = urlsplit(os.getenv("NEO4J_URI", ""))
+    assert uri.scheme == "neo4j+s" and (uri.hostname or "").endswith(".databases.neo4j.io"), (
+        "Aura verification requires the encrypted team Aura URI"
+    )
+    namespace = f"warning-test-{uuid4()}"
+    with graph_driver() as driver:
+        memory = WarningMemory(driver, database=get_database(), namespace=namespace)
+        with driver.session(database=memory.database) as session:
+            session.run("RETURN 1").consume()
+        try:
+            yield ew.EarlyWarningRag(memory, use_vectors=False)
+        finally:
+            with driver.session(database=memory.database) as session:
+                session.run(
+                    """MATCH (n {namespace:$namespace})
+                    WHERE n:WarningPattern OR n:WarningResolution OR n:WarningManualCase
+                    DETACH DELETE n""",
+                    namespace=namespace,
+                ).consume()
+
+
 def resolved(service, event, selected=US2, *, case_id=None, equipment_scope=LEGACY, **kwargs):
     return service.record_resolution(event, case_id=case_id or "CASE-" + event["event_id"],
                                      actual_action="테스트 작업자가 정비 조치를 수행함",
@@ -144,8 +206,9 @@ def resolved(service, event, selected=US2, *, case_id=None, equipment_scope=LEGA
                                      equipment_scope=equipment_scope, manual_case_id=selected, **kwargs)
 
 
-def test_live_graph_first_candidate_promotion_counterexample_and_rebuild(graph_service, monkeypatch):
-    service = graph_service
+@pytest.mark.parametrize("fixture", ["graph_service", "aura_graph_service"])
+def test_live_graph_first_candidate_promotion_and_counterexample(fixture, request, monkeypatch):
+    service = request.getfixturevalue(fixture)
     model = Mock(side_effect=AssertionError("automatic lookup must not call a model"))
     monkeypatch.setattr(ew, "_claude", model)
     monkeypatch.setattr(ew, "retrieve", model)
@@ -177,13 +240,6 @@ def test_live_graph_first_candidate_promotion_counterexample_and_rebuild(graph_s
     assert automatic["status"] == "automatic"
     assert automatic["automatic_card"]["applicable_cases"] == 2
 
-    # Run the actual rebuild write routine on the dedicated disposable DB.
-    with service.memory.driver.session(database="neo4j") as session:
-        session.run("CREATE (:Rag:Cause {id:'warning-rebuild-fixture'})").consume()
-        session.execute_write(write_graph, {}, {})
-        assert session.run("MATCH (n:Rag:Cause {id:'warning-rebuild-fixture'}) RETURN count(n) AS n").single()["n"] == 0
-    assert service.inspect(next_warning, equipment_scope=LEGACY)["status"] == "automatic"
-
     resolved(service, warning("c", "gun-c"), OTHER, rejected_auto_case_id=US2)
     held = service.inspect(next_warning, equipment_scope=LEGACY)
     assert held["status"] == "counterexample" and held["counterexample_event_ids"] == ["c"]
@@ -192,6 +248,35 @@ def test_live_graph_first_candidate_promotion_counterexample_and_rebuild(graph_s
     resolved(service, warning("d", "gun-d"), OTHER)
     assert service.inspect(next_warning, equipment_scope=LEGACY)["status"] == "conflict"
     model.assert_not_called()
+
+
+def test_live_graph_rebuild_preserves_warning_history(graph_service):
+    service = graph_service
+    resolved(service, warning("first", None))
+    resolved(service, warning("second", None))
+    with service.memory.driver.session(database=service.memory.database) as session:
+        session.run("CREATE (:Rag:Cause {id:'warning-rebuild-fixture'})").consume()
+        session.execute_write(write_graph, {}, {})
+        assert session.run("MATCH (n:Rag:Cause {id:'warning-rebuild-fixture'}) RETURN count(n) AS n").single()["n"] == 0
+    assert service.inspect(warning("next", None), equipment_scope=LEGACY)["status"] == "automatic"
+
+
+def test_aura_manual_search_and_worker_resolution(aura_graph_service):
+    service = aura_graph_service
+    event = warning("manual-aura", None)
+    response = service.search_manuals(event, "E012 Timeout compensation")
+    assert response["status"] == "ok", response
+    source = next(hit["source"] for hit in response["hits"] if not hit["review_needed"])
+    pending = resolved(service, event, selected=None, manual_source=source)
+    assert pending["status"] == "pending_review"
+    assert service.inspect(warning("next", None), equipment_scope=LEGACY)["status"] == "new_pattern"
+    approved = service.review_resolution(
+        event["event_id"], title="Aura 테스트 매뉴얼 항목", equipment_scope=LEGACY,
+        checks=[source["quote"][:100].strip()],
+    )
+    saved = service.inspect(warning("next", None), equipment_scope=LEGACY)
+    assert saved["status"] == "candidates"
+    assert saved["history_candidates"][0]["manual_case_id"] == approved["manual_case"]["manual_case_id"]
 
 
 def test_live_graph_manual_review_and_missing_confirmation(graph_service):

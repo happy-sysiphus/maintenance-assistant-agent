@@ -37,8 +37,10 @@ def searchable_chunk(text, source_json=None):
 
 
 def fingerprint() -> str:
-    return hashlib.sha256(DOCUMENTS_PATH.read_bytes() + MAPPING_PATH.read_bytes()
-                          + (DATA / "processing.json").read_bytes()).hexdigest()
+    # The shared Aura corpus was indexed with CRLF. Keep its version across OS checkouts.
+    paths = (DOCUMENTS_PATH, MAPPING_PATH, DATA / "processing.json")
+    contents = b"".join(path.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n") for path in paths)
+    return hashlib.sha256(contents).hexdigest()
 
 
 def verify_manuals() -> None:
