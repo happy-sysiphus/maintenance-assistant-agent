@@ -60,14 +60,8 @@ def all_cases() -> list[dict[str, Any]]:
 
 
 def group_key(e: dict[str, Any]) -> str | None:
-    """케이스를 묶는 키 (cases.code 칸): 종료 코드. 코드 없는 조기 경보는 "early_warning", 코드 없는 모델 단독 critical은 None.
-
-    조기 경보와 모델 단독 critical이 같은 설비의 열린 케이스 하나에 섞이지 않게 한다 (ml D-9 스펙 11.1).
-    """
-    code = e["trigger"].get("rule_code")
-    if code:
-        return code
-    return "early_warning" if e.get("event_type") == "early_warning" else None
+    """Group warnings separately from code-less critical alarms for the same equipment."""
+    return "early_warning" if e.get("event_type") == "early_warning" else e["trigger"].get("rule_code")
 
 
 def put(d: dict[str, Any], *, warning_delivery=None) -> None:
@@ -156,11 +150,15 @@ def all_feedback() -> list[dict[str, Any]]:
 
 
 def open_case(gun_id: str, code: str | None) -> dict[str, Any] | None:
-    """같은 설비 · 같은 묶음 키(group_key)로 아직 끝나지 않은 케이스 (반복 알림을 묶을 곳)."""
+    """Find an open case with the same equipment and alarm group."""
     with _lock, _conn() as c:
+        # Warnings saved before type-aware grouping may still have a null code.
         row = c.execute(
-            "SELECT data FROM cases WHERE gun_id = ? AND code IS ? AND status NOT IN ('resolved', 'unresolved', 'false_alarm')"
-            " ORDER BY detected_at DESC LIMIT 1",
+            """SELECT data FROM cases
+               WHERE gun_id = ? AND status NOT IN ('resolved', 'unresolved', 'false_alarm')
+                 AND (CASE WHEN code IS NULL AND json_extract(data, '$.event.event_type') = 'early_warning'
+                           THEN 'early_warning' ELSE code END) IS ?
+               ORDER BY detected_at DESC LIMIT 1""",
             (gun_id, code),
         ).fetchone()
     return json.loads(row[0]) if row else None

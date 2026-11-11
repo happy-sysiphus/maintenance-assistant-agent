@@ -266,13 +266,13 @@ ml/
 │   └─ test/
 ├─ eda_out/                1단계 산출물
 ├─ models/                 4단계 산출물 (joblib 번들, 지표 JSON, scores/)
-├─ results/                실험 지표 JSON: 작업 ID별 폴더(A-1_B-1/ ~ D-10/, 대응은 `history.md` "작업 ID") — 재현 스크립트는 대개 폴더 안. 예외: B-2·B-5는 `.py/experiments.py`, B-6은 `paper_task.py`, B-7은 `physics.py`, A-1_B-1·C-8은 `train.py` 등의 실행 기록, D-8/runs/는 `hitl_loop.py`, D-9/runs/는 `feedback_loop.py` 산출물; */cache/·D-8/runs/·D-9/runs/는 git 제외
-├─ .py/                    파이프라인: preprocess.py, train.py, replay.py(API 스트림 재생), rag_mapping.py(핸드오프 매핑), sensor_features.py(매분 센서 문서, 보내지 않음), mock_rag.py(가짜 RAG), hitl_loop.py(D-8 HITL 시연 드라이버, docs/hitl-loop.md), feedback_eval.py·feedback_loop.py(D-9 피드백 루프 보고서, 5.12절)
+├─ results/                실험 지표 JSON: 작업 ID별 폴더(A-1_B-1/ ~ D-8/, 대응은 `history.md` "작업 ID") — 재현 스크립트는 대개 폴더 안. 예외: B-2·B-5는 `.py/experiments.py`, B-6은 `paper_task.py`, B-7은 `physics.py`, A-1_B-1·C-8은 `train.py` 등의 실행 기록, D-8/runs/는 `hitl_loop.py` 산출물; */cache/·D-8/runs/는 git 제외
+├─ .py/                    파이프라인: preprocess.py, train.py, replay.py(API 스트림 재생), rag_mapping.py(핸드오프 매핑), sensor_features.py(매분 센서 문서, 보내지 않음), mock_rag.py(가짜 RAG), hitl_loop.py(D-8 HITL 시연 드라이버, docs/hitl-loop.md)
 │                          실험: eda.py, experiments.py(B-2~B-5), paper_task.py(B-6 논문 프로토콜), physics.py(B-7 물리 피처)
 │                          원본·점검: Benchmark.py, Benchmark_fixed.py, error_check.py·file_check.py
 ├─ main.py                 FastAPI 서빙 · static/trace.html  이상 추적 차트
-├─ state/                  서빙 상태 (RSW_STATE_DIR): guns/<gun_id>.json 건 판정 상태, outbox/<event_id>.json 핸드오프, windows/<gun_id>/<UTC 날짜>.jsonl 창 기록(RSW_WINDOW_LOG=1일 때, 5.12절) (git 제외)
-├─ tests/                  test_pipeline.py(합성 데이터 E2E·서빙 회귀), test_rag_mapping.py(매핑 단위), test_sensor_features.py(매분 센서 문서), test_hitl_loop.py(D-8 드라이버, langgraph 없으면 건너뜀), test_feedback_loop.py(D-9 라벨·판정·보고서)
+├─ state/                  서빙 상태 (RSW_STATE_DIR): guns/<gun_id>.json 건 판정 상태, outbox/<event_id>.json 핸드오프 (git 제외)
+├─ tests/                  test_pipeline.py(합성 데이터 E2E·서빙 회귀), test_rag_mapping.py(매핑 단위), test_sensor_features.py(매분 센서 문서), test_hitl_loop.py(D-8 드라이버, langgraph 없으면 건너뜀)
 ├─ requirements.txt  pyproject.toml  (ruff/black 120자, Benchmark.py·pic code/ 제외)
 ├─ test.md                 현재 모델의 테스트셋 판정·결과
 ├─ history.md              변경·실험 기록(시간순) · techspec.md  앞으로 개발할 것
@@ -728,7 +728,7 @@ python .py/replay.py test/test_0.csv --speed 60               # 60배속
 - 핸드오프 테스트(`tests/test_rag_mapping.py`와 수동 확인 절차)는 5.10.7절.
 - `pytest` → `tests/test_pipeline.py`: 합성 CSV(클래스별 2파일 + 테스트 2파일, 2시간, gap·캡 드레싱·종료 코드 포함)를 임시 폴더에서 2→3→4→4'→`--score`→5단계(`/predict`)까지 돌리고, API 점수가 오프라인 점수와 같은지 확인한다. 학습은 `--warmup-hours 0.5`로 돌려 2시간 파일에서도 건별 워밍업이 끝나게 하고, API가 워밍업 전(`warming_up`, 글로벌 임계값)과 후(`gun`, 건별 임계값·재정규화 점수가 오프라인 `window_file`/`gun_thresholds`와 일치)를 모두 재현하는지 본다. 실데이터 폴더는 건드리지 않는다. 파이프라인 코드를 고치면 이것부터 돌린다.
 - 검증 항목: 번들의 `gun_norm`·`dropped_features`(c19 제외, 46피처)·`alarm_max_non_welding`·`rule`, 점수 CSV의 `threshold`/`warmup` 열, API의 `alarm_held`(캡 드레싱 구간), `rule_triggered`(에피소드 시작 1회, 쿨다운)·`rule_repeat`(24h 안 같은 코드 → warning, 핸드오프 없음)·`rule_repeats` 단위 테스트, 번들 `rule.repeat_s`, 건별 AUROC, `gun_norm` 전·후 점수 일치, 요청 크기 한도(422), 시간 기준 지속 알람(10초 청크로 보내도 180초에 `sustained_alarm`; 10분 critical은 `test_9`), 버퍼보다 긴 비용접 구간, `replay.py`로 2시간 파일 재생.
-- 서빙 회귀(`test_6_serving_edge_cases`): 202 중 규칙 발화 보존, 종료 코드 전환(공통 쿨다운 = 같은 에피소드, 코드별 = 새 발화), gap 앞 코드, 시각 이상(422·409), NaN 거부, 초 미만 시각, 1행 요청에서 trace 주기, 워밍업 후 원 단위 `welds_in_window`, 버퍼 시작의 carry. `test_3d_ensemble_model`: 앙상블 번들의 학습→평가→서빙(온라인=오프라인 점수). `test_7_state_survives_restart`: 워밍업 뒤 재시작해도 건별 임계값·쿨다운·24h 반복 판정이 재시작 없는 실행과 같고, 다른 모델로 기동하면 워밍업으로 돌아감. `test_8_outbox_retry_restart_idempotent`: RAG가 꺼진 동안 백오프 재시도 → 재시작 → RAG 복구 시 이벤트마다 정확히 한 번 도착, 4xx는 재시도 안 함, 재시작 뒤 같은 데이터를 다시 보내도 새 이벤트 없음. 테스트마다 별도 상태 폴더. `test_3e_ensemble_components`: 앙상블 구성 요소 조합·구 번들 호환. `test_6`의 구간 단언: 공백을 걸친 요청이 공백 앞 완결 분까지 채점. `test_9_restart_hold_and_critical_sustain`: 재가동 보류(오프라인 `restart_flags` = 온라인, 같은 상태 기계 `train.restart_step`)와 10분 critical(3분은 warning). `test_10_rule_per_code_and_profile`: 한 청크의 E016→E029(발화 둘·핸드오프 둘), 건 프로파일(밖 코드 warning·핸드오프 없음·모델 핸드오프의 고장 유형에서도 제외), `[]` 프로파일, DELETE 뒤 프로파일 유지, 예전 상태 파일의 `/stats`. `test_18_window_log`: 창 기록을 켜도 응답이 같고 줄이 trace 점과 같으며, 못 쓰면 설비마다 경고 한 번. `tests/test_feedback_loop.py`: 라벨(B-18 재현)·판정 표·입력 읽기·보고서, 실험실 숫자가 B-20과 같은지(`results/B-19/cache`가 없으면 그 시험만 건너뜀). 모두 193개(파이프라인 56 + 매핑 24 + 센서 문서 7 + HITL 45 + 피드백 루프 61; HITL은 langgraph가 없으면 건너뜀), 5분쯤.
+- 서빙 회귀(`test_6_serving_edge_cases`): 202 중 규칙 발화 보존, 종료 코드 전환(공통 쿨다운 = 같은 에피소드, 코드별 = 새 발화), gap 앞 코드, 시각 이상(422·409), NaN 거부, 초 미만 시각, 1행 요청에서 trace 주기, 워밍업 후 원 단위 `welds_in_window`, 버퍼 시작의 carry. `test_3d_ensemble_model`: 앙상블 번들의 학습→평가→서빙(온라인=오프라인 점수). `test_7_state_survives_restart`: 워밍업 뒤 재시작해도 건별 임계값·쿨다운·24h 반복 판정이 재시작 없는 실행과 같고, 다른 모델로 기동하면 워밍업으로 돌아감. `test_8_outbox_retry_restart_idempotent`: RAG가 꺼진 동안 백오프 재시도 → 재시작 → RAG 복구 시 이벤트마다 정확히 한 번 도착, 4xx는 재시도 안 함, 재시작 뒤 같은 데이터를 다시 보내도 새 이벤트 없음. 테스트마다 별도 상태 폴더. `test_3e_ensemble_components`: 앙상블 구성 요소 조합·구 번들 호환. `test_6`의 구간 단언: 공백을 걸친 요청이 공백 앞 완결 분까지 채점. `test_9_restart_hold_and_critical_sustain`: 재가동 보류(오프라인 `restart_flags` = 온라인, 같은 상태 기계 `train.restart_step`)와 10분 critical(3분은 warning). `test_10_rule_per_code_and_profile`: 한 청크의 E016→E029(발화 둘·핸드오프 둘), 건 프로파일(밖 코드 warning·핸드오프 없음·모델 핸드오프의 고장 유형에서도 제외), `[]` 프로파일, DELETE 뒤 프로파일 유지, 예전 상태 파일의 `/stats`. 모두 130개(파이프라인 54 + 매핑 24 + 센서 문서 7 + HITL 45; HITL은 langgraph가 없으면 건너뜀), 몇 분.
 - 회귀 고정: `test_2b_window_columns`는 윈도우 집계가 연속 피처(24개, 모델 입력은 그중 23개)에만 `_mean`/`_std`를 붙이고 메타데이터 이름은 그대로 두는지 확인한다. 합성 데이터의 캡 드레싱 구간을 **분 경계에서 30초 어긋나게** 만들어, `non_welding`이 `max`(=1)가 아니라 `mean`(=0.5)으로 집계되는지도 함께 검증한다.
 - `ruff check .`: `tests/test_sensor_features.py:14` E402 1건(`# noqa: E402` 빠짐). `black .`은 `pyproject.toml` 설정(120자)을 따른다.
 - 실데이터 파이프라인을 다시 돌려야 하는 변경: 전처리 규칙(2단계 코드) → 2·3·4단계 전부. 모델·윈도우만 → 4단계. 서빙만 → 재실행 불필요(`pytest`로 확인).
@@ -788,7 +788,7 @@ ML(이상탐지)과 하류(api·RAG: 원인·점검·매뉴얼·안내)를 **따
 - critical 에피소드의 **첫 요청**(직전 요청은 critical 아님 → 이번 `critical_in_request=true`)에 1회.
 - 종료 코드 규칙이 발화할 때마다(`rule_triggered=true`; 코드가 시작할 때마다 1회 — E016→E029 같은 전환도 새 발화, 30분 쿨다운은 코드별, C-6 번들 `rule.per_code`; 구 번들은 에피소드 시작 1회 + 건 공통 쿨다운). 한 요청에 발화가 둘이면 핸드오프도 둘이다(응답에는 하나만). 단 반복 발화(`rule_repeat=true`, 같은 코드가 이 건에서 24h 안에 이미 발화)는 critical이 아니므로 넘기지 않는다. 같은 요청에서 모델이 critical이면 모델 이벤트로 넘어가되, 반복 발화는 규칙 근거로 쓰지 않는다(`trigger.rule_code = null`, `fault_class.basis`는 `latest_error_code`).
 - `replay.py`도 이벤트를 찍는다(`fault_class=E0x | 요약`). 응답마다 한 줄이라, 한 요청에 발화가 둘(E016→E029)이면 핸드오프·`/stats`는 2건, replay는 1건이다. 조기 경보 핸드오프는 끝 요약에 수만 센다.
-- **조기 경보(C-8, v1.3)**: `RSW_EARLY_WARNING_HANDOFFS=1`일 때만 넘긴다(기본 끔). 2026-11-08(D-9)부터 api는 이 문서를 `severity: "warning"` 케이스로 받고, 같은 건의 모델 단독 critical과 따로 묶는다(`api/README.md`). 화면 문구와 닫기 선택지는 FE 요청 중이다(`docs/feedback-loop-requests.md`).
+- **조기 경보(C-8, v1.3)**: `RSW_EARLY_WARNING_HANDOFFS=1`일 때만 넘긴다(기본 끔 — 지금 api는 모든 핸드오프를 critical 케이스로 받는다).
   - 시점: 조기 경보 에피소드가 시작된 요청에서 1회(`early_warning_onset=true`). 같은 건에서는 60분 쿨다운이 있다(번들 `early_warning.cooldown_s`).
   - 같은 요청에 critical 이벤트·종료 코드가 있으면 보내지 않는다. 직전 요청이 critical이어도 마찬가지다. 사유는 `early_warning_handoff_suppressed`(`critical` / `terminal_code` / `cooldown` / `handoffs_off`)에 남는다.
   - 멱등 키는 critical과 겹치지 않는다(`gun|window_end|early_warning|since`).
@@ -888,30 +888,3 @@ JSON Schema는 서버의 `/docs`·`/openapi.json`.
 전달: `/predict` 응답의 `sensor_features[]`(그 요청에서 처음 채점된 분마다 하나), `GET /guns/{id}/sensor-features?minutes=N`(최근 N분, 최대 360). 이 둘뿐이다. 매분 POST(`RSW_RAG_SENSOR_URL`)는 2026-10-29에 지웠다. 이 값이 남아 있으면 서버가 켜질 때 "무시한다"는 경고만 남긴다.
 
 실데이터 예시 만들기: `python results/D-6/sensor_examples.py`(기본 10개: test_0·test_3 × 끝 5·30·180·1440분 전 + 종료 코드가 처음 뜬 분, 요약표에 상위 4개 측정값·상태 비율·설정값 평균±흔들림). 파일·시점은 `--files … --before-end …`, `--at 파일=시각`, `--plan plan.csv`로 바꾼다. 결과 `results/D-6/examples/summary.md`.
-
-#### 5.12 ML 피드백 루프 보고서 (D-9)
-
-현장에서 닫은 케이스를 라벨로 삼아 ML 운영 규칙(조기 경보 임계값·게이트, 건 프로파일)을 바꿀지 판정하고 **보고서만** 쓴다. 모델·번들·서빙 판단은 건드리지 않고, 반영은 사람이 한다. 설계는 `docs/superpowers/specs/2026-11-08-ml-feedback-loop-design.md`, 기록은 `history.md` 49절이다.
-
-**창 기록.** `RSW_WINDOW_LOG=1`이고 상태 폴더(`RSW_STATE_DIR`)가 있으면 새로 채점한 창마다 한 줄을 `windows/<gun_id>/<UTC 날짜>.jsonl`에 쓴다(설비 하루 약 1.6 MB, 테스트 7일치 실측 11 MB). 어느 모델의 기록인지는 `windows/models.json`에 남는다. 기본은 끔이고, 켜도 응답은 같다. 쓰기에 실패하면 설비마다 경고 한 번을 남기고 서빙은 계속된다. 상태 폴더가 없으면(메모리만) 경고를 찍고 쓰지 않는다.
-
-**보고서 만들기.** `ml/`에서 돌린다. 서버를 띄울 필요는 없다(`--api`만 예외).
-
-```bash
-python .py/feedback_loop.py --state state --cases ../api/state/api.db --lab results/B-19/cache
-```
-
-| 옵션 | 뜻 |
-|---|---|
-| `--state` | ML 서버의 상태 폴더(창 기록, 핸드오프 outbox, 건 프로파일). 필수 |
-| `--cases` / `--history` / `--api` | 케이스를 읽을 곳 하나: api의 SQLite(읽기 전용, 열린 케이스까지) / 저장해 둔 `GET /api/history` 응답 / api 주소(이 둘은 닫힌 케이스만) |
-| `--lab` | B-19 캐시. 주면 도전자의 실험실 판정을 더한다. 없으면 실험실 판정은 "해당 없음" |
-| `--tag`, `--out` | 출력 폴더 이름(기본 UTC `YYYYMMDD-HHMM`)과 위치(기본 `results/D-9/runs/`) |
-
-결과는 `<out>/<tag>/report.md`와 `report.json`이다. 케이스 번호와 현장 메모가 들어가서 git에서 뺀다. 입력 일부가 없어도 그 부분만 "해당 없음"으로 적고 끝까지 돈다. 입력 경로가 틀리면 종료 코드 2로 멈춘다.
-
-**읽는 법.** 조기 경보 도전자 넷(GATE, Q+, Q-, Q0.975)은 실험실과 현장 판정을 합쳐 `반영 제안` · `검토 필요` · `보류` · `반영 안 함` · `평가 안 함` 중 하나로 나온다. 판정된 현장 고장이 10건, 설비가 5대보다 적으면 현장 판정은 "증거 부족"이다. critical 프로필 제안에는 근거 케이스와 `PUT /guns/{id}/profile` 본문이 같이 나온다. 같은 유형에 미확인 케이스가 있으면 제안 대신 "검토 필요"로 적는다. 열린 케이스까지 이렇게 막는 것은 `--cases`로 돌릴 때뿐이고, `--history` · `--api`로 돌리면 보고서 1절에 그 경고가 나온다. 기준값과 그 출처는 보고서 1절에 있다.
-
-- 통과 여부는 초과분(적중 − 우연)의 차이 D로 정한다. 우연이 같이 줄면 적중이 줄어도 D는 0 근처에 남으므로, 놓침은 "적중 변화" 열로 따로 본다.
-- 현장의 Q+ · Q−는 적용 명령(다시 학습)이 만들 임계값의 추정인 실험실 8회 평균으로 평가한다. `--lab` 없이 돌리면 현장 정상 창의 분위수로 평가하고 보고서 1절에 경고가 나온다. 판정 줄에 지금 임계값, 현장 평가 임계값과 그 근거를 적고, 평가한 임계값이 적용 방향의 반대쪽이면 "반영 제안"을 "검토 필요"로 낮춘다.
-- outbox는 30일만 남는다. 지워진 고장은 케이스 기록으로 채우고, 케이스도 없는 고장은 빠질 수 있어 창 기록이 30일을 넘으면 경고한다.

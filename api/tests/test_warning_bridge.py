@@ -118,6 +118,25 @@ def test_repeat_keeps_whole_event_and_uses_selected_repeat(app, memory):
     assert 'c5:up' in row['pattern_key']
 
 
+def test_warning_and_code_less_critical_stay_separate_with_legacy_case(app, make_handoff):
+    warning_id = ingest(app, warning())
+    with store._conn() as db:
+        db.execute("UPDATE cases SET code = NULL WHERE case_id = ?", (warning_id,))
+    critical = make_handoff('critical', gun_id='gun-1', code=None, source='model')
+    critical_id = ingest(app, critical)
+    assert critical_id != warning_id
+
+    repeated = warning('w2')
+    assert app.post('/api/ml/handoffs', json=repeated).status_code == 200
+    assert store.get(warning_id)['repeats'][0]['handoff'] == repeated
+    assert store.get(critical_id)['repeats'] == []
+    summaries = {row['case_id']: row for row in app.get('/api/cases').json()['cases']}
+    assert summaries[warning_id]['event']['event_type'] == 'early_warning'
+    assert summaries[warning_id]['severity'] == 'warning'
+    assert summaries[critical_id]['event']['event_type'] == 'critical'
+    assert summaries[critical_id]['severity'] == 'critical'
+
+
 def test_resolution_saved_when_feedback_off_and_retry_idempotent(app, monkeypatch, memory):
     monkeypatch.setenv('RAG_WARNING_FEEDBACK', '0')
     cid = ingest(app)

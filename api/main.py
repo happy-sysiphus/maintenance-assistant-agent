@@ -118,7 +118,7 @@ def score_trace(gun_id: str, detected_at: str) -> list[dict[str, Any]]:
 
 
 def ingest(handoff: dict[str, Any]) -> str:
-    """알림 하나를 케이스로. 같은 설비 · 같은 코드의 열린 케이스가 있으면 새 줄 대신 '반복'으로 묶는다."""
+    """알림을 케이스로 만든다. 같은 설비와 경보 그룹의 열린 케이스에 반복 경보를 붙인다."""
     # 반복을 붙이는 저장이 같은 케이스의 닫기 · 기록과 겹치지 않게 _WRITE_LOCK도 잡는다 (플래그와 상관없이)
     with _INGEST_LOCK if field_memory.enabled() else nullcontext(), _WRITE_LOCK:
         eid = handoff["event_id"]
@@ -138,7 +138,6 @@ def ingest(handoff: dict[str, Any]) -> str:
         d = {
             "case_id": store.next_id(),
             "status": "new",
-            # 조기 경보 핸드오프(event_type early_warning, ML RSW_EARLY_WARNING_HANDOFFS=1)는 주의, 나머지는 긴급
             "severity": "warning" if handoff.get("event_type") == "early_warning" else "critical",
             "assignee": None,
             "event": handoff,
@@ -200,7 +199,6 @@ def summary(d: dict[str, Any]) -> dict[str, Any]:
             "event_id": e["event_id"],
             "gun_id": e["gun_id"],
             "detected_at": e["detected_at"],
-            # v1.2까지의 핸드오프에는 event_type이 없다: 모두 critical
             "event_type": e.get("event_type") or "critical",
             "trigger": {k: e["trigger"].get(k) for k in ("source", "rule_code", "rule_trigger_time")},
             "fault_class": {"code": fc["code"], "name_ko": fc["name_ko"]} if fc else None,
@@ -476,8 +474,6 @@ def history():
                 "cause": cause_name(d),
                 "action_kind": action.get("kind"),
                 "worker": action.get("worker"),
-                # 반복으로 묶인 알림 (ml/.py/feedback_loop.py가 케이스와 ML 알림을 잇는다)
-                "repeat_event_ids": [r["event_id"] for r in d.get("repeats", [])],
             }
         )
     items.sort(key=lambda i: i["closure"]["at"], reverse=True)
