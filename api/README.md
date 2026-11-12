@@ -61,54 +61,37 @@ ManualDoc와 문서 이름표를 네 종류로 확장하고, guidance.causes의 
 저장소 루트에서 python -B -m unittest discover -s rag/tests -v.
 API 의존성 파일은 RAG 의존성도 포함합니다. 테스트 DB는 임시 디렉터리를 사용합니다.
 
-## 현장 기억 (D-8, FIELD_MEMORY=1)
+## 이전 기록 (FIELD_MEMORY=1)
 
-`FIELD_MEMORY=1`로 켜면 닫힌 케이스의 사람 판정을 다시 읽어 참고 문장을 붙이고, 새 케이스 카드의 점검 순서를 정합니다(R2).
-끄면 위 동작과 같습니다. 단, 켜고 만든 케이스(field_order가 있는 행)는 끈 뒤에도 순서와 고정을 지킵니다(스펙 4.5). 시연은 새 API_DB로 합니다.
-RAG 안내 카드의 내용은 바꾸지 않습니다. 순서는 R2 조건을 만족한 새 케이스만 바뀝니다.
-문장은 참고용이고 매뉴얼 근거가 아닙니다.
-라벨은 "오알람으로 닫기" = 오알람, "해결 종료" = 고장 확인입니다. 미해결·도움 요청은 세지 않습니다.
+`FIELD_MEMORY=1`로 켜면 같은 설비·코드로 닫힌 케이스의 사람 기록을 케이스 상세에 붙여 보여 줍니다.
+끄면 위 동작과 같습니다. 기록을 보여 주기만 합니다. 안내 카드·점검 순서·챗봇 답은 켜도 바뀌지 않습니다.
+닫힌 기록으로 문장을 붙이고 점검 순서를 바꾸던 기능(R1·R2), GET /api/memory, 챗봇의 현장 기록 문단은 11/11에 없앴습니다.
 
-- GET /api/cases/{id}: 응답에 field_memory(applied·note_ko·checks 등)를 붙입니다. field_memory는 DB에 저장하지 않습니다.
-  - 같은 설비·코드에서 오알람으로 닫은 기록이 고장 확인보다 많으면 "오알람(운영 원인)인지부터 확인" 문장을 씁니다(R1).
-  - 카드의 첫 점검이 field_order.lead이면 applied에 R2를 더하고, 순서를 바꾼 이유 문장을 씁니다.
-  - 이 카드 점검 항목(E0xx-Kn)의 지난 이상·정상 횟수를 함께 적습니다. 지금 보는 케이스는 빼고 셉니다.
-- R2(케이스를 만들 때 한 번):
-  - 조건: 같은 코드의 해결 종료 케이스(카드 밖 원인으로 해결한 것은 뺌)에서 '이상'으로 가장 많이 기록된 점검이 매핑에서 앞의 모든 점검보다 3건 이상 많고, 설비 2대 이상에서 나와야 합니다.
-  - 동작: 그 점검과 그 원인을 맨 앞에 둡니다.
-  - 저장: 결정은 케이스 최상위 field_order에 저장되고 케이스 상세 응답과 케이스 쓰기 응답에 실립니다(목록에는 없습니다).
-  - 예외: 앞세울 원인 앞의 원인에 앞세울 원인이 갖지 않은 조치가 있으면 바꾸지 않습니다(같은 조치를 가지면 옮김). 순서를 정한 케이스에 판단·조치·결과가 기록되면 카드를 다시 만들지 않습니다.
-  - 문서: 설계는 ml/docs/superpowers/specs/2026-11-07-feedback-card-order-design.md, 다른 파트 요청은 ml/docs/card-order-requests.md에 있습니다.
-- GET /api/memory: 사람 라벨, 설비·코드별 오알람·고장 확인 수, 점검 항목별 수. 켰을 때만 있고 /docs에는 없습니다.
-- 챗봇: 답 끝에 현장 기록 문단 하나를 붙입니다. evidence·caution·인용에는 넣지 않습니다.
-- 닫기: 오알람 이유(reason)·메모(note)를 closure에 남깁니다.
-- 알림 수신: 한 번에 하나씩 처리합니다.
+- GET /api/cases/{id}: 응답에 `field_memory`를 붙입니다. DB에는 저장하지 않고, 지금 보는 케이스는 빼고 셉니다.
+  - `alarm_key`: 묶는 단위 "설비|규칙 코드".
+  - `alarm`: 그 단위에서 오알람으로 닫은 수(`false_alarm`)와 해결 종료한 수(`real`). 미해결·도움 요청은 세지 않습니다.
+  - `recent`: 최근 닫은 순 3건 `{case_id, outcome, closed_at, cause, reason}`. 해결이면 판단한 원인 이름, 오알람이면 닫을 때 고른 사유.
+    화면은 이 목록을 "이전 기록"으로 보입니다(상황 화면 오른쪽).
+- 닫기: 오알람 이유(reason)·메모(note)를 closure에 남깁니다(켰을 때만).
+- GET /api/health: 켜면 `"memory": "on"`이 붙습니다.
 
-코드는 field_memory.py, 테스트는 tests/입니다. 루프 전체 설명은 ml/docs/hitl-loop.md에 있습니다.
+코드는 field_memory.py와 main.py의 get_case, 테스트는 tests/입니다.
 
 ```powershell
 cd api
 ..\.venv\Scripts\python.exe -m pytest tests -q -p no:cacheprovider   # 저장소 .venv
-py -3.11 -m pytest tests -q -p no:cacheprovider                     # langgraph·pandas가 있는 Python
 ```
-
-저장소 .venv에는 langgraph·pandas가 없어 test_driver_contract.py는 건너뜁니다.
-두 번째 줄은 그 Python에 requirements.txt(RAG 의존성 포함)를 설치한 뒤 실행합니다. 드라이버 계약 테스트까지 돕니다.
 
 ## 11/04 FE 추가 (UI 연동)
 
-현장 기억을 화면에 붙이면서 api에 더한 것입니다. 기존 응답 필드는 바꾸지 않고 추가만 했습니다.
+기존 응답 필드는 바꾸지 않고 추가만 했습니다.
 
-- GET /api/cases/{id}: `field_memory.recent`(켰을 때만). 같은 설비·코드로 오알람·해결 종료된 케이스 최근 3건
-  `{case_id, outcome, closed_at, cause, reason}`. 해결이면 판단한 원인 이름, 오알람이면 닫을 때 고른 사유.
-  화면은 note_ko 문장 대신 이 목록을 "이전 기록"으로 보입니다(상황 화면 오른쪽).
 - 닫힌 케이스 읽기 전용: 해결 종료·오알람 케이스에 기록·닫기·도움 요청을 보내면 409 "closed".
-  다시 닫으면 마지막 closure가 현장 기억 라벨을 덮어쓰기 때문입니다. 미해결·도움 요청은 이어서 할 수 있습니다.
+  다시 닫으면 마지막 closure가 이전 기록의 결과를 덮어쓰기 때문입니다. 미해결·도움 요청은 이어서 할 수 있습니다.
 - 저장 잠금: 케이스를 고치는 주소와 알림 수신(ingest)은 `_WRITE_LOCK` 하나로 한 번에 하나씩 처리합니다(플래그 무관).
   상세 조회는 RAG 생성을 잠금 밖에서 하고, 안내가 바뀌었을 때만 저장합니다(그냥 열면 저장 안 함).
-  hitl-loop.md ④ 요청 9(ingest 경쟁)·10(상세 조회가 닫기를 덮음)에 대한 처리입니다.
 - 챗봇 피드백: POST /api/assistant/feedback가 질문·답·상태·코드와 함께 SQLite `feedback` 표에 저장합니다
-  (같은 답은 마지막 평가만). GET /api/assistant/feedback로 최근 순 목록을 봅니다. 현장 기억·RAG에는 아직 쓰지 않습니다.
+  (같은 답은 마지막 평가만). GET /api/assistant/feedback로 최근 순 목록을 봅니다. 저장만 하고 RAG에는 쓰지 않습니다.
 
 ## 브라우저에서 직접 질문하기
 

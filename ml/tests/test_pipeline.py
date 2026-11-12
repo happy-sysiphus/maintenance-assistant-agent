@@ -87,6 +87,7 @@ def isolated_state(tmp_path, monkeypatch):
     monkeypatch.setenv("RSW_STATE_DIR", str(tmp_path / "state"))
     monkeypatch.setenv("RSW_MOCK_RAG_OUT", str(tmp_path / "rag_received"))
     monkeypatch.delenv("RSW_RAG_URL", raising=False)
+    monkeypatch.delenv("RSW_MODEL_REGISTRY", raising=False)  # D-11: a registry set in the shell would win over RSW_MODEL_PATH
 
 
 def run(*args):
@@ -1928,3 +1929,690 @@ def test_v14_context_failure_leaves_the_two_fields(workspace, monkeypatch):
         _, hs = v14_two_hits(client, "T", v14_raw(workspace))
     assert len(hs) == 2 and all(h["error_timeline"] == [] and h["sensor_trend"] == [] for h in hs)
     assert all(h["sensor_features"] and h["contributing_features"] for h in hs)
+
+
+# ------------------------------------------------------------------ D-11 model loop
+# (docs/superpowers/specs/2026-11-11-model-loop-design.md; the logic without data is in test_model_loop.py)
+def loop_list(path, names):
+    path.write_text("\n".join(names) + "\n", encoding="utf-8")
+    return path
+
+
+def test_18_loop_files_from(workspace):
+    """train.py --files-from: only the listed preprocessed files are used (the loop trains on the files that ended)."""
+    d = workspace["ws"] / "models_loop"
+    names = ["E01_0", "E01_1", "E02_0", "E02_1", "E03_0", "E03_1"]
+    lst = loop_list(workspace["ws"] / "loop_train.txt", names[:3] + ["", "  "] + names[3:])  # blank lines are skipped
+    out = run(os.path.join(PY, "train.py"), "--data-dir", workspace["pre"], "--model-dir", d, "--model", "iforest",
+              "--val-frac", "0.5", "--warmup-hours", "0.5", "--no-test", "--files-from", lst)
+    assert "train files 3, val files 3" in out
+    m = json.load(open(d / "baseline_iforest_metrics.json", encoding="utf-8"))
+    assert sorted(m["train_files"] + m["val_files"]) == [f"{n}.parquet" for n in names], "no E04 file"
+    assert "test" not in m["metrics"]
+
+
+def test_18b_loop_files_from_missing_file(workspace):
+    lst = loop_list(workspace["ws"] / "loop_missing.txt", ["E01_0", "E09_9"])
+    d = workspace["ws"] / "models_loop_missing"
+    r = subprocess.run([sys.executable, os.path.join(PY, "train.py"), "--data-dir", str(workspace["pre"]),
+                        "--model-dir", str(d), "--model", "iforest", "--no-test", "--files-from", str(lst)],
+                       capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode != 0 and "E09_9" in r.stdout + r.stderr
+    assert "E01_0" not in (r.stdout + r.stderr).split("E09_9")[0].splitlines()[-1], "only the missing name is listed"
+    assert not d.exists(), "nothing was trained"
+
+
+def test_18c_loop_eval_files_from(workspace, tmp_path):
+    """--evaluate --eval-files-from: the saved bundle on chosen files of --data-dir (the loop's shadow files)."""
+    d = workspace["ws"] / "models_loop"
+    lst = loop_list(tmp_path / "shadow.txt", ["E04_0", "E04_1"])
+    out = tmp_path / "eval" / "e.json"
+    (tmp_path / "no_test").mkdir()  # no test split is needed for this
+    run(os.path.join(PY, "train.py"), "--data-dir", workspace["pre"], "--test-dir", tmp_path / "no_test",
+        "--model-dir", d, "--model", "iforest", "--evaluate", "--eval-files-from", lst, "--eval-out", out)
+    e = json.load(open(out, encoding="utf-8"))
+    assert e["test"]["files"] == ["E04_0.parquet", "E04_1.parquet"]
+    assert set(e["test"]["per_file"]) == {"E04_0", "E04_1"}
+    assert 0 <= e["test"]["auroc_gun_mean"] <= 1 and all(0 <= v["auroc"] <= 1 for v in e["test"]["per_file"].values())
+    assert e["test"]["early_warning"]["per_file"].keys() == {"E04_0", "E04_1"}
+    assert not (d / "scores").exists(), "no per-file score CSVs for a loop evaluation"
+    assert not (d / "baseline_iforest_test_metrics.json").exists(), "--eval-out replaces the default path"
+
+
+def test_18d_loop_options_absent(workspace):
+    """Without the new options --evaluate is what it was: the test split, the default JSON, the score CSVs."""
+    d = workspace["ws"] / "models_loop"
+    out = run(os.path.join(PY, "train.py"), "--data-dir", workspace["pre"], "--model-dir", d, "--model", "iforest",
+              "--evaluate")
+    e = json.load(open(d / "baseline_iforest_test_metrics.json", encoding="utf-8"))
+    assert e["test"]["files"] == ["test_0.parquet", "test_1.parquet"] and "test: AUROC" in out
+    assert (d / "scores" / "test_0_iforest.csv").exists()
+
+
+@pytest.fixture(scope="module")
+def append_ws(workspace, tmp_path_factory):
+    """A copy of the preprocessed train folder that the --split append tests may change (they run in order on it),
+    and a folder for the new raw CSVs."""
+    import shutil
+
+    root = tmp_path_factory.mktemp("append")
+    shutil.copytree(workspace["pre"], root / "pre")
+    (root / "incoming").mkdir()
+    return {"pre": root / "pre", "incoming": root / "incoming"}
+
+
+def loop_append(ws):
+    return run(os.path.join(PY, "preprocess.py"), "--split", "append", "--input-dir", ws["incoming"],
+               "--train-out-dir", ws["pre"])
+
+
+def test_19_loop_append_named_file(append_ws):
+    """preprocess.py --split append: a new raw file joins the preprocessed folder with the train run's config and
+    scaler - refitting the scaler would put the older bundles on another scale."""
+    pre = append_ws["pre"]
+    frozen = {n: (pre / n).read_bytes() for n in ("scaler.json", "preprocess_config.json")}
+    old = (pre / "manifest.csv").read_text(encoding="utf-8").splitlines()
+    synth_file(append_ws["incoming"] / "E01_7.csv", "E01", 31, start="2021-11-01T00:00:00Z")
+    out = loop_append(append_ws)
+    assert "appended 1, skipped 0, dropped 0" in out
+    assert all((pre / n).read_bytes() == b for n, b in frozen.items()), "the scaler and the config stay as they were"
+    new = (pre / "manifest.csv").read_text(encoding="utf-8").splitlines()
+    assert new[0] == old[0] + ",source" and new[1:len(old)] == [ln + "," for ln in old[1:]], "old rows are untouched"
+    man = pd.read_csv(pre / "manifest.csv")
+    row = man[man["file"] == "E01_7"].iloc[0]
+    assert (row["source"], row["class"], row["class_source"], row["gun"]) == ("E01_7", "E01", "filename", 7)
+    assert pd.Timestamp(row["end"]) == pd.Timestamp("2021-11-01 01:59:59")
+    df = pd.read_parquet(pre / "E01_7.parquet")
+    assert list(df.columns) == list(pd.read_parquet(pre / "E01_0.parquet").columns)
+    assert df["label"].sum() == PRE_FAILURE_S + 1, "the train run's --pre-failure-window is inherited"
+    normal = df[(df["label"] == 0) & (df["error_active"] == 0)]
+    assert abs(normal["c5"].mean()) < 0.5, "scaled with the train scaler"
+
+
+def test_19b_loop_append_infers_class(append_ws):
+    """A file without a class in its name gets one from its terminal code and the next free E0x_N name: train.py
+    splits by that prefix."""
+    pre = append_ws["pre"]
+    synth_file(append_ws["incoming"] / "line_3.csv", "E03", 32, start="2021-11-02T00:00:00Z")
+    out = loop_append(append_ws)
+    assert "appended 1, skipped 1, dropped 0" in out, "E01_7 is already in the manifest"
+    assert not (pre / "line_3.parquet").exists()
+    df = pd.read_parquet(pre / "E03_2.parquet")
+    assert set(df["file"]) == {"E03_2"} and set(df["class"]) == {"E03"} and set(df["gun"]) == {2}
+    man = pd.read_csv(pre / "manifest.csv")
+    row = man[man["file"] == "E03_2"].iloc[0]
+    assert (row["source"], row["class_source"], row["gun"]) == ("line_3", "terminal code E028", 2)
+
+
+def test_19c_loop_append_skips_no_fault(append_ws):
+    """A recording that does not end at a failure has no label: it is left out (and tried again next time)."""
+    pre = append_ws["pre"]
+    p = append_ws["incoming"] / "line_4.csv"
+    synth_file(p, "E02", 33, start="2021-11-03T00:00:00Z")
+    raw = pd.read_csv(p, dtype=str)
+    raw["error"] = "0"
+    raw.to_csv(p, index=False)
+    before = (pre / "manifest.csv").read_bytes()
+    out = loop_append(append_ws)
+    assert "no terminal code in the last 10 min" in out and "appended 0, skipped 3, dropped 0" in out
+    assert (pre / "manifest.csv").read_bytes() == before and not list(pre.glob("*_4.parquet"))
+
+
+def test_19d_loop_append_is_idempotent(append_ws):
+    pre = append_ws["pre"]
+    before = (pre / "manifest.csv").read_bytes()
+    stamp = (pre / "E03_2.parquet").stat().st_mtime_ns
+    assert "appended 0, skipped 3, dropped 0" in loop_append(append_ws)
+    assert (pre / "manifest.csv").read_bytes() == before and (pre / "E03_2.parquet").stat().st_mtime_ns == stamp
+
+
+def test_19e_loop_append_then_train(append_ws, tmp_path):
+    """The appended files train like the others, and the loop's calendar sees them."""
+    import model_loop
+
+    pre = append_ws["pre"]
+    names = ["E01_0", "E01_7", "E02_0", "E02_1", "E03_0", "E03_2", "E04_0", "E04_1"]
+    run(os.path.join(PY, "train.py"), "--data-dir", pre, "--model-dir", tmp_path / "m", "--model", "iforest",
+        "--val-frac", "0.5", "--warmup-hours", "0.5", "--no-test", "--files-from", loop_list(tmp_path / "t.txt", names))
+    m = json.load(open(tmp_path / "m" / "baseline_iforest_metrics.json", encoding="utf-8"))
+    assert sorted(m["train_files"] + m["val_files"]) == [f"{n}.parquet" for n in names]
+    ends = dict(model_loop.load_manifest(str(pre)))
+    assert len(ends) == 10 and ends["E03_2"] == pd.Timestamp("2021-11-02 01:59:59")
+
+
+def test_19f_loop_append_refusals(append_ws):
+    """What append does not take: no --input-dir, an --out-dir, a name it cannot read, a file with too many gaps."""
+    pre, incoming = append_ws["pre"], append_ws["incoming"]
+    exe = [sys.executable, os.path.join(PY, "preprocess.py"), "--split", "append", "--train-out-dir", str(pre)]
+    r = subprocess.run(exe, capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode != 0 and "--input-dir" in r.stderr
+    r = subprocess.run(exe + ["--input-dir", str(incoming), "--out-dir", str(pre)], capture_output=True, text=True,
+                       cwd=ROOT)
+    assert r.returncode != 0 and "--out-dir" in r.stderr
+    (incoming / "notes.csv").write_text("not a recording\n", encoding="utf-8")
+    synth_file(incoming / "E02_9.csv", "E02", 34, start="2021-11-04T00:00:00Z")
+    sparse = pd.read_csv(incoming / "E02_9.csv", dtype=str)
+    pd.concat([sparse.iloc[::2].iloc[:-1], sparse.iloc[[-1]]]).to_csv(incoming / "E02_9.csv", index=False)  # 50 % missing
+    out = loop_append(append_ws)
+    assert "notes" in out and "<prefix>_<number>" in out and "appended 0, skipped 4, dropped 1" in out
+    man = pd.read_csv(pre / "manifest.csv", dtype=str, keep_default_na=False)
+    row = man[man["file"] == "E02_9"].iloc[0]
+    assert row["dropped"] == "missing rate 51%", "every other row + the file's own gaps"
+    assert row["source"] == "E02_9" and not (pre / "E02_9.parquet").exists()
+    import model_loop
+
+    assert "E02_9" not in dict(model_loop.load_manifest(str(pre)))
+    assert "appended 0, skipped 5, dropped 0" in loop_append(append_ws), "a dropped file is not tried again"
+
+
+@pytest.fixture(scope="module")
+def loop_ws(workspace, tmp_path_factory):
+    """A registry for the end-to-end loop tests (they run in order on it): small settings and a light recipe, so that
+    the 8 synthetic files (one ends each day from 2021-09-01) give a first model, a challenger and one decision."""
+    root = tmp_path_factory.mktemp("loop")
+    recipe = root / "recipe.json"
+    recipe.write_text(json.dumps(["--model", "ensemble", "--val-frac", "0.5", "--warmup-hours", "0.5",
+                                  "--exclude-non-welding"]), encoding="utf-8")
+    common = ["--registry", root / "registry", "--data-dir", workspace["pre"]]
+    return {"reg": root / "registry", "out": root / "report", "common": common,
+            "settings": ["--initial-min-files", "6", "--train-min-new", "1", "--shadow-min-files", "1",
+                         "--seeds", "42,43", "--recipe-file", recipe]}
+
+
+def loop_cli(*args):
+    return run(os.path.join(PY, "model_loop.py"), *args)
+
+
+def test_20_loop_replay_end_to_end(workspace, loop_ws):
+    """model_loop.py replay with real training: first model, challenger + its noise model, shadow decision, next
+    challenger - all through train.py, into a registry the server can read."""
+    pytest.importorskip("lightgbm")
+    import joblib
+
+    out = loop_cli("replay", "--start", "2021-09-01", "--interval-days", "1", *loop_ws["common"], *loop_ws["settings"])
+    root = loop_ws["reg"]
+    reg = json.load(open(root / "registry.json", encoding="utf-8"))
+    ticks = {t["at"]: t["actions"] for t in reg["ticks"]}
+    assert list(ticks)[0] == "2021-09-02T00:00:00" and list(ticks)[-1] == "2021-09-09T00:00:00"
+    assert ticks["2021-09-06T00:00:00"] == ["wait_first:5"] and ticks["2021-09-07T00:00:00"] == ["first:v001"]
+    assert ticks["2021-09-08T00:00:00"] == ["train:v002"]
+    judged, trained = ticks["2021-09-09T00:00:00"]
+    assert judged in ("swap:v001>v002", "keep:v001|v002") and trained == "train:v003"
+    assert "2021-09-07T00:00:00  first:v001" in out
+    assert [len(v["train_files"]) for v in reg["versions"].values()] == [6, 7, 8]
+    assert reg["versions"]["v002"]["train_files"][-1] == "E04_0" and reg["challenger"] == "v003"
+    d, = reg["decisions"]
+    assert d["shadow_files"] == ["E04_1"] and (d["champion"], d["challenger"]) == ("v001", "v002")
+    assert set(d["values"]) == {"auroc_a", "auroc_b", "noise", "files_b_ge_a", "files_compared", "hits_a", "hits_b",
+                                "fa_a", "fa_b"}
+    assert all(isinstance(d["values"][k], float) for k in ("auroc_a", "auroc_b", "noise")), d
+    assert d["values"]["files_compared"] == 1 and len(d["checks"]) == 5 and d["swap"] == all(d["checks"].values())
+    assert d["swap"] == (judged == "swap:v001>v002") and reg["champion"] == ("v002" if d["swap"] else "v001")
+    for v in ("v001", "v002", "v003"):
+        assert reg["versions"][v]["bundle"] == f"{v}/baseline_ensemble.joblib"
+        b = joblib.load(root / v / "baseline_ensemble.joblib")
+        assert b["created"] == reg["versions"][v]["created"] and b["early_warning"]["enabled"]
+        assert sorted(b["train_files"] + b["val_files"]) == sorted(f"{n}.parquet" for n in reg["versions"][v]["train_files"])
+    assert not (root / "v001" / "seeds").exists(), "the first model is not judged: no noise model"
+    seed = joblib.load(root / "v002" / "seeds" / "s43" / "baseline_ensemble.joblib")
+    assert seed["args"]["seed"] == 43 and not (seed["early_warning"] or {}).get("enabled")
+    assert len(list((root / "v002" / "eval").glob("*.json"))) == 1 and not (root / "registry.lock").exists()
+
+
+def test_20b_loop_replay_resume_skips_training(workspace, loop_ws):
+    """The same command again: nothing is trained, nothing changes. Other settings are refused."""
+    pytest.importorskip("lightgbm")
+    root = loop_ws["reg"]
+    before = (root / "registry.json").read_bytes()
+    stamps = {p: p.stat().st_mtime_ns for p in root.rglob("*.joblib")}
+    out = loop_cli("replay", "--start", "2021-09-01", "--interval-days", "1", *loop_ws["common"], *loop_ws["settings"])
+    assert "first:" not in out and "train:" not in out
+    assert (root / "registry.json").read_bytes() == before
+    assert {p: p.stat().st_mtime_ns for p in root.rglob("*.joblib")} == stamps and len(stamps) == 5
+    r = subprocess.run([sys.executable, os.path.join(PY, "model_loop.py"), "tick", "--now", "2021-09-10",
+                        *map(str, loop_ws["common"])], capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 2 and "initial_min_files" in r.stderr, "the default settings are not this registry's"
+    assert (root / "registry.json").read_bytes() == before
+
+
+def test_20c_loop_report(workspace, loop_ws):
+    """report: every version on the test split (never used for a decision), the ticks and the decisions."""
+    pytest.importorskip("lightgbm")
+    root, out_dir = loop_ws["reg"], loop_ws["out"]
+    loop_cli("report", "--out", out_dir, *loop_ws["common"])
+    reg = json.load(open(root / "registry.json", encoding="utf-8"))
+    rep = json.load(open(out_dir / "report.json", encoding="utf-8"))
+    assert rep["config"] == reg["config"] and rep["ticks"] == reg["ticks"] and rep["decisions"] == reg["decisions"]
+    assert list(rep["versions"]) == ["v001", "v002", "v003"]
+    for name, v in rep["versions"].items():
+        assert 0 <= v["test"]["auroc_gun_mean"] <= 1 and 0 <= v["test"]["auroc"] <= 1
+        assert v["status"] == reg["versions"][name]["status"] and v["cutoff"] == reg["versions"][name]["cutoff"]
+        assert sum(v["by_class"].values()) == v["n_train_files"] == len(reg["versions"][name]["train_files"])
+        assert (root / name / "test_metrics.json").exists()
+    assert rep["versions"]["v001"]["by_class"] == {"E01": 2, "E02": 2, "E03": 2, "E04": 0}
+    fv = rep["first_vs_final"]
+    assert fv["first"] == "v001" and fv["final"] == reg["champion"]
+    assert fv["diff"] == pytest.approx(fv["final_auroc_gun_mean"] - fv["first_auroc_gun_mean"])
+    md = (out_dir / "report.md").read_text(encoding="utf-8")
+    assert all(h in md for h in ("## 점검", "## 버전", "## 판정", "## 테스트")) and "v003" in md
+    stamp = (root / "v001" / "test_metrics.json").stat().st_mtime_ns
+    loop_cli("report", "--out", out_dir, *loop_ws["common"])
+    assert (root / "v001" / "test_metrics.json").stat().st_mtime_ns == stamp, "the test scores are computed once"
+    assert "v003" in loop_cli("status", "--registry", root)
+
+
+LOOP_NEW = "2099-01-01T00:00:00"  # `created` of the second bundle in loop_registry
+
+
+def loop_registry(workspace, tmp_path):
+    """A registry as model_loop.py leaves it: the workspace IsolationForest as v001 (champion) and the same model
+    under another `created` as v002 (challenger)."""
+    import shutil
+
+    import joblib
+    import model_registry as mr
+
+    reg = mr.Registry(str(tmp_path / "reg"))
+    data = reg.init({"made_by": "test"})
+    src = workspace["models"] / "baseline_iforest.joblib"
+    bundle = joblib.load(src)
+    for v in ("v001", "v002"):
+        os.makedirs(reg.version_dir(v))
+    shutil.copy(src, os.path.join(reg.version_dir("v001"), "b.joblib"))
+    joblib.dump({**bundle, "created": LOOP_NEW}, os.path.join(reg.version_dir("v002"), "b.joblib"), compress=3)
+    mr.add_version(data, "v001", cutoff="2021-09-06T00:00:00", train_files=["E01_0"], seed=42,
+                   created=bundle["created"], bundle="v001/b.joblib", status="champion")
+    mr.set_champion(data, "v001", at="2021-09-06T00:00:00", by="first")
+    mr.add_version(data, "v002", cutoff="2021-09-13T00:00:00", train_files=["E01_0", "E01_1"], seed=42,
+                   created=LOOP_NEW, bundle="v002/b.joblib", status="challenger")
+    mr.set_challenger(data, "v002")
+    reg.save(data)
+    return reg
+
+
+def loop_main(reg, monkeypatch):
+    monkeypatch.setenv("RSW_MODEL_REGISTRY", reg.root)
+    monkeypatch.delenv("RSW_MODEL_PATH", raising=False)
+    monkeypatch.delenv("RSW_EARLY_WARNING_HANDOFFS", raising=False)
+    sys.path.insert(0, ROOT)
+    return importlib.reload(importlib.import_module("main"))
+
+
+def loop_promote(reg, version="v002"):
+    """What a swap decision of model_loop.py does to the registry."""
+    import model_registry as mr
+
+    data = reg.load()
+    mr.set_champion(data, version, at="2021-09-20T00:00:00", by="decision")
+    reg.save(data)
+
+
+def loop_post(client, gun, part):
+    return client.post("/predict", json={"gun_id": gun, "readings": part.to_dict("records")})
+
+
+def test_21_loop_gate_swap_waits_for_requests(workspace):
+    """ModelGate: a swap waits for the requests in flight, and goes before the requests that come after it."""
+    import threading
+
+    gate = load_main(workspace).ModelGate()
+    inside, release, order = threading.Event(), threading.Event(), []
+
+    def first_request():
+        with gate.shared():
+            inside.set()
+            release.wait(5)
+        order.append("request 1 done")
+
+    def swap():
+        with gate.exclusive():
+            order.append("swap")
+
+    def later_request():
+        with gate.shared():
+            order.append("request 2")
+
+    threads = [threading.Thread(target=f) for f in (first_request, swap, later_request)]
+    threads[0].start()
+    assert inside.wait(5)
+    threads[1].start()
+    assert wait_for(lambda: gate._swaps_waiting == 1), "the swap is waiting"
+    threads[2].start()
+    time.sleep(0.2)
+    assert order == [], "the swap waits for request 1; request 2 waits behind the swap"
+    release.set()
+    for t in threads:
+        t.join(5)
+    assert order.index("swap") < order.index("request 2") and len(order) == 3
+
+
+def test_21_loop_gate_requests_run_together(workspace):
+    import threading
+
+    gate = load_main(workspace).ModelGate()
+    both = threading.Barrier(2)
+
+    def request():
+        with gate.shared():
+            both.wait(5)  # passes only if two requests are inside at once
+
+    threads = [threading.Thread(target=request) for _ in range(2)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(6)
+    assert not both.broken
+    held, entered, release = threading.Event(), threading.Event(), threading.Event()
+
+    def swap():
+        with gate.exclusive():
+            held.set()
+            release.wait(5)
+
+    def request_during_swap():
+        with gate.shared():
+            entered.set()
+
+    threads = [threading.Thread(target=swap), threading.Thread(target=request_during_swap)]
+    threads[0].start()
+    assert held.wait(5)
+    threads[1].start()
+    assert not entered.wait(0.2), "no request runs while the model is being swapped"
+    release.set()
+    assert entered.wait(5)
+    for t in threads:
+        t.join(5)
+
+
+def test_21a_loop_server_reads_registry(workspace, tmp_path, monkeypatch, caplog):
+    """RSW_MODEL_REGISTRY: the server serves the registry's champion and shows the loop at GET /model/loop."""
+    reg = loop_registry(workspace, tmp_path)
+    main = loop_main(reg, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    with TestClient(main.app) as client:
+        h = client.get("/health").json()
+        assert h["model_version"] == "v001" and h["model_path"] == reg.bundle_path(reg.load(), "v001")
+        loop = client.get("/model/loop").json()
+        assert loop == {"registry": reg.root, "loaded": {"version": "v001", "created": h["model"]["created"]},
+                        "in_sync": True,
+                        "champion": {"version": "v001", "cutoff": "2021-09-06T00:00:00", "train_files": 1},
+                        "challenger": {"version": "v002", "cutoff": "2021-09-13T00:00:00", "train_files": 2},
+                        "last_tick": None, "decisions": []}
+        assert client.get("/model/loop?limit=0").status_code == 422
+        assert {"/model/reload", "/model/loop"} <= set(client.get("/openapi.json").json()["paths"])
+    monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))
+    with caplog.at_level(logging.WARNING), TestClient(main.app) as client:
+        assert client.get("/health").json()["model_version"] == "v001", "the registry wins"
+    assert "RSW_MODEL_PATH is ignored" in caplog.text
+
+
+def test_21b_loop_server_without_registry(workspace, monkeypatch):
+    """Without RSW_MODEL_REGISTRY the server is what it was: the bundle of RSW_MODEL_PATH, no loop."""
+    monkeypatch.delenv("RSW_MODEL_REGISTRY", raising=False)
+    main = load_main(workspace)
+    from fastapi.testclient import TestClient
+
+    with TestClient(main.app) as client:
+        h = client.get("/health").json()
+        assert h["model_version"] is None and h["model_path"] == str(workspace["models"] / "baseline_iforest.joblib")
+        assert client.get("/model/loop").json() == {"registry": None}
+        r = client.post("/model/reload")
+        assert r.status_code == 409 and "RSW_MODEL_REGISTRY" in r.json()["detail"]
+
+
+def test_21c_loop_reload_noop(workspace, tmp_path, monkeypatch):
+    reg = loop_registry(workspace, tmp_path)
+    main = loop_main(reg, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    with TestClient(main.app) as client:
+        assert client.post("/model/reload").json() == {"changed": False, "version": "v001"}
+        assert client.get("/health").json()["model_version"] == "v001"
+
+
+def test_21d_loop_reload_swaps(workspace, tmp_path, monkeypatch):
+    """POST /model/reload after the registry's champion changed: the new bundle serves without a restart and every
+    gun is where a restart under the new bundle would have put it (warming up again; the rest carried over)."""
+    reg = loop_registry(workspace, tmp_path)
+    main = loop_main(reg, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    with TestClient(main.app) as client:
+        assert stream_chunks(client, "G", raw.iloc[:2700], step=300)
+        assert client.get("/guns").json()[0]["gun_norm"] == "gun", "45 min in: past the 30-min warm-up"
+        old = client.get("/health").json()["model"]["created"]
+        before = main.app.state.guns["G"].snapshot("G", old)
+        loop_promote(reg)
+        assert client.get("/model/loop").json()["in_sync"] is False, "the registry moved, the server has not yet"
+        assert client.post("/model/reload").json() == {"changed": True, "version": "v002", "previous": "v001",
+                                                       "created": LOOP_NEW}
+        h = client.get("/health").json()
+        assert (h["model_version"], h["model"]["created"]) == ("v002", LOOP_NEW)
+        assert h["model_path"] == reg.bundle_path(reg.load(), "v002") and h["guns_tracked"] == 1
+        assert client.get("/model").json()["model"]["created"] == LOOP_NEW
+        loop = client.get("/model/loop").json()
+        assert loop["in_sync"] is True and loop["loaded"] == {"version": "v002", "created": LOOP_NEW}
+        g = client.get("/guns").json()[0]
+        assert g["gun_norm"] == "warming_up" and g["gun_threshold"] is None
+        want = main.GunState.restore(before, True, LOOP_NEW).snapshot("G", LOOP_NEW)
+        got = main.app.state.guns["G"].snapshot("G", LOOP_NEW)
+        assert {**got, "saved_at": None} == {**want, "saved_at": None}, "the same as a restart under the new bundle"
+        saved = json.load(open(os.path.join(os.environ["RSW_STATE_DIR"], "guns", "G.json"), encoding="utf-8"))
+        assert saved["model_created"] == LOOP_NEW, "the state file is the new model's"
+        assert loop_post(client, "G", raw.iloc[2700:3000]).status_code in (200, 202), "the stream goes on"
+        assert client.post("/model/reload").json() == {"changed": False, "version": "v002"}
+
+
+def test_21e_loop_reload_keeps_stats_and_rules(workspace, tmp_path, monkeypatch):
+    """What does not belong to a model survives the swap: counters, profile, the rule's cooldown."""
+    reg = loop_registry(workspace, tmp_path)
+    main = loop_main(reg, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    col = raw.columns.get_loc("error")
+    raw.iloc[2000:2050, col] = "E029"
+    raw.iloc[2750:2800, col] = "E029"  # again 12 min later: inside the 30-min cooldown
+    with TestClient(main.app) as client:
+        assert client.put("/guns/G/profile", json={"expected_fault_classes": ["E04"]}).status_code == 200
+        fired = [r["rule_code"] for r in stream_chunks(client, "G", raw.iloc[:2700], step=300) if r["rule_triggered"]]
+        assert fired == ["E029"]
+        stats = client.get("/guns/G/stats").json()
+        last = dict(main.app.state.guns["G"].rule_last_by_code)
+        loop_promote(reg)
+        assert client.post("/model/reload").json()["changed"] is True
+        assert client.get("/guns/G/stats").json() == stats
+        assert client.get("/guns/G/profile").json() == {"expected_fault_classes": ["E04"]}
+        assert main.app.state.guns["G"].rule_last_by_code == last
+        after = stream_chunks(client, "G", raw.iloc[2700:3300], step=300)
+        assert after and not any(r["rule_triggered"] for r in after), "still in the cooldown of the old trigger"
+
+
+def test_21f_loop_reload_bad_bundle_keeps_old(workspace, tmp_path, monkeypatch):
+    reg = loop_registry(workspace, tmp_path)
+    main = loop_main(reg, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    with TestClient(main.app) as client:
+        open(reg.bundle_path(reg.load(), "v002"), "wb").close()  # an unreadable bundle becomes the champion
+        loop_promote(reg)
+        r = client.post("/model/reload")
+        assert r.status_code == 500 and "v002" in r.json()["detail"] and "v001" in r.json()["detail"]
+        assert client.get("/health").json()["model_version"] == "v001"
+        assert client.get("/model/loop").json()["in_sync"] is False
+        assert stream_chunks(client, "G", raw.iloc[:600], step=300), "the old model keeps serving"
+
+
+def test_21g_loop_reload_broken_registry_keeps_old_model(workspace, tmp_path, monkeypatch):
+    reg = loop_registry(workspace, tmp_path)
+    main = loop_main(reg, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    with TestClient(main.app) as client:
+        with open(reg.path, "w", encoding="utf-8") as fh:
+            fh.write('{"schema": 1,')
+        r = client.post("/model/reload")
+        assert r.status_code == 500 and "registry.json" in r.json()["detail"]
+        assert client.get("/model/loop").status_code == 500
+        assert client.get("/health").json()["model_version"] == "v001"
+        assert stream_chunks(client, "G", raw.iloc[:600], step=300)
+
+
+def test_21h_loop_registry_missing_bundle(workspace, tmp_path, monkeypatch):
+    """A registry the server cannot serve from stops it at start-up, with the reason."""
+    import model_registry as mr
+    from fastapi.testclient import TestClient
+
+    reg = loop_registry(workspace, tmp_path)
+    bundle = reg.bundle_path(reg.load(), "v001")
+    os.remove(bundle)
+    main = loop_main(reg, monkeypatch)
+    with pytest.raises(RuntimeError) as e:
+        with TestClient(main.app):
+            pass
+    assert bundle in str(e.value) and "v001" in str(e.value)
+    empty = mr.Registry(str(tmp_path / "empty"))
+    empty.init({"made_by": "test"})
+    for root, word in ((empty.root, "no champion"), (str(tmp_path / "nothing"), "no registry")):
+        monkeypatch.setenv("RSW_MODEL_REGISTRY", root)
+        with pytest.raises(RuntimeError) as e:
+            with TestClient(main.app):
+                pass
+        assert word in str(e.value) and root in str(e.value)
+    broken = loop_registry(workspace, tmp_path / "broken")
+    path = broken.bundle_path(broken.load(), "v001")
+    open(path, "wb").close()  # there, but not a bundle
+    monkeypatch.setenv("RSW_MODEL_REGISTRY", broken.root)
+    with pytest.raises(RuntimeError) as e:
+        with TestClient(main.app):
+            pass
+    assert path in str(e.value) and "v001" in str(e.value)
+
+
+def test_21i_loop_reload_under_load(workspace, tmp_path, monkeypatch):
+    """A swap in the middle of concurrent /predict streams: no request fails, none is lost, every gun ends under
+    the new model."""
+    import threading
+
+    reg = loop_registry(workspace, tmp_path)
+    main = loop_main(reg, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    codes, errors, after, swapped = [], [], [], threading.Event()
+
+    def stream(client, gun):
+        """Minute after minute until 5 requests have gone out after the swap (however long the swap takes)."""
+        n = 0
+        for a in range(0, 6600, 60):
+            was_swapped = swapped.is_set()
+            try:
+                codes.append(loop_post(client, gun, raw.iloc[a:a + 60]).status_code)
+            except Exception as e:  # noqa: BLE001
+                errors.append(repr(e))
+            n += was_swapped
+            if n >= 5:
+                break
+        after.append(n)
+
+    with TestClient(main.app) as client:
+        threads = [threading.Thread(target=stream, args=(client, f"L{k}")) for k in range(4)]
+        for t in threads:
+            t.start()
+        assert wait_for(lambda: len(codes) >= 30), "the streams are running"
+        loop_promote(reg)
+        r = client.post("/model/reload")
+        swapped.set()
+        for t in threads:
+            t.join(120)
+        assert r.status_code == 200 and r.json()["changed"] is True
+        assert after == [5, 5, 5, 5], "every stream was running at the swap and went on after it"
+        assert not errors and len(codes) >= 50 and set(codes) <= {200, 202}, (errors[:2], sorted(set(codes)))
+        assert client.get("/health").json()["model_version"] == "v002"
+        assert sorted(main.app.state.guns) == ["L0", "L1", "L2", "L3"]
+        for k in range(4):
+            path = os.path.join(os.environ["RSW_STATE_DIR"], "guns", f"L{k}.json")
+            assert json.load(open(path, encoding="utf-8"))["model_created"] == LOOP_NEW
+
+
+def test_21j_loop_reload_keeps_pending_handoffs(workspace, tmp_path, monkeypatch):
+    """Handoffs made before the swap stay in the outbox as they were (their detector is the old model)."""
+    reg = loop_registry(workspace, tmp_path)
+    main = loop_main(reg, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    part = v14_raw(workspace).iloc[:600].copy()
+    part.iloc[150:200, part.columns.get_loc("error")] = "E029"
+    with TestClient(main.app) as client:
+        old = client.get("/health").json()["model"]["created"]
+        event = loop_post(client, "H", part).json()["handoff"]
+        before = client.get("/handoffs").json()
+        assert len(before) == 1 and before[0]["handoff"]["detector"]["created"] == old
+        loop_promote(reg)
+        assert client.post("/model/reload").json()["changed"] is True
+        assert client.get("/handoffs").json() == before
+        assert client.get(f"/handoffs/{event['event_id']}").json()["handoff"]["detector"]["created"] == old
+
+
+def test_19g_loop_append_survives_a_bad_file(append_ws):
+    """A file that cannot be read must not cost the others (found by the final review): it is reported and left for
+    the next run, the rest is appended - before, the first bad file ended the run and every later run."""
+    pre, incoming = append_ws["pre"], append_ws["incoming"]
+    (incoming / "bad_1.csv").write_text("not,a,recording\n1,2,3\n", encoding="utf-8")
+    synth_file(incoming / "line_20261112.csv", "E04", 35, start="2021-11-05T00:00:00Z")  # a date as the number
+    synth_file(incoming / "line_7.csv", "E04", 36, start="2021-11-06T00:00:00Z")
+    out = loop_append(append_ws)
+    assert "skipped: KeyError" in out and "32767" in out
+    assert "appended 1, skipped 7, dropped 0" in out
+    man = pd.read_csv(pre / "manifest.csv", dtype=str, keep_default_na=False)
+    row = man[man["source"] == "line_7"].iloc[0]
+    assert row["file"] == "E04_2" and (pre / "E04_2.parquet").exists()
+    assert not set(man["source"]) & {"bad_1", "line_20261112"}, "not recorded: they are tried again next time"
+    assert not list(pre.glob("manifest.csv.*")), "no temp file left"
+
+
+def test_21k_loop_reload_waits_for_a_request_in_flight(workspace, tmp_path, monkeypatch):
+    """/predict holds the gate (found by the final review: nothing pinned it): a swap waits for the request in
+    flight, that request is answered by the old model, and what it did to the gun is in the state the swap carries."""
+    import threading
+
+    reg = loop_registry(workspace, tmp_path)
+    main = loop_main(reg, monkeypatch)
+    from fastapi.testclient import TestClient
+
+    raw = v14_raw(workspace)
+    inside, release, answers = threading.Event(), threading.Event(), {}
+    score = main.score_request
+
+    def held(req, request, g):
+        out = score(req, request, g)
+        inside.set()
+        release.wait(30)
+        return out
+
+    with TestClient(main.app) as client:
+        old = client.get("/health").json()["model"]["created"]
+        monkeypatch.setattr(main, "score_request", held)
+        request = threading.Thread(target=lambda: answers.update(predict=loop_post(client, "G", raw.iloc[:300])))
+        request.start()
+        assert inside.wait(30), "the request is inside /predict"
+        loop_promote(reg)
+        reload = threading.Thread(target=lambda: answers.update(reload=client.post("/model/reload")))
+        reload.start()
+        reload.join(2)
+        assert reload.is_alive(), "the swap waits for the request in flight"
+        assert client.get("/health").json()["model_version"] == "v001"
+        release.set()
+        request.join(30)
+        reload.join(30)
+        assert answers["reload"].json() == {"changed": True, "version": "v002", "previous": "v001", "created": LOOP_NEW}
+        assert answers["predict"].status_code == 200
+        assert answers["predict"].json()["model"]["created"] == old, "answered by the model it started with"
+        saved = json.load(open(os.path.join(os.environ["RSW_STATE_DIR"], "guns", "G.json"), encoding="utf-8"))
+        assert saved["model_created"] == LOOP_NEW
+        assert saved["latest"].startswith(raw["time"].iloc[299].rstrip("Z")), "the request's rows are in the state"
+        assert client.get("/health").json()["model_version"] == "v002"

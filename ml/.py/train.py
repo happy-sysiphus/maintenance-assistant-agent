@@ -1066,6 +1066,19 @@ def score_frame(bundle, df):
 
 
 # ------------------------------------------------------------------- main
+def listed_files(list_path, data_dir):
+    """Paths of the preprocessed files named in list_path: one name per line without the extension (E01_0), blank
+    lines skipped (D-11 model loop: train on / evaluate chosen files instead of the whole folder)."""
+    with open(list_path, encoding="utf-8-sig") as f:
+        names = [ln.strip() for ln in f if ln.strip()]
+    if not names:
+        raise SystemExit(f"{list_path} names no files")
+    missing = [n for n in names if not os.path.exists(os.path.join(data_dir, f"{n}.parquet"))]
+    if missing:
+        raise SystemExit(f"{list_path}: no such preprocessed file in {data_dir}: {', '.join(missing)}")
+    return sorted(os.path.join(data_dir, f"{n}.parquet") for n in names)
+
+
 def split_files(files, val_frac, seed):
     rng = np.random.default_rng(seed)
     train, val = [], []
@@ -1085,6 +1098,15 @@ def main():
                     "Evaluated after training when present; pass --no-test to skip")
     ap.add_argument("--no-test", action="store_true")
     ap.add_argument("--evaluate", action="store_true", help="skip training; evaluate the saved bundle on --test-dir")
+    ap.add_argument("--files-from", default=None,
+                    help="text file, one preprocessed file name per line (E01_0): train on these files of --data-dir "
+                         "only (D-11 model loop)")
+    ap.add_argument("--eval-files-from", default=None,
+                    help="with --evaluate: evaluate on these files of --data-dir (same list format) instead of the "
+                         "test split; no score CSVs are written")
+    ap.add_argument("--eval-out", default=None,
+                    help="with --evaluate: write the metrics JSON here instead of "
+                         "<model-dir>/baseline_<model>_test_metrics.json")
     ap.add_argument("--model-dir", default=os.path.join(PROJECT_ROOT, "models"))
     ap.add_argument("--model", choices=["iforest", "pca", "ensemble"], default="ensemble",
                     help="ensemble = IsolationForest + LightGBM, the production model (needs lightgbm; history.md "
@@ -1159,6 +1181,8 @@ def main():
     test_dir = args.test_dir or os.path.join(args.data_dir, "test")
     test_files = [] if args.no_test else test_files_in(test_dir)
     if args.evaluate:
+        if args.eval_files_from:  # D-11: chosen files of the data folder (the loop's shadow files)
+            test_files = listed_files(args.eval_files_from, args.data_dir)
         if not test_files:
             raise SystemExit(f"no test_*.parquet in {test_dir} - run preprocess.py --split test first")
         bundle_path = os.path.join(args.model_dir, f"baseline_{args.model}.joblib")
@@ -1166,9 +1190,11 @@ def main():
             raise SystemExit(f"{bundle_path} not found - train first")
         b = load_bundle(bundle_path)
         print(f"evaluating {bundle_path} (window {b['window']}s, threshold {b['threshold']:.4f}, "
-              f"sustain {b['sustain']}) on {len(test_files)} test files")
+              f"sustain {b['sustain']}) on {len(test_files)} "
+              f"{'listed' if args.eval_files_from else 'test'} files")
         m = evaluate_test(b["model"], b["feature_cols"], b["model_cols"], b["window"], b["threshold"],
-                          b["sustain"], test_files, os.path.join(args.model_dir, "scores"), args.model,
+                          b["sustain"], test_files,
+                          None if args.eval_files_from else os.path.join(args.model_dir, "scores"), args.model,
                           gate=b.get("alarm_max_non_welding"), gn=b.get("gun_norm"),
                           label_window=(b.get("args") or {}).get("label_window"),
                           warmup_alarms=b.get("warmup_alarms", True), restart=b.get("restart_hold"),
@@ -1176,7 +1202,8 @@ def main():
                           rule_per_code=bool((b.get("rule") or {}).get("per_code", False)),
                           early_warning=b.get("early_warning"))
         print_metrics("test", m)
-        dst = os.path.join(args.model_dir, f"baseline_{args.model}_test_metrics.json")
+        dst = args.eval_out or os.path.join(args.model_dir, f"baseline_{args.model}_test_metrics.json")
+        os.makedirs(os.path.dirname(os.path.abspath(dst)), exist_ok=True)
         with open(dst, "w", encoding="utf-8") as f:
             json.dump({"bundle": bundle_path, "created": b.get("created"), "threshold": b["threshold"],
                        "window": b["window"], "sustain": b["sustain"],
@@ -1185,7 +1212,8 @@ def main():
         print(f"saved {dst}")
         return
 
-    files = sorted(glob.glob(os.path.join(args.data_dir, "E0*.parquet")))
+    files = (listed_files(args.files_from, args.data_dir) if args.files_from
+             else sorted(glob.glob(os.path.join(args.data_dir, "E0*.parquet"))))
     if not files:
         raise SystemExit(f"no E0*.parquet in {args.data_dir} — run preprocess.py first")
     if args.max_files:  # keep the classes balanced in a quick run

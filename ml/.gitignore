@@ -28,6 +28,8 @@ results/*/cache/
 
 # 서빙 상태
 state/
+# D-11 모델 등록부 (py -3.11 .py/model_loop.py; 기록으로 남길 것은 results/D-11/runs/의 보고서)
+models/registry/
 
 # Python / 도구 캐시
 __pycache__/
@@ -41,6 +43,3 @@ venv/
 # B-15 time-series foundation models (separate env, experiment cache)
 .venv-tsfm/
 results/B-15/cache/
-
-# D-8 HITL 루프 실행 산출물 (py -3.11 .py/hitl_loop.py)
-results/D-8/runs/

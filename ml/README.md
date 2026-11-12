@@ -265,19 +265,19 @@ ml/
 ├─ preprocessed/           2·3단계 산출물 (git 제외)
 │   └─ test/
 ├─ eda_out/                1단계 산출물
-├─ models/                 4단계 산출물 (joblib 번들, 지표 JSON, scores/)
-├─ results/                실험 지표 JSON: 작업 ID별 폴더(A-1_B-1/ ~ D-8/, 대응은 `history.md` "작업 ID") — 재현 스크립트는 대개 폴더 안. 예외: B-2·B-5는 `.py/experiments.py`, B-6은 `paper_task.py`, B-7은 `physics.py`, A-1_B-1·C-8은 `train.py` 등의 실행 기록, D-8/runs/는 `hitl_loop.py` 산출물; */cache/·D-8/runs/는 git 제외
-├─ .py/                    파이프라인: preprocess.py, train.py, replay.py(API 스트림 재생), rag_mapping.py(핸드오프 매핑), sensor_features.py(매분 센서 문서, 보내지 않음), mock_rag.py(가짜 RAG), hitl_loop.py(D-8 HITL 시연 드라이버, docs/hitl-loop.md)
+├─ models/                 4단계 산출물 (joblib 번들, 지표 JSON, scores/); registry/는 D-11 모델 등록부(git 제외, 5.12절)
+├─ results/                실험 지표 JSON: 작업 ID별 폴더(A-1_B-1/ ~ D-7/, 대응은 `history.md` "작업 ID") — 재현 스크립트는 대개 폴더 안. 예외: B-2·B-5는 `.py/experiments.py`, B-6은 `paper_task.py`, B-7은 `physics.py`, A-1_B-1·C-8은 `train.py` 등의 실행 기록; */cache/는 git 제외
+├─ .py/                    파이프라인: preprocess.py, train.py, replay.py(API 스트림 재생), rag_mapping.py(핸드오프 매핑), sensor_features.py(매분 센서 문서, 보내지 않음), mock_rag.py(가짜 RAG), model_loop.py · model_registry.py(D-11 모델 루프, 5.12절)
 │                          실험: eda.py, experiments.py(B-2~B-5), paper_task.py(B-6 논문 프로토콜), physics.py(B-7 물리 피처)
 │                          원본·점검: Benchmark.py, Benchmark_fixed.py, error_check.py·file_check.py
 ├─ main.py                 FastAPI 서빙 · static/trace.html  이상 추적 차트
 ├─ state/                  서빙 상태 (RSW_STATE_DIR): guns/<gun_id>.json 건 판정 상태, outbox/<event_id>.json 핸드오프 (git 제외)
-├─ tests/                  test_pipeline.py(합성 데이터 E2E·서빙 회귀), test_rag_mapping.py(매핑 단위), test_sensor_features.py(매분 센서 문서), test_hitl_loop.py(D-8 드라이버, langgraph 없으면 건너뜀)
+├─ tests/                  test_pipeline.py(합성 데이터 E2E·서빙 회귀), test_rag_mapping.py(매핑 단위), test_sensor_features.py(매분 센서 문서), test_model_loop.py(D-11 등록부 · 판정 · 점검, 학습 없음)
 ├─ requirements.txt  pyproject.toml  (ruff/black 120자, Benchmark.py·pic code/ 제외)
 ├─ test.md                 현재 모델의 테스트셋 판정·결과
 ├─ history.md              변경·실험 기록(시간순) · techspec.md  앞으로 개발할 것
 ├─ MEMORY.md               설계 결정 기록 · CLAUDE.md  작업 규약
-├─ docs/                   논문, 예시 JSON(anomaly_result·rag_handoff·rag_handoff_early_warning·handoff_sensor_features_typical·sensor_features·trace — `make_examples.py`로 재생성; rag_response는 가짜 RAG의 옛 응답), sensor_features.schema.json, 안내·답변 문서(early-warning-handoff·handoff_sensor_features_for_rag·sensor_features_for_rag·hitl-loop·card-order-requests·fe-*), 설계 기록(superpowers/)
+├─ docs/                   논문, 예시 JSON(anomaly_result·rag_handoff·rag_handoff_early_warning·handoff_sensor_features_typical·sensor_features·trace — `make_examples.py`로 재생성; rag_response는 가짜 RAG의 옛 응답), sensor_features.schema.json, 안내·답변 문서(early-warning-handoff·handoff_sensor_features_for_rag·sensor_features_for_rag·fe-*), 설계 기록(superpowers/)
 └─ pic code/               논문 그림 재현 스크립트 (파이프라인과 무관)
 ```
 
@@ -728,7 +728,7 @@ python .py/replay.py test/test_0.csv --speed 60               # 60배속
 - 핸드오프 테스트(`tests/test_rag_mapping.py`와 수동 확인 절차)는 5.10.7절.
 - `pytest` → `tests/test_pipeline.py`: 합성 CSV(클래스별 2파일 + 테스트 2파일, 2시간, gap·캡 드레싱·종료 코드 포함)를 임시 폴더에서 2→3→4→4'→`--score`→5단계(`/predict`)까지 돌리고, API 점수가 오프라인 점수와 같은지 확인한다. 학습은 `--warmup-hours 0.5`로 돌려 2시간 파일에서도 건별 워밍업이 끝나게 하고, API가 워밍업 전(`warming_up`, 글로벌 임계값)과 후(`gun`, 건별 임계값·재정규화 점수가 오프라인 `window_file`/`gun_thresholds`와 일치)를 모두 재현하는지 본다. 실데이터 폴더는 건드리지 않는다. 파이프라인 코드를 고치면 이것부터 돌린다.
 - 검증 항목: 번들의 `gun_norm`·`dropped_features`(c19 제외, 46피처)·`alarm_max_non_welding`·`rule`, 점수 CSV의 `threshold`/`warmup` 열, API의 `alarm_held`(캡 드레싱 구간), `rule_triggered`(에피소드 시작 1회, 쿨다운)·`rule_repeat`(24h 안 같은 코드 → warning, 핸드오프 없음)·`rule_repeats` 단위 테스트, 번들 `rule.repeat_s`, 건별 AUROC, `gun_norm` 전·후 점수 일치, 요청 크기 한도(422), 시간 기준 지속 알람(10초 청크로 보내도 180초에 `sustained_alarm`; 10분 critical은 `test_9`), 버퍼보다 긴 비용접 구간, `replay.py`로 2시간 파일 재생.
-- 서빙 회귀(`test_6_serving_edge_cases`): 202 중 규칙 발화 보존, 종료 코드 전환(공통 쿨다운 = 같은 에피소드, 코드별 = 새 발화), gap 앞 코드, 시각 이상(422·409), NaN 거부, 초 미만 시각, 1행 요청에서 trace 주기, 워밍업 후 원 단위 `welds_in_window`, 버퍼 시작의 carry. `test_3d_ensemble_model`: 앙상블 번들의 학습→평가→서빙(온라인=오프라인 점수). `test_7_state_survives_restart`: 워밍업 뒤 재시작해도 건별 임계값·쿨다운·24h 반복 판정이 재시작 없는 실행과 같고, 다른 모델로 기동하면 워밍업으로 돌아감. `test_8_outbox_retry_restart_idempotent`: RAG가 꺼진 동안 백오프 재시도 → 재시작 → RAG 복구 시 이벤트마다 정확히 한 번 도착, 4xx는 재시도 안 함, 재시작 뒤 같은 데이터를 다시 보내도 새 이벤트 없음. 테스트마다 별도 상태 폴더. `test_3e_ensemble_components`: 앙상블 구성 요소 조합·구 번들 호환. `test_6`의 구간 단언: 공백을 걸친 요청이 공백 앞 완결 분까지 채점. `test_9_restart_hold_and_critical_sustain`: 재가동 보류(오프라인 `restart_flags` = 온라인, 같은 상태 기계 `train.restart_step`)와 10분 critical(3분은 warning). `test_10_rule_per_code_and_profile`: 한 청크의 E016→E029(발화 둘·핸드오프 둘), 건 프로파일(밖 코드 warning·핸드오프 없음·모델 핸드오프의 고장 유형에서도 제외), `[]` 프로파일, DELETE 뒤 프로파일 유지, 예전 상태 파일의 `/stats`. 모두 130개(파이프라인 54 + 매핑 24 + 센서 문서 7 + HITL 45; HITL은 langgraph가 없으면 건너뜀), 몇 분.
+- 서빙 회귀(`test_6_serving_edge_cases`): 202 중 규칙 발화 보존, 종료 코드 전환(공통 쿨다운 = 같은 에피소드, 코드별 = 새 발화), gap 앞 코드, 시각 이상(422·409), NaN 거부, 초 미만 시각, 1행 요청에서 trace 주기, 워밍업 후 원 단위 `welds_in_window`, 버퍼 시작의 carry. `test_3d_ensemble_model`: 앙상블 번들의 학습→평가→서빙(온라인=오프라인 점수). `test_7_state_survives_restart`: 워밍업 뒤 재시작해도 건별 임계값·쿨다운·24h 반복 판정이 재시작 없는 실행과 같고, 다른 모델로 기동하면 워밍업으로 돌아감. `test_8_outbox_retry_restart_idempotent`: RAG가 꺼진 동안 백오프 재시도 → 재시작 → RAG 복구 시 이벤트마다 정확히 한 번 도착, 4xx는 재시도 안 함, 재시작 뒤 같은 데이터를 다시 보내도 새 이벤트 없음. 테스트마다 별도 상태 폴더. `test_3e_ensemble_components`: 앙상블 구성 요소 조합·구 번들 호환. `test_6`의 구간 단언: 공백을 걸친 요청이 공백 앞 완결 분까지 채점. `test_9_restart_hold_and_critical_sustain`: 재가동 보류(오프라인 `restart_flags` = 온라인, 같은 상태 기계 `train.restart_step`)와 10분 critical(3분은 warning). `test_10_rule_per_code_and_profile`: 한 청크의 E016→E029(발화 둘·핸드오프 둘), 건 프로파일(밖 코드 warning·핸드오프 없음·모델 핸드오프의 고장 유형에서도 제외), `[]` 프로파일, DELETE 뒤 프로파일 유지, 예전 상태 파일의 `/stats`. 모두 167개(파이프라인 81, 그중 D-11이 27 + 매핑 24 + 센서 문서 7 + 모델 루프 55), 약 8분.
 - 회귀 고정: `test_2b_window_columns`는 윈도우 집계가 연속 피처(24개, 모델 입력은 그중 23개)에만 `_mean`/`_std`를 붙이고 메타데이터 이름은 그대로 두는지 확인한다. 합성 데이터의 캡 드레싱 구간을 **분 경계에서 30초 어긋나게** 만들어, `non_welding`이 `max`(=1)가 아니라 `mean`(=0.5)으로 집계되는지도 함께 검증한다.
 - `ruff check .`: `tests/test_sensor_features.py:14` E402 1건(`# noqa: E402` 빠짐). `black .`은 `pyproject.toml` 설정(120자)을 따른다.
 - 실데이터 파이프라인을 다시 돌려야 하는 변경: 전처리 규칙(2단계 코드) → 2·3·4단계 전부. 모델·윈도우만 → 4단계. 서빙만 → 재실행 불필요(`pytest`로 확인).
@@ -888,3 +888,85 @@ JSON Schema는 서버의 `/docs`·`/openapi.json`.
 전달: `/predict` 응답의 `sensor_features[]`(그 요청에서 처음 채점된 분마다 하나), `GET /guns/{id}/sensor-features?minutes=N`(최근 N분, 최대 360). 이 둘뿐이다. 매분 POST(`RSW_RAG_SENSOR_URL`)는 2026-10-29에 지웠다. 이 값이 남아 있으면 서버가 켜질 때 "무시한다"는 경고만 남긴다.
 
 실데이터 예시 만들기: `python results/D-6/sensor_examples.py`(기본 10개: test_0·test_3 × 끝 5·30·180·1440분 전 + 종료 코드가 처음 뜬 분, 요약표에 상위 4개 측정값·상태 비율·설정값 평균±흔들림). 파일·시점은 `--files … --before-end …`, `--at 파일=시각`, `--plan plan.csv`로 바꾼다. 결과 `results/D-6/examples/summary.md`.
+
+#### 5.12 모델 루프 (D-11) — 재학습 · 섀도 비교 · 자동 교체
+
+2026-11-11 결정(`history.md` 50절, 설계 `docs/superpowers/specs/2026-11-11-model-loop-design.md`): 새로 끝난 파일로 모델을 다시 학습하고, 지금 모델(현재 모델)과 새 모델(도전자)을 둘 다 처음 보는 파일로 비교해, 더 나으면 서빙 모델을 재시작 없이 바꾼다. 도전자는 판정 전까지 알림을 내지 않는다(섀도 비교).
+
+| 명령 | 하는 일 |
+|---|---|
+| `python .py/model_loop.py replay --start 2021-08-16` | `preprocessed/`의 파일을 종료 시각 순으로 7일마다 점검한다. 끊기면 같은 명령으로 이어 간다 |
+| `python .py/model_loop.py report --out results/D-11/runs/<이름>` | 점검 · 판정 기록과 모든 버전의 테스트 8건 점수(`report.json`, `report.md`) |
+| `python .py/model_loop.py tick [--server-url http://localhost:8000]` | 지금 시각으로 점검 한 번(스케줄러용) |
+| `python .py/model_loop.py status` | 현재 모델, 도전자, 마지막 점검 · 판정 |
+| `python .py/model_loop.py rollback [--to v001] [--server-url ...]` | 앞의 현재 모델로 되돌린다(사람이 부른다) |
+| `python .py/preprocess.py --split append --input-dir incoming` | 새 원본 CSV를 기존 설정 · 표준화 값으로 `preprocessed/`에 더한다 |
+
+점검 한 번의 규칙(기본값):
+
+- 현재 모델이 없으면 끝난 파일이 16건 이상일 때 첫 모델을 학습한다.
+- 도전자가 있으면 도전자가 학습하지 않은 끝난 파일(섀도 파일)이 5건 이상일 때 판정한다. 모자라면 미룬다.
+- 도전자가 없으면 마지막으로 학습한 버전이 쓰지 않은 끝난 파일이 5건 이상일 때, 그때까지의 파일 전체로 도전자를 학습한다.
+
+판정은 다섯 조건을 모두 만족할 때만 교체다.
+
+1. 건별 AUROC 평균의 차(도전자 − 현재 모델)가 우연 폭보다 크다. 우연 폭은 같은 파일로 시드만 바꿔 학습한 모델들 사이의 차다.
+2. 섀도 파일의 과반에서 도전자의 AUROC가 현재 모델 이상이다.
+3. 도전자에 조기 경보가 있고, 적중 건수가 현재 모델 이상이다. 조기 경보가 없는 도전자는 현재 모델의 적중이 0건이어도 여기서 떨어진다.
+4. 도전자의 조기 경보 오알람이 현재 모델의 1.2배 이하다.
+5. 도전자의 조기 경보 오알람이 설비당 하루 24회 이하다.
+
+테스트 8건은 판정에 쓰지 않고 보고서에서만 본다.
+
+등록부(`models/registry/`, git 제외): `registry.json`에 버전, 현재 모델 · 도전자, 판정마다의 수치와 사유, 점검 기록이 있고, 버전마다 폴더(`v001/` …)에 번들이 있다. 설정(위 기본값과 학습 레시피)은 등록부에 기록되고, 다른 설정으로는 그 등록부를 쓸 수 없다.
+
+서버: `RSW_MODEL_REGISTRY=models/registry`로 켜면 등록부의 현재 모델을 읽는다. 지정하지 않으면 기존처럼 `RSW_MODEL_PATH`다.
+
+- `POST /model/reload`: 등록부의 현재 모델이 바뀌었으면 재시작 없이 바꿔 탄다. 처리 중인 요청은 옛 모델로 끝난다. 새 번들을 못 읽으면 500이고 옛 모델로 계속 돈다.
+- 조기 경보가 없는 모델은 등록하지 않는다(사용자 결정 2026-11-12). 학습한 버전에 조기 경보가 없으면(레시피에서 껐거나 임계값을 정할 윈도우가 모자라면) 점검이 이유를 알리고 오류로 끝난다. 첫 모델도 같다. 서버는 지금 모델로 계속 돈다.
+- `GET /model/loop`: 읽은 버전, 현재 모델, 도전자, 최근 판정. `GET /health`에는 `model_version`이 있다.
+- `--server-url`을 준 `tick` · `replay`는 끝날 때마다 reload를 부른다. 교체 알림을 놓친 서버는 다음 점검에서 따라온다.
+- 교체 뒤 설비는 다시 워밍업한다(6시간). 설비별 임계값이 옛 모델의 점수로 잡힌 값이기 때문이다. 그동안 모델 알림과 조기 경보는 나가지 않고 종료 코드 규칙 알림은 나간다. 규칙 쿨다운 · 프로파일 · 통계 · 전송 대기열은 이어진다.
+
+새 데이터가 들어올 때 스케줄러가 부를 명령이다(스케줄러 등록은 하지 않았다). 추가 전처리는 읽지 못한 파일만 이유와 함께 건너뛰고 나머지를 더한다. 고장으로 끝나지 않은 기록(마지막 10분에 종료 코드 없음)도 건너뛴다.
+
+```bash
+python .py/preprocess.py --split append --input-dir incoming
+python .py/model_loop.py tick --server-url http://localhost:8000
+```
+
+한계:
+
+- 표준화 값, 모델 구성, 피처, 조기 경보 운영점은 전체 데이터를 보고 정한 것이라 보고서의 절대 수치는 낙관적이다. 두 모델이 같은 혜택을 받으므로 비교는 공정하다.
+- 판정은 섀도 파일 5 ~ 15건으로 하므로 하나하나가 강한 증거는 아니다.
+- 서버가 받은 스트림을 저장해 학습 파일로 만드는 것은 아직 없다.
+
+실제 64건 재생 결과(2026-11-12, `results/D-11/runs/replay-1/report.md`):
+
+- 점검은 예상한 일정대로 돌았다: 08-23 · 08-30 대기(3 · 5건), 09-06 v001(16건: E01 5 · E02 4 · E04 7), 09-13 v002(33건), 09-20 판정 + v003(40건), 09-27 미룸(1건), 10-04 판정 + v004(45건), 10-11 미룸(3건), 10-18 판정 + v005(60건), 10-25 · 11-01 미룸(3 · 4건).
+- 판정 세 번이 모두 '유지'다. 현재 모델은 끝까지 첫 모델 v001(16건)이다. v005(60건)는 섀도 파일이 4건이라 판정받지 않은 도전자로 남았다.
+
+| 판정 | 섀도 파일 | 건별 AUROC 평균 A → B (우연 폭) | B ≥ A인 파일 | 조기 경보 적중 A / B | 오알람(설비 · 일) A / B | 실패한 조건 |
+|---|---|---|---|---|---|---|
+| 09-20 v001 대 v002 | 7 | 0.711 → 0.709 (0.105) | 2 / 7 | 3 / 4 | 5.32 / 32.08 | 1 · 2 · 4 · 5 |
+| 10-04 v001 대 v003 | 5 | 0.700 → 0.722 (0.100) | 2 / 5 | 0 / 1 | 2.83 / 5.37 | 1 · 2 · 4 |
+| 10-18 v001 대 v004 | 15 | 0.672 → 0.626 (0.031) | 6 / 15 | 3 / 4 | 2.10 / 5.44 | 1 · 2 · 4 |
+
+- 건별 AUROC 평균의 차(−0.002 · +0.022 · −0.046)가 우연 폭을 넘은 적이 없다. 섀도 파일 5 ~ 7건에서는 시드만 바꿔도 0.10이 흔들린다.
+- 도전자는 매번 조기 경보를 한 건 더 맞혔지만 오알람이 현재 모델의 1.9 ~ 6.0배였다.
+
+테스트 8건(판정에 쓰지 않았다):
+
+| 버전 | 학습 파일 | 상태 | AUROC | 건별 AUROC 평균 | 조기 경보 적중 | 우연 | 오알람 / 설비 · 일 |
+|---|---|---|---|---|---|---|---|
+| v001 | 16 | 현재 모델 | 0.598 | 0.625 | 0.000 | 0.062 | 1.76 |
+| v002 | 33 | 떨어짐 | 0.615 | 0.660 | 0.500 | 0.250 | 12.37 |
+| v003 | 40 | 떨어짐 | 0.628 | 0.668 | 0.250 | 0.083 | 3.40 |
+| v004 | 45 | 떨어짐 | 0.611 | 0.642 | 0.375 | 0.271 | 16.89 |
+| v005 | 60 | 도전자(판정 전) | 0.630 | 0.620 | 0.375 | 0.167 | 7.73 |
+
+- 건별 AUROC 평균은 0.620 ~ 0.668이고, 버전 사이의 차는 판정 때의 우연 폭과 같은 크기다. 60건으로 학습한 v005가 16건으로 학습한 v001보다 높지 않다.
+- v001은 테스트 8건에서 조기 경보를 한 건도 맞히지 못했다. 뒤 버전은 더 맞히지만 오알람과 우연 수준이 같이 올라간다.
+- 루프는 설계대로 돌았고 판정 근거가 남았다. 이 데이터에서 '파일을 더 넣어 다시 학습한 모델이 낫다'는 근거는 나오지 않았다.
+
+걸린 시간은 약 45분이다(버전 모델 5개 24분, 시드 모델 8개 14분, 판정 채점 3분, 보고서 1.5분). 서버 교체는 등록부 사본과 실제 번들로 확인했다: v001로 뜬 서버가 `rollback --to v003 --server-url ...` 한 번에 재시작 없이 v003으로 바뀌고 `/predict`가 이어서 동작한다. 재생에서 교체 판정은 나오지 않았다.

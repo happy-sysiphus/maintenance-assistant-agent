@@ -22,6 +22,15 @@ Endpoints
     GET  /stats                   the same summed per gun, every gun
     GET  /handoffs/{event_id}     one handoff document + its delivery status
     POST /handoffs/preview        AnomalyResult JSON -> handoff document (no state; for the receiver's tests)
+    GET  /model/loop              model loop (D-11): loaded version, champion, challenger, the latest decisions
+    POST /model/reload            serve the registry's champion if it changed - no restart
+
+Model loop (D-11, .py/model_loop.py, docs/superpowers/specs/2026-11-11-model-loop-design.md): with
+RSW_MODEL_REGISTRY=models/registry the server serves the registry's champion instead of RSW_MODEL_PATH.
+model_loop.py retrains on the files that ended, compares the new model with the champion on files neither has seen
+and, when it wins, changes the champion and calls POST /model/reload. A reload is a restart under the new bundle
+without the downtime: requests in flight finish on the old model, later ones use the new one, every gun warms up
+again (its threshold belongs to the old model's scores); rule cooldowns, profiles, counters and the outbox stay.
 
 ML -> downstream handoff (.py/rag_mapping.py, schema v1.4): the first request of every critical episode (and every
 terminal-code rule trigger) carries `handoff` - sensor findings in words, the terminal code and fault class (E01..E04).
@@ -67,10 +76,10 @@ import sys
 import threading
 import time
 from collections import deque
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Literal
+from typing import Any, Iterator, Literal
 from urllib.parse import quote
 
 import joblib
@@ -88,6 +97,7 @@ import train as trainlib  # noqa: E402  (also makes PCADetector importable for p
 from preprocess import BINARY_COL, ROLL, SENSOR_COLS, TERMINAL_TO_CLASS, VALUE_COLS, fill_gaps  # noqa: E402
 import rag_mapping  # noqa: E402  (ML -> downstream handoff; pure Python)
 import sensor_features  # noqa: E402  (per-minute sensor z document, sensor-features-v4; pure Python)
+import model_registry as registrylib  # noqa: E402  (D-11 model loop: versions, champion, decisions; pure Python)
 
 TRACE_HTML = os.path.join(PROJECT_ROOT, "static", "trace.html")
 # default: the IsolationForest + LightGBM ensemble (B-9, history.md §18); models/baseline_iforest.joblib is the fallback
@@ -1473,13 +1483,92 @@ class Outbox:
                 os.remove(self.path(k))
 
 
+REGISTRY_ENV = "RSW_MODEL_REGISTRY"  # D-11: the model registry folder; unset = the bundle of RSW_MODEL_PATH
+
+
+class ModelGate:
+    """D-11: requests that change gun state hold the gate shared, a model swap holds it alone. A waiting swap goes
+    before the requests that arrive after it, so a steady stream cannot keep it out."""
+
+    def __init__(self) -> None:
+        self._cond = threading.Condition()
+        self._requests = 0  # shared holders inside
+        self._swapping = False
+        self._swaps_waiting = 0
+
+    @contextmanager
+    def shared(self) -> Iterator[None]:
+        with self._cond:
+            while self._swapping or self._swaps_waiting:
+                self._cond.wait()
+            self._requests += 1
+        try:
+            yield
+        finally:
+            with self._cond:
+                self._requests -= 1
+                self._cond.notify_all()
+
+    @contextmanager
+    def exclusive(self) -> Iterator[None]:
+        with self._cond:
+            self._swaps_waiting += 1
+            try:
+                while self._swapping or self._requests:
+                    self._cond.wait()
+            finally:
+                self._swaps_waiting -= 1
+            self._swapping = True
+        try:
+            yield
+        finally:
+            with self._cond:
+                self._swapping = False
+                self._cond.notify_all()
+
+
+def resolve_model(registry_dir: str | None, model_path: str) -> tuple[str, str | None]:
+    """(bundle path, registry version or None). With a registry the bundle is its champion's; a registry that
+    cannot be served from (unreadable, no champion yet, bundle file gone) raises with the reason."""
+    if not registry_dir:
+        return model_path, None
+    reg = registrylib.Registry(registry_dir)
+    try:
+        data = reg.load()
+    except registrylib.RegistryError as e:
+        raise RuntimeError(f"{REGISTRY_ENV}: {e}") from e
+    if data is None:
+        raise RuntimeError(f"{REGISTRY_ENV}: no registry at {reg.path} - run .py/model_loop.py first")
+    version = data["champion"]
+    if version is None:
+        raise RuntimeError(f"{REGISTRY_ENV}: {reg.path} has no champion yet - run .py/model_loop.py until the "
+                           "first model is trained")
+    path = reg.bundle_path(data, version)
+    if not os.path.exists(path):
+        raise RuntimeError(f"{REGISTRY_ENV}: the bundle of champion {version} is missing: {path}")
+    return path, version
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    model_path = os.environ.get("RSW_MODEL_PATH", MODEL_PATH)
+    registry_dir = os.environ.get(REGISTRY_ENV) or None
+    if registry_dir and os.environ.get("RSW_MODEL_PATH"):
+        log.warning("RSW_MODEL_PATH is ignored: %s (%s) names the model", REGISTRY_ENV, registry_dir)
+    model_path, version = resolve_model(registry_dir, os.environ.get("RSW_MODEL_PATH", MODEL_PATH))
     if not os.path.exists(model_path):
         raise RuntimeError(f"model not found: {model_path} — run .py/train.py or set RSW_MODEL_PATH")
-    d = app.state.detector = Detector(model_path)
+    try:
+        d = app.state.detector = Detector(model_path)
+    except Exception as e:
+        if version is None:
+            raise
+        raise RuntimeError(f"{REGISTRY_ENV}: the bundle of champion {version} does not load ({model_path}): {e!r} - "
+                           "go back with .py/model_loop.py rollback") from e
     log.info("loaded %s (window %ss, threshold %.4f)", model_path, d.window, d.threshold)
+    app.state.registry = registrylib.Registry(registry_dir) if registry_dir else None
+    app.state.model_version = version  # None without a registry
+    app.state.model_gate = ModelGate()
+    app.state.reload_lock = threading.Lock()  # one POST /model/reload at a time
     state_dir = os.environ.get("RSW_STATE_DIR", STATE_DIR) or None
     app.state.state_dir = state_dir
     app.state.store = GunStore(state_dir, d.info.created)
@@ -1533,7 +1622,9 @@ async def validation_error(request: Request, exc: RequestValidationError) -> JSO
 async def health(request: Request) -> dict[str, Any]:
     d: Detector = request.app.state.detector
     ob = request.app.state.outbox.all()
-    return {"status": "ok", "model_path": d.path, "model": d.info.model_dump(), "guns_tracked": len(request.app.state.guns),
+    return {"status": "ok", "model_path": d.path, "model": d.info.model_dump(),
+            "model_version": request.app.state.model_version,  # D-11: the registry version; None without a registry
+            "guns_tracked": len(request.app.state.guns),
             "max_chunk": MAX_CHUNK, "state_dir": request.app.state.state_dir, "rag_url": request.app.state.rag_url,
             "outbox": {k: sum(r.delivery == k for r in ob) for k in ("pending", "delivered", "failed", "pull_only")},
             "early_warning": {"model": d.early_warning is not None, "handoffs": request.app.state.ew_handoffs}}
@@ -1553,6 +1644,72 @@ async def model_card(request: Request) -> dict[str, Any]:
             "test": {k: v for k, v in metrics.get("test", {}).items() if k != "per_file"} or None,
             "train_files": b.get("train_files"), "val_files": b.get("val_files"),
             "test_files": metrics.get("test", {}).get("files")}
+
+
+def swap_model(app: FastAPI, new: Detector, version: str) -> None:
+    """D-11: put `new` in the place of the serving model. The caller holds the gate alone - no request that changes
+    gun state is in flight. Every gun ends where a restart under the new bundle puts it (the snapshot -> restore path
+    of C-1): its warm-up result, threshold and alarm run are the old model's and go, the rest stays."""
+    old: Detector = app.state.detector
+    store = GunStore(app.state.state_dir, new.info.created)
+    gun_norm = new.gun_norm is not None
+    guns = {gun_id: GunState.restore(g.snapshot(gun_id, old.info.created), gun_norm, new.info.created)
+            for gun_id, g in app.state.guns.items()}
+    for gun_id, g in guns.items():
+        store.save(gun_id, g)
+    if app.state.ew_handoffs and new.early_warning is None:
+        log.warning("RSW_EARLY_WARNING_HANDOFFS is on, but %s has no early warning", new.path)
+    with app.state.guns_lock:  # nothing above changed the app: the four go together
+        app.state.detector, app.state.store, app.state.guns, app.state.model_version = new, store, guns, version
+
+
+@app.post("/model/reload")
+def model_reload(request: Request) -> dict[str, Any]:
+    """D-11: serve the registry's champion if it is not the loaded version (model_loop.py calls this after a swap
+    decision or a rollback). The new bundle is read while the old one keeps serving; if it cannot be read, 500 and
+    nothing changes."""
+    state = request.app.state
+    if state.registry is None:
+        raise HTTPException(status_code=409, detail=f"the server was not started with {REGISTRY_ENV}: there is no "
+                                                    "registry to reload from")
+    with state.reload_lock:
+        previous = state.model_version
+        try:
+            path, version = resolve_model(state.registry.root, "")
+            if version == previous:
+                return {"changed": False, "version": version}
+            try:
+                new = Detector(path)
+            except Exception as e:
+                raise RuntimeError(f"the bundle of {version} does not load ({path}): {e!r}") from e
+        except RuntimeError as e:
+            log.exception("model reload failed; still serving %s", previous)
+            raise HTTPException(status_code=500, detail=f"still serving {previous}: {e}") from e
+        with state.model_gate.exclusive():
+            swap_model(request.app, new, version)
+        log.info("model %s -> %s (%s, created %s); %d guns warm up again", previous, version, path, new.info.created,
+                 len(state.guns))
+        return {"changed": True, "version": version, "previous": previous, "created": new.info.created}
+
+
+@app.get("/model/loop")
+def model_loop_status(request: Request, limit: int = Query(10, ge=1, le=100)) -> dict[str, Any]:
+    """D-11: what the model loop has done - the loaded version, the registry's champion and challenger, the last
+    tick and the latest `limit` decisions with their numbers. in_sync false = the registry's champion changed and
+    this server has not reloaded yet. {"registry": null} when the server runs without a registry."""
+    reg = request.app.state.registry
+    if reg is None:
+        return {"registry": None}
+    try:
+        data = reg.load()
+        if data is None:
+            raise registrylib.RegistryError(f"no registry at {reg.path}")
+    except registrylib.RegistryError as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    s = registrylib.summary(data, limit)
+    loaded = {"version": request.app.state.model_version, "created": request.app.state.detector.info.created}
+    return {"registry": reg.root, "loaded": loaded,
+            "in_sync": s["champion"] is not None and s["champion"]["version"] == loaded["version"], **s}
 
 
 def gun_state(request: Request, gun_id: str, create: bool = False) -> GunState:
@@ -1585,13 +1742,14 @@ def check_times(g: GunState, readings: list[SensorReading]) -> None:
                      409: {"description": "timestamps went back more than the buffer"},
                      422: {"description": "invalid readings, or a chunk longer than the buffer"}})
 def predict(req: PredictRequest, request: Request) -> AnomalyResult | JSONResponse:
-    g = gun_state(request, req.gun_id, create=True)
-    with g.lock:
-        check_times(g, req.readings)
-        try:
-            return score_request(req, request, g)
-        finally:
-            request.app.state.store.save(req.gun_id, g)  # C-1: the state as this request left it
+    with request.app.state.model_gate.shared():  # D-11: one model for the whole request; a swap waits for it
+        g = gun_state(request, req.gun_id, create=True)
+        with g.lock:
+            check_times(g, req.readings)
+            try:
+                return score_request(req, request, g)
+            finally:
+                request.app.state.store.save(req.gun_id, g)  # C-1: the state as this request left it
 
 
 def score_request(req: PredictRequest, request: Request, g: GunState) -> AnomalyResult | JSONResponse:
@@ -1974,13 +2132,14 @@ def guns(request: Request) -> list[GunStatus]:
 @app.put("/guns/{gun_id}/profile", response_model=GunProfile)
 def put_profile(gun_id: str, profile: GunProfile, request: Request) -> GunProfile:
     """Set the gun's fault-class profile (C-3). Creates the gun if it has not streamed yet. DELETE /guns/{id} clears it."""
-    g = gun_state(request, gun_id, create=True)
-    with g.lock:
-        # [] = no class expected (every terminal code only warns); None = no profile (every code critical)
-        cls = profile.expected_fault_classes
-        g.profile = None if cls is None else sorted(set(cls))
-        request.app.state.store.save(gun_id, g)
-        return GunProfile(expected_fault_classes=g.profile)
+    with request.app.state.model_gate.shared():  # D-11: not during a model swap (the swap copies every gun)
+        g = gun_state(request, gun_id, create=True)
+        with g.lock:
+            # [] = no class expected (every terminal code only warns); None = no profile (every code critical)
+            cls = profile.expected_fault_classes
+            g.profile = None if cls is None else sorted(set(cls))
+            request.app.state.store.save(gun_id, g)
+            return GunProfile(expected_fault_classes=g.profile)
 
 
 @app.get("/guns/{gun_id}/profile", response_model=GunProfile)
@@ -2089,7 +2248,7 @@ async def trace_view(gun_id: str) -> HTMLResponse:
 def forget_gun(gun_id: str, request: Request, keep_profile: bool = True) -> None:
     """Forget the gun's stream state (buffer, warm-up, alarms, rule history, stats) - e.g. after maintenance. Its
     profile (PUT /guns/{id}/profile) is configuration and is kept unless keep_profile=false."""
-    with request.app.state.guns_lock:
+    with request.app.state.model_gate.shared(), request.app.state.guns_lock:  # D-11: not during a model swap
         old = request.app.state.guns.pop(gun_id, None)
         if old is None:
             raise HTTPException(status_code=404, detail=f"unknown gun {gun_id}")

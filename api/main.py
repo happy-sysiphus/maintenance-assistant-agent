@@ -14,7 +14,6 @@ import functools
 import os
 import threading
 import time
-from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Literal
@@ -24,8 +23,6 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
-from fastapi.routing import APIRoute
-from starlette.routing import Match
 
 
 import assistant
@@ -39,9 +36,7 @@ REPO = Path(__file__).resolve().parent.parent
 MANUALS = {doc: manual_path(doc) for doc in manuals()}
 MANUAL_CAUSE = "MANUAL"
 TRACE_MINUTES = 30
-# 현장 기억을 켜면 ingest 전체(seen → put)를 한 번에 하나씩 (store._lock을 다시 잡으면 교착)
-_INGEST_LOCK = threading.Lock()
-# 케이스를 고치는 곳(읽기 → 고치기 → 저장)은 한 번에 하나씩 (11/04 FE, ml/docs/hitl-loop.md ④ 요청 9 · 10).
+# 케이스를 고치는 곳(읽기 → 고치기 → 저장)은 한 번에 하나씩 (11/04 FE).
 # 겹치면 나중 저장이 먼저 저장한 기록(예: 닫기)을 옛 내용으로 덮는다. 상세 조회의 RAG 생성은 이 잠금 밖에서 한다.
 # store._lock과는 다른 잠금이고, store 함수 안에서는 잡지 않으므로 교착이 없다
 _WRITE_LOCK = threading.RLock()
@@ -101,8 +96,8 @@ def score_trace(gun_id: str, detected_at: str) -> list[dict[str, Any]]:
 
 def ingest(handoff: dict[str, Any]) -> str:
     """알림 하나를 케이스로. 같은 설비 · 같은 코드의 열린 케이스가 있으면 새 줄 대신 '반복'으로 묶는다."""
-    # 반복을 붙이는 저장이 같은 케이스의 닫기 · 기록과 겹치지 않게 _WRITE_LOCK도 잡는다 (플래그와 상관없이)
-    with _INGEST_LOCK if field_memory.enabled() else nullcontext(), _WRITE_LOCK:
+    # 알림은 한 번에 하나씩 처리한다. 반복을 붙이는 저장이 같은 케이스의 닫기 · 기록과 겹치지 않게도 한다
+    with _WRITE_LOCK:
         eid = handoff["event_id"]
         if store.seen(eid):
             return "duplicate"
@@ -113,11 +108,6 @@ def ingest(handoff: dict[str, Any]) -> str:
             store.put(same)
             store.mark_seen(eid, same["case_id"])
             return "repeat"
-        card = guidance.guidance_for(handoff)
-        # R2(현장 기억): 닫힌 케이스의 '이상' 점검 기록으로 이 케이스의 점검 순서를 한 번 정한다 (field_memory.order_for)
-        order = None
-        if field_memory.enabled():
-            order = field_memory.order_for(guidance.event_code(handoff), store.all_cases())
         d = {
             "case_id": store.next_id(),
             "status": "new",
@@ -126,12 +116,10 @@ def ingest(handoff: dict[str, Any]) -> str:
             "assignee": None,
             "event": handoff,
             "score_trace": score_trace(handoff["gun_id"], handoff["detected_at"]),
-            "guidance": field_memory.apply_order(card, order["lead"]) if order else card,
+            "guidance": guidance.guidance_for(handoff),
             "records": {"checks": {}, "judgments": [], "actions": [], "results": [], "field": [], "handovers": []},
             "repeats": [],
         }
-        if order:
-            d["field_order"] = order
         store.put(d)
         store.mark_seen(eid, d["case_id"])
         return "new"
@@ -203,7 +191,7 @@ CLOSED = ("resolved", "false_alarm")
 
 def load_open(case_id: str) -> dict[str, Any]:
     """기록을 바꾸는 주소용 load. 해결 종료 · 오알람으로 닫힌 케이스는 409 (읽기 전용, 11/04 FE).
-    다시 닫으면 마지막 closure가 현장 기억 라벨을 덮어쓰기 때문이다 (ml/docs/hitl-loop.md ⑥).
+    다시 닫으면 마지막 closure가 이전 기록의 결과(오알람 · 해결)를 덮어쓰기 때문이다.
     미해결 · 도움 요청은 이어서 하므로 막지 않는다."""
     d = load(case_id)
     if d["status"] in CLOSED:
@@ -245,47 +233,38 @@ def list_cases():
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str):
-    current = load(case_id)
-    # R2로 순서를 정한 케이스에 판단 · 조치 · 결과가 있으면 카드를 다시 만들지 않는다 (원인 번호가 카드 위치라서)
-    enriched = current if field_memory.order_pinned(current) else guidance.enrich(current)  # RAG 생성(수 초)은 잠금 밖에서
+    enriched = guidance.enrich(load(case_id))  # RAG 생성(수 초)은 잠금 밖에서
     with _WRITE_LOCK:
         latest = load(case_id)  # Preserve records saved while generation was running.
-        card = enriched["guidance"]
-        order = latest.get("field_order")
-        if order:
-            # 새 RAG 카드에도 같은 순서를 다시 적용한다. 생성 중에 기록이 들어왔으면 저장된 카드를 지킨다
-            pinned = field_memory.order_pinned(latest)
-            card = latest["guidance"] if pinned else field_memory.apply_order(card, order["lead"])
         # 안내가 바뀌었을 때만 저장한다 (11/04): 그냥 열 때마다 저장하면 같은 순간의 닫기 · 기록을 덮을 수 있다
-        if latest["guidance"] != card:
-            latest["guidance"] = card
+        if latest["guidance"] != enriched["guidance"]:
+            latest["guidance"] = enriched["guidance"]
             save(latest)
-    out = latest
-    # 현장 기억은 볼 때마다 새로 세어 사본에만 붙인다 (field_memory는 DB에 저장하지 않는다. 순서는 ingest가 정한다, R2)
     if not field_memory.enabled():
-        return out
-    cases = store.all_cases()
-    out = field_memory.annotate(out, cases)
-    out["field_memory"]["recent"] = recent_closures(out, cases)
-    return out
+        return latest
+    # 이전 기록은 볼 때마다 새로 찾아 응답에만 붙인다 (DB에는 저장하지 않는다. 안내 카드는 그대로)
+    same = field_memory.past(latest, store.all_cases())
+    labels = [field_memory.alarm_label(c) for c in same]
+    return {
+        **latest,
+        "field_memory": {
+            "alarm_key": field_memory.alarm_key(latest["event"]),
+            "alarm": {"false_alarm": labels.count("false_alarm"), "real": labels.count("real")},
+            "recent": recent_closures(same),
+        },
+    }
 
 
 RECENT_MAX = 3
 
 
-def recent_closures(d: dict[str, Any], cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """같은 설비 · 코드(field_memory.alarm_key)로 오알람 · 해결 종료된 케이스, 최근 닫은 순 RECENT_MAX건 (UI 이전 기록).
+def recent_closures(same: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """같은 설비 · 코드로 오알람 · 해결 종료된 케이스(field_memory.past) 중 최근 닫은 순 RECENT_MAX건 (UI 이전 기록).
 
-    field_memory.alarm의 건수와 같은 범위(라벨 있는 닫힘만, 자기 자신 제외)다.
     해결이면 맞다고 판단한 원인 이름(cause), 오알람이면 닫을 때 남긴 사유(reason)를 준다.
     """
-    key = field_memory.alarm_key(d["event"])
     rows = []
-    for c in cases:
-        if c["case_id"] == d["case_id"] or field_memory.alarm_key(c["event"]) != key:
-            continue
-        if field_memory.alarm_label(c) is None:
-            continue
+    for c in same:
         closure = c["records"]["closure"]
         rows.append(
             {
@@ -444,26 +423,6 @@ def history():
     return {"items": items}
 
 
-class _MemoryRoute(APIRoute):
-    """FIELD_MEMORY를 끄면 라우터가 이 주소를 못 본다 (다른 메서드 405 · 끝 슬래시 307 없이, 없는 주소처럼 404)."""
-
-    def matches(self, scope):
-        if not field_memory.enabled():
-            return Match.NONE, {}
-        return super().matches(scope)
-
-
-def memory_summary():
-    """현장 기억 요약 (FIELD_MEMORY=1일 때만, 끄면 없는 주소처럼 404)."""
-    if not field_memory.enabled():
-        raise HTTPException(404, "Not Found")
-    return {"enabled": True, **field_memory.snapshot(store.all_cases())}
-
-
-app.router.add_api_route("/api/memory", memory_summary, methods=["GET"], include_in_schema=False,
-                         route_class_override=_MemoryRoute)
-
-
 # ---- 설비 · 매뉴얼 · 챗봇 ----
 
 
@@ -517,13 +476,9 @@ class AssistantAskInput(BaseModel):
 
 @app.post("/api/assistant/ask")
 async def ask(body: AssistantAskInput):
-    # 현장 기억(FIELD_MEMORY=1)이면 요약을 memory=로 넘긴다. 끄면 인자는 그대로 셋
-    extra: dict[str, Any] = {}
-    if field_memory.enabled():
-        extra["memory"] = await run_in_threadpool(lambda: field_memory.snapshot(store.all_cases()))
     try:
         return await run_in_threadpool(assistant.answer,body.question,body.photos,
-                                       [message.model_dump() for message in body.history],**extra)
+                                       [message.model_dump() for message in body.history])
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -533,8 +488,8 @@ FEEDBACK_KEYS = ("conversation_id", "message_index", "helpful", "question", "ans
 
 @app.post("/api/assistant/feedback")
 def feedback(body: dict[str, Any]):
-    """챗봇 답 👍/👎 (11/04 FE, ml/docs/hitl-loop.md ④ 요청 5). SQLite feedback 표에 남긴다.
-    question · answer가 없는 옛 화면 본문도 받는다(빈 값으로 저장). 현장 기억 · RAG에는 아직 쓰지 않는다."""
+    """챗봇 답 👍/👎 (11/04 FE). SQLite feedback 표에 남긴다.
+    question · answer가 없는 옛 화면 본문도 받는다(빈 값으로 저장). 저장만 하고 RAG에는 쓰지 않는다."""
     if not isinstance(body.get("conversation_id"), str) or not isinstance(body.get("message_index"), int):
         raise HTTPException(422, "conversation_id · message_index가 필요합니다")
     row = {k: body.get(k) for k in FEEDBACK_KEYS}

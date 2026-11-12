@@ -50,6 +50,10 @@ Outputs (in --out-dir):
 Usage:
     python preprocess.py                         # ./train -> ./preprocessed
     python preprocess.py --split test            # ./test  -> ./preprocessed/test (train config + scaler)
+    python preprocess.py --split append --input-dir incoming     # new files -> ./preprocessed (D-11 model loop):
+                                                 # train config + scaler unchanged, manifest.csv gains rows; a file
+                                                 # without E0x_ in its name is named by its terminal code (E03_18);
+                                                 # one that does not end at a failure is left out
     python preprocess.py --resample 10s          # 10-second bins (mean of sensors, max of flags)
     python preprocess.py --scale per-file --drop-static
     python preprocess.py --pattern "E04_*" --max-files 3     # quick check
@@ -307,10 +311,105 @@ def load_train_scaler(args):
     return sc
 
 
+def append_split(ap, args):
+    """--split append (D-11 model loop): new raw files join the train out-dir with the train run's options and
+    scaler. Nothing of the train run is rewritten - scaler.json and preprocess_config.json stay as they are (a refit
+    would put the bundles trained earlier on another scale), manifest.csv only gains rows and a `source` column
+    (the raw file's name). A file is taken once: its name is looked up in `file` and `source`."""
+    if not args.input_dir:
+        raise SystemExit("--split append needs --input-dir (the folder with the new CSV files)")
+    if args.out_dir:
+        raise SystemExit("--split append writes into --train-out-dir: do not pass --out-dir")
+    out_dir = args.train_out_dir
+    inherit_train_config(ap, args)
+    train_scaler = load_train_scaler(args) if args.scale == "global" else None
+    scale_cols = [c for c in VALUE_COLS if not (args.drop_static and c in STATIC_COLS)] + DERIVED_CONT
+    if train_scaler and train_scaler["columns"] != scale_cols:
+        raise SystemExit(f"scaler columns {train_scaler['columns']} != {scale_cols} - check --drop-static")
+    man_path = os.path.join(out_dir, "manifest.csv")
+    if not os.path.exists(man_path):
+        raise SystemExit(f"{man_path} not found - run the train split first (python preprocess.py)")
+    man = pd.read_csv(man_path, dtype=str, keep_default_na=False)  # as text: the old rows go back unchanged
+    if "source" not in man.columns:
+        man["source"] = ""
+    known = set(man["file"]) | (set(man["source"]) - {""})
+    paths = sorted(glob.glob(os.path.join(args.input_dir, args.pattern)))
+    if not paths:
+        raise SystemExit(f"no files matching {args.pattern!r} in {os.path.abspath(args.input_dir)}")
+    _, write = writer(args.format)
+    text = man.to_csv(index=False)
+
+    def record(row):
+        """One more manifest row, written at once (temp file + rename): a later failure loses nothing converted."""
+        nonlocal text
+        text += pd.DataFrame([row]).reindex(columns=man.columns).to_csv(index=False, header=False)
+        tmp = f"{man_path}.{os.getpid()}.tmp"
+        with open(tmp, "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+        os.replace(tmp, man_path)
+
+    appended, skipped, dropped = 0, 0, 0
+    for i, p in enumerate(paths, 1):
+        src = os.path.splitext(os.path.basename(p))[0]
+        print(f"[{i}/{len(paths)}] {os.path.basename(p)}", flush=True)
+        parts = src.split("_")
+        if src in known:
+            print("  skipped: already in the manifest")
+            skipped += 1
+            continue
+        if len(parts) != 2 or not parts[1].isdigit():
+            print("  skipped: the name must be <prefix>_<number>.csv")
+            skipped += 1
+            continue
+        if int(parts[1]) > 32767:  # the gun number is stored as int16
+            print("  skipped: the number in the name must be at most 32767")
+            skipped += 1
+            continue
+        try:
+            out, info = preprocess_file(p, args)
+        except Exception as e:  # one unreadable file must not cost the others; it is tried again next time
+            print(f"  skipped: {type(e).__name__}: {e} - left for the next run")
+            skipped += 1
+            continue
+        if out is None:  # recorded with its reason, so that it is not tried again
+            print("  dropped:", info["dropped"])
+            record({**info, "source": src})
+            known.add(src)
+            dropped += 1
+            continue
+        if info["class"] not in CLASSES:  # no label without a failure at the end; it may still be running
+            print(f"  skipped: {info['class_source']} - not a recording that ends at a failure")
+            skipped += 1
+            continue
+        if parts[0] not in CLASSES:  # train.py splits the files by the E0x_ prefix of their name
+            cls = info["class"]
+            n = 1 + max(pd.to_numeric(man.loc[man["class"] == cls, "gun"], errors="coerce").max(), -1)
+            n = 0 if n != n else int(n)
+            while f"{cls}_{n}" in known:
+                n += 1
+            name = f"{cls}_{n}"
+            out["file"], out["gun"] = name, np.int16(n)
+            info = {**info, "file": name, "gun": n}
+            print(f"  class {cls} ({info['class_source']}) -> {name}")
+        if args.scale == "per-file":
+            local = StreamingStats(scale_cols)
+            local.add(normal_rows(out))
+            out = apply_scaler(out, local.params())
+        elif train_scaler:
+            out = apply_scaler(out, train_scaler["params"])  # never refit
+        write(out, os.path.join(out_dir, info["file"]))
+        record({**info, "source": src})
+        known.update((src, info["file"]))
+        appended += 1
+
+    print(f"\nappended {appended}, skipped {skipped}, dropped {dropped} -> {out_dir}")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--split", choices=["train", "test"], default="train",
-                    help="test: ./test -> <train-out-dir>/test with the train config and scaler")
+    ap.add_argument("--split", choices=["train", "test", "append"], default="train",
+                    help="test: ./test -> <train-out-dir>/test with the train config and scaler; "
+                         "append: new files of --input-dir -> <train-out-dir>, config and scaler unchanged")
     ap.add_argument("--input-dir", "--train-dir", dest="input_dir", default=None,
                     help="CSV folder; default ./train or ./test by --split")
     ap.add_argument("--out-dir", default=None, help="default ./preprocessed (train) or ./preprocessed/test")
@@ -329,6 +428,8 @@ def main():
     ap.add_argument("--drop-static", action="store_true", help="drop c7/c8/c9 (constant per gun)")
     ap.add_argument("--format", choices=["parquet", "csv"], default="parquet")
     args = ap.parse_args()
+    if args.split == "append":
+        return append_split(ap, args)
     is_test = args.split == "test"
     config_source, train_scaler = None, None
     if is_test:

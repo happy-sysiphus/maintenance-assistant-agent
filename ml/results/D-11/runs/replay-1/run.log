@@ -1,0 +1,1128 @@
+=== 2026-11-12T05:40:59Z replay --end 2021-09-07
+2021-08-23T00:00:00  wait_first:3
+2021-08-30T00:00:00  wait_first:5
+--- training v001 on 16 files (seed 42)
+train files 12, val files 4
+[1/16] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/16] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/16] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/16] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[5/16] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[6/16] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[7/16] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[8/16] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[9/16] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[10/16] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[11/16] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[12/16] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[13/16] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[14/16] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[15/16] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[16/16] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 18s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+cv fold 1/4: AUROC 0.903  recall 0.109  alarm@normal 0.022  (5 guns)
+cv fold 2/4: AUROC 0.725  recall 0.033  alarm@normal 0.014  (4 guns)
+cv fold 3/4: AUROC 0.759  recall 0.237  alarm@normal 0.179  (4 guns)
+cv fold 4/4: AUROC 0.882  recall 0.061  alarm@normal 0.010  (3 guns)
+cv 4-fold: AUROC 0.817 +- 0.076 (per gun 0.827 +- 0.088)  recall 0.110 +- 0.078  alarm@normal 0.056 +- 0.071  operating point 0/16 guns
+fitting ensemble on the normal windows of 12 files x 46 features
+fitted on 99,414 normal windows, threshold 0.9542
+early warning: model_ng_k1 threshold 0.9789456129074097 (cv4_out_of_fold), val exceed rate 0.0020091247750198818
+val: AUROC 0.900 (per gun mean 0.885, > 10 min before failure 0.880)  AUPRC 0.074  alarm@normal 0.002  recall@pre-failure 0.153  (32,316 windows, 834 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.003 sd 0.001; 4 files gun-normalised, 4 with a gun threshold)
+  E01: AUROC 0.801  recall 0.295  alarm@normal 0.002
+  E02: AUROC 0.816  recall 0.066  alarm@normal 0.000
+  E04: AUROC 0.958  recall 0.125  alarm@normal 0.002
+  operating point (lead >= 30 min, false runs <= 1/day): 0/4 files (lead ok 0, false runs ok 4); final run in 3 files (median lead 9.3 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 4/4 files hit, median lead 9.6 min; false triggers 0.04/day/file (1 files with any, 4 files <= 1/day); 0 repeats not critical (0 in the pre-failure window), 0.04/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v001\baseline_ensemble.joblib (3.3 MB) in 126s
+2021-09-06T00:00:00  first:v001
+=== 2026-11-12T05:43:29Z replay --end 2021-09-14
+--- training v002 on 33 files (seed 42)
+train files 24, val files 9
+[1/33] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/33] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/33] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/33] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[5/33] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[6/33] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/33] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[8/33] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[9/33] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[10/33] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[11/33] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[12/33] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[13/33] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[14/33] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[15/33] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[16/33] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[17/33] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[18/33] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[19/33] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[20/33] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[21/33] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[22/33] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[23/33] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[24/33] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[25/33] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[26/33] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[27/33] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[28/33] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[29/33] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[30/33] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[31/33] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[32/33] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[33/33] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 42s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+cv fold 1/4: AUROC 0.856  recall 0.045  alarm@normal 0.009  (10 guns)
+cv fold 2/4: AUROC 0.783  recall 0.090  alarm@normal 0.004  (9 guns)
+cv fold 3/4: AUROC 0.724  recall 0.141  alarm@normal 0.009  (7 guns)
+cv fold 4/4: AUROC 0.722  recall 0.083  alarm@normal 0.016  (7 guns)
+cv 4-fold: AUROC 0.771 +- 0.055 (per gun 0.772 +- 0.050)  recall 0.090 +- 0.034  alarm@normal 0.009 +- 0.004  operating point 0/33 guns
+fitting ensemble on the normal windows of 24 files x 46 features
+fitted on 198,389 normal windows, threshold 0.9471
+early warning: model_ng_k1 threshold 0.9295356273651123 (cv4_out_of_fold), val exceed rate 0.02320046742956492
+val: AUROC 0.832 (per gun mean 0.825, > 10 min before failure 0.800)  AUPRC 0.104  alarm@normal 0.006  recall@pre-failure 0.116  (88,609 windows, 1,246 alarms held by the non-welding gate; per-file alarm@normal 0.001..0.011 sd 0.004; 9 files gun-normalised, 9 with a gun threshold)
+  E01: AUROC 0.780  recall 0.172  alarm@normal 0.009
+  E02: AUROC 0.690  recall 0.167  alarm@normal 0.002
+  E03: AUROC 0.785  recall 0.042  alarm@normal 0.008
+  E04: AUROC 0.968  recall 0.094  alarm@normal 0.003
+  operating point (lead >= 30 min, false runs <= 1/day): 0/9 files (lead ok 0, false runs ok 9); final run in 4 files (median lead 9.0 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 9/9 files hit, median lead 9.3 min; false triggers 0.03/day/file (1 files with any, 9 files <= 1/day); 1 repeats not critical (1 in the pre-failure window), 0.03/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\baseline_ensemble.joblib (4.0 MB) in 245s
+--- training v002\seeds\s43 on 33 files (seed 43)
+train files 24, val files 9
+[1/33] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/33] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/33] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/33] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[5/33] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[6/33] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/33] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[8/33] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[9/33] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[10/33] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[11/33] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[12/33] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[13/33] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[14/33] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[15/33] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[16/33] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[17/33] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[18/33] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[19/33] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[20/33] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[21/33] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[22/33] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[23/33] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[24/33] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[25/33] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[26/33] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[27/33] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[28/33] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[29/33] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[30/33] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[31/33] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[32/33] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[33/33] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 39s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+fitting ensemble on the normal windows of 24 files x 46 features
+fitted on 196,145 normal windows, threshold 0.9439
+val: AUROC 0.746 (per gun mean 0.746, > 10 min before failure 0.701)  AUPRC 0.037  alarm@normal 0.034  recall@pre-failure 0.094  (89,347 windows, 2,157 alarms held by the non-welding gate; per-file alarm@normal 0.001..0.183 sd 0.064; 9 files gun-normalised, 9 with a gun threshold)
+  E01: AUROC 0.650  recall 0.197  alarm@normal 0.009
+  E02: AUROC 0.635  recall 0.116  alarm@normal 0.079
+  E03: AUROC 0.821  recall 0.017  alarm@normal 0.005
+  E04: AUROC 0.840  recall 0.061  alarm@normal 0.045
+  operating point (lead >= 30 min, false runs <= 1/day): 0/9 files (lead ok 0, false runs ok 6); final run in 2 files (median lead 11.5 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 9/9 files hit, median lead 9.3 min; false triggers 0.02/day/file (1 files with any, 9 files <= 1/day); 0 repeats not critical (0 in the pre-failure window), 0.02/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\seeds\s43\baseline_ensemble.joblib (4.0 MB) in 82s
+--- training v002\seeds\s44 on 33 files (seed 44)
+train files 24, val files 9
+[1/33] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/33] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/33] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/33] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[5/33] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[6/33] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/33] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[8/33] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[9/33] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[10/33] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[11/33] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[12/33] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[13/33] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[14/33] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[15/33] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[16/33] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[17/33] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[18/33] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[19/33] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[20/33] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[21/33] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[22/33] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[23/33] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[24/33] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[25/33] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[26/33] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[27/33] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[28/33] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[29/33] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[30/33] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[31/33] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[32/33] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[33/33] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 42s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+fitting ensemble on the normal windows of 24 files x 46 features
+fitted on 197,451 normal windows, threshold 0.9348
+val: AUROC 0.661 (per gun mean 0.672, > 10 min before failure 0.663)  AUPRC 0.024  alarm@normal 0.012  recall@pre-failure 0.017  (90,001 windows, 3,167 alarms held by the non-welding gate; per-file alarm@normal 0.002..0.028 sd 0.008; 9 files gun-normalised, 9 with a gun threshold)
+  E01: AUROC 0.916  recall 0.000  alarm@normal 0.008
+  E02: AUROC 0.622  recall 0.050  alarm@normal 0.015
+  E03: AUROC 0.795  recall 0.000  alarm@normal 0.012
+  E04: AUROC 0.420  recall 0.016  alarm@normal 0.012
+  operating point (lead >= 30 min, false runs <= 1/day): 0/9 files (lead ok 0, false runs ok 8); final run in 0 files (median lead nan min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 9/9 files hit, median lead 9.6 min; false triggers 0.02/day/file (1 files with any, 9 files <= 1/day); 0 repeats not critical (0 in the pre-failure window), 0.02/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\seeds\s44\baseline_ensemble.joblib (4.0 MB) in 81s
+2021-09-13T00:00:00  train:v002
+=== 2026-11-12T05:52:11Z budget_replay 540
+--- scoring v001 on 7 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v001\baseline_ensemble.joblib (window 60s, threshold 0.9542, sustain 3) on 7 listed files
+[test 1/7] E02_10.parquet (class E02): 584,004 rows -> 9,748 windows (gun-normalised)
+[test 2/7] E02_9.parquet (class E02): 544,610 rows -> 9,098 windows (gun-normalised)
+[test 3/7] E03_11.parquet (class E03): 603,571 rows -> 10,060 windows (gun-normalised)
+[test 4/7] E03_12.parquet (class E03): 603,563 rows -> 10,060 windows (gun-normalised)
+[test 5/7] E03_14.parquet (class E03): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 6/7] E04_10.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 7/7] E04_8.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+test: AUROC 0.700 (per gun mean 0.711, > 10 min before failure 0.647)  AUPRC 0.089  alarm@normal 0.008  recall@pre-failure 0.227  (69,236 windows, 933 alarms held by the non-welding gate; per-file alarm@normal 0.003..0.018 sd 0.005; 7 files gun-normalised, 7 with a gun threshold)
+  E02: AUROC 0.920  recall 0.546  alarm@normal 0.011
+  E03: AUROC 0.646  recall 0.121  alarm@normal 0.006
+  E04: AUROC 0.636  recall 0.100  alarm@normal 0.010
+  operating point (lead >= 30 min, false runs <= 1/day): 0/7 files (lead ok 0, false runs ok 6); final run in 3 files (median lead 9.1 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 7/7 files hit, median lead 9.3 min; false triggers 0.10/day/file (3 files with any, 7 files <= 1/day); 5 repeats not critical (0 in the pre-failure window), 0.21/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v001\eval\56aa8462c3b4.json.tmp
+[piece] score v001 seed None on 7 files: 12s
+--- scoring v002 on 7 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\baseline_ensemble.joblib (window 60s, threshold 0.9471, sustain 3) on 7 listed files
+[test 1/7] E02_10.parquet (class E02): 584,004 rows -> 9,748 windows (gun-normalised)
+[test 2/7] E02_9.parquet (class E02): 544,610 rows -> 9,098 windows (gun-normalised)
+[test 3/7] E03_11.parquet (class E03): 603,571 rows -> 10,060 windows (gun-normalised)
+[test 4/7] E03_12.parquet (class E03): 603,563 rows -> 10,060 windows (gun-normalised)
+[test 5/7] E03_14.parquet (class E03): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 6/7] E04_10.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 7/7] E04_8.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+test: AUROC 0.736 (per gun mean 0.709, > 10 min before failure 0.704)  AUPRC 0.054  alarm@normal 0.008  recall@pre-failure 0.234  (69,236 windows, 1,015 alarms held by the non-welding gate; per-file alarm@normal 0.004..0.018 sd 0.004; 7 files gun-normalised, 7 with a gun threshold)
+  E02: AUROC 0.854  recall 0.556  alarm@normal 0.012
+  E03: AUROC 0.766  recall 0.148  alarm@normal 0.008
+  E04: AUROC 0.544  recall 0.075  alarm@normal 0.006
+  operating point (lead >= 30 min, false runs <= 1/day): 0/7 files (lead ok 0, false runs ok 6); final run in 3 files (median lead 9.0 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 7/7 files hit, median lead 9.3 min; false triggers 0.10/day/file (3 files with any, 7 files <= 1/day); 5 repeats not critical (0 in the pre-failure window), 0.21/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\eval\56aa8462c3b4.json.tmp
+[piece] score v002 seed None on 7 files: 14s
+--- scoring v002\seeds\s43 on 7 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\seeds\s43\baseline_ensemble.joblib (window 60s, threshold 0.9439, sustain 3) on 7 listed files
+[test 1/7] E02_10.parquet (class E02): 584,004 rows -> 9,748 windows (gun-normalised)
+[test 2/7] E02_9.parquet (class E02): 544,610 rows -> 9,098 windows (gun-normalised)
+[test 3/7] E03_11.parquet (class E03): 603,571 rows -> 10,060 windows (gun-normalised)
+[test 4/7] E03_12.parquet (class E03): 603,563 rows -> 10,060 windows (gun-normalised)
+[test 5/7] E03_14.parquet (class E03): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 6/7] E04_10.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 7/7] E04_8.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+test: AUROC 0.660 (per gun mean 0.659, > 10 min before failure 0.607)  AUPRC 0.043  alarm@normal 0.028  recall@pre-failure 0.232  (69,236 windows, 830 alarms held by the non-welding gate; per-file alarm@normal 0.004..0.055 sd 0.019; 7 files gun-normalised, 7 with a gun threshold)
+  E02: AUROC 0.875  recall 0.556  alarm@normal 0.018
+  E03: AUROC 0.644  recall 0.126  alarm@normal 0.018
+  E04: AUROC 0.483  recall 0.100  alarm@normal 0.053
+  operating point (lead >= 30 min, false runs <= 1/day): 0/7 files (lead ok 0, false runs ok 3); final run in 4 files (median lead 7.2 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 7/7 files hit, median lead 9.3 min; false triggers 0.10/day/file (3 files with any, 7 files <= 1/day); 5 repeats not critical (0 in the pre-failure window), 0.21/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\seeds\s43\eval\56aa8462c3b4.json.tmp
+[piece] score v002 seed 43 on 7 files: 13s
+--- scoring v002\seeds\s44 on 7 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\seeds\s44\baseline_ensemble.joblib (window 60s, threshold 0.9348, sustain 3) on 7 listed files
+[test 1/7] E02_10.parquet (class E02): 584,004 rows -> 9,748 windows (gun-normalised)
+[test 2/7] E02_9.parquet (class E02): 544,610 rows -> 9,098 windows (gun-normalised)
+[test 3/7] E03_11.parquet (class E03): 603,571 rows -> 10,060 windows (gun-normalised)
+[test 4/7] E03_12.parquet (class E03): 603,563 rows -> 10,060 windows (gun-normalised)
+[test 5/7] E03_14.parquet (class E03): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 6/7] E04_10.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 7/7] E04_8.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+test: AUROC 0.584 (per gun mean 0.604, > 10 min before failure 0.556)  AUPRC 0.012  alarm@normal 0.023  recall@pre-failure 0.105  (69,236 windows, 829 alarms held by the non-welding gate; per-file alarm@normal 0.002..0.080 sd 0.028; 7 files gun-normalised, 7 with a gun threshold)
+  E02: AUROC 0.794  recall 0.315  alarm@normal 0.042
+  E03: AUROC 0.556  recall 0.005  alarm@normal 0.020
+  E04: AUROC 0.534  recall 0.067  alarm@normal 0.010
+  operating point (lead >= 30 min, false runs <= 1/day): 0/7 files (lead ok 0, false runs ok 6); final run in 0 files (median lead nan min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 7/7 files hit, median lead 9.3 min; false triggers 0.10/day/file (3 files with any, 7 files <= 1/day); 5 repeats not critical (0 in the pre-failure window), 0.21/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\seeds\s44\eval\56aa8462c3b4.json.tmp
+[piece] score v002 seed 44 on 7 files: 13s
+--- training v003 on 40 files (seed 42)
+train files 30, val files 10
+[1/40] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/40] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/40] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/40] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[5/40] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[6/40] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/40] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[8/40] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[9/40] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[10/40] E02_10.parquet: 584,004 rows -> 9,748 windows (gun-normalised)
+[11/40] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[12/40] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[13/40] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[14/40] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[15/40] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[16/40] E02_9.parquet: 544,610 rows -> 9,098 windows (gun-normalised)
+[17/40] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[18/40] E03_11.parquet: 603,571 rows -> 10,060 windows (gun-normalised)
+[19/40] E03_12.parquet: 603,563 rows -> 10,060 windows (gun-normalised)
+[20/40] E03_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[21/40] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[22/40] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[23/40] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[24/40] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[25/40] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[26/40] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[27/40] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[28/40] E04_10.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[29/40] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[30/40] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[31/40] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[32/40] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[33/40] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[34/40] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[35/40] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[36/40] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[37/40] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[38/40] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[39/40] E04_8.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[40/40] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 54s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+cv fold 1/4: AUROC 0.838  recall 0.062  alarm@normal 0.007  (11 guns)
+cv fold 2/4: AUROC 0.735  recall 0.065  alarm@normal 0.007  (10 guns)
+cv fold 3/4: AUROC 0.703  recall 0.143  alarm@normal 0.063  (10 guns)
+cv fold 4/4: AUROC 0.814  recall 0.188  alarm@normal 0.009  (9 guns)
+cv 4-fold: AUROC 0.773 +- 0.055 (per gun 0.774 +- 0.057)  recall 0.114 +- 0.054  alarm@normal 0.022 +- 0.024  operating point 0/40 guns
+fitting ensemble on the normal windows of 30 files x 46 features
+fitted on 249,966 normal windows, threshold 0.9324
+early warning: model_ng_k1 threshold 0.9597008228302002 (cv4_out_of_fold), val exceed rate 0.009042906774027668
+val: AUROC 0.803 (per gun mean 0.788, > 10 min before failure 0.767)  AUPRC 0.090  alarm@normal 0.011  recall@pre-failure 0.088  (100,001 windows, 2,731 alarms held by the non-welding gate; per-file alarm@normal 0.001..0.032 sd 0.010; 10 files gun-normalised, 10 with a gun threshold)
+  E01: AUROC 0.789  recall 0.180  alarm@normal 0.013
+  E02: AUROC 0.707  recall 0.125  alarm@normal 0.017
+  E03: AUROC 0.837  recall 0.033  alarm@normal 0.004
+  E04: AUROC 0.831  recall 0.050  alarm@normal 0.011
+  operating point (lead >= 30 min, false runs <= 1/day): 0/10 files (lead ok 0, false runs ok 9); final run in 3 files (median lead 9.1 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 10/10 files hit, median lead 9.2 min; false triggers 0.07/day/file (2 files with any, 10 files <= 1/day); 2 repeats not critical (1 in the pre-failure window), 0.09/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\baseline_ensemble.joblib (4.2 MB) in 319s
+[piece] train v003 seed 42 on 40 files: 324s
+--- v003: already trained on these files, kept
+--- training v003\seeds\s43 on 40 files (seed 43)
+train files 30, val files 10
+[1/40] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/40] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/40] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/40] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[5/40] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[6/40] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/40] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[8/40] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[9/40] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[10/40] E02_10.parquet: 584,004 rows -> 9,748 windows (gun-normalised)
+[11/40] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[12/40] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[13/40] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[14/40] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[15/40] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[16/40] E02_9.parquet: 544,610 rows -> 9,098 windows (gun-normalised)
+[17/40] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[18/40] E03_11.parquet: 603,571 rows -> 10,060 windows (gun-normalised)
+[19/40] E03_12.parquet: 603,563 rows -> 10,060 windows (gun-normalised)
+[20/40] E03_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[21/40] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[22/40] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[23/40] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[24/40] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[25/40] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[26/40] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[27/40] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[28/40] E04_10.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[29/40] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[30/40] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[31/40] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[32/40] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[33/40] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[34/40] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[35/40] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[36/40] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[37/40] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[38/40] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[39/40] E04_8.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[40/40] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 48s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+fitting ensemble on the normal windows of 30 files x 46 features
+fitted on 243,465 normal windows, threshold 0.9528
+val: AUROC 0.653 (per gun mean 0.661, > 10 min before failure 0.588)  AUPRC 0.025  alarm@normal 0.006  recall@pre-failure 0.053  (100,756 windows, 113 alarms held by the non-welding gate; per-file alarm@normal 0.001..0.024 sd 0.006; 10 files gun-normalised, 10 with a gun threshold)
+  E01: AUROC 0.665  recall 0.123  alarm@normal 0.004
+  E02: AUROC 0.678  recall 0.025  alarm@normal 0.015
+  E03: AUROC 0.501  recall 0.008  alarm@normal 0.003
+  E04: AUROC 0.762  recall 0.054  alarm@normal 0.003
+  operating point (lead >= 30 min, false runs <= 1/day): 0/10 files (lead ok 0, false runs ok 10); final run in 3 files (median lead 9.1 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 10/10 files hit, median lead 9.5 min; false triggers 0.01/day/file (1 files with any, 10 files <= 1/day); 0 repeats not critical (0 in the pre-failure window), 0.01/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\seeds\s43\baseline_ensemble.joblib (4.2 MB) in 95s
+[piece] train v003 seed 43 on 40 files: 100s
+[stop] training v003 seed 44 (about 127s) is left for the next call (477s used)
+=== 2026-11-12T06:00:24Z budget_replay 540
+--- v003: already trained on these files, kept
+[piece] train v003 seed 42 on 40 files: 0s
+--- v003: already trained on these files, kept
+--- v003\seeds\s43: already trained on these files, kept
+[piece] train v003 seed 43 on 40 files: 0s
+--- v003: already trained on these files, kept
+--- v003\seeds\s43: already trained on these files, kept
+--- training v003\seeds\s44 on 40 files (seed 44)
+train files 30, val files 10
+[1/40] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/40] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/40] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/40] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[5/40] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[6/40] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/40] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[8/40] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[9/40] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[10/40] E02_10.parquet: 584,004 rows -> 9,748 windows (gun-normalised)
+[11/40] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[12/40] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[13/40] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[14/40] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[15/40] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[16/40] E02_9.parquet: 544,610 rows -> 9,098 windows (gun-normalised)
+[17/40] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[18/40] E03_11.parquet: 603,571 rows -> 10,060 windows (gun-normalised)
+[19/40] E03_12.parquet: 603,563 rows -> 10,060 windows (gun-normalised)
+[20/40] E03_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[21/40] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[22/40] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[23/40] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[24/40] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[25/40] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[26/40] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[27/40] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[28/40] E04_10.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[29/40] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[30/40] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[31/40] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[32/40] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[33/40] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[34/40] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[35/40] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[36/40] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[37/40] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[38/40] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[39/40] E04_8.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[40/40] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 50s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+fitting ensemble on the normal windows of 30 files x 46 features
+fitted on 249,539 normal windows, threshold 0.9348
+val: AUROC 0.809 (per gun mean 0.795, > 10 min before failure 0.774)  AUPRC 0.111  alarm@normal 0.004  recall@pre-failure 0.140  (99,714 windows, 1,191 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.009 sd 0.003; 10 files gun-normalised, 10 with a gun threshold)
+  E01: AUROC 0.969  recall 0.008  alarm@normal 0.005
+  E02: AUROC 0.776  recall 0.433  alarm@normal 0.005
+  E03: AUROC 0.716  recall 0.083  alarm@normal 0.008
+  E04: AUROC 0.781  recall 0.087  alarm@normal 0.002
+  operating point (lead >= 30 min, false runs <= 1/day): 0/10 files (lead ok 0, false runs ok 10); final run in 4 files (median lead 9.0 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 10/10 files hit, median lead 9.5 min; false triggers 0.10/day/file (3 files with any, 10 files <= 1/day); 4 repeats not critical (0 in the pre-failure window), 0.16/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\seeds\s44\baseline_ensemble.joblib (4.2 MB) in 98s
+[piece] train v003 seed 44 on 40 files: 103s
+2021-09-20T00:00:00  train:v003
+2021-09-27T00:00:00  defer:1
+--- scoring v001 on 5 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v001\baseline_ensemble.joblib (window 60s, threshold 0.9542, sustain 3) on 5 listed files
+[test 1/5] E02_12.parquet (class E02): 366,286 rows -> 6,105 windows (gun-normalised)
+[test 2/5] E02_17.parquet (class E02): 392,589 rows -> 6,544 windows (gun-normalised)
+[test 3/5] E03_13.parquet (class E03): 605,286 rows -> 10,088 windows (gun-normalised)
+[test 4/5] E03_2.parquet (class E03): 605,162 rows -> 10,086 windows (gun-normalised)
+[test 5/5] E03_6.parquet (class E03): 604,421 rows -> 10,073 windows (gun-normalised)
+test: AUROC 0.652 (per gun mean 0.700, > 10 min before failure 0.606)  AUPRC 0.026  alarm@normal 0.009  recall@pre-failure 0.036  (42,896 windows, 567 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.028 sd 0.011; 5 files gun-normalised, 5 with a gun threshold)
+  E02: AUROC 0.700  recall 0.083  alarm@normal 0.007
+  E03: AUROC 0.641  recall 0.006  alarm@normal 0.010
+  operating point (lead >= 30 min, false runs <= 1/day): 0/5 files (lead ok 0, false runs ok 3); final run in 1 files (median lead 9.4 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 5/5 files hit, median lead 9.4 min; false triggers 0.19/day/file (4 files with any, 5 files <= 1/day); 0 repeats not critical (0 in the pre-failure window), 0.19/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v001\eval\a87c2b97dcbc.json.tmp
+[piece] score v001 seed None on 5 files: 10s
+--- scoring v003 on 5 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\baseline_ensemble.joblib (window 60s, threshold 0.9324, sustain 3) on 5 listed files
+[test 1/5] E02_12.parquet (class E02): 366,286 rows -> 6,105 windows (gun-normalised)
+[test 2/5] E02_17.parquet (class E02): 392,589 rows -> 6,544 windows (gun-normalised)
+[test 3/5] E03_13.parquet (class E03): 605,286 rows -> 10,088 windows (gun-normalised)
+[test 4/5] E03_2.parquet (class E03): 605,162 rows -> 10,086 windows (gun-normalised)
+[test 5/5] E03_6.parquet (class E03): 604,421 rows -> 10,073 windows (gun-normalised)
+test: AUROC 0.715 (per gun mean 0.722, > 10 min before failure 0.666)  AUPRC 0.055  alarm@normal 0.008  recall@pre-failure 0.050  (42,896 windows, 637 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.053 sd 0.021; 5 files gun-normalised, 5 with a gun threshold)
+  E02: AUROC 0.703  recall 0.091  alarm@normal 0.024
+  E03: AUROC 0.702  recall 0.022  alarm@normal 0.001
+  operating point (lead >= 30 min, false runs <= 1/day): 0/5 files (lead ok 0, false runs ok 4); final run in 2 files (median lead 6.5 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 5/5 files hit, median lead 9.4 min; false triggers 0.19/day/file (4 files with any, 5 files <= 1/day); 0 repeats not critical (0 in the pre-failure window), 0.19/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\eval\a87c2b97dcbc.json.tmp
+[piece] score v003 seed None on 5 files: 10s
+--- scoring v003\seeds\s43 on 5 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\seeds\s43\baseline_ensemble.joblib (window 60s, threshold 0.9528, sustain 3) on 5 listed files
+[test 1/5] E02_12.parquet (class E02): 366,286 rows -> 6,105 windows (gun-normalised)
+[test 2/5] E02_17.parquet (class E02): 392,589 rows -> 6,544 windows (gun-normalised)
+[test 3/5] E03_13.parquet (class E03): 605,286 rows -> 10,088 windows (gun-normalised)
+[test 4/5] E03_2.parquet (class E03): 605,162 rows -> 10,086 windows (gun-normalised)
+[test 5/5] E03_6.parquet (class E03): 604,421 rows -> 10,073 windows (gun-normalised)
+test: AUROC 0.813 (per gun mean 0.822, > 10 min before failure 0.782)  AUPRC 0.062  alarm@normal 0.003  recall@pre-failure 0.036  (42,896 windows, 526 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.017 sd 0.007; 5 files gun-normalised, 5 with a gun threshold)
+  E02: AUROC 0.874  recall 0.058  alarm@normal 0.008
+  E03: AUROC 0.778  recall 0.022  alarm@normal 0.001
+  operating point (lead >= 30 min, false runs <= 1/day): 0/5 files (lead ok 0, false runs ok 4); final run in 1 files (median lead 3.7 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 5/5 files hit, median lead 9.4 min; false triggers 0.19/day/file (4 files with any, 5 files <= 1/day); 0 repeats not critical (0 in the pre-failure window), 0.19/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\seeds\s43\eval\a87c2b97dcbc.json.tmp
+[piece] score v003 seed 43 on 5 files: 9s
+--- scoring v003\seeds\s44 on 5 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\seeds\s44\baseline_ensemble.joblib (window 60s, threshold 0.9348, sustain 3) on 5 listed files
+[test 1/5] E02_12.parquet (class E02): 366,286 rows -> 6,105 windows (gun-normalised)
+[test 2/5] E02_17.parquet (class E02): 392,589 rows -> 6,544 windows (gun-normalised)
+[test 3/5] E03_13.parquet (class E03): 605,286 rows -> 10,088 windows (gun-normalised)
+[test 4/5] E03_2.parquet (class E03): 605,162 rows -> 10,086 windows (gun-normalised)
+[test 5/5] E03_6.parquet (class E03): 604,421 rows -> 10,073 windows (gun-normalised)
+test: AUROC 0.697 (per gun mean 0.766, > 10 min before failure 0.650)  AUPRC 0.036  alarm@normal 0.010  recall@pre-failure 0.079  (42,896 windows, 1,834 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.069 sd 0.027; 5 files gun-normalised, 5 with a gun threshold)
+  E02: AUROC 0.675  recall 0.107  alarm@normal 0.031
+  E03: AUROC 0.710  recall 0.061  alarm@normal 0.002
+  operating point (lead >= 30 min, false runs <= 1/day): 0/5 files (lead ok 0, false runs ok 4); final run in 2 files (median lead 9.5 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 5/5 files hit, median lead 9.4 min; false triggers 0.19/day/file (4 files with any, 5 files <= 1/day); 0 repeats not critical (0 in the pre-failure window), 0.19/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\seeds\s44\eval\a87c2b97dcbc.json.tmp
+[piece] score v003 seed 44 on 5 files: 9s
+--- training v004 on 45 files (seed 42)
+train files 34, val files 11
+[1/45] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/45] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/45] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/45] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[5/45] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[6/45] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/45] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[8/45] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[9/45] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[10/45] E02_10.parquet: 584,004 rows -> 9,748 windows (gun-normalised)
+[11/45] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[12/45] E02_12.parquet: 366,286 rows -> 6,105 windows (gun-normalised)
+[13/45] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[14/45] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[15/45] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[16/45] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[17/45] E02_17.parquet: 392,589 rows -> 6,544 windows (gun-normalised)
+[18/45] E02_9.parquet: 544,610 rows -> 9,098 windows (gun-normalised)
+[19/45] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[20/45] E03_11.parquet: 603,571 rows -> 10,060 windows (gun-normalised)
+[21/45] E03_12.parquet: 603,563 rows -> 10,060 windows (gun-normalised)
+[22/45] E03_13.parquet: 605,286 rows -> 10,088 windows (gun-normalised)
+[23/45] E03_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[24/45] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[25/45] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[26/45] E03_2.parquet: 605,162 rows -> 10,086 windows (gun-normalised)
+[27/45] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[28/45] E03_6.parquet: 604,421 rows -> 10,073 windows (gun-normalised)
+[29/45] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[30/45] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[31/45] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[32/45] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[33/45] E04_10.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[34/45] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[35/45] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[36/45] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[37/45] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[38/45] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[39/45] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[40/45] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[41/45] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[42/45] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[43/45] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[44/45] E04_8.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[45/45] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 59s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+cv fold 1/4: AUROC 0.773  recall 0.147  alarm@normal 0.018  (12 guns)
+cv fold 2/4: AUROC 0.740  recall 0.057  alarm@normal 0.009  (12 guns)
+cv fold 3/4: AUROC 0.829  recall 0.095  alarm@normal 0.011  (11 guns)
+cv fold 4/4: AUROC 0.793  recall 0.099  alarm@normal 0.008  (10 guns)
+cv 4-fold: AUROC 0.784 +- 0.032 (per gun 0.788 +- 0.039)  recall 0.099 +- 0.032  alarm@normal 0.011 +- 0.004  operating point 0/45 guns
+fitting ensemble on the normal windows of 34 files x 46 features
+fitted on 279,936 normal windows, threshold 0.9385
+early warning: model_ng_k1 threshold 0.9392440319061279 (cv4_out_of_fold), val exceed rate 0.02254881278859902
+val: AUROC 0.770 (per gun mean 0.746, > 10 min before failure 0.724)  AUPRC 0.051  alarm@normal 0.009  recall@pre-failure 0.049  (107,293 windows, 1,123 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.024 sd 0.008; 11 files gun-normalised, 11 with a gun threshold)
+  E01: AUROC 0.705  recall 0.131  alarm@normal 0.015
+  E02: AUROC 0.658  recall 0.008  alarm@normal 0.003
+  E03: AUROC 0.721  recall 0.041  alarm@normal 0.009
+  E04: AUROC 0.866  recall 0.033  alarm@normal 0.009
+  operating point (lead >= 30 min, false runs <= 1/day): 0/11 files (lead ok 0, false runs ok 11); final run in 1 files (median lead 9.0 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 11/11 files hit, median lead 9.5 min; false triggers 0.07/day/file (4 files with any, 11 files <= 1/day); 1 repeats not critical (1 in the pre-failure window), 0.07/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\baseline_ensemble.joblib (4.0 MB) in 341s
+[piece] train v004 seed 42 on 45 files: 345s
+[stop] training v004 seed 43 (about 141s) is left for the next call (486s used)
+=== 2026-11-12T06:08:42Z budget_replay 540
+--- v004: already trained on these files, kept
+[piece] train v004 seed 42 on 45 files: 0s
+--- v004: already trained on these files, kept
+--- training v004\seeds\s43 on 45 files (seed 43)
+train files 34, val files 11
+[1/45] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/45] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/45] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/45] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[5/45] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[6/45] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/45] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[8/45] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[9/45] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[10/45] E02_10.parquet: 584,004 rows -> 9,748 windows (gun-normalised)
+[11/45] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[12/45] E02_12.parquet: 366,286 rows -> 6,105 windows (gun-normalised)
+[13/45] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[14/45] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[15/45] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[16/45] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[17/45] E02_17.parquet: 392,589 rows -> 6,544 windows (gun-normalised)
+[18/45] E02_9.parquet: 544,610 rows -> 9,098 windows (gun-normalised)
+[19/45] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[20/45] E03_11.parquet: 603,571 rows -> 10,060 windows (gun-normalised)
+[21/45] E03_12.parquet: 603,563 rows -> 10,060 windows (gun-normalised)
+[22/45] E03_13.parquet: 605,286 rows -> 10,088 windows (gun-normalised)
+[23/45] E03_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[24/45] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[25/45] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[26/45] E03_2.parquet: 605,162 rows -> 10,086 windows (gun-normalised)
+[27/45] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[28/45] E03_6.parquet: 604,421 rows -> 10,073 windows (gun-normalised)
+[29/45] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[30/45] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[31/45] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[32/45] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[33/45] E04_10.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[34/45] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[35/45] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[36/45] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[37/45] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[38/45] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[39/45] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[40/45] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[41/45] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[42/45] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[43/45] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[44/45] E04_8.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[45/45] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 55s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+fitting ensemble on the normal windows of 34 files x 46 features
+fitted on 278,229 normal windows, threshold 0.9279
+val: AUROC 0.729 (per gun mean 0.730, > 10 min before failure 0.677)  AUPRC 0.095  alarm@normal 0.008  recall@pre-failure 0.100  (101,859 windows, 2,182 alarms held by the non-welding gate; per-file alarm@normal 0.001..0.022 sd 0.006; 11 files gun-normalised, 11 with a gun threshold)
+  E01: AUROC 0.775  recall 0.197  alarm@normal 0.009
+  E02: AUROC 0.720  recall 0.101  alarm@normal 0.003
+  E03: AUROC 0.872  recall 0.028  alarm@normal 0.002
+  E04: AUROC 0.587  recall 0.104  alarm@normal 0.012
+  operating point (lead >= 30 min, false runs <= 1/day): 0/11 files (lead ok 0, false runs ok 10); final run in 4 files (median lead 9.9 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 11/11 files hit, median lead 9.5 min; false triggers 0.04/day/file (3 files with any, 11 files <= 1/day); 2 repeats not critical (0 in the pre-failure window), 0.07/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\seeds\s43\baseline_ensemble.joblib (4.1 MB) in 105s
+[piece] train v004 seed 43 on 45 files: 109s
+--- v004: already trained on these files, kept
+--- v004\seeds\s43: already trained on these files, kept
+--- training v004\seeds\s44 on 45 files (seed 44)
+train files 34, val files 11
+[1/45] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/45] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/45] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/45] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[5/45] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[6/45] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/45] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[8/45] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[9/45] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[10/45] E02_10.parquet: 584,004 rows -> 9,748 windows (gun-normalised)
+[11/45] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[12/45] E02_12.parquet: 366,286 rows -> 6,105 windows (gun-normalised)
+[13/45] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[14/45] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[15/45] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[16/45] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[17/45] E02_17.parquet: 392,589 rows -> 6,544 windows (gun-normalised)
+[18/45] E02_9.parquet: 544,610 rows -> 9,098 windows (gun-normalised)
+[19/45] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[20/45] E03_11.parquet: 603,571 rows -> 10,060 windows (gun-normalised)
+[21/45] E03_12.parquet: 603,563 rows -> 10,060 windows (gun-normalised)
+[22/45] E03_13.parquet: 605,286 rows -> 10,088 windows (gun-normalised)
+[23/45] E03_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[24/45] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[25/45] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[26/45] E03_2.parquet: 605,162 rows -> 10,086 windows (gun-normalised)
+[27/45] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[28/45] E03_6.parquet: 604,421 rows -> 10,073 windows (gun-normalised)
+[29/45] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[30/45] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[31/45] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[32/45] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[33/45] E04_10.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[34/45] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[35/45] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[36/45] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[37/45] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[38/45] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[39/45] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[40/45] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[41/45] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[42/45] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[43/45] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[44/45] E04_8.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[45/45] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 56s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+fitting ensemble on the normal windows of 34 files x 46 features
+fitted on 279,788 normal windows, threshold 0.9498
+val: AUROC 0.765 (per gun mean 0.766, > 10 min before failure 0.726)  AUPRC 0.060  alarm@normal 0.008  recall@pre-failure 0.126  (106,986 windows, 1,065 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.041 sd 0.011; 11 files gun-normalised, 11 with a gun threshold)
+  E01: AUROC 0.894  recall 0.016  alarm@normal 0.009
+  E02: AUROC 0.815  recall 0.430  alarm@normal 0.024
+  E03: AUROC 0.498  recall 0.030  alarm@normal 0.006
+  E04: AUROC 0.882  recall 0.095  alarm@normal 0.004
+  operating point (lead >= 30 min, false runs <= 1/day): 0/11 files (lead ok 0, false runs ok 10); final run in 3 files (median lead 8.9 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 11/11 files hit, median lead 9.4 min; false triggers 0.11/day/file (5 files with any, 11 files <= 1/day); 3 repeats not critical (0 in the pre-failure window), 0.15/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\seeds\s44\baseline_ensemble.joblib (4.0 MB) in 111s
+[piece] train v004 seed 44 on 45 files: 115s
+2021-10-04T00:00:00  train:v004
+2021-10-11T00:00:00  defer:3
+--- scoring v001 on 15 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v001\baseline_ensemble.joblib (window 60s, threshold 0.9542, sustain 3) on 15 listed files
+[test 1/15] E01_1.parquet (class E01): 602,652 rows -> 10,044 windows (gun-normalised)
+[test 2/15] E01_11.parquet (class E01): 604,486 rows -> 10,075 windows (gun-normalised)
+[test 3/15] E01_12.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 4/15] E01_14.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 5/15] E01_15.parquet (class E01): 605,318 rows -> 10,089 windows (gun-normalised)
+[test 6/15] E01_17.parquet (class E01): 604,482 rows -> 10,075 windows (gun-normalised)
+[test 7/15] E01_3.parquet (class E01): 601,226 rows -> 10,020 windows
+[test 8/15] E01_4.parquet (class E01): 603,549 rows -> 10,058 windows (gun-normalised)
+[test 9/15] E01_6.parquet (class E01): 600,849 rows -> 10,014 windows (gun-normalised)
+[test 10/15] E01_7.parquet (class E01): 603,594 rows -> 10,060 windows (gun-normalised)
+[test 11/15] E03_10.parquet (class E03): 601,226 rows -> 10,020 windows
+[test 12/15] E03_5.parquet (class E03): 601,771 rows -> 10,030 windows (gun-normalised)
+[test 13/15] E03_9.parquet (class E03): 603,569 rows -> 10,060 windows (gun-normalised)
+[test 14/15] E04_13.parquet (class E04): 605,291 rows -> 10,088 windows (gun-normalised)
+[test 15/15] E04_5.parquet (class E04): 594,818 rows -> 9,913 windows (gun-normalised)
+test: AUROC 0.638 (per gun mean 0.672, > 10 min before failure 0.581)  AUPRC 0.044  alarm@normal 0.012  recall@pre-failure 0.048  (150,726 windows, 1,667 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.053 sd 0.015; 13 files gun-normalised, 13 with a gun threshold)
+  E01: AUROC 0.671  recall 0.049  alarm@normal 0.009
+  E03: AUROC 0.613  recall 0.066  alarm@normal 0.029
+  E04: AUROC 0.569  recall 0.016  alarm@normal 0.004
+  operating point (lead >= 30 min, false runs <= 1/day): 0/15 files (lead ok 0, false runs ok 10); final run in 2 files (median lead 5.9 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 15/15 files hit, median lead 9.7 min; false triggers 0.11/day/file (5 files with any, 15 files <= 1/day); 5 repeats not critical (0 in the pre-failure window), 0.16/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v001\eval\35c7a88c38b2.json.tmp
+[piece] score v001 seed None on 15 files: 30s
+--- scoring v004 on 15 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\baseline_ensemble.joblib (window 60s, threshold 0.9385, sustain 3) on 15 listed files
+[test 1/15] E01_1.parquet (class E01): 602,652 rows -> 10,044 windows (gun-normalised)
+[test 2/15] E01_11.parquet (class E01): 604,486 rows -> 10,075 windows (gun-normalised)
+[test 3/15] E01_12.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 4/15] E01_14.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 5/15] E01_15.parquet (class E01): 605,318 rows -> 10,089 windows (gun-normalised)
+[test 6/15] E01_17.parquet (class E01): 604,482 rows -> 10,075 windows (gun-normalised)
+[test 7/15] E01_3.parquet (class E01): 601,226 rows -> 10,020 windows
+[test 8/15] E01_4.parquet (class E01): 603,549 rows -> 10,058 windows (gun-normalised)
+[test 9/15] E01_6.parquet (class E01): 600,849 rows -> 10,014 windows (gun-normalised)
+[test 10/15] E01_7.parquet (class E01): 603,594 rows -> 10,060 windows (gun-normalised)
+[test 11/15] E03_10.parquet (class E03): 601,226 rows -> 10,020 windows
+[test 12/15] E03_5.parquet (class E03): 601,771 rows -> 10,030 windows (gun-normalised)
+[test 13/15] E03_9.parquet (class E03): 603,569 rows -> 10,060 windows (gun-normalised)
+[test 14/15] E04_13.parquet (class E04): 605,291 rows -> 10,088 windows (gun-normalised)
+[test 15/15] E04_5.parquet (class E04): 594,818 rows -> 9,913 windows (gun-normalised)
+test: AUROC 0.627 (per gun mean 0.626, > 10 min before failure 0.548)  AUPRC 0.062  alarm@normal 0.005  recall@pre-failure 0.068  (150,726 windows, 1,308 alarms held by the non-welding gate; per-file alarm@normal 0.001..0.015 sd 0.003; 13 files gun-normalised, 13 with a gun threshold)
+  E01: AUROC 0.663  recall 0.061  alarm@normal 0.004
+  E03: AUROC 0.634  recall 0.093  alarm@normal 0.003
+  E04: AUROC 0.444  recall 0.066  alarm@normal 0.009
+  operating point (lead >= 30 min, false runs <= 1/day): 0/15 files (lead ok 0, false runs ok 13); final run in 6 files (median lead 8.0 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 15/15 files hit, median lead 9.7 min; false triggers 0.11/day/file (5 files with any, 15 files <= 1/day); 5 repeats not critical (0 in the pre-failure window), 0.16/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\eval\35c7a88c38b2.json.tmp
+[piece] score v004 seed None on 15 files: 30s
+--- scoring v004\seeds\s43 on 15 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\seeds\s43\baseline_ensemble.joblib (window 60s, threshold 0.9279, sustain 3) on 15 listed files
+[test 1/15] E01_1.parquet (class E01): 602,652 rows -> 10,044 windows (gun-normalised)
+[test 2/15] E01_11.parquet (class E01): 604,486 rows -> 10,075 windows (gun-normalised)
+[test 3/15] E01_12.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 4/15] E01_14.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 5/15] E01_15.parquet (class E01): 605,318 rows -> 10,089 windows (gun-normalised)
+[test 6/15] E01_17.parquet (class E01): 604,482 rows -> 10,075 windows (gun-normalised)
+[test 7/15] E01_3.parquet (class E01): 601,226 rows -> 10,020 windows
+[test 8/15] E01_4.parquet (class E01): 603,549 rows -> 10,058 windows (gun-normalised)
+[test 9/15] E01_6.parquet (class E01): 600,849 rows -> 10,014 windows (gun-normalised)
+[test 10/15] E01_7.parquet (class E01): 603,594 rows -> 10,060 windows (gun-normalised)
+[test 11/15] E03_10.parquet (class E03): 601,226 rows -> 10,020 windows
+[test 12/15] E03_5.parquet (class E03): 601,771 rows -> 10,030 windows (gun-normalised)
+[test 13/15] E03_9.parquet (class E03): 603,569 rows -> 10,060 windows (gun-normalised)
+[test 14/15] E04_13.parquet (class E04): 605,291 rows -> 10,088 windows (gun-normalised)
+[test 15/15] E04_5.parquet (class E04): 594,818 rows -> 9,913 windows (gun-normalised)
+test: AUROC 0.652 (per gun mean 0.657, > 10 min before failure 0.582)  AUPRC 0.053  alarm@normal 0.015  recall@pre-failure 0.062  (150,726 windows, 4,873 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.054 sd 0.015; 13 files gun-normalised, 13 with a gun threshold)
+  E01: AUROC 0.651  recall 0.059  alarm@normal 0.017
+  E03: AUROC 0.682  recall 0.071  alarm@normal 0.012
+  E04: AUROC 0.632  recall 0.066  alarm@normal 0.010
+  operating point (lead >= 30 min, false runs <= 1/day): 0/15 files (lead ok 0, false runs ok 12); final run in 4 files (median lead 8.0 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 15/15 files hit, median lead 9.7 min; false triggers 0.11/day/file (5 files with any, 15 files <= 1/day); 5 repeats not critical (0 in the pre-failure window), 0.16/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\seeds\s43\eval\35c7a88c38b2.json.tmp
+[piece] score v004 seed 43 on 15 files: 28s
+--- scoring v004\seeds\s44 on 15 shadow files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\seeds\s44\baseline_ensemble.joblib (window 60s, threshold 0.9498, sustain 3) on 15 listed files
+[test 1/15] E01_1.parquet (class E01): 602,652 rows -> 10,044 windows (gun-normalised)
+[test 2/15] E01_11.parquet (class E01): 604,486 rows -> 10,075 windows (gun-normalised)
+[test 3/15] E01_12.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 4/15] E01_14.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 5/15] E01_15.parquet (class E01): 605,318 rows -> 10,089 windows (gun-normalised)
+[test 6/15] E01_17.parquet (class E01): 604,482 rows -> 10,075 windows (gun-normalised)
+[test 7/15] E01_3.parquet (class E01): 601,226 rows -> 10,020 windows
+[test 8/15] E01_4.parquet (class E01): 603,549 rows -> 10,058 windows (gun-normalised)
+[test 9/15] E01_6.parquet (class E01): 600,849 rows -> 10,014 windows (gun-normalised)
+[test 10/15] E01_7.parquet (class E01): 603,594 rows -> 10,060 windows (gun-normalised)
+[test 11/15] E03_10.parquet (class E03): 601,226 rows -> 10,020 windows
+[test 12/15] E03_5.parquet (class E03): 601,771 rows -> 10,030 windows (gun-normalised)
+[test 13/15] E03_9.parquet (class E03): 603,569 rows -> 10,060 windows (gun-normalised)
+[test 14/15] E04_13.parquet (class E04): 605,291 rows -> 10,088 windows (gun-normalised)
+[test 15/15] E04_5.parquet (class E04): 594,818 rows -> 9,913 windows (gun-normalised)
+test: AUROC 0.643 (per gun mean 0.656, > 10 min before failure 0.573)  AUPRC 0.050  alarm@normal 0.012  recall@pre-failure 0.069  (150,726 windows, 772 alarms held by the non-welding gate; per-file alarm@normal 0.001..0.066 sd 0.016; 13 files gun-normalised, 13 with a gun threshold)
+  E01: AUROC 0.632  recall 0.071  alarm@normal 0.014
+  E03: AUROC 0.728  recall 0.066  alarm@normal 0.006
+  E04: AUROC 0.598  recall 0.066  alarm@normal 0.007
+  operating point (lead >= 30 min, false runs <= 1/day): 0/15 files (lead ok 0, false runs ok 11); final run in 4 files (median lead 8.0 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 15/15 files hit, median lead 9.7 min; false triggers 0.11/day/file (5 files with any, 15 files <= 1/day); 5 repeats not critical (0 in the pre-failure window), 0.16/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\seeds\s44\eval\35c7a88c38b2.json.tmp
+[piece] score v004 seed 44 on 15 files: 26s
+[stop] training v005 seed 42 (about 507s) is left for the next call (338s used)
+=== 2026-11-12T06:14:31Z budget_replay 560
+--- training v005 on 60 files (seed 42)
+train files 46, val files 14
+[1/60] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/60] E01_1.parquet: 602,652 rows -> 10,044 windows (gun-normalised)
+[3/60] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[4/60] E01_11.parquet: 604,486 rows -> 10,075 windows (gun-normalised)
+[5/60] E01_12.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[6/60] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/60] E01_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[8/60] E01_15.parquet: 605,318 rows -> 10,089 windows (gun-normalised)
+[9/60] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[10/60] E01_17.parquet: 604,482 rows -> 10,075 windows (gun-normalised)
+[11/60] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[12/60] E01_3.parquet: 601,226 rows -> 10,020 windows
+[13/60] E01_4.parquet: 603,549 rows -> 10,058 windows (gun-normalised)
+[14/60] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[15/60] E01_6.parquet: 600,849 rows -> 10,014 windows (gun-normalised)
+[16/60] E01_7.parquet: 603,594 rows -> 10,060 windows (gun-normalised)
+[17/60] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[18/60] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[19/60] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[20/60] E02_10.parquet: 584,004 rows -> 9,748 windows (gun-normalised)
+[21/60] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[22/60] E02_12.parquet: 366,286 rows -> 6,105 windows (gun-normalised)
+[23/60] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[24/60] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[25/60] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[26/60] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[27/60] E02_17.parquet: 392,589 rows -> 6,544 windows (gun-normalised)
+[28/60] E02_9.parquet: 544,610 rows -> 9,098 windows (gun-normalised)
+[29/60] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[30/60] E03_10.parquet: 601,226 rows -> 10,020 windows
+[31/60] E03_11.parquet: 603,571 rows -> 10,060 windows (gun-normalised)
+[32/60] E03_12.parquet: 603,563 rows -> 10,060 windows (gun-normalised)
+[33/60] E03_13.parquet: 605,286 rows -> 10,088 windows (gun-normalised)
+[34/60] E03_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[35/60] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[36/60] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[37/60] E03_2.parquet: 605,162 rows -> 10,086 windows (gun-normalised)
+[38/60] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[39/60] E03_5.parquet: 601,771 rows -> 10,030 windows (gun-normalised)
+[40/60] E03_6.parquet: 604,421 rows -> 10,073 windows (gun-normalised)
+[41/60] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[42/60] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[43/60] E03_9.parquet: 603,569 rows -> 10,060 windows (gun-normalised)
+[44/60] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[45/60] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[46/60] E04_10.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[47/60] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[48/60] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[49/60] E04_13.parquet: 605,291 rows -> 10,088 windows (gun-normalised)
+[50/60] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[51/60] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[52/60] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[53/60] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[54/60] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[55/60] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[56/60] E04_5.parquet: 594,818 rows -> 9,913 windows (gun-normalised)
+[57/60] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[58/60] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[59/60] E04_8.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[60/60] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 76s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+cv fold 1/4: AUROC 0.792  recall 0.065  alarm@normal 0.005  (17 guns)
+cv fold 2/4: AUROC 0.644  recall 0.066  alarm@normal 0.005  (16 guns)
+cv fold 3/4: AUROC 0.685  recall 0.021  alarm@normal 0.007  (14 guns)
+cv fold 4/4: AUROC 0.722  recall 0.075  alarm@normal 0.012  (13 guns)
+cv 4-fold: AUROC 0.711 +- 0.055 (per gun 0.722 +- 0.056)  recall 0.057 +- 0.021  alarm@normal 0.007 +- 0.003  operating point 0/60 guns
+fitting ensemble on the normal windows of 46 files x 46 features
+fitted on 382,055 normal windows, threshold 0.9576
+early warning: model_ng_k1 threshold 0.9325205087661743 (cv4_out_of_fold), val exceed rate 0.02104821728113066
+val: AUROC 0.788 (per gun mean 0.803, > 10 min before failure 0.746)  AUPRC 0.103  alarm@normal 0.003  recall@pre-failure 0.076  (139,072 windows, 399 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.010 sd 0.003; 14 files gun-normalised, 14 with a gun threshold)
+  E01: AUROC 0.848  recall 0.111  alarm@normal 0.002
+  E02: AUROC 0.691  recall 0.176  alarm@normal 0.003
+  E03: AUROC 0.844  recall 0.022  alarm@normal 0.004
+  E04: AUROC 0.740  recall 0.050  alarm@normal 0.002
+  operating point (lead >= 30 min, false runs <= 1/day): 0/14 files (lead ok 0, false runs ok 14); final run in 5 files (median lead 9.8 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 14/14 files hit, median lead 9.7 min; false triggers 0.06/day/file (4 files with any, 14 files <= 1/day); 3 repeats not critical (0 in the pre-failure window), 0.09/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v005\baseline_ensemble.joblib (4.5 MB) in 422s
+[piece] train v005 seed 42 on 60 files: 428s
+[stop] training v005 seed 43 (about 183s) is left for the next call (428s used)
+=== 2026-11-12T06:21:47Z budget_replay 540
+--- v005: already trained on these files, kept
+[piece] train v005 seed 42 on 60 files: 0s
+--- v005: already trained on these files, kept
+--- training v005\seeds\s43 on 60 files (seed 43)
+train files 46, val files 14
+[1/60] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/60] E01_1.parquet: 602,652 rows -> 10,044 windows (gun-normalised)
+[3/60] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[4/60] E01_11.parquet: 604,486 rows -> 10,075 windows (gun-normalised)
+[5/60] E01_12.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[6/60] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/60] E01_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[8/60] E01_15.parquet: 605,318 rows -> 10,089 windows (gun-normalised)
+[9/60] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[10/60] E01_17.parquet: 604,482 rows -> 10,075 windows (gun-normalised)
+[11/60] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[12/60] E01_3.parquet: 601,226 rows -> 10,020 windows
+[13/60] E01_4.parquet: 603,549 rows -> 10,058 windows (gun-normalised)
+[14/60] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[15/60] E01_6.parquet: 600,849 rows -> 10,014 windows (gun-normalised)
+[16/60] E01_7.parquet: 603,594 rows -> 10,060 windows (gun-normalised)
+[17/60] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[18/60] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[19/60] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[20/60] E02_10.parquet: 584,004 rows -> 9,748 windows (gun-normalised)
+[21/60] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[22/60] E02_12.parquet: 366,286 rows -> 6,105 windows (gun-normalised)
+[23/60] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[24/60] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[25/60] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[26/60] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[27/60] E02_17.parquet: 392,589 rows -> 6,544 windows (gun-normalised)
+[28/60] E02_9.parquet: 544,610 rows -> 9,098 windows (gun-normalised)
+[29/60] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[30/60] E03_10.parquet: 601,226 rows -> 10,020 windows
+[31/60] E03_11.parquet: 603,571 rows -> 10,060 windows (gun-normalised)
+[32/60] E03_12.parquet: 603,563 rows -> 10,060 windows (gun-normalised)
+[33/60] E03_13.parquet: 605,286 rows -> 10,088 windows (gun-normalised)
+[34/60] E03_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[35/60] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[36/60] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[37/60] E03_2.parquet: 605,162 rows -> 10,086 windows (gun-normalised)
+[38/60] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[39/60] E03_5.parquet: 601,771 rows -> 10,030 windows (gun-normalised)
+[40/60] E03_6.parquet: 604,421 rows -> 10,073 windows (gun-normalised)
+[41/60] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[42/60] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[43/60] E03_9.parquet: 603,569 rows -> 10,060 windows (gun-normalised)
+[44/60] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[45/60] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[46/60] E04_10.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[47/60] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[48/60] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[49/60] E04_13.parquet: 605,291 rows -> 10,088 windows (gun-normalised)
+[50/60] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[51/60] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[52/60] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[53/60] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[54/60] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[55/60] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[56/60] E04_5.parquet: 594,818 rows -> 9,913 windows (gun-normalised)
+[57/60] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[58/60] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[59/60] E04_8.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[60/60] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 77s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+fitting ensemble on the normal windows of 46 files x 46 features
+fitted on 385,857 normal windows, threshold 0.9488
+val: AUROC 0.681 (per gun mean 0.695, > 10 min before failure 0.619)  AUPRC 0.077  alarm@normal 0.006  recall@pre-failure 0.098  (139,854 windows, 1,897 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.016 sd 0.005; 13 files gun-normalised, 13 with a gun threshold)
+  E01: AUROC 0.774  recall 0.095  alarm@normal 0.009
+  E02: AUROC 0.789  recall 0.167  alarm@normal 0.008
+  E03: AUROC 0.623  recall 0.066  alarm@normal 0.002
+  E04: AUROC 0.603  recall 0.099  alarm@normal 0.007
+  operating point (lead >= 30 min, false runs <= 1/day): 0/14 files (lead ok 0, false runs ok 14); final run in 6 files (median lead 8.0 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 14/14 files hit, median lead 9.5 min; false triggers 0.10/day/file (5 files with any, 14 files <= 1/day); 4 repeats not critical (1 in the pre-failure window), 0.13/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v005\seeds\s43\baseline_ensemble.joblib (4.5 MB) in 146s
+[piece] train v005 seed 43 on 60 files: 151s
+--- v005: already trained on these files, kept
+--- v005\seeds\s43: already trained on these files, kept
+--- training v005\seeds\s44 on 60 files (seed 44)
+train files 46, val files 14
+[1/60] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/60] E01_1.parquet: 602,652 rows -> 10,044 windows (gun-normalised)
+[3/60] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[4/60] E01_11.parquet: 604,486 rows -> 10,075 windows (gun-normalised)
+[5/60] E01_12.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[6/60] E01_13.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[7/60] E01_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[8/60] E01_15.parquet: 605,318 rows -> 10,089 windows (gun-normalised)
+[9/60] E01_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[10/60] E01_17.parquet: 604,482 rows -> 10,075 windows (gun-normalised)
+[11/60] E01_2.parquet: 601,707 rows -> 10,029 windows (gun-normalised)
+[12/60] E01_3.parquet: 601,226 rows -> 10,020 windows
+[13/60] E01_4.parquet: 603,549 rows -> 10,058 windows (gun-normalised)
+[14/60] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[15/60] E01_6.parquet: 600,849 rows -> 10,014 windows (gun-normalised)
+[16/60] E01_7.parquet: 603,594 rows -> 10,060 windows (gun-normalised)
+[17/60] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[18/60] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[19/60] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[20/60] E02_10.parquet: 584,004 rows -> 9,748 windows (gun-normalised)
+[21/60] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[22/60] E02_12.parquet: 366,286 rows -> 6,105 windows (gun-normalised)
+[23/60] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[24/60] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[25/60] E02_15.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[26/60] E02_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[27/60] E02_17.parquet: 392,589 rows -> 6,544 windows (gun-normalised)
+[28/60] E02_9.parquet: 544,610 rows -> 9,098 windows (gun-normalised)
+[29/60] E03_1.parquet: 603,548 rows -> 10,060 windows (gun-normalised)
+[30/60] E03_10.parquet: 601,226 rows -> 10,020 windows
+[31/60] E03_11.parquet: 603,571 rows -> 10,060 windows (gun-normalised)
+[32/60] E03_12.parquet: 603,563 rows -> 10,060 windows (gun-normalised)
+[33/60] E03_13.parquet: 605,286 rows -> 10,088 windows (gun-normalised)
+[34/60] E03_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[35/60] E03_16.parquet: 604,474 rows -> 10,075 windows (gun-normalised)
+[36/60] E03_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[37/60] E03_2.parquet: 605,162 rows -> 10,086 windows (gun-normalised)
+[38/60] E03_3.parquet: 603,163 rows -> 10,052 windows (gun-normalised)
+[39/60] E03_5.parquet: 601,771 rows -> 10,030 windows (gun-normalised)
+[40/60] E03_6.parquet: 604,421 rows -> 10,073 windows (gun-normalised)
+[41/60] E03_7.parquet: 601,703 rows -> 10,029 windows (gun-normalised)
+[42/60] E03_8.parquet: 605,338 rows -> 10,089 windows (gun-normalised)
+[43/60] E03_9.parquet: 603,569 rows -> 10,060 windows (gun-normalised)
+[44/60] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[45/60] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[46/60] E04_10.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[47/60] E04_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[48/60] E04_12.parquet: 605,335 rows -> 10,089 windows (gun-normalised)
+[49/60] E04_13.parquet: 605,291 rows -> 10,088 windows (gun-normalised)
+[50/60] E04_14.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[51/60] E04_15.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[52/60] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[53/60] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[54/60] E04_2.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[55/60] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[56/60] E04_5.parquet: 594,818 rows -> 9,913 windows (gun-normalised)
+[57/60] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[58/60] E04_7.parquet: 604,493 rows -> 10,075 windows (gun-normalised)
+[59/60] E04_8.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[60/60] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 80s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+fitting ensemble on the normal windows of 46 files x 46 features
+fitted on 385,461 normal windows, threshold 0.9382
+val: AUROC 0.723 (per gun mean 0.726, > 10 min before failure 0.667)  AUPRC 0.093  alarm@normal 0.010  recall@pre-failure 0.086  (136,639 windows, 1,462 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.060 sd 0.015; 12 files gun-normalised, 12 with a gun threshold)
+  E01: AUROC 0.820  recall 0.111  alarm@normal 0.005
+  E02: AUROC 0.830  recall 0.091  alarm@normal 0.005
+  E03: AUROC 0.662  recall 0.070  alarm@normal 0.022
+  E04: AUROC 0.600  recall 0.075  alarm@normal 0.004
+  operating point (lead >= 30 min, false runs <= 1/day): 0/14 files (lead ok 0, false runs ok 12); final run in 6 files (median lead 9.3 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 14/14 files hit, median lead 9.7 min; false triggers 0.11/day/file (6 files with any, 14 files <= 1/day); 2 repeats not critical (0 in the pre-failure window), 0.13/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v005\seeds\s44\baseline_ensemble.joblib (4.5 MB) in 142s
+[piece] train v005 seed 44 on 60 files: 147s
+2021-10-18T00:00:00  train:v005
+2021-10-25T00:00:00  defer:3
+2021-11-01T00:00:00  defer:4
+[done] replay complete in 298s
+=== 2026-11-12T06:26:53Z replay --start 2021-08-16 (check)
+=== 2026-11-12T06:27:07Z report
+--- scoring v001 on the 8 test files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v001\baseline_ensemble.joblib (window 60s, threshold 0.9542, sustain 3) on 8 test files
+[test 1/8] test_0.parquet (class E01): 603,595 rows -> 10,060 windows (gun-normalised)
+[test 2/8] test_1.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 3/8] test_2.parquet (class E02): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 4/8] test_3.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 5/8] test_4.parquet (class E03): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 6/8] test_5.parquet (class E03): 597,837 rows -> 9,963 windows (gun-normalised)
+[test 7/8] test_6.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 8/8] test_7.parquet (class E04): 603,577 rows -> 10,060 windows (gun-normalised)
+test: AUROC 0.598 (per gun mean 0.625, > 10 min before failure 0.538)  AUPRC 0.016  alarm@normal 0.034  recall@pre-failure 0.124  (80,533 windows, 1,272 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.245 sd 0.080; 8 files gun-normalised, 8 with a gun threshold)
+  E01: AUROC 0.501  recall 0.017  alarm@normal 0.005
+  E02: AUROC 0.692  recall 0.100  alarm@normal 0.001
+  E03: AUROC 0.683  recall 0.358  alarm@normal 0.126
+  E04: AUROC 0.595  recall 0.050  alarm@normal 0.006
+  operating point (lead >= 30 min, false runs <= 1/day): 0/8 files (lead ok 0, false runs ok 7); final run in 1 files (median lead 9.6 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 8/8 files hit, median lead 9.2 min; false triggers 0.18/day/file (4 files with any, 8 files <= 1/day); 4 repeats not critical (0 in the pre-failure window), 0.25/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v001\test_metrics.json.tmp
+--- scoring v002 on the 8 test files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\baseline_ensemble.joblib (window 60s, threshold 0.9471, sustain 3) on 8 test files
+[test 1/8] test_0.parquet (class E01): 603,595 rows -> 10,060 windows (gun-normalised)
+[test 2/8] test_1.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 3/8] test_2.parquet (class E02): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 4/8] test_3.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 5/8] test_4.parquet (class E03): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 6/8] test_5.parquet (class E03): 597,837 rows -> 9,963 windows (gun-normalised)
+[test 7/8] test_6.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 8/8] test_7.parquet (class E04): 603,577 rows -> 10,060 windows (gun-normalised)
+test: AUROC 0.615 (per gun mean 0.660, > 10 min before failure 0.563)  AUPRC 0.050  alarm@normal 0.004  recall@pre-failure 0.077  (80,533 windows, 534 alarms held by the non-welding gate; per-file alarm@normal 0.001..0.011 sd 0.003; 8 files gun-normalised, 8 with a gun threshold)
+  E01: AUROC 0.535  recall 0.033  alarm@normal 0.007
+  E02: AUROC 0.719  recall 0.217  alarm@normal 0.001
+  E03: AUROC 0.793  recall 0.092  alarm@normal 0.002
+  E04: AUROC 0.574  recall 0.050  alarm@normal 0.005
+  operating point (lead >= 30 min, false runs <= 1/day): 0/8 files (lead ok 0, false runs ok 8); final run in 2 files (median lead 5.3 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 8/8 files hit, median lead 9.2 min; false triggers 0.18/day/file (4 files with any, 8 files <= 1/day); 4 repeats not critical (0 in the pre-failure window), 0.25/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v002\test_metrics.json.tmp
+--- scoring v003 on the 8 test files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\baseline_ensemble.joblib (window 60s, threshold 0.9324, sustain 3) on 8 test files
+[test 1/8] test_0.parquet (class E01): 603,595 rows -> 10,060 windows (gun-normalised)
+[test 2/8] test_1.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 3/8] test_2.parquet (class E02): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 4/8] test_3.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 5/8] test_4.parquet (class E03): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 6/8] test_5.parquet (class E03): 597,837 rows -> 9,963 windows (gun-normalised)
+[test 7/8] test_6.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 8/8] test_7.parquet (class E04): 603,577 rows -> 10,060 windows (gun-normalised)
+test: AUROC 0.628 (per gun mean 0.668, > 10 min before failure 0.582)  AUPRC 0.066  alarm@normal 0.005  recall@pre-failure 0.079  (80,533 windows, 661 alarms held by the non-welding gate; per-file alarm@normal 0.002..0.007 sd 0.002; 8 files gun-normalised, 8 with a gun threshold)
+  E01: AUROC 0.653  recall 0.025  alarm@normal 0.006
+  E02: AUROC 0.835  recall 0.250  alarm@normal 0.003
+  E03: AUROC 0.793  recall 0.083  alarm@normal 0.005
+  E04: AUROC 0.484  recall 0.055  alarm@normal 0.005
+  operating point (lead >= 30 min, false runs <= 1/day): 0/8 files (lead ok 0, false runs ok 8); final run in 1 files (median lead 9.6 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 8/8 files hit, median lead 9.2 min; false triggers 0.18/day/file (4 files with any, 8 files <= 1/day); 4 repeats not critical (0 in the pre-failure window), 0.25/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v003\test_metrics.json.tmp
+--- scoring v004 on the 8 test files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\baseline_ensemble.joblib (window 60s, threshold 0.9385, sustain 3) on 8 test files
+[test 1/8] test_0.parquet (class E01): 603,595 rows -> 10,060 windows (gun-normalised)
+[test 2/8] test_1.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 3/8] test_2.parquet (class E02): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 4/8] test_3.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 5/8] test_4.parquet (class E03): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 6/8] test_5.parquet (class E03): 597,837 rows -> 9,963 windows (gun-normalised)
+[test 7/8] test_6.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 8/8] test_7.parquet (class E04): 603,577 rows -> 10,060 windows (gun-normalised)
+test: AUROC 0.611 (per gun mean 0.642, > 10 min before failure 0.550)  AUPRC 0.079  alarm@normal 0.019  recall@pre-failure 0.145  (80,533 windows, 276 alarms held by the non-welding gate; per-file alarm@normal 0.001..0.106 sd 0.033; 8 files gun-normalised, 8 with a gun threshold)
+  E01: AUROC 0.589  recall 0.025  alarm@normal 0.006
+  E02: AUROC 0.822  recall 0.200  alarm@normal 0.001
+  E03: AUROC 0.811  recall 0.375  alarm@normal 0.057
+  E04: AUROC 0.473  recall 0.055  alarm@normal 0.008
+  operating point (lead >= 30 min, false runs <= 1/day): 0/8 files (lead ok 0, false runs ok 7); final run in 1 files (median lead 9.6 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 8/8 files hit, median lead 9.2 min; false triggers 0.18/day/file (4 files with any, 8 files <= 1/day); 4 repeats not critical (0 in the pre-failure window), 0.25/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v004\test_metrics.json.tmp
+--- scoring v005 on the 8 test files
+evaluating C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v005\baseline_ensemble.joblib (window 60s, threshold 0.9576, sustain 3) on 8 test files
+[test 1/8] test_0.parquet (class E01): 603,595 rows -> 10,060 windows (gun-normalised)
+[test 2/8] test_1.parquet (class E01): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 3/8] test_2.parquet (class E02): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 4/8] test_3.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 5/8] test_4.parquet (class E03): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 6/8] test_5.parquet (class E03): 597,837 rows -> 9,963 windows (gun-normalised)
+[test 7/8] test_6.parquet (class E04): 605,401 rows -> 10,090 windows (gun-normalised)
+[test 8/8] test_7.parquet (class E04): 603,577 rows -> 10,060 windows (gun-normalised)
+test: AUROC 0.630 (per gun mean 0.620, > 10 min before failure 0.571)  AUPRC 0.027  alarm@normal 0.001  recall@pre-failure 0.046  (80,533 windows, 378 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.004 sd 0.001; 8 files gun-normalised, 8 with a gun threshold)
+  E01: AUROC 0.478  recall 0.017  alarm@normal 0.002
+  E02: AUROC 0.908  recall 0.083  alarm@normal 0.000
+  E03: AUROC 0.858  recall 0.042  alarm@normal 0.001
+  E04: AUROC 0.460  recall 0.055  alarm@normal 0.002
+  operating point (lead >= 30 min, false runs <= 1/day): 0/8 files (lead ok 0, false runs ok 8); final run in 1 files (median lead 9.6 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 8/8 files hit, median lead 9.2 min; false triggers 0.18/day/file (4 files with any, 8 files <= 1/day); 4 repeats not critical (0 in the pre-failure window), 0.25/day counting them
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry\v005\test_metrics.json.tmp
+wrote results/D-11/runs/replay-1\report.md

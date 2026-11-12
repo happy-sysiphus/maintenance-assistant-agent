@@ -110,7 +110,3 @@ v1.4의 두 필드(`contributing_features`, `sensor_features`)에 필요한 일�
   - 테스트 8건 4.5건, 검증 14건 6.0건, 교차검증 64건 5.7건이다(`models/baseline_ensemble_metrics.json`, `metrics.*.early_warning.handoff_onsets_per_gun_day`).
   - 건 사이 차이가 크다. 테스트에서 7일 동안 test_5는 4건, test_1은 60건이었다.
 - 서버의 `GET /guns/{id}/stats`에 `early_warnings`(시작 수)와 `early_warning_handoffs`(보낸 수)가 날짜별로 쌓인다.
-
-## 6. HITL 리허설
-
-`docs/hitl-loop.md`의 ③ 표는 플래그를 끈 상태 기준이다. `.py/hitl_loop.py`는 조기 경보 핸드오프를 건너뛴다.
