@@ -157,7 +157,9 @@ def inspect(case, event_id=None):
     saved = {key: copy.deepcopy(value) for key, value in state.items() if key != "inspection"}
     previous = state.get("inspection")
     delivery = store.warning_delivery_for_case(case["case_id"])
-    status = delivery["status"] if delivery else "not_resolved"
+    status = "not_linked" if case["status"] == "resolved" else "not_resolved"
+    if delivery:
+        status = delivery["status"]
     enabled = feedback_enabled()
 
     if case["status"] in ("resolved", "false_alarm", "unresolved") and previous:

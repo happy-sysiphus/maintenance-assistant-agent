@@ -111,6 +111,7 @@ def test_repeat_keeps_whole_event_and_uses_selected_repeat(app, memory):
     assert store.get(cid)['repeats'][0]['handoff'] == repeat
     choose(app, cid, 'w2')
     assert app.post(path(cid, '/resolve'), json=close_body('w2')).status_code == 200
+    assert app.get('/api/history').json()['items'][0]['repeat_event_ids'] == ['w2']
     assert store.warning_delivery_for_case(cid) == {'event_id': 'w2', 'status': 'pending'}
     assert bridge.deliver_next()
     row = memory.resolution('w2')
@@ -169,9 +170,39 @@ def test_false_alarm_never_becomes_resolved_training_case(app):
     assert app.post(path(cid, '/candidates'), json={'event_id': 'w1'}).status_code == 409
 
 
-def test_old_close_cannot_bypass_evidence(app):
-    cid = ingest(app)
-    assert app.post(f'/api/cases/{cid}/close', json={'outcome': 'resolved'}).status_code == 409
+def test_legacy_warning_close_keeps_history_without_enqueuing_an_aura_resolution(app, memory, monkeypatch):
+    event = warning()
+    cid = ingest(app, event)
+    case_url = f'/api/cases/{cid}'
+    outcome = {'outcome': 'resolved'}
+    assert app.post(f'{case_url}/close', json=outcome).status_code == 409
+    assert app.put(f'{case_url}/log', json={'action': '이력 조치', 'approved': True}).status_code == 200
+    closed = app.post(f'{case_url}/close', json=outcome)
+    assert closed.status_code == 200
+    assert closed.json()['warning_resolution_status'] == 'not_linked'
+    assert store.warning_delivery_for_case(cid) is None
+
+    received = []
+    inspect = ew.EarlyWarningRag.inspect
+
+    def capture(self, handoff, **kwargs):
+        received.append(handoff)
+        return inspect(self, handoff, **kwargs)
+
+    monkeypatch.setattr(ew.EarlyWarningRag, 'inspect', capture)
+    monkeypatch.setattr(ew, '_claude', lambda *a, **k: pytest.fail('history GET called model'))
+    history = app.get('/api/history').json()['items']
+    assert history[0]['case_id'] == cid
+    assert history[0]['closure']['outcome'] == 'resolved'
+    assert not received
+
+    detail = app.get(case_url).json()
+    assert received == [event]
+    assert detail['warning_rag']['recording_status'] == 'not_linked'
+    assert detail['warning_resolution_status'] == 'not_linked'
+    assert detail['records'] == closed.json()['records'] == store.get(cid)['records']
+    assert not bridge.deliver_next()
+    assert memory.resolution('w1') is None
 
 
 def test_draft_restores_after_reload_and_validates_checks(app):

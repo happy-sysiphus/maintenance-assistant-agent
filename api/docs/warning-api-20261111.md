@@ -35,7 +35,8 @@ Aura의 집계 키는 대표 ML 경보 ID를 기준으로 만든 `warning:<대�
 
 | 메서드 | 주소 | 동작 |
 |---|---|---|
-| GET | `/api/cases/:id` | WARNING은 `warning_rag` 필드로 센서 소견 추가, CRITICAL은 기존 동작 |
+| GET | `/api/history` | 종료된 케이스와 반복 경보 ID 조회 |
+| GET | `/api/cases/:id` | 저장된 WARNING 핸드오프를 분석하고 `warning_rag` 반환 |
 | GET | `/api/cases/:id/warning?event_id=...` | 선택한 대표/반복 경보의 소견·저장 상태 조회 |
 | POST | `/api/cases/:id/warning/candidates` | RAG 원인 후보 요청·결과 보존 |
 | POST | `/api/cases/:id/warning/manual` | 센서 문맥+질문으로 매뉴얼 검색, 선택 가능한 근거 보존 |
@@ -43,8 +44,11 @@ Aura의 집계 키는 대표 ML 경보 ID를 기준으로 만든 `warning:<대�
 | POST | `/api/cases/:id/warning/reject` | 표시한 자동 카드의 거절 기록 |
 | PUT | `/api/cases/:id/warning/draft` | 작업자·실제 조치·선택 카드의 점검 결과 임시 저장 |
 | POST | `/api/cases/:id/warning/resolve` | 작업자 확인·일지 승인 후 케이스 종료와 Aura 전송 대기 등록 |
+| POST | `/api/cases/:id/close` | 오알람 종료 또는 기존 UI의 일지 승인 후 정비 종료 |
 | POST | `/api/warning/resolutions/:event_id/review` | 운영자: 수동 근거를 기존/새 검토 사례에 연결 |
 | POST | `/api/warning/resolutions/:event_id/acknowledge` | 운영자: 검토한 반례의 자동 표시 보류 해제 |
+
+정비이력의 개별 항목을 열면 `GET /api/cases/:id`로 조회합니다. RAG는 저장된 WARNING 핸드오프의 `contributing_features`와 `sensor_features`를 그대로 받습니다. 종료 당시 소견이 있는 건은 해당 기록을 표시합니다. 목록에서는 종료 내역만 조회하고, 새 후보 생성은 `POST /candidates`에서 요청합니다.
 
 후보·거절 요청:
 ```json
@@ -82,7 +86,7 @@ Aura의 집계 키는 대표 ML 경보 ID를 기준으로 만든 `warning:<대�
 
 수동 근거는 운영자가 검토하기 전까지 자동 추천에 사용하지 않는다. 검토 API는 `RAG_WARNING_REVIEW_TOKEN` 미설정이면 404, 설정 시 `X-Warning-Review-Token` 헤더가 필요하다. 토큰을 UI 환경변수에 넣지 않는다. 검토 본문은 기존 사례 연결이면 `{"existing_case_id":"manual:E012-C2"}`, 신규면 `title`, `equipment_scope`, 선택한 PDF 인용 안에 존재하는 `checks`/`actions` 발췌를 전달한다. 운영자 검토 화면은 이번 UI 범위에 포함하지 않는다.
 
-오알람은 기존 `/close`를 사용하며 RAG 해결 사례에 포함하지 않는다. WARNING의 해결 종료는 새 `/warning/resolve`를 사용한다. 기존 주소로 해결 종료하면 409로 새 경로를 안내한다. 기존 UI의 CRITICAL 종료 경로는 유지한다.
+오알람은 기존 `/close`에서 종료한다. 기존 UI에서 일지를 승인한 뒤 `/close`로 WARNING을 해결 종료하면 정비이력에 `not_linked`로 기록된다. 경보와 근거를 연결한 해결은 `/warning/resolve`에서 Aura 전송을 등록한다. `not_linked`는 정비일지 종료와 Aura 이력 연결 상태를 구분하는 값이다.
 
 ## 화면 동작
 

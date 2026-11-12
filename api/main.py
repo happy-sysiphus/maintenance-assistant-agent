@@ -387,8 +387,6 @@ def put_log(case_id: str, body: dict[str, Any]):
 @locked
 def close(case_id: str, body: dict[str, Any]):
     d = load_open(case_id)
-    if d['event'].get('event_type') == 'early_warning' and body['outcome'] == 'resolved':
-        raise HTTPException(409, 'use /warning/resolve to preserve the selected event and evidence')
     if body["outcome"] == "resolved" and not (d["records"].get("log") or {}).get("approved_at"):
         raise HTTPException(409, "log not approved")
     closure = {"outcome": body["outcome"], "at": now()}
@@ -399,6 +397,9 @@ def close(case_id: str, body: dict[str, Any]):
             if isinstance(v, str) and v.strip():
                 closure[k] = v
     d["records"]["closure"] = closure
+    if d['event'].get('event_type') == 'early_warning' and body['outcome'] == 'resolved':
+        # The legacy close request records an approved log without a verified warning selection.
+        d['warning_resolution_status'] = 'not_linked'
     d["status"] = body["outcome"]
     return save(d)
 
@@ -474,6 +475,7 @@ def history():
                 "cause": cause_name(d),
                 "action_kind": action.get("kind"),
                 "worker": action.get("worker"),
+                "repeat_event_ids": [r["event_id"] for r in d.get("repeats", [])],
             }
         )
     items.sort(key=lambda i: i["closure"]["at"], reverse=True)
