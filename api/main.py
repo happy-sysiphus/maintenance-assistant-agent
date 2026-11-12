@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import functools
 import os
 import threading
@@ -32,6 +33,8 @@ import assistant
 import field_memory
 import guidance
 from rag.documents import manuals, manual_path
+from rag.warning_catalog import validate_manual_selection
+from rag.warning_input import analyze_warning, timestamp
 import store
 import warning_bridge
 
@@ -60,8 +63,16 @@ def locked(fn):
 
 @asynccontextmanager
 async def lifespan(app):
-    yield
-    warning_bridge.shutdown()
+    stop = asyncio.Event()
+    worker = asyncio.create_task(warning_bridge.deliver_until_stopped(stop))
+    try:
+        yield
+    finally:
+        stop.set()
+        try:
+            await worker
+        finally:
+            warning_bridge.shutdown()
 
 
 app = FastAPI(title="RSW 정비 지원 api", lifespan=lifespan)
@@ -107,7 +118,7 @@ def score_trace(gun_id: str, detected_at: str) -> list[dict[str, Any]]:
 
 
 def ingest(handoff: dict[str, Any]) -> str:
-    """알림 하나를 케이스로. 같은 설비 · 같은 코드의 열린 케이스가 있으면 새 줄 대신 '반복'으로 묶는다."""
+    """알림을 케이스로 만든다. 같은 설비와 경보 그룹의 열린 케이스에 반복 경보를 붙인다."""
     # 반복을 붙이는 저장이 같은 케이스의 닫기 · 기록과 겹치지 않게 _WRITE_LOCK도 잡는다 (플래그와 상관없이)
     with _INGEST_LOCK if field_memory.enabled() else nullcontext(), _WRITE_LOCK:
         eid = handoff["event_id"]
@@ -127,7 +138,6 @@ def ingest(handoff: dict[str, Any]) -> str:
         d = {
             "case_id": store.next_id(),
             "status": "new",
-            # 조기 경보 핸드오프(event_type early_warning, ML RSW_EARLY_WARNING_HANDOFFS=1)는 주의, 나머지는 긴급
             "severity": "warning" if handoff.get("event_type") == "early_warning" else "critical",
             "assignee": None,
             "event": handoff,
@@ -189,7 +199,6 @@ def summary(d: dict[str, Any]) -> dict[str, Any]:
             "event_id": e["event_id"],
             "gun_id": e["gun_id"],
             "detected_at": e["detected_at"],
-            # v1.2까지의 핸드오프에는 event_type이 없다: 모두 critical
             "event_type": e.get("event_type") or "critical",
             "trigger": {k: e["trigger"].get(k) for k in ("source", "rule_code", "rule_trigger_time")},
             "fault_class": {"code": fc["code"], "name_ko": fc["name_ko"]} if fc else None,
@@ -264,10 +273,11 @@ def get_case(case_id: str):
         # Persist automatic cards as server-verified choices. Never overwrite concurrent records.
         with _WRITE_LOCK:
             latest = load(case_id)
-            if not store.warning_resolution_for_case(case_id) and result.get('status') != 'invalid_input':
-                warning_bridge.snapshot(latest, result['event_id'], result, 'inspection')
+            if latest['status'] not in CLOSED and result.get('status') != 'invalid_input':
+                result = warning_bridge.snapshot(latest, result['event_id'], result, 'inspection')
                 store.put(latest)
-        return {**latest, 'warning_rag': result}
+        return {**latest, 'warning_rag': result,
+                'warning_resolution_status': result.get('recording_status', 'not_resolved')}
     # R2로 순서를 정한 케이스에 판단 · 조치 · 결과가 있으면 카드를 다시 만들지 않는다 (원인 번호가 카드 위치라서)
     enriched = current if field_memory.order_pinned(current) else guidance.enrich(current)  # RAG 생성(수 초)은 잠금 밖에서
     with _WRITE_LOCK:
@@ -388,8 +398,7 @@ def close(case_id: str, body: dict[str, Any]):
                 closure[k] = v
     d["records"]["closure"] = closure
     if d['event'].get('event_type') == 'early_warning' and body['outcome'] == 'resolved':
-        # Existing UI posts /close. Save the human record without inventing a verified RAG selection.
-        # /warning/resolve remains available when the UI supplies event-specific verified evidence.
+        # The legacy close request records an approved log without a verified warning selection.
         d['warning_resolution_status'] = 'not_linked'
     d["status"] = body["outcome"]
     return save(d)
@@ -466,7 +475,6 @@ def history():
                 "cause": cause_name(d),
                 "action_kind": action.get("kind"),
                 "worker": action.get("worker"),
-                # 반복으로 묶인 알림 (ml/.py/feedback_loop.py가 케이스와 ML 알림을 잇는다)
                 "repeat_event_ids": [r["event_id"] for r in d.get("repeats", [])],
             }
         )
@@ -579,7 +587,7 @@ def feedback_list():
     """모인 평가 (최근 순). RAG 담당이 👎 받은 질문 · 답을 볼 때 쓴다."""
     return {"items": store.all_feedback()}
 
-# ---- Early warning: full raw event → RAG → verified choice → atomic SQLite close ----
+# ---- Early warning: verified choice → case closure and delivery to shared Aura ----
 class WarningEventInput(BaseModel):
     model_config = ConfigDict(extra='forbid')
     event_id: str = Field(min_length=1, max_length=200)
@@ -605,6 +613,8 @@ class WarningResolveInput(WarningEventInput):
 
 def warning_result(case_id, event_id, operation, **kwargs):
     event = warning_bridge.event_for(load_open(case_id), event_id)
+    if operation == 'generate_candidates':
+        kwargs['pending'] = store.warning_pending(analyze_warning(event)['pattern_key'])
     try:
         result = getattr(warning_bridge.service(), operation)(event, **kwargs)
     except (ValueError, TypeError, KeyError) as exc:
@@ -614,7 +624,7 @@ def warning_result(case_id, event_id, operation, **kwargs):
         raise HTTPException(503, 'RAG connection unavailable; retry or record a manual check')
     with _WRITE_LOCK:
         latest = load_open(case_id)
-        warning_bridge.snapshot(latest, event_id, result, operation)
+        result = warning_bridge.snapshot(latest, event_id, result, operation)
         store.put(latest)
     return result
 
@@ -626,7 +636,7 @@ def warning_inspect(case_id: str, event_id: str | None = None):
     with _WRITE_LOCK:
         latest = load(case_id)
         if latest['status'] not in CLOSED:
-            warning_bridge.snapshot(latest, result['event_id'], result, 'inspection')
+            result = warning_bridge.snapshot(latest, result['event_id'], result, 'inspection')
             store.put(latest)
     return result
 
@@ -650,6 +660,8 @@ def warning_select(case_id: str, body: WarningSelectInput):
         raise HTTPException(422, 'select exactly one case or manual source')
     state = d.get('warning_events', {}).get(body.event_id, {})
     if body.manual_case_id:
+        if state.get('rejected_auto_case_id') == body.manual_case_id:
+            raise HTTPException(422, 'this automatic card was rejected for the event')
         if body.manual_case_id not in state.get('shown_cards', {}):
             raise HTTPException(422, 'case was not displayed for this event')
         selection = {'manual_case_id': body.manual_case_id}
@@ -676,8 +688,11 @@ def warning_reject(case_id: str, body: WarningEventInput):
     if not card:
         raise HTTPException(409, 'no displayed automatic card')
     state['rejected_auto_case_id'] = card['manual_case_id']
+    state.get('shown_cards', {}).pop(card['manual_case_id'], None)
     if state.get('selection', {}).get('manual_case_id') == card['manual_case_id']:
         state.pop('selection', None)
+        if state.get('draft'):
+            state['draft'].update(checks={}, selection={})
     store.put(d)
     return {'status': 'rejected'}
 
@@ -687,13 +702,14 @@ def warning_reject(case_id: str, body: WarningEventInput):
 def warning_resolve(case_id: str, body: WarningResolveInput):
     d = load(case_id)
     event = warning_bridge.event_for(d, body.event_id)
-    previous = store.warning_resolution_for_case(case_id)
+    previous = store.warning_delivery_for_case(case_id)
     if previous:
-        if (previous['event_id'] == body.event_id and previous['actual_action'] == body.actual_action.strip()
+        draft = d.get('warning_events', {}).get(body.event_id, {}).get('draft', {})
+        if (previous['event_id'] == body.event_id and draft.get('actual_action') == body.actual_action.strip()
                 and d.get('warning_close_worker') == body.worker.strip()
-                and d.get('warning_events', {}).get(body.event_id, {}).get('draft', {}).get('checks', {}) == body.checks
+                and draft.get('checks', {}) == body.checks
                 and body.worker_confirmed and body.log_approved):
-            return d
+            return {**d, 'warning_resolution_status': previous['status']}
         raise HTTPException(409, 'resolution already saved with different content')
     d = load_open(case_id)
     if not body.worker_confirmed or not body.log_approved or not body.actual_action.strip() or not body.worker.strip():
@@ -703,8 +719,9 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
     if not selection:
         raise HTTPException(422, 'select a displayed case or manual source first')
     t = now()
-    service = warning_bridge.service()
-    service.trusted_sources = state.get('shown_sources', {})
+    analysis = analyze_warning(event)
+    if timestamp(t, 'closed_at') < timestamp(analysis['onset_at'], 'onset_at'):
+        raise HTTPException(422, 'closed_at precedes the warning onset')
     card = state.get('shown_cards', {}).get(selection.get('manual_case_id'), {})
     allowed = {step.get('id', str(i)) for i, step in enumerate(card.get('checks', []))}
     if set(body.checks) - allowed:
@@ -712,13 +729,35 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
     rejected = state.get('rejected_auto_case_id')
     if rejected and rejected == selection.get('manual_case_id'):
         raise HTTPException(422, 'choose another case after rejecting the automatic card')
+    if 'manual_source' in selection:
+        try:
+            source = validate_manual_selection(selection['manual_source'])
+            if state.get('shown_sources', {}).get(source['evidence_id']) != source:
+                raise ValueError('source was not returned by the event search')
+        except (ValueError, TypeError, KeyError) as exc:
+            raise HTTPException(422, str(exc)) from exc
+    equipment_scope = warning_bridge.scope()
+    if equipment_scope and card.get('equipment_scope') not in (None, equipment_scope):
+        raise HTTPException(422, 'the selected case does not apply to the equipment scope')
     try:
-        result = service.record_resolution(event, case_id=case_id, actual_action=body.actual_action.strip(),
-            worker_confirmed=True, closed_at=t, rejected_auto_case_id=rejected, **selection)
-    except (ValueError, TypeError, KeyError) as exc:
-        raise HTTPException(422, str(exc)) from exc
-    except Exception:
-        raise HTTPException(503, 'manual verification unavailable; records were not closed, retry later')
+        target = warning_bridge.target()
+    except ValueError as exc:
+        raise HTTPException(503, 'shared warning history configuration is missing or invalid') from exc
+    delivery = {
+        'target': target,
+        'pattern_key': analysis['pattern_key'],
+        'handoff': event,
+        'resolution': {
+            # Different APIs can show the same CASE-0001. The representative ML event is stable.
+            'case_id': f"warning:{d['event']['event_id']}",
+            'actual_action': body.actual_action.strip(),
+            'worker_confirmed': True,
+            'closed_at': t,
+            'equipment_scope': equipment_scope,
+            'rejected_auto_case_id': rejected,
+            **selection,
+        },
+    }
     title = (state.get('shown_cards', {}).get(selection.get('manual_case_id')) or {}).get('title', '수동 매뉴얼 근거 적용')
     state['draft'] = {'worker': body.worker.strip(), 'actual_action': body.actual_action.strip(),
                       'checks': body.checks, 'selection': selection, 'saved_at': t}
@@ -734,9 +773,9 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
     r['closure'] = {'outcome': 'resolved', 'at': t}
     d['status'] = 'resolved'
     d['warning_close_worker'] = body.worker.strip()
-    d['warning_resolution_status'] = result['status']
+    d['warning_resolution_status'] = 'pending'
     try:
-        store.put(d, warning_resolution=service.memory.staged)
+        store.put(d, warning_delivery=delivery)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
     return d
@@ -793,6 +832,8 @@ def warning_review(event_id: str, body: WarningReviewInput,
         return warning_bridge.service().review_resolution(event_id, **kwargs)
     except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(422, str(exc)) from exc
+    except (RuntimeError, *warning_bridge.MEMORY_ERRORS) as exc:
+        raise HTTPException(503, 'shared warning history is unavailable') from exc
 
 
 @app.post('/api/warning/resolutions/{event_id}/acknowledge')
@@ -803,4 +844,6 @@ def warning_acknowledge(event_id: str, x_warning_review_token: str | None = Head
         warning_bridge.service().memory.acknowledge_counterexample(event_id)
     except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(422, str(exc)) from exc
+    except (RuntimeError, *warning_bridge.MEMORY_ERRORS) as exc:
+        raise HTTPException(503, 'shared warning history is unavailable') from exc
     return {'status': 'reviewed'}

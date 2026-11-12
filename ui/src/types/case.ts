@@ -33,6 +33,7 @@ export interface FaultClass {
 
 /** ML 핸드오프 중 작업함이 쓰는 부분 */
 export interface CaseEvent {
+  event_type?: string
   event_id: string
   gun_id: string
   /** ML이 판정한 데이터 시각 (UTC) */

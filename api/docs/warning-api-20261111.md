@@ -1,91 +1,158 @@
-# WARNING API → RAG 연결 — UI 변경 제외 수정본
+# WARNING API·UI 연동 구현 — 2026-11-11
 
-## 범위와 기준
+## 구현 범위
 
-사용자가 첨부한 `WARNING_API_RAG_UI_연동_패치.zip`의 API 코드를 기준으로 UI 변경을 제외한 수정본입니다. `ui/` 파일, UI 의존성, 기존 README, 기존 RAG 문서, RAG Python 코드의 변경은 포함하지 않습니다.
+- WARNING(v1.4 `early_warning`) 원본을 API → 기존 RAG 함수로 전달한다.
+- 상세 조회는 센서 분석과 과거 이력 조회만 한다. 후보 생성·Claude 호출은 버튼 POST에서만 한다.
+- UI는 기존 케이스 상세에서 `event_type`으로 WARNING 화면을 선택한다.
+- CRITICAL은 기존 E 코드 기반 안내를 유지한다. 코드 없는 CRITICAL의 센서 기반 RAG 분석은 이번 범위 밖이다.
+- ML 모델·특징·임계값·학습 로직은 수정하지 않는다.
+- `RAG_WARNING_FEEDBACK=1`이 기본이다. 비활성 상태에서도 해결 기록은 공용 Aura에 저장한다.
+- 수동 모드는 질문별 매뉴얼 검색과 근거 선택을 제공한다.
 
-이 패치는 기존 저장소에 이미 `rag/early_warning.py`, `rag/warning_input.py`, `rag/warning_catalog.py`, `rag/warning_memory.py`가 있는 환경에 적용합니다. 실제 GitHub의 `main`은 `0db9387`(PR #3 되돌림), `develop-loop`는 `3b9e43d`로 확인했으며, 별도 `fix/warning-shared-aura`(`951ca08`)에는 공유 Neo4j 이력·outbox 변경이 있습니다. 이 첨부 패치 기반의 SQLite 어댑터로 해당 Aura 수정본을 덮어쓰면 안 됩니다. 기존 UI는 해당 적용 브랜치의 파일을 유지합니다.
+## 저장소 선택
 
-## 정비이력 항목 클릭 시 센서 전달
+API는 케이스 원본, 작업자 기록, 종료 상태를 SQLite에 보존한다. `EarlyWarningRag`는 공용 Aura에서 재사용할 해결 이력을 저장·조회·검토한다. 모든 API 인스턴스는 같은 `NEO4J_DATABASE`와 `RAG_WARNING_NAMESPACE`를 사용한다.
 
-기존 UI의 실제 호출 경로:
+기본 파일: `api/state/api.db` (`API_DB`로 변경 가능).
 
-1. 정비이력 메뉴: `GET /api/history` → 종료 이력 목록만 조회합니다.
-2. 개별 이력 클릭: 해결 항목은 `/cases/:id/log`, 나머지는 `/cases/:id`로 이동합니다.
-3. 두 경로 모두 `CaseLayout` → `useCaseQuery` → `GET /api/cases/:id`를 사용합니다.
-4. API는 WARNING의 전체 핸드오프를 보존한 그대로 `EarlyWarningRag.inspect(handoff)`에 전달합니다.
-5. `contributing_features`(상위 기여 피처), `sensor_features`(1분 센서 블록), 기타 원본 필드를 제거·재작성하지 않습니다.
-6. `warning_rag` 필드로 RAG 결과를 추가 반환합니다. 기존 `event`, `guidance`, `records` 등의 응답 필드는 유지합니다.
+| 위치 | 저장 내용 |
+|---|---|
+| `cases.data.event` | 대표 경보 전체 원본 |
+| `cases.data.repeats[].handoff` | 반복 경보 전체 원본(이번 버전부터) |
+| `cases.data.warning_events[event_id]` | 실제 표시한 카드·검색 근거, 선택, 거절, 점검·조치 초안 |
+| `cases.data.records` | 기존 조치·결과·일지·종료 필드와 동일한 구조로 최종 결과 저장 |
+| SQLite `warning_outbox` | 선택한 경보 원본·종료 요청·Aura 전송 상태 |
+| Aura `WarningResolution`, `WarningPattern`, `WarningManualCase` | 공용 해결 이력·센서 패턴·매뉴얼 사례 |
 
-여기서 “전달”은 API 프로세스가 RAG Python 함수를 호출하는 방식입니다. 별도 RAG HTTP 서버에 POST하는 구조가 아닙니다. 종료된 케이스도 센서 원본을 전달하지만, 당시 저장한 안내·조치·일지를 최신 응답으로 덮어쓰지 않습니다. 목록 화면을 여는 것만으로 전체 이력의 센서를 일괄 전송하지 않습니다.
+종료와 전송 대기 등록은 하나의 SQLite 트랜잭션에서 처리한다. 백그라운드 작업이 원본과 종료 시각을 고정한 채 Aura로 전송하며, 연결 실패는 2초부터 최대 300초까지 간격을 늘려 재시도한다. 동일 종료 재요청은 기존 상태를 반환하며 다른 내용으로 재종료하면 409다. 전송이 중단되면 API를 다시 띄웠을 때 SQLite에 남은 대기 건부터 이어서 처리한다. 이전 브랜치의 SQLite 전용 이력은 기존 DB에 보존된다. 기존 ML 평가 스크립트는 여전히 `/api/history` 또는 케이스 DB로 종료 결과를 읽을 수 있다.
 
-상세 열기의 `inspect`는 센서 관측 및 이력 조회입니다. Claude 후보 생성을 뜻하지 않습니다. 후보 생성은 아래 POST가 별도로 담당하며, 기존 UI가 해당 기능을 사용하려면 이 주소를 호출해야 합니다. 이번 패치는 UI 버튼이나 호출 코드를 변경하지 않습니다. 원래 UI가 `warning_rag`를 읽지 않는다면 센서 소견이 새로 화면에 표시되지는 않지만, API → RAG 전달은 상세 조회에서 이루어집니다.
+Aura의 집계 키는 대표 ML 경보 ID를 기준으로 만든 `warning:<대표 event_id>`다. 다른 API에서도 화면 번호는 각각 `CASE-0001`일 수 있다. 대표 이벤트가 다르면 별개 해결 건으로 세고, 반복 경보를 선택한 경우에는 해당 반복의 센서 패턴으로 저장하면서 집계 키는 대표 이벤트를 사용한다.
 
-## 유지되는 API
+## API 계약
 
-| 메서드 | 주소 | 기능 |
+아래 `:id`는 케이스 ID이며 요청 본문은 JSON이다.
+
+| 메서드 | 주소 | 동작 |
 |---|---|---|
-| GET | `/api/cases/:id` | 기존 UI 상세 조회 + WARNING 원본 센서 전달 |
-| GET | `/api/cases/:id/warning?event_id=...` | 대표/반복 WARNING의 소견·선택·초안 조회 |
-| POST | `/api/cases/:id/warning/candidates` | 매뉴얼 후보 생성, 표시 근거 보존 |
-| POST | `/api/cases/:id/warning/manual` | 센서 문맥을 포함한 매뉴얼 검색 |
-| POST | `/api/cases/:id/warning/select` | 실제 표시한 후보/근거 선택 |
-| POST | `/api/cases/:id/warning/reject` | 자동 카드 거절 |
-| PUT | `/api/cases/:id/warning/draft` | 점검·작업자·조치 임시 저장 |
-| POST | `/api/cases/:id/warning/resolve` | 검증된 이벤트별 근거와 해결 이력 저장 |
-| POST | `/api/cases/:id/close` | 기존 UI의 승인된 정비일지 종료 경로 유지 |
-| POST | `/api/warning/resolutions/:event_id/review` | 운영자 수동 근거 검토 |
-| POST | `/api/warning/resolutions/:event_id/acknowledge` | 운영자 반례 검토 완료 |
+| GET | `/api/history` | 종료된 케이스와 반복 경보 ID 조회 |
+| GET | `/api/cases/:id` | 저장된 WARNING 핸드오프를 분석하고 `warning_rag` 반환 |
+| GET | `/api/cases/:id/warning?event_id=...` | 선택한 대표/반복 경보의 소견·저장 상태 조회 |
+| POST | `/api/cases/:id/warning/candidates` | RAG 원인 후보 요청·결과 보존 |
+| POST | `/api/cases/:id/warning/manual` | 센서 문맥+질문으로 매뉴얼 검색, 선택 가능한 근거 보존 |
+| POST | `/api/cases/:id/warning/select` | 서버가 실제 표시한 사례 또는 근거 선택 |
+| POST | `/api/cases/:id/warning/reject` | 표시한 자동 카드의 거절 기록 |
+| PUT | `/api/cases/:id/warning/draft` | 작업자·실제 조치·선택 카드의 점검 결과 임시 저장 |
+| POST | `/api/cases/:id/warning/resolve` | 작업자 확인·일지 승인 후 케이스 종료와 Aura 전송 대기 등록 |
+| POST | `/api/cases/:id/close` | 오알람 종료 또는 기존 UI의 일지 승인 후 정비 종료 |
+| POST | `/api/warning/resolutions/:event_id/review` | 운영자: 수동 근거를 기존/새 검토 사례에 연결 |
+| POST | `/api/warning/resolutions/:event_id/acknowledge` | 운영자: 검토한 반례의 자동 표시 보류 해제 |
 
-후보 요청 예: `{"event_id":"EW-0042"}`.
+정비이력의 개별 항목을 열면 `GET /api/cases/:id`로 조회합니다. RAG는 저장된 WARNING 핸드오프의 `contributing_features`와 `sensor_features`를 그대로 받습니다. 종료 당시 소견이 있는 건은 해당 기록을 표시합니다. 목록에서는 종료 내역만 조회하고, 새 후보 생성은 `POST /candidates`에서 요청합니다.
 
-검색 요청 예: `{"event_id":"EW-0042","question":"공급 압력 점검 방법","explain":true}`.
+후보·거절 요청:
+```json
+{"event_id":"EW-0042"}
+```
+검색 요청:
+```json
+{"event_id":"EW-0042","question":"공급 압력을 어떻게 확인하나요?","explain":true}
+```
+선택 요청(둘 중 하나만):
+```json
+{"event_id":"EW-0042","manual_case_id":"manual:E012-C2"}
+```
+```json
+{"event_id":"EW-0042","evidence_id":"검색 응답에 포함된 실제 ID"}
+```
+임시 저장:
+```json
+{"event_id":"EW-0042","worker":"작업자","actual_action":"실제로 수행한 조치","checks":{}}
+```
+해결 종료:
+```json
+{
+  "event_id":"EW-0042",
+  "actual_action":"실제 점검·조치 내용을 작성",
+  "worker":"작업자",
+  "worker_confirmed":true,
+  "log_approved":true,
+  "checks":{}
+}
+```
+`checks`는 선택한 카드에서 받은 실제 점검 ID와 `normal|abnormal|unchecked` 값으로 구성한다. 임의 점검 ID는 거절한다. 카드 순번 대신 `event_id`+`manual_case_id`로 선택을 식별한다. 서버가 보존한 근거만 선택 가능하며 클라이언트가 인용문을 만들어 전송할 수 없다.
 
-선택은 `manual_case_id` 또는 검색 응답의 `evidence_id` 중 하나만 받습니다. 클라이언트가 만든 인용문을 받지 않습니다. `/warning/resolve`는 `event_id`, `actual_action`, `worker`, `worker_confirmed:true`, `log_approved:true`, 선택 카드의 점검 ID별 `checks`를 받습니다.
+종료 응답의 `warning_resolution_status`와 상세의 `recording_status`로 전송 상태를 확인한다. `pending`은 Aura 반영 대기, `saved`는 반영 완료, `pending_review`는 Aura에 저장된 수동 근거의 검토 대기, `failed`는 데이터 충돌 등 운영자 확인이 필요한 상태다. 같은 API에 해당 패턴의 반영 대기나 실패가 남으면 자동 카드를 보류한다. 각 API의 SQLite 대기 상태는 해당 API에서 확인하며, Aura에 반영된 뒤부터 모든 API가 같은 이력을 조회한다.
 
-## 기존 UI의 종료와 호환
+수동 근거는 운영자가 검토하기 전까지 자동 추천에 사용하지 않는다. 검토 API는 `RAG_WARNING_REVIEW_TOKEN` 미설정이면 404, 설정 시 `X-Warning-Review-Token` 헤더가 필요하다. 토큰을 UI 환경변수에 넣지 않는다. 검토 본문은 기존 사례 연결이면 `{"existing_case_id":"manual:E012-C2"}`, 신규면 `title`, `equipment_scope`, 선택한 PDF 인용 안에 존재하는 `checks`/`actions` 발췌를 전달한다. 운영자 검토 화면은 이번 UI 범위에 포함하지 않는다.
 
-기존 UI는 일지 승인 후 `/close`로 해결을 저장합니다. 이 경로를 409로 막던 이전 패치 동작을 해제했습니다. 일지 승인 확인은 유지합니다. 실제 선택한 경보별 근거가 없는 기존 종료 기록은 `not_linked`로 보존하며, 그 기록을 검증된 RAG 해결 사례로 임의 승격하지 않습니다. 근거 선택 계약을 사용하는 UI는 `/warning/resolve`로 해결 사례 연결까지 저장할 수 있습니다.
+오알람은 기존 `/close`에서 종료한다. 기존 UI에서 일지를 승인한 뒤 `/close`로 WARNING을 해결 종료하면 정비이력에 `not_linked`로 기록된다. 경보와 근거를 연결한 해결은 `/warning/resolve`에서 Aura 전송을 등록한다. `not_linked`는 정비일지 종료와 Aura 이력 연결 상태를 구분하는 값이다.
 
-CRITICAL은 기존 E 코드 기반 안내를 유지합니다. 센서에서 E 코드로 확정하는 신규 규칙이나 ML 재학습은 추가하지 않습니다.
+## 화면 동작
 
-## 저장과 피드백
+1. WARNING 상세: 조기 경보·원인 미확정, 센서별 방향/관측 초/상태 전환 구간을 표시한다.
+2. 대표·반복 경보를 선택한다. 저장하지 않은 조치가 있으면 경보 전환을 잠근다.
+3. 과거 자동 카드 또는 원인 후보 보기 → 매뉴얼 후보·근거·적용 조건·과거 실제 조치를 표시한다.
+4. 수동 검색 결과의 PDF를 열거나 해당 근거를 선택한다.
+5. 선택한 카드의 점검 정상/이상, 작업자, 실제 조치를 임시 저장할 수 있다. 새로고침 후 복원한다.
+6. 해결 확인과 정비일지 미리보기 승인 후 종료한다. 입력 내용을 최종 저장하므로 별도 임시 저장을 잊어도 조치가 보존된다.
+7. 종료 후 읽기 전용으로 표시한다. Aura 반영 상태를 갱신하고, 수동 근거는 저장된 뒤 검토 대기를 표시한다.
 
-- API 정비 원본과 RAG용 해결 레코드: SQLite (`api/state/api.db`, `API_DB`로 변경).
-- 이 수정본은 첨부 패치의 `SqliteWarningMemory`를 유지하며, Neo4j 정비이력 전송 기능을 추가하지 않습니다.
-- `RAG_WARNING_FEEDBACK=0`: 기본값. 해결 레코드는 저장하되 과거 해결 추천은 사용하지 않습니다.
-- `RAG_WARNING_FEEDBACK=1`: 조건을 충족하는 과거 해결을 재사용합니다. 실제 설비의 매뉴얼 범위 `RAG_WARNING_EQUIPMENT_SCOPE`를 설정해야 자동 표시가 가능합니다.
-- 수동 검색 근거는 검토 전 자동 추천에서 제외합니다.
-- 같은 센서 패턴·사례에 대한 서로 다른 확인 케이스 2건 이상 등 기존 RAG 조건을 유지합니다.
-- 상세 반복 조회 시 inspection 안에 inspection이 중첩되며 DB가 커지는 문제를 막았습니다.
+센서 방향은 RAG 원래 모듈의 첫/마지막 구간 중앙값 비교이며 인과·고장 확정이 아니다. 상태 전환 시간은 센서 블록 시작으로부터의 구간으로 표시한다.
 
-## 적용
+## 피드백 OFF / ON
 
-`api/` 변경 파일만 기존 프로젝트의 같은 경로에 반영합니다. `README.md`나 `ui/`는 업로드하지 않습니다. 이 ZIP은 변경 파일만 담은 패치이며 단독 실행 프로젝트가 아닙니다.
+- OFF: 과거 해결 후보 조회·자동 추천을 하지 않는다. 센서 소견·매뉴얼 후보/검색·해결 기록 저장은 가능하다.
+- ON(기본): 공용 Aura 해결 이력을 원래 RAG 패턴 규칙으로 조회한다. 서로 다른 방향성 있는 3채널이 필요하다.
+- 자동 표시: 현재 매뉴얼 버전·설비 범위가 맞고, 같은 패턴+사례의 서로 다른 해결 케이스가 2건 이상이어야 한다. 같은 케이스 반복은 중복 집계하지 않는다.
+- 설비 범위 미설정, 센서 부족, 미검토 수동 근거, 반례, 복수 적격 사례 등은 자동 표시하지 않는다.
+- 자동 카드를 거절하면 해당 경보에서 후보 목록과 선택에서 제거한다.
+- OFF 동안 기록한 신규 해결도 나중에 ON으로 바꾸면 활용 가능하다. 이 수정 이전의 구형 기록은 실제 선택 근거가 없으므로 자동으로 매핑하지 않는다.
 
-이전 UI 패치가 이미 커밋되어 있다면, 이번 패치에서 UI 파일을 뺀 것만으로 이전 UI 변경이 자동으로 되돌아가지는 않습니다. PR에서 기존 UI 기준 커밋의 `ui/`를 복원하거나 UI 변경 커밋을 제외해야 합니다. 팀의 더 최신 UI 구현이 있는 브랜치를 기준으로 복원해야 하며, 임의로 `main` UI를 덮어쓰지 않습니다.
+## 실행
 
-## 실행과 검증
-
-기존 의존성을 설치한 뒤:
-
+기존 API·RAG 의존성 설치:
 ```bash
 python -m pip install -r api/requirements.txt
-python -m pytest api/tests rag/tests -q -p no:cacheprovider
 ```
+공용 Aura 접속 정보와 키는 `rag/.env`에 설정한다. `RAG_WARNING_NAMESPACE=team-rag`처럼 팀이 합의한 이력 이름을 사용한다. API 실행 전에 [공용 Aura 이력 스키마](../../rag/docs/early-warning-integration.md#처음-한-번-준비)가 준비돼 있어야 한다. 환경변수는 셸에서 덮어쓸 수 있다.
+```bash
+cd api
+uvicorn main:app --port 9000
+```
+Windows PowerShell:
+```powershell
+cd api
+python -m uvicorn main:app --port 9000
+```
+자동 카드에 사용할 설비의 매뉴얼 적용 범위를 지정한다. 예를 들어 실제 장비가 해당 범위에 속할 때는 다음과 같이 설정한다.
+```powershell
+$env:RAG_WARNING_EQUIPMENT_SCOPE='cpx-weld-2g-sa'
+```
+ML에서 WARNING 핸드오프를 생성하려면 `RSW_EARLY_WARNING_HANDOFFS=1`이 필요하다(기존 ML 동작). API push는 `RSW_RAG_URL=http://localhost:9000/api/ml/handoffs`, 또는 기존 pull 경로를 사용한다.
 
-실제 ML WARNING 생성은 `RSW_EARLY_WARNING_HANDOFFS=1`이 필요합니다. 기존 ML push 또는 API pull을 유지합니다. 문서 검색·Claude 등 외부 서비스는 기존 `rag/.env` 설정을 사용합니다.
+UI `ui/.env.local`:
+```dotenv
+VITE_USE_MOCK=false
+VITE_API_BASE_URL=/api
+VITE_API_PROXY_TARGET=http://localhost:9000
+```
+```bash
+cd ui
+npm ci
+npm run dev
+```
+매뉴얼 후보는 기존 문서 KG 및 Claude 연결이 필요하며 벡터 검색을 켜면 OpenAI 임베딩도 사용한다. `RAG_WARNING_VECTORS=0`으로 키워드 검색만 사용할 수 있지만 후보 생성은 여전히 Claude를 사용한다. 기본 상세 센서 분석·임시 저장·검증된 해결 저장은 외부 모델 호출 없이 가능하다.
 
-이 수정본의 검증: API·RAG 153개 통과, 외부 서비스 환경이 필요한 4개 건너뜀. 상세 GET에서 RAG에 전달한 핸드오프가 저장된 센서 블록·기여 피처와 완전히 같은지 확인했습니다. 종료 이력 재조회, 기존 `/close` 호환, 반복 조회 snapshot 비중첩, 기존 CRITICAL 회귀를 검증했습니다. 실제 운영 ML·Neo4j·Claude와의 네트워크 연결 및 브라우저 클릭은 검증하지 않았습니다.
+## 검증과 한계
 
-## 기존 WARNING UI 확인 결과
+```bash
+python -m pytest api/tests rag/tests -q -p no:cacheprovider
+cd ui
+npm run test:warning
+npm run build
+npm run lint
+```
+UI 통합 테스트는 실제 FastAPI와 임시 SQLite를 띄우고 React DOM 이벤트로 소견→후보→선택→임시 저장/재마운트→수동 검색/선택→해결 종료→반영·검토 상태를 검증한다. 문서 검색, Claude, Aura 이력은 테스트 대역을 사용한다. API 회귀 테스트는 반복 경보, 거절 카드 재선택 차단, 전송 실패 재시도와 중복 방지, 근거 검토, CRITICAL을 포함한다.
 
-확인 기준: `main`과 `develop-loop`의 UI 소스. 이들은 WARNING 전용 `WarningPage` 없이 공통 `OverviewPage`를 사용합니다.
-
-- 작업함: `SeverityTag`가 `warning`을 주황색 “주의”로 표시합니다.
-- 코드 없는 WARNING의 상단은 “코드 없음”, 왼쪽 제목은 “모델 이상 신호 전후”, “최근 30분”입니다.
-- 왼쪽: 센서/이상 점수 그래프, 신호 선택 버튼, “그래프 읽는 법”, 사건 정보.
-- 오른쪽: “확인할 원인”. 후보가 없으면 근거를 찾지 못했다는 문장과 “직접 점검해서 기록”, “오알람 닫기” 등이 표시됩니다.
-- `warning-api-rag-ui` 및 `fix/warning-shared-aura`에는 이전에 추가한 `WarningPage`가 있으므로 화면이 다릅니다. 브랜치를 구분해야 합니다.
-
-제공하는 HTML은 원래 UI 컴포넌트에 합성 WARNING 데이터를 넣어 생성한 정적 미리보기입니다. 운영 화면 캡처나 UI 업데이트가 아닙니다.
+공용 Aura API 검증은 `RAG_WARNING_TEST_AURA=1`을 설정한 뒤 `python -m pytest api/tests/test_warning_bridge.py -k shared_aura_distinguishes`로 실행한다. 각자 `CASE-0001`인 합성 케이스 두 건이 테스트 전용 Aura 이력에서 서로 다른 해결로 집계되고, 세 번째 API가 자동 카드를 받는지 확인한다. 테스트가 만든 이력만 종료 시 정리한다. 실제 현장 경보의 후보 적중률과 운영 배포는 별도로 검증한다.

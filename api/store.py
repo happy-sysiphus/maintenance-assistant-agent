@@ -1,7 +1,7 @@
 """케이스 저장소: SQLite 파일 하나. 케이스 한 건을 FE `CaseDetail` 모양 JSON으로 통째로 저장한다.
 
-데모 규모(케이스 수십 개)라 표 하나로 충분하다. 사람 기록(records)은 SQLite에 보존한다. WARNING 해결 이력은 warning_bridge가 선택적으로 재사용한다.
-FIELD_MEMORY=1은 기존 코드별 현장 기억을 제어한다. 별도로 WARNING 해결 이력은 warning_resolutions에 케이스 종료와 함께 저장하며, RAG_WARNING_FEEDBACK=1일 때 warning_bridge를 통해 재사용한다.
+사람 기록(records)은 SQLite에 보존한다. WARNING 해결 종료와 Aura 전송 대기 건은
+같은 트랜잭션에 기록한다. 재사용할 해결 이력은 공용 Aura에서 조회한다.
 """
 
 from __future__ import annotations
@@ -34,7 +34,12 @@ def _conn() -> Iterator[sqlite3.Connection]:
         " conversation_id TEXT, message_index INTEGER, helpful INTEGER, at TEXT, data TEXT,"
         " PRIMARY KEY (conversation_id, message_index))"
     )
-    c.execute("CREATE TABLE IF NOT EXISTS warning_resolutions (event_id TEXT PRIMARY KEY, case_id TEXT UNIQUE, data TEXT)")
+    c.execute(
+        "CREATE TABLE IF NOT EXISTS warning_outbox ("
+        " event_id TEXT PRIMARY KEY, case_id TEXT UNIQUE NOT NULL, pattern_key TEXT,"
+        " data TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending',"
+        " attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at REAL NOT NULL DEFAULT 0)"
+    )
     try:
         with c:
             yield c
@@ -55,17 +60,11 @@ def all_cases() -> list[dict[str, Any]]:
 
 
 def group_key(e: dict[str, Any]) -> str | None:
-    """케이스를 묶는 키 (cases.code 칸): 종료 코드. 코드 없는 조기 경보는 "early_warning", 코드 없는 모델 단독 critical은 None.
-
-    조기 경보와 모델 단독 critical이 같은 설비의 열린 케이스 하나에 섞이지 않게 한다 (ml D-9 스펙 11.1).
-    """
-    code = e["trigger"].get("rule_code")
-    if code:
-        return code
-    return "early_warning" if e.get("event_type") == "early_warning" else None
+    """Group warnings separately from code-less critical alarms for the same equipment."""
+    return "early_warning" if e.get("event_type") == "early_warning" else e["trigger"].get("rule_code")
 
 
-def put(d: dict[str, Any], warning_resolution=None) -> None:
+def put(d: dict[str, Any], *, warning_delivery=None) -> None:
     e = d["event"]
     code = group_key(e)
     with _lock, _conn() as c:
@@ -74,23 +73,56 @@ def put(d: dict[str, Any], warning_resolution=None) -> None:
             (d["case_id"], e["gun_id"], code, d["status"], e["detected_at"], json.dumps(d, ensure_ascii=False)),
         )
 
-        if warning_resolution is not None:
-            existing = c.execute("SELECT data FROM warning_resolutions WHERE event_id = ? OR case_id = ?",
-                                 (warning_resolution['event_id'], d['case_id'])).fetchone()
-            payload = json.dumps(warning_resolution, ensure_ascii=False, sort_keys=True)
-            if existing and existing[0] != payload:
-                raise ValueError('immutable warning resolution conflict')
-            c.execute("INSERT OR IGNORE INTO warning_resolutions VALUES (?, ?, ?)",
-                      (warning_resolution['event_id'], d['case_id'], payload))
+        if warning_delivery is not None:
+            try:
+                c.execute(
+                    "INSERT INTO warning_outbox (event_id, case_id, pattern_key, data) VALUES (?, ?, ?, ?)",
+                    (warning_delivery["handoff"]["event_id"], d["case_id"], warning_delivery["pattern_key"],
+                     json.dumps(warning_delivery, ensure_ascii=False)),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise ValueError("warning case or event already queued") from exc
 
 
-def warning_resolutions():
+def warning_delivery_for_case(case_id):
     with _lock, _conn() as c:
-        return [json.loads(r[0]) for r in c.execute("SELECT data FROM warning_resolutions")]
+        row = c.execute(
+            "SELECT event_id, status FROM warning_outbox WHERE case_id = ?", (case_id,),
+        ).fetchone()
+    return {"event_id": row[0], "status": row[1]} if row else None
 
 
-def warning_resolution_for_case(case_id):
-    return next((r for r in warning_resolutions() if r['case_id'] == case_id), None)
+def warning_pending(pattern_key):
+    if pattern_key is None:
+        return False
+    with _lock, _conn() as c:
+        return c.execute(
+            "SELECT 1 FROM warning_outbox WHERE pattern_key = ? AND status IN ('pending', 'failed') LIMIT 1",
+            (pattern_key,),
+        ).fetchone() is not None
+
+
+def claim_warning_delivery(now, lease_until):
+    with _lock, _conn() as c:
+        row = c.execute(
+            """UPDATE warning_outbox SET attempts = attempts + 1, next_attempt_at = ?
+            WHERE event_id = (
+                SELECT event_id FROM warning_outbox WHERE status = 'pending' AND next_attempt_at <= ?
+                ORDER BY next_attempt_at, rowid LIMIT 1
+            )
+            RETURNING event_id, attempts, data""",
+            (lease_until, now),
+        ).fetchone()
+    return (row[0], row[1], json.loads(row[2])) if row else None
+
+
+def finish_warning_delivery(event_id, attempt, status, *, next_attempt_at=0):
+    with _lock, _conn() as c:
+        c.execute(
+            """UPDATE warning_outbox SET status = ?, next_attempt_at = ?
+            WHERE event_id = ? AND attempts = ? AND status = 'pending'""",
+            (status, next_attempt_at, event_id, attempt),
+        )
 
 
 def seen(event_id: str) -> bool:
@@ -118,11 +150,15 @@ def all_feedback() -> list[dict[str, Any]]:
 
 
 def open_case(gun_id: str, code: str | None) -> dict[str, Any] | None:
-    """같은 설비 · 같은 묶음 키(group_key)로 아직 끝나지 않은 케이스 (반복 알림을 묶을 곳)."""
+    """Find an open case with the same equipment and alarm group."""
     with _lock, _conn() as c:
+        # Warnings saved before type-aware grouping may still have a null code.
         row = c.execute(
-            "SELECT data FROM cases WHERE gun_id = ? AND code IS ? AND status NOT IN ('resolved', 'unresolved', 'false_alarm')"
-            " ORDER BY detected_at DESC LIMIT 1",
+            """SELECT data FROM cases
+               WHERE gun_id = ? AND status NOT IN ('resolved', 'unresolved', 'false_alarm')
+                 AND (CASE WHEN code IS NULL AND json_extract(data, '$.event.event_type') = 'early_warning'
+                           THEN 'early_warning' ELSE code END) IS ?
+               ORDER BY detected_at DESC LIMIT 1""",
             (gun_id, code),
         ).fetchone()
     return json.loads(row[0]) if row else None
@@ -132,17 +168,3 @@ def next_id() -> str:
     with _lock, _conn() as c:
         n = c.execute("SELECT COUNT(*) FROM cases").fetchone()[0]
     return f"CASE-{n + 1:04d}"
-
-
-def review_warning_resolution(value):
-    """Only review metadata may change after closure; actions and event stay immutable."""
-    with _lock, _conn() as c:
-        row = c.execute('SELECT data FROM warning_resolutions WHERE event_id=?', (value['event_id'],)).fetchone()
-        if not row:
-            raise ValueError('resolution not found')
-        original = json.loads(row[0])
-        immutable = lambda r: {k: v for k, v in r.items() if k not in ('manual_case', 'counterexample_reviewed')}
-        if immutable(original) != immutable(value):
-            raise ValueError('cannot alter recorded resolution')
-        c.execute('UPDATE warning_resolutions SET data=? WHERE event_id=?',
-                  (json.dumps(value, ensure_ascii=False, sort_keys=True), value['event_id']))
