@@ -1,7 +1,8 @@
 """케이스 저장소: SQLite 파일 하나. 케이스 한 건을 FE `CaseDetail` 모양 JSON으로 통째로 저장한다.
 
-데모 규모(케이스 수십 개)라 표 하나로 충분하다. 사람 기록(records)은 ML · RAG에 보내지 않는다.
-FIELD_MEMORY=1이면 api 안에서만 이 기록을 다시 읽어 케이스 조회에 이전 기록을 붙인다(field_memory.py). 그때도 ML · rag/에는 보내지 않는다.
+사람 기록(records)은 SQLite에 보존한다. WARNING 해결 종료와 Aura 전송 대기 건은
+같은 트랜잭션에 기록한다. 재사용할 해결 이력은 공용 Aura에서 조회한다.
+FIELD_MEMORY=1이면 api 안에서 이 기록을 다시 읽어 케이스 조회에 이전 기록을 붙인다(field_memory.py).
 """
 
 from __future__ import annotations
@@ -34,6 +35,12 @@ def _conn() -> Iterator[sqlite3.Connection]:
         " conversation_id TEXT, message_index INTEGER, helpful INTEGER, at TEXT, data TEXT,"
         " PRIMARY KEY (conversation_id, message_index))"
     )
+    c.execute(
+        "CREATE TABLE IF NOT EXISTS warning_outbox ("
+        " event_id TEXT PRIMARY KEY, case_id TEXT UNIQUE NOT NULL, pattern_key TEXT,"
+        " data TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending',"
+        " attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at REAL NOT NULL DEFAULT 0)"
+    )
     try:
         with c:
             yield c
@@ -53,13 +60,69 @@ def all_cases() -> list[dict[str, Any]]:
     return [json.loads(r[0]) for r in rows]
 
 
-def put(d: dict[str, Any]) -> None:
+def group_key(e: dict[str, Any]) -> str | None:
+    """Group warnings separately from code-less critical alarms for the same equipment."""
+    return "early_warning" if e.get("event_type") == "early_warning" else e["trigger"].get("rule_code")
+
+
+def put(d: dict[str, Any], *, warning_delivery=None) -> None:
     e = d["event"]
-    code = e["trigger"].get("rule_code")
+    code = group_key(e)
     with _lock, _conn() as c:
         c.execute(
             "INSERT OR REPLACE INTO cases VALUES (?, ?, ?, ?, ?, ?)",
             (d["case_id"], e["gun_id"], code, d["status"], e["detected_at"], json.dumps(d, ensure_ascii=False)),
+        )
+
+        if warning_delivery is not None:
+            try:
+                c.execute(
+                    "INSERT INTO warning_outbox (event_id, case_id, pattern_key, data) VALUES (?, ?, ?, ?)",
+                    (warning_delivery["handoff"]["event_id"], d["case_id"], warning_delivery["pattern_key"],
+                     json.dumps(warning_delivery, ensure_ascii=False)),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise ValueError("warning case or event already queued") from exc
+
+
+def warning_delivery_for_case(case_id):
+    with _lock, _conn() as c:
+        row = c.execute(
+            "SELECT event_id, status FROM warning_outbox WHERE case_id = ?", (case_id,),
+        ).fetchone()
+    return {"event_id": row[0], "status": row[1]} if row else None
+
+
+def warning_pending(pattern_key):
+    if pattern_key is None:
+        return False
+    with _lock, _conn() as c:
+        return c.execute(
+            "SELECT 1 FROM warning_outbox WHERE pattern_key = ? AND status IN ('pending', 'failed') LIMIT 1",
+            (pattern_key,),
+        ).fetchone() is not None
+
+
+def claim_warning_delivery(now, lease_until):
+    with _lock, _conn() as c:
+        row = c.execute(
+            """UPDATE warning_outbox SET attempts = attempts + 1, next_attempt_at = ?
+            WHERE event_id = (
+                SELECT event_id FROM warning_outbox WHERE status = 'pending' AND next_attempt_at <= ?
+                ORDER BY next_attempt_at, rowid LIMIT 1
+            )
+            RETURNING event_id, attempts, data""",
+            (lease_until, now),
+        ).fetchone()
+    return (row[0], row[1], json.loads(row[2])) if row else None
+
+
+def finish_warning_delivery(event_id, attempt, status, *, next_attempt_at=0):
+    with _lock, _conn() as c:
+        c.execute(
+            """UPDATE warning_outbox SET status = ?, next_attempt_at = ?
+            WHERE event_id = ? AND attempts = ? AND status = 'pending'""",
+            (status, next_attempt_at, event_id, attempt),
         )
 
 
@@ -88,11 +151,15 @@ def all_feedback() -> list[dict[str, Any]]:
 
 
 def open_case(gun_id: str, code: str | None) -> dict[str, Any] | None:
-    """같은 설비 · 같은 코드로 아직 끝나지 않은 케이스 (반복 알림을 묶을 곳)."""
+    """Find an open case with the same equipment and alarm group."""
     with _lock, _conn() as c:
+        # Warnings saved before type-aware grouping may still have a null code.
         row = c.execute(
-            "SELECT data FROM cases WHERE gun_id = ? AND code IS ? AND status NOT IN ('resolved', 'unresolved', 'false_alarm')"
-            " ORDER BY detected_at DESC LIMIT 1",
+            """SELECT data FROM cases
+               WHERE gun_id = ? AND status NOT IN ('resolved', 'unresolved', 'false_alarm')
+                 AND (CASE WHEN code IS NULL AND json_extract(data, '$.event.event_type') = 'early_warning'
+                           THEN 'early_warning' ELSE code END) IS ?
+               ORDER BY detected_at DESC LIMIT 1""",
             (gun_id, code),
         ).fetchone()
     return json.loads(row[0]) if row else None

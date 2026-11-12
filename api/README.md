@@ -1,3 +1,5 @@
+> WARNING API·UI는 공용 Aura의 해결 이력을 사용합니다. [기능·계약·실행 설정](docs/warning-api-20261111.md)
+
 # 정비 지원 API
 
 UI와 ML·RAG를 연결하는 FastAPI 서버입니다.
@@ -21,9 +23,9 @@ ML이 꺼져 있어도 챗봇·PDF와 저장된 케이스는 사용할 수 있�
 ## 연결과 저장
 
 - ML 알림: GET /handoffs를 당겨 오거나 POST /api/ml/handoffs로 수신합니다.
-- RAG 입력: 알림의 trigger.rule_code 또는 fault_class.terminal_code만 사용합니다. 센서는 보내지 않습니다.
-- 신규 케이스: E 코드당 후보 하나와 고정 점검 ID를 즉시 생성합니다. ML 수신 응답은 LLM 생성을 기다리지 않습니다.
-- GET /api/cases/{id}: 최초 상세 조회에서 한국어 구조화 안내를 생성·저장합니다. 동일 질문은 캐시를 재사용합니다.
+- RAG 입력은 CRITICAL의 종료 코드와 WARNING의 전체 센서 핸드오프로 구분합니다.
+- 신규 CRITICAL 케이스는 E 코드당 후보 하나와 고정 점검 ID를 즉시 생성합니다. ML 수신 응답은 LLM 생성을 기다리지 않습니다.
+- 케이스 상세에서 CRITICAL은 한국어 구조화 안내를 생성하고, WARNING은 센서 소견과 해결 이력 조회 결과를 `warning_rag`로 반환합니다.
 - guidance에는 status·candidates와 함께 sections·causes·evidence·answer 등 실제 RAG 필드가 있습니다.
 - 기존 S 기반 저장 케이스의 기록 키는 자동 변환하지 않습니다. 새 케이스부터 E 코드 키를 사용합니다.
 - 점검·판단·조치·결과·일지·도움 요청은 기존 SQLite에 저장합니다. 생성 중 추가된 기록도 보존합니다.
@@ -92,6 +94,52 @@ cd api
   상세 조회는 RAG 생성을 잠금 밖에서 하고, 안내가 바뀌었을 때만 저장합니다(그냥 열면 저장 안 함).
 - 챗봇 피드백: POST /api/assistant/feedback가 질문·답·상태·코드와 함께 SQLite `feedback` 표에 저장합니다
   (같은 답은 마지막 평가만). GET /api/assistant/feedback로 최근 순 목록을 봅니다. 저장만 하고 RAG에는 쓰지 않습니다.
+
+## WARNING 케이스와 정비이력 상세
+
+WARNING 케이스 또는 정비이력의 개별 항목을 열면 API가 저장된 상위 기여 피처와 1분 센서 데이터를 RAG에서 분석하고 공용 Aura의 해결 이력을 조회합니다.
+
+| 파일 | 변경 내용 |
+|---|---|
+| `api/main.py` | WARNING 케이스 상세 조회에서 RAG 센서 분석 호출을 연결하고 `warning_rag` 응답을 추가했습니다. WARNING·CRITICAL을 구분하고 반복 WARNING의 전체 원본을 보존합니다. 후보·검색·선택·임시 저장·검증된 해결 저장 API도 제공합니다. |
+| `api/warning_bridge.py` | 저장된 핸드오프를 RAG에 전달합니다. 검증된 해결 사례를 공용 Aura에 저장하고 조회합니다. |
+| `api/store.py` | 케이스 종료와 Aura 전송 대기를 하나의 트랜잭션에서 기록합니다. |
+| `api/tests/test_warning_bridge.py` | 센서 원본 전달, 반복 경보 연결, 기존 종료 호환, 중복 저장·잘못된 선택 방지 등을 검증합니다. |
+| `api/docs/warning-api-20261111.md` | API 계약과 적용 범위, 기존 UI와의 연결 조건을 정리했습니다. |
+
+### 정비이력을 클릭했을 때의 흐름
+
+1. 정비이력 메뉴를 열면 `GET /api/history`로 목록을 조회합니다. 목록 조회만으로 센서를 일괄 분석하지 않습니다.
+2. 개별 이력을 클릭하면 `/cases/:id` 또는 `/cases/:id/log`로 이동합니다.
+3. 기존 UI의 공통 케이스 조회 기능이 `GET /api/cases/:id`를 호출합니다.
+4. WARNING인 경우 API가 전체 핸드오프를 RAG에 전달합니다. 종료 당시의 소견이 저장되어 있으면 당시 화면을 재현합니다.
+5. 센서 소견과 이력 조회 결과를 기존 케이스 정보에 `warning_rag` 필드로 추가해서 반환합니다.
+
+전달하는 원본에는 다음 정보가 포함됩니다.
+
+- `contributing_features`: ML이 제공한 상위 기여 피처. 실제 제공된 개수 그대로 전달합니다.
+- `sensor_features`: 해당 WARNING의 1분 센서 블록과 시간·결측 정보.
+- `event_id`, `gun_id`, `early_warning` 등 경보 문맥.
+
+여기서 전달은 API 프로세스가 RAG Python 함수를 직접 호출하는 방식입니다. 별도 RAG HTTP 서버로 POST하는 구조는 아닙니다.
+
+종료된 이력을 다시 열면 당시의 안내·조치·정비일지를 함께 확인할 수 있습니다. 저장된 센서 소견이 없는 종료 건은 원본 핸드오프로 소견을 계산합니다.
+
+### 센서 조회와 후보 요청
+
+| 요청 | 수행하는 기능 |
+|---|---|
+| `GET /api/cases/:id` | WARNING 센서 원본 전달, 소견·이력 조회. Claude로 새 후보를 생성하지 않습니다. |
+| `POST /api/cases/:id/warning/candidates` | 매뉴얼 검색과 원인 후보 생성. |
+| `POST /api/cases/:id/warning/manual` | 센서 문맥을 포함한 수동 매뉴얼 검색. |
+
+### 기존 정비일지 종료와 Aura 연결
+
+- CRITICAL의 기존 에러코드 기반 안내는 유지합니다.
+- 기존 UI의 일지 승인 후 `/close`로 해결 종료하는 경로를 유지합니다.
+- 기존 `/close`로 종료한 WARNING은 정비이력에 남고, 상세 API는 `not_linked`를 반환합니다. 경보와 근거가 확인된 사례는 `/warning/resolve`로 종료해 Aura 추천 이력에 연결합니다.
+- 케이스와 정비일지는 `API_DB`에 보관합니다. WARNING 추천에 사용하는 해결 사례는 공용 Aura에서 관리합니다. 설정과 검증 방법은 [WARNING API 계약](docs/warning-api-20261111.md)에 있습니다.
+
 
 ## 브라우저에서 직접 질문하기
 

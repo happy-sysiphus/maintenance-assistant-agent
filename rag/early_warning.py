@@ -128,10 +128,11 @@ def _repair_order(repair):
 class EarlyWarningRag:
     """The API owns case state and must pass only server-verified selections."""
 
-    def __init__(self, memory, *, use_vectors=True, equipment_scope=None):
+    def __init__(self, memory, *, use_vectors=True, equipment_scope=None, reuse_history=True):
         self.memory = memory
         self.use_vectors = use_vectors
         self.equipment_scope = _scope(equipment_scope)
+        self.reuse_history = reuse_history
 
     def inspect(self, handoff, *, equipment_scope=None, pending=False):
         scope = self.equipment_scope if equipment_scope is None else _scope(equipment_scope)
@@ -140,10 +141,12 @@ class EarlyWarningRag:
                   "history_candidates": [], "counterexample_event_ids": []}
         if not analysis["pattern_key"]:
             return {**result, "status": "insufficient_channels"}
+        if not self.reuse_history:
+            return {**result, "status": "feedback_disabled"}
         try:
             rows = self.memory.lookup(analysis["pattern_key"])
         except MEMORY_ERRORS:
-            return {**result, "status": "memory_unavailable"}
+            return {**result, "status": "pending" if pending else "memory_unavailable"}
         candidates, counterexamples = _history_cards(rows, analysis["event_id"], scope)
         result.update(history_candidates=candidates, counterexample_event_ids=counterexamples)
         eligible = [case for case in candidates if case["applicable_cases"] >= 2]
