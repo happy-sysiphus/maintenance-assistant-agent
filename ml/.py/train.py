@@ -915,12 +915,8 @@ def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_al
     for f, idx in val.groupby("file").indices.items():
         order = idx[np.argsort(-val["ttf_s"].values[idx])]  # chronological
         final_h, false_per_day = alarm_timing(a[order], val["ttf_s"].values[order], sustain)
-        crit_h, crit_false = alarm_timing(a[order], val["ttf_s"].values[order], cs)
         per_file[f] = {"final_alarm_run_starts_h_before_failure": float(final_h),
                        "false_alarm_runs_per_day": float(false_per_day),
-                       # model-only CRITICAL runs (>= critical_sustain windows): what reaches the RAG handoff
-                       "final_critical_run_starts_h_before_failure": float(crit_h),
-                       "false_critical_runs_per_day": float(crit_false),
                        "alarm_rate_normal": float(a[idx][normal.values[idx]].mean()),
                        "held_share_of_windows": float((~welding[idx]).mean()),
                        "gun_norm": str(val["gun_norm"].values[idx[0]]) if "gun_norm" in val.columns else "global",
@@ -998,7 +994,6 @@ def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_al
         "files_lead_ok": int((lead >= OP_LEAD_MIN).sum()), "files_false_runs_ok": int((false_runs <= OP_FALSE_RUNS).sum()),
         "files_both_ok": int(((lead >= OP_LEAD_MIN) & (false_runs <= OP_FALSE_RUNS)).sum()),
         "files_with_final_run": int((lead >= 0).sum()),
-        "false_critical_runs_per_day_mean": float(np.mean([v["false_critical_runs_per_day"] for v in per_file.values()])),
         # the rule alone: judged by its lead (first trigger inside the pre-failure window), not by a run
         "files_rule_lead_ok": int(sum(1 for v in per_file.values() if v["rule_lead_min"] >= OP_LEAD_MIN)),
         "final_lead_min_median": float(np.median(lead[lead >= 0])) if (lead >= 0).any() else np.nan}
