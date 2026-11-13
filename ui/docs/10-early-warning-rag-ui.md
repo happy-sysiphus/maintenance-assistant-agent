@@ -2,6 +2,8 @@
 
 2026-11-11 · UI 담당자용 · 로컬 통합 브랜치 `fix/warning-shared-aura` (`c6f0db1` 기준)
 
+2026-11-13 시계열 통합 브랜치의 화면 변경과 실제 클릭 순서는 [팀원용 변경 보고서](../../docs/timeseries-rag-integration-report.md)와 [A~D 시연](../../docs/timeseries-rag-browser-demo.html)에서 확인할 수 있습니다. 아래 내용은 기존 WARNING 화면과 API의 계약입니다.
+
 **WARNING 화면과 API 연결은 이미 구현돼 있습니다.** UI 작업은 기존 화면을 기반으로 오류 안내와 입력 보존을 보완하고, 팀 환경에서 실제 ML 경보부터 Aura 이력 재사용까지 확인하는 것입니다. 화면은 API를 통해 센서 소견, 매뉴얼 후보와 공용 해결 이력을 받습니다. [WARNING 화면 코드](../src/pages/case/WarningPage.tsx) · [API 구현 명세](../../api/docs/warning-api-20261111.md)
 
 ## 1. 현재 화면에서 되는 것

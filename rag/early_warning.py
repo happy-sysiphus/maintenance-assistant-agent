@@ -55,7 +55,7 @@ def _claude(prompt, context, model, *, allowed_field, allowed_ids):
 
     load_environment()
     schema = model.model_json_schema()
-    for definition in schema.get("$defs", {}).values():
+    for definition in (schema, *schema.get("$defs", {}).values()):
         properties = definition.get("properties", {})
         if allowed_field in properties:
             properties[allowed_field] = {"type": "string", "enum": sorted(allowed_ids)}
@@ -201,13 +201,17 @@ class EarlyWarningRag:
 
     def search_manuals(self, handoff, question, *, history=None, explain=False):
         analysis = analyze_warning(handoff)
+        return self._search_manuals(analysis, question, _search_query(analysis), history=history, explain=explain)
+
+    def _search_manuals(self, analysis, question, sensor_query, *, history=None, explain=False, reference_code=None):
         question = required_text(question, "question", 2000)
         history = normalize_history(history)
-        query = question + "\n" + _search_query(analysis)
+        query = question + "\n" + sensor_query
         result = {"event_id": analysis["event_id"], "hits": [], "notes": []}
         try:
+            options = {"error_code": reference_code} if reference_code else {}
             evidence = retrieve(query, history=history, use_vectors=self.use_vectors,
-                                database=self.memory.database)["evidence"]
+                                database=self.memory.database, **options)["evidence"]
             catalog = self._catalog(allow_unavailable=True)
             for row in evidence:
                 ref = source_ref(row["doc"], row["page"], row["text"][:2400], evidence_id=row["id"])

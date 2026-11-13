@@ -11,8 +11,10 @@ from fastapi import HTTPException
 import store
 from rag.config import get_database, graph_driver, load_environment
 from rag.early_warning import MEMORY_ERRORS, EarlyWarningRag
+from rag.warning_assessment import WarningAssessment
 from rag.warning_catalog import validate_manual_selection
-from rag.warning_input import analyze_warning, required_text
+from rag.warning_input import analyze_warning, required_text, timestamp
+from rag.warning_series import observed_code, parse_event
 from rag.warning_memory import WarningMemory
 
 log = logging.getLogger(__name__)
@@ -23,6 +25,21 @@ _INSPECTION_FIELDS = (
     "observations", "derived_features", "equipment_scope", "automatic_card",
     "history_candidates", "counterexample_event_ids", "status",
 )
+_ASSESSMENT_FIELDS = (
+    "event_id", "route", "status", "reason", "observed_error", "observations", "comparison_channels",
+    "candidate_ids", "candidate_comparisons", "past_event_id", "model_reason", "intervals",
+    "card", "cards", "evidence", "definition", "recording_status",
+)
+_assessment_locks = tuple(threading.Lock() for _ in range(32))
+
+
+def timeseries_enabled(handoff):
+    load_environment()
+    return os.getenv("RAG_WARNING_TIMESERIES") == "1" and handoff.get("schema_version") == "1.4"
+
+
+def is_timeseries(case):
+    return case.get("rag_mode") == "timeseries"
 
 
 def feedback_enabled():
@@ -78,6 +95,31 @@ def service(target_config=None):
                          equipment_scope=scope(), reuse_history=feedback_enabled())
 
 
+def assessment_service(target_config=None, *, equipment_scope=None):
+    config = target_config if target_config is not None else target()
+    return WarningAssessment(memory(config), use_vectors=os.getenv("RAG_WARNING_VECTORS", "1") != "0",
+                             equipment_scope=scope() if equipment_scope is None else equipment_scope,
+                             reuse_history=feedback_enabled())
+
+
+def case_events(case):
+    return [case["event"], *(r["handoff"] for r in case.get("repeats", []) if "handoff" in r)]
+
+
+def preferred_event(case):
+    events = case_events(case)
+    if not is_timeseries(case):
+        return events[0]
+    if case["status"] in ("resolved", "false_alarm"):
+        delivery = store.warning_delivery_for_case(case["case_id"])
+        if delivery:
+            return next((event for event in events if event["event_id"] == delivery["event_id"]), events[0])
+    codes = [(event, observed_code(event)) for event in events]
+    return max(((event, code) for event, code in codes if code),
+               key=lambda pair: timestamp(pair[1]["observed_at"], "observed_at"),
+               default=(events[0], None))[0]
+
+
 def deliver_next(now=None):
     timestamp = time.time() if now is None else now
     job = store.claim_warning_delivery(timestamp, timestamp + 120)
@@ -85,10 +127,15 @@ def deliver_next(now=None):
         return False
     event_id, attempt, payload = job
     try:
-        rag = ApiWarningRag(memory(payload["target"]),
-                            equipment_scope=payload["resolution"]["equipment_scope"])
-        rag.trusted_source = payload["resolution"].get("manual_source")
-        result = rag.record_resolution(payload["handoff"], **payload["resolution"])
+        fields = dict(payload["resolution"])
+        if payload.get("rag_mode") == "timeseries":
+            rag = assessment_service(payload["target"], equipment_scope=fields.pop("equipment_scope"))
+            rag.register(payload["handoff"])
+            result = rag.close(event_id, **fields)
+        else:
+            rag = ApiWarningRag(memory(payload["target"]), equipment_scope=fields["equipment_scope"])
+            rag.trusted_source = fields.get("manual_source")
+            result = rag.record_resolution(payload["handoff"], **fields)
     except (ValueError, TypeError, KeyError) as exc:
         log.warning("WARNING delivery rejected for %s (%s)", event_id, type(exc).__name__)
         store.finish_warning_delivery(event_id, attempt, "failed")
@@ -116,18 +163,31 @@ async def deliver_until_stopped(stop):
 
 
 def event_for(case, event_id=None):
-    if case["event"].get("event_type") != "early_warning":
+    if not is_timeseries(case) and case["event"].get("event_type") != "early_warning":
         raise HTTPException(409, "early_warning case required")
-    events = [case["event"]] + [r["handoff"] for r in case.get("repeats", []) if "handoff" in r]
-    eid = event_id or case["event"]["event_id"]
-    event = next((e for e in events if e["event_id"] == eid), None)
+    eid = event_id or preferred_event(case)["event_id"]
+    event = next((e for e in case_events(case) if e["event_id"] == eid), None)
     if event is None:
         raise HTTPException(404, "event does not belong to this case or its raw payload is unavailable")
     try:
-        analyze_warning(event)
+        if is_timeseries(case):
+            parse_event(event, scope())
+        else:
+            analyze_warning(event)
     except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(422, str(exc)) from exc
     return event
+
+
+def assess(event, *, retry=False):
+    event_id = event["event_id"]
+    with _assessment_locks[hash(event_id) % len(_assessment_locks)]:
+        rag = assessment_service()
+        rag.register(event)
+        previous = rag.read_decision(event_id)
+        if previous is not None and (not retry or previous["status"] != "uncertain"):
+            return previous
+        return rag.assess(event_id)
 
 
 def without_rejected(result, state):
@@ -146,6 +206,8 @@ def without_rejected(result, state):
             cleaned[key] = [card for card in cleaned[key] if card["manual_case_id"] != rejected]
     if (cleaned.get("automatic_card") or {}).get("manual_case_id") == rejected:
         cleaned.update(automatic_card=None, status="candidates")
+    if (cleaned.get("card") or {}).get("manual_case_id") == rejected:
+        cleaned.update(card=None, route="manual", status="rejected", reason="worker_rejected")
     if result.get("status") == "ok" and "candidates" in cleaned and not cleaned["candidates"]:
         cleaned["status"] = "no_evidence"
     return cleaned
@@ -162,7 +224,9 @@ def inspect(case, event_id=None):
         status = delivery["status"]
     enabled = feedback_enabled()
 
-    if case["status"] in ("resolved", "false_alarm", "unresolved") and previous:
+    if is_timeseries(case):
+        response = previous or {"event_id": event["event_id"], "status": "awaiting_assessment"}
+    elif case["status"] in ("resolved", "false_alarm", "unresolved") and previous:
         response = {key: previous[key] for key in _INSPECTION_FIELDS if key in previous}
     else:
         pending = store.warning_pending(analyze_warning(event)["pattern_key"])
@@ -189,12 +253,16 @@ def inspect(case, event_id=None):
 def snapshot(case, event_id, result, kind):
     state = case.setdefault("warning_events", {}).setdefault(event_id, {})
     result = without_rejected(result, state)
-    stored = {key: result[key] for key in _INSPECTION_FIELDS if key in result} if kind == "inspection" else result
+    fields = _ASSESSMENT_FIELDS if is_timeseries(case) else _INSPECTION_FIELDS
+    stored = {key: result[key] for key in fields if key in result} if kind == "inspection" else result
     state[kind] = copy.deepcopy(stored)
-    cards = [result.get("automatic_card"), *result.get("history_candidates", []), *result.get("candidates", [])]
+    cards = [result.get("automatic_card"), result.get("card"), *result.get("cards", []),
+             *result.get("history_candidates", []), *result.get("candidates", [])]
     for card in cards:
-        if card:
+        if card and card.get("manual_case_id") and card["manual_case_id"] != state.get("rejected_auto_case_id"):
             state.setdefault("shown_cards", {})[card["manual_case_id"]] = copy.deepcopy(card)
+        elif card and card.get("evidence_id"):
+            state.setdefault("shown_sources", {})[card["evidence_id"]] = copy.deepcopy(card["source"])
     for hit in result.get("hits", []):
         state.setdefault("shown_sources", {})[hit["source"]["evidence_id"]] = copy.deepcopy(hit["source"])
     return result

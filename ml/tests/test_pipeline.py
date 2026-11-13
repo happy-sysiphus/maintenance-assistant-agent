@@ -1461,6 +1461,7 @@ def test_v14_ew_basic(workspace, monkeypatch):
     r = next(x for x in res if (x["handoff"] or {}).get("event_type") == "early_warning")
     h, b, cf = r["handoff"], r["handoff"]["sensor_features"], r["handoff"]["contributing_features"]
     assert h["schema_version"] == "1.4" and b["window_end"] == h["early_warning"]["onset_at"]
+    assert h["episode_id"] == main.warning_episode_id("V1", h["early_warning"]["since"])
     assert set(b["channels"]) == {f"c{i}" for i in range(1, 20)}
     assert 0 < len(cf) <= 3 and all(c["contribution"] > 0 for c in cf) and not any(c["sensor"][:5] == "hour_" for c in cf)
     assert r["windows_scored"] == 1 and cf == v14_filter(r["contributing_features"])
@@ -1827,6 +1828,25 @@ def test_v14_critical_window_unit():
     between = [verdict(1), verdict(3)]
     gap = main.RuleHit(pd.Timestamp("2021-10-01 00:02:30"), "E029", False)
     assert main.critical_window(between, vecs[:2], gap)[0].index[0].minute == 3, "between two windows: the later one"
+
+
+def test_controller_code_keeps_the_warning_active_at_its_window():
+    from types import SimpleNamespace
+
+    sys.path.insert(0, ROOT)
+    main = importlib.import_module("main")
+    first = pd.Timestamp("2021-10-01T00:00:00")
+    second = first + pd.Timedelta(minutes=4)
+    windows = [
+        SimpleNamespace(w=pd.DataFrame(index=pd.DatetimeIndex([first + pd.Timedelta(minutes=1)])),
+                        prior_warning_since=first),
+        SimpleNamespace(w=pd.DataFrame(index=pd.DatetimeIndex([second + pd.Timedelta(minutes=1)])),
+                        prior_warning_since=second),
+    ]
+    hit = main.RuleHit(first + pd.Timedelta(seconds=52), "E012", False)
+    assert main.controller_episode_id("gun", windows, hit) == main.warning_episode_id("gun", first)
+    assert main.controller_episode_id("gun", windows, main.RuleHit(hit.time.tz_localize("UTC"), "E012", False)) == main.warning_episode_id("gun", first)
+    assert main.controller_episode_id("gun", windows, main.RuleHit(first - pd.Timedelta(seconds=1), "E012", False)) is None
 
 
 def test_v14_window_choice_failure_keeps_the_event(workspace, monkeypatch):

@@ -12,7 +12,7 @@ import { BackLink, CaseFacts, CauseList, FalseAlarmButton, FieldMemoryNote } fro
 // 상황 (wireframe/boards/V2Case.dc.html): 고장 전후 30분 그래프 + 확인할 원인
 export default function OverviewPage() {
   const d = useCaseDetail()
-  return d.event.event_type === 'early_warning' ? <WarningPage /> : <CriticalOverview />
+  return d.rag_mode === 'timeseries' || d.event.event_type === 'early_warning' ? <WarningPage /> : <CriticalOverview />
 }
 
 function CriticalOverview() {
