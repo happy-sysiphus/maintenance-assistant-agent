@@ -115,6 +115,12 @@ def score_trace(gun_id: str, detected_at: str) -> list[dict[str, Any]]:
     return out
 
 
+def codeless_critical(handoff: dict[str, Any]) -> bool:
+    """C-9 (11/13): CRITICAL은 종료 코드(E 코드) 규칙으로만 생긴다. 코드 없는 critical(옛 ML의 모델 10분 지속 경로)은
+    E 코드 RAG가 안내를 만들 수 없어 빈 케이스가 되므로 받지 않는다. 조기 경보는 원래 코드가 없으니 해당하지 않는다."""
+    return handoff.get("event_type") != "early_warning" and guidance.event_code(handoff) not in guidance.mapping()
+
+
 def ingest(handoff: dict[str, Any]) -> str:
     """알림을 케이스로 만든다. 같은 설비와 경보 그룹의 열린 케이스에 반복 경보를 붙인다."""
     # 알림은 한 번에 하나씩 처리한다. 반복을 붙이는 저장이 같은 케이스의 닫기 · 기록과 겹치지 않게도 한다
@@ -122,6 +128,10 @@ def ingest(handoff: dict[str, Any]) -> str:
         eid = handoff["event_id"]
         if store.seen(eid):
             return "duplicate"
+        if codeless_critical(handoff):
+            # 다시 당겨 와도(sync_from_ml) 매번 무시만 하도록 본 것으로 표시한다. 케이스는 만들지 않는다
+            store.mark_seen(eid, None)
+            return "ignored_codeless_critical"
         same = store.open_case(handoff["gun_id"], store.group_key(handoff))
         if same:
             same.setdefault("repeats", []).append({"event_id": eid, "detected_at": handoff["detected_at"], "handoff": handoff})

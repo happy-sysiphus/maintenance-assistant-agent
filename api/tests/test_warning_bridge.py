@@ -119,23 +119,34 @@ def test_repeat_keeps_whole_event_and_uses_selected_repeat(app, memory):
     assert 'c5:up' in row['pattern_key']
 
 
-def test_warning_and_code_less_critical_stay_separate_with_legacy_case(app, make_handoff):
+def test_code_less_critical_is_ignored_and_legacy_warning_unaffected(app, make_handoff):
+    """C-9: a code-less critical (old ML 10-min model path) makes no case; a legacy warning row keeps its repeats."""
     warning_id = ingest(app, warning())
     with store._conn() as db:
         db.execute("UPDATE cases SET code = NULL WHERE case_id = ?", (warning_id,))
     critical = make_handoff('critical', gun_id='gun-1', code=None, source='model')
-    critical_id = ingest(app, critical)
-    assert critical_id != warning_id
+    r = app.post('/api/ml/handoffs', json=critical)
+    assert r.status_code == 200 and r.json() == {'result': 'ignored_codeless_critical'}
+    assert app.post('/api/ml/handoffs', json=critical).json() == {'result': 'duplicate'}  # a resend stays ignored
+    assert [c['case_id'] for c in store.all_cases()] == [warning_id]
 
     repeated = warning('w2')
     assert app.post('/api/ml/handoffs', json=repeated).status_code == 200
     assert store.get(warning_id)['repeats'][0]['handoff'] == repeated
-    assert store.get(critical_id)['repeats'] == []
     summaries = {row['case_id']: row for row in app.get('/api/cases').json()['cases']}
+    assert list(summaries) == [warning_id]
     assert summaries[warning_id]['event']['event_type'] == 'early_warning'
     assert summaries[warning_id]['severity'] == 'warning'
-    assert summaries[critical_id]['event']['event_type'] == 'critical'
-    assert summaries[critical_id]['severity'] == 'critical'
+
+
+def test_coded_critical_still_makes_a_case(app, make_handoff):
+    """Rule-triggered critical and a model trigger that carries a terminal code both keep the E-code path."""
+    for eid, src in (('rule', 'rule'), ('model-coded', 'model')):
+        r = app.post('/api/ml/handoffs', json=make_handoff(eid, gun_id=f'g-{eid}', code='E029', source=src))
+        assert r.json() == {'result': 'new'}
+    cases = store.all_cases()
+    assert len(cases) == 2 and all(c['severity'] == 'critical' for c in cases)
+    assert all(c['guidance']['candidates'] for c in cases), 'no empty case'
 
 
 def test_resolution_saved_when_feedback_off_and_retry_idempotent(app, monkeypatch, memory):

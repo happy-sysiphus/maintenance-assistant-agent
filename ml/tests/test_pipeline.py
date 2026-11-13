@@ -88,6 +88,8 @@ def isolated_state(tmp_path, monkeypatch):
     monkeypatch.setenv("RSW_MOCK_RAG_OUT", str(tmp_path / "rag_received"))
     monkeypatch.delenv("RSW_RAG_URL", raising=False)
     monkeypatch.delenv("RSW_MODEL_REGISTRY", raising=False)  # D-11: a registry set in the shell would win over RSW_MODEL_PATH
+    # C-9: early-warning handoffs are on by default now; the tests below opt in where they check them
+    monkeypatch.setenv("RSW_EARLY_WARNING_HANDOFFS", "0")
 
 
 def run(*args):
@@ -502,7 +504,9 @@ def test_5_api_chunks_sustain_rule(workspace):
             # one 1170-row chunk: every window is scored, the run is long enough -> sustained
             res = post(client, "S1", raw.iloc[:1170]).json()
             assert res["windows_scored"] == 19 and res["consecutive_alarms"] == 19
-            assert res["sustained_alarm"] is True and res["severity"] == "critical" and res["alarm_duration_s"] >= 1100
+            # C-9: a 19-min model alarm alone stays a warning - no code-less critical event, no handoff
+            assert res["sustained_alarm"] is True and res["severity"] == "warning" and res["alarm_duration_s"] >= 1100
+            assert res["model_critical"] is False and res["critical_in_request"] is False and res["handoff"] is None
             # 10 s chunks: a clock window is scored once, when complete - sustained after
             # sustain x window = 180 s of continuous alarm, whatever the call rate
             first, sustained_at = None, None
@@ -982,6 +986,26 @@ def test_9_restart_hold_and_critical_sustain(workspace, monkeypatch):
         finally:
             d.threshold, d.warmup_alarms = thr, wa
         run = pd.DataFrame(out).drop_duplicates("window_start")
+        # C-9 (default): the model alone never becomes critical - a 20-min alarm run stays a warning, no handoff
+        assert card["model_critical"] is False
+        assert (run["alarm_duration_s"] >= 600).sum() >= 3, "the run is long enough for the old 10-min path"
+        assert (run["severity"] == "warning").all() and not run["critical_in_request"].any()
+        assert not run["model_critical"].any() and run["handoff"].isna().all()
+        assert client.get("/handoffs", params={"gun_id": "CS", "event_type": "critical"}).json() == []
+        pts = client.get("/guns/CS/trace", params={"minutes": 60}).json()["points"]
+        assert not any(p["critical"] for p in pts)
+        # the old C-5 path (RSW_MODEL_CRITICAL=1): critical after critical_sustain windows
+        d.model_critical = True
+        d.threshold, d.warmup_alarms = -1e9, True
+        try:
+            out = []
+            for a in range(0, 1200, 60):
+                r = client.post("/predict", json={"gun_id": "CS5", "readings": raw.iloc[a:a + 60].to_dict("records")})
+                if r.status_code == 200:
+                    out.append(r.json())
+        finally:
+            d.threshold, d.warmup_alarms, d.model_critical = thr, wa, False
+        run = pd.DataFrame(out).drop_duplicates("window_start")
         sus = run[run["sustained_alarm"] & (run["alarm_duration_s"] < 600)]
         assert len(sus) >= 5 and (sus["severity"] == "warning").all() and not sus["critical_in_request"].any()
         assert not sus["model_critical"].any()
@@ -990,7 +1014,7 @@ def test_9_restart_hold_and_critical_sustain(workspace, monkeypatch):
         assert crit["model_critical"].all()
         assert (crit["severity_source"] == "model").all() and crit["handoff"].iloc[0] is not None
         # the chart marks critical-length runs, not 3-window ones
-        pts = client.get("/guns/CS/trace", params={"minutes": 60}).json()["points"]
+        pts = client.get("/guns/CS5/trace", params={"minutes": 60}).json()["points"]
         assert any(p["sustained"] and not p["critical"] for p in pts) and any(p["critical"] for p in pts)
         # the restart state survives a restart of the server (snapshot / restore)
         snap = g.snapshot("RH", d.info.created)
@@ -1266,7 +1290,7 @@ def test_16_ew_handoff_rules(workspace, monkeypatch):
     per episode start (event_type early_warning, no code, no class, the profile as candidates), a cooldown per gun,
     none while a critical event or a terminal code is there; /handoffs?event_type= and /stats count them."""
     monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))
-    monkeypatch.delenv("RSW_EARLY_WARNING_HANDOFFS", raising=False)
+    monkeypatch.setenv("RSW_EARLY_WARNING_HANDOFFS", "0")
     sys.path.insert(0, ROOT)
     main = importlib.reload(importlib.import_module("main"))
     from fastapi.testclient import TestClient
@@ -1324,7 +1348,7 @@ def test_16_ew_handoff_rules(workspace, monkeypatch):
             assert last["early_warning_onset"] and last["rule_triggered"]
             assert last["early_warning_handoff_suppressed"] == ("critical" if gun == "CR" else "terminal_code")
         assert len(client.get("/handoffs", params={"event_type": "early_warning"}).json()) == 1
-    os.environ.pop("RSW_EARLY_WARNING_HANDOFFS", None)
+    os.environ["RSW_EARLY_WARNING_HANDOFFS"] = "0"
 
 
 def test_17_ew_restart_and_old_bundle(workspace, tmp_path, monkeypatch):
@@ -1360,7 +1384,7 @@ def test_17_ew_restart_and_old_bundle(workspace, tmp_path, monkeypatch):
         assert out and not any(r["early_warning"] or r["early_warning_onset"] for r in out)
         assert all(r["early_warning_threshold"] is None for r in out)
         assert client.get("/handoffs", params={"event_type": "early_warning"}).json() == []
-    os.environ.pop("RSW_EARLY_WARNING_HANDOFFS", None)
+    os.environ["RSW_EARLY_WARNING_HANDOFFS"] = "0"
     os.environ.pop("RSW_MODEL_PATH", None)
 
 
@@ -1370,7 +1394,7 @@ def v14_load(workspace, monkeypatch, ew=False):
     if ew:
         monkeypatch.setenv("RSW_EARLY_WARNING_HANDOFFS", "1")
     else:
-        monkeypatch.delenv("RSW_EARLY_WARNING_HANDOFFS", raising=False)
+        monkeypatch.setenv("RSW_EARLY_WARNING_HANDOFFS", "0")
     sys.path.insert(0, ROOT)
     return importlib.reload(importlib.import_module("main"))
 
@@ -1661,6 +1685,11 @@ def test_v14_critical_model_only_first_critical_window(workspace, monkeypatch):
     with TestClient(main.app) as client:
         d = main.app.state.detector
         d.threshold, d.warmup_alarms = -1e9, True
+        # C-9 (default): no model-only critical event, so no code-less critical handoff
+        off = v14_post(client, "C3off", raw.iloc[:1170])
+        assert off["severity"] == "warning" and off["handoff"] is None
+        assert client.get("/handoffs", params={"event_type": "critical"}).json() == []
+        d.model_critical = True  # the old C-5 path (RSW_MODEL_CRITICAL=1)
         r = v14_post(client, "C3", raw.iloc[:1170])
         res = stream_chunks(client, "C3b", raw.iloc[:1170])  # test_9's 60-row client: one window per request
     h, b = r["handoff"], r["handoff"]["sensor_features"]
@@ -2361,7 +2390,7 @@ def loop_registry(workspace, tmp_path):
 def loop_main(reg, monkeypatch):
     monkeypatch.setenv("RSW_MODEL_REGISTRY", reg.root)
     monkeypatch.delenv("RSW_MODEL_PATH", raising=False)
-    monkeypatch.delenv("RSW_EARLY_WARNING_HANDOFFS", raising=False)
+    monkeypatch.setenv("RSW_EARLY_WARNING_HANDOFFS", "0")
     sys.path.insert(0, ROOT)
     return importlib.reload(importlib.import_module("main"))
 
@@ -2746,3 +2775,18 @@ def test_21k_loop_reload_waits_for_a_request_in_flight(workspace, tmp_path, monk
         assert saved["model_created"] == LOOP_NEW
         assert saved["latest"].startswith(raw["time"].iloc[299].rstrip("Z")), "the request's rows are in the state"
         assert client.get("/health").json()["model_version"] == "v002"
+
+
+def test_c9_early_warning_handoffs_on_by_default(workspace, monkeypatch):
+    """C-9: unset = early-warning handoffs on (the model's only way downstream); "0" turns them off."""
+    from fastapi.testclient import TestClient
+    for value, expected in ((None, True), ("0", False), ("1", True)):
+        if value is None:
+            monkeypatch.delenv("RSW_EARLY_WARNING_HANDOFFS", raising=False)
+        else:
+            monkeypatch.setenv("RSW_EARLY_WARNING_HANDOFFS", value)
+        monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))
+        sys.path.insert(0, ROOT)
+        main = importlib.reload(importlib.import_module("main"))
+        with TestClient(main.app) as client:
+            assert client.get("/health").json()["early_warning"]["handoffs"] is expected, value

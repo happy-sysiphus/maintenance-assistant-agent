@@ -42,10 +42,10 @@ Since v1.4 the handoff also carries `sensor_features` (the raw per-second values
 model features) of the event's own minute, for early warnings and critical events alike.
 
 Early warning (C-8, bundle `early_warning`, history.md §42-43): a low-precision "a failure may come in the next tens of
-minutes" state per gun (`early_warning*` fields, trace, /guns), separate from `severity`. With
-RSW_EARLY_WARNING_HANDOFFS=1 the start of an early-warning episode also becomes a handoff with
-event_type "early_warning" (no terminal code; per-gun cooldown; never while a critical event or a terminal code is
-there). Off by default: a receiver that does not read event_type would take it for a critical event.
+minutes" state per gun (`early_warning*` fields, trace, /guns), separate from `severity`. The
+start of an early-warning episode also becomes a handoff with event_type "early_warning" (no terminal code; per-gun
+cooldown; never while a critical event or a terminal code is there). On by default since C-9 (2026-11-13: the model
+alone is no longer critical, so this is its only way downstream); RSW_EARLY_WARNING_HANDOFFS=0 turns it off.
 
 State survives a restart (RSW_STATE_DIR, default ./state; "" = memory only): every gun's judgement state
 (warm-up result, gun threshold, alarm run, rule cooldown / repeat history, carry) is written after each request to
@@ -122,6 +122,11 @@ TRACE_SKIP = {"hour_sin", "hour_cos", "error_share_10min"}
 # push target for handoffs (FE's api: http://127.0.0.1:9000/api/ml/handoffs); unset = pull only (GET /handoffs)
 RAG_URL = os.environ.get("RSW_RAG_URL")
 RAG_TIMEOUT_S = float(os.environ.get("RSW_RAG_TIMEOUT_S", "10"))
+# C-9 (2026-11-13, 멘토링 후 합의): a sustained model alarm alone is never critical any more - the 10-min
+# (critical_sustain) path made code-less critical handoffs that the E-code RAG could not answer (empty cases).
+# Critical = the terminal-code rule only; the model's signal goes downstream as an early warning.
+# RSW_MODEL_CRITICAL=1 restores the old C-5 behaviour (replays / comparisons only).
+MODEL_CRITICAL = os.environ.get("RSW_MODEL_CRITICAL", "0") == "1"
 OUTBOX_MAX = 1000  # handoffs kept in memory when nothing is persisted (RSW_STATE_DIR="")
 STATE_DIR = os.path.join(PROJECT_ROOT, "state")  # default RSW_STATE_DIR
 RAG_BACKOFF_S = (10.0, 30.0, 120.0, 600.0)  # wait before retry 1, 2, 3, 4+ (RSW_RAG_BACKOFF_S="10,30,120,600")
@@ -271,7 +276,10 @@ class ModelInfo(BaseModel):
                                                         "gun is a repeat: reported, not critical (None = no repeat check)")
     warmup_alarms: bool = Field(True, description="false: the model raises no alarm in a gun's warm-up (alarm_held)")
     critical_sustain: int | None = Field(None, description="windows of continuous model alarm before the model alone is "
-                                                           "critical (RAG handoff); older bundles: = sustain")
+                                                           "critical (RAG handoff); older bundles: = sustain. Only "
+                                                           "used when model_critical is true")
+    model_critical: bool = Field(False, description="C-9: false (default) = the model alone is never critical, only the "
+                                                    "terminal-code rule is; true = old C-5 path (RSW_MODEL_CRITICAL=1)")
     restart_hold_s: int | None = Field(None, description="no model alarm for this long after an idle block of "
                                                          "restart_idle_windows windows (alarm_held; None = off)")
     restart_idle_windows: int | None = None
@@ -735,6 +743,8 @@ class Detector:
         self.sustain: int = int(b.get("sustain", 3))
         # C-5: the model alone is critical after critical_sustain windows; restart hold after idle blocks
         self.critical_sustain: int = int(b.get("critical_sustain") or self.sustain)
+        # C-9: off by default - the model alone never makes a window critical (critical_sustain is kept for reporting)
+        self.model_critical: bool = MODEL_CRITICAL
         self.restart_hold: dict[str, Any] | None = b.get("restart_hold")
         self.duty_idx: int | None = (list(b["model_cols"]).index("weld_duty_10min_mean")
                                      if "weld_duty_10min_mean" in b["model_cols"] else None)
@@ -793,7 +803,7 @@ class Detector:
                               gun_threshold_q=(gn or {}).get("threshold_q"), rule_cooldown_s=self.rule_cooldown_s,
                               rule_repeat_s=self.rule_repeat_s, rule_per_code=self.rule_per_code,
                               warmup_alarms=self.warmup_alarms,
-                              critical_sustain=self.critical_sustain,
+                              critical_sustain=self.critical_sustain, model_critical=self.model_critical,
                               restart_hold_s=None if not self.restart_hold else int(self.restart_hold["hold_s"]),
                               restart_idle_windows=None if not self.restart_hold else int(self.restart_hold["idle_windows"]),
                               **({} if self.early_warning is None else {
@@ -1090,7 +1100,7 @@ class Detector:
             duration = int((w.index[-1] - g.alarm_since).total_seconds()) + 1 if alarm and g.alarm_since is not None else 0
             v = Verdict(w, float(sc), float(threshold), is_anomaly, held, alarm, duration,
                         duration >= self.sustain * self.window, nw_share, hold,
-                        critical=duration >= self.critical_sustain * self.window,
+                        critical=self.model_critical and duration >= self.critical_sustain * self.window,
                         ew_active=ew_active, ew_onset=ew_onset)
             # trace: non-overlapping windows only, so the ring covers TRACE_WINDOWS minutes whatever the request cadence
             if fresh and (not g.trace or g.trace[-1]["window_end"] < w.index[0]):
@@ -1582,7 +1592,9 @@ async def lifespan(app: FastAPI):
     app.state.rag_max_attempts = int(os.environ.get("RSW_RAG_MAX_ATTEMPTS", RAG_MAX_ATTEMPTS))
     app.state.outbox_poll_s = float(os.environ.get("RSW_OUTBOX_POLL_S", OUTBOX_POLL_S))
     # C-8: early-warning episodes become handoffs (event_type "early_warning") only on request
-    app.state.ew_handoffs = os.environ.get("RSW_EARLY_WARNING_HANDOFFS", "").strip().lower() in ("1", "true", "on", "yes")
+    # C-9 (11/13): on by default - the model's signal reaches the RAG only as an early warning now (the api handles
+    # event_type "early_warning" as a WARNING case). RSW_EARLY_WARNING_HANDOFFS=0 turns it off.
+    app.state.ew_handoffs = os.environ.get("RSW_EARLY_WARNING_HANDOFFS", "1").strip().lower() not in ("0", "false", "off", "no")
     if app.state.ew_handoffs and d.early_warning is None:
         log.warning("RSW_EARLY_WARNING_HANDOFFS is on, but %s has no early warning (retrain with the current train.py)",
                     model_path)

@@ -139,7 +139,7 @@ def seen(event_id: str) -> bool:
         return c.execute("SELECT 1 FROM events WHERE event_id = ?", (event_id,)).fetchone() is not None
 
 
-def mark_seen(event_id: str, case_id: str) -> None:
+def mark_seen(event_id: str, case_id: str | None) -> None:
     with _lock, _conn() as c:
         c.execute("INSERT OR IGNORE INTO events VALUES (?, ?)", (event_id, case_id))
 
