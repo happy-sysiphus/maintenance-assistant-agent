@@ -624,11 +624,82 @@ def early_warning_leads(w):
     return lead
 
 
+# D-12 operator verdicts (docs/superpowers/specs/2026-11-12-feedback-labels-design.md): a warning that an operator
+# closed as "resolved, something was wrong" is followed by no failure in the data, so its windows would count as normal
+# and its onset as a false alarm. --feedback names those spans; their windows carry confirmed = 1 and are left out of
+# the normal data in four places: the fit, the early-warning calibration, the evaluation's normal windows and the
+# early-warning false alarms. The pre-failure windows and the hit zone are not touched.
+def _naive_utc(s):
+    t = pd.Timestamp(s)
+    return t.tz_convert("UTC").tz_localize(None) if t.tzinfo is not None else t
+
+
+def load_feedback(path, window_s=None):
+    """--feedback JSON -> {"confirmed": {file: [(start, end), ...]}, "false_alarm": {...}}: naive UTC, end exclusive,
+    a missing key is empty. With window_s both ends are floored to the window: a warning's time is a row time (the
+    first or the last second of its window), the windows are named by their clock label, and the window the warning
+    lies in has to be the first one of its span."""
+    with open(path, encoding="utf-8") as f:
+        raw = json.load(f)
+
+    def at(s):
+        t = _naive_utc(s)
+        return t.floor(f"{int(window_s)}s") if window_s else t
+
+    return {k: {name: [(at(a), at(b)) for a, b in spans] for name, spans in (raw.get(k) or {}).items()}
+            for k in ("confirmed", "false_alarm")}
+
+
+def _in_spans(index, spans):
+    hit = np.zeros(len(index), dtype=bool)
+    for a, b in spans:
+        hit |= np.asarray((index >= a) & (index < b))
+    return hit
+
+
+def mark_confirmed(w, spans):
+    """One file's windows (index = window start) with a float32 `confirmed` column: 1 inside a span, else 0."""
+    return w.assign(confirmed=_in_spans(w.index, spans).astype("float32"))
+
+
+def confirmed_mask(w):
+    """Windows an operator confirmed as abnormal; none without the column (no --feedback, or no confirmed span)."""
+    return w["confirmed"].to_numpy() > 0 if "confirmed" in w.columns else np.zeros(len(w), dtype=bool)
+
+
+def feedback_counts(w, fb):
+    """What the feedback did on these windows (any number of files): confirmed spans on them, the windows they took out of
+    the normal data, the ones that were not normal anyway (pre-failure, error state), and the false-alarm verdicts
+    that the data contradicts: the warning's own window - the first one of the span - lies in the hit zone, 10-60 min
+    before the onset, so the failure did follow it."""
+    c = confirmed_mask(w)
+    normal = (w["label"].to_numpy() == 0) & (w["error_active"].to_numpy() == 0)
+    conflicts = 0
+    if len(w) and any(fb["false_alarm"].values()):
+        lead, files = early_warning_leads(w), w["file"].to_numpy()
+        zone = (lead >= EW_ZONE_S[0]) & (lead <= EW_ZONE_S[1])
+        for name, spans in fb["false_alarm"].items():
+            for span in spans:
+                at = np.flatnonzero((files == name) & _in_spans(w.index, [span]))
+                conflicts += int(len(at) and zone[at[np.argmin(w.index.to_numpy()[at])]])
+    loaded = set(w["file"]) if len(w) else set()  # a span on a file that is not here was not used
+    return {"spans": int(sum(len(v) for name, v in fb["confirmed"].items() if name in loaded)),
+            "windows_excluded": int((c & normal).sum()),
+            "windows_already_not_normal": int((c & ~normal).sum()), "false_alarm_conflicts": int(conflicts)}
+
+
+def bundle_args(args):
+    """The arguments a bundle records. Without --feedback the key is left out: a model trained without operator
+    verdicts carries the args it carried before D-12."""
+    return {k: v for k, v in vars(args).items() if not (k == "feedback" and v is None)}
+
+
 def early_warning_population(w):
     """Calibration windows: > EW_CAL_LEAD_S before T, no controller code, not in the warm-up (non-welding windows
     included - the population B-18 swept). Fewer than EW_CAL_MIN -> > 1 h before T (fallback). (mask, fallback)."""
     lead = early_warning_leads(w)
     base = (w["error_active"].to_numpy() == 0) & ~(w["warmup"].to_numpy() > 0 if "warmup" in w.columns else False)
+    base = base & ~confirmed_mask(w)  # D-12
     pop = base & (lead > EW_CAL_LEAD_S)
     if pop.sum() >= EW_CAL_MIN:
         return pop, False
@@ -665,6 +736,7 @@ def early_warning_metrics(w, scores, cfg, n_boot=1000):
     lead = early_warning_leads(w)
     ok = ~(w["warmup"].to_numpy() > 0) if "warmup" in w.columns else np.ones(len(w), dtype=bool)
     term = w["terminal_any"].to_numpy() > 0 if "terminal_any" in w.columns else np.zeros(len(w), dtype=bool)
+    conf = confirmed_mask(w)  # D-12: neither a false alarm nor monitored normal time; the hit zone is not touched
 
     def hit(a, ld, k, shift):
         z = (ld - shift >= EW_ZONE_S[0]) & (ld - shift <= EW_ZONE_S[1]) & k
@@ -674,7 +746,7 @@ def early_warning_metrics(w, scores, cfg, n_boot=1000):
     for f, idx in w.groupby("file").indices.items():
         idx = idx[np.argsort(w.index.to_numpy()[idx], kind="stable")]
         ld, a, o, k = lead[idx], active[idx], onset[idx], ok[idx]
-        normal = (ld > EW_ZONE_S[1]) & k
+        normal = (ld > EW_ZONE_S[1]) & k & ~conf[idx]
         sent, last = 0, None
         for i in np.flatnonzero(o & normal & ~term[idx]):
             t = w.index[idx[i]]
@@ -795,7 +867,7 @@ def evaluate(val, scores, threshold, sustain, gate=None, gun_thr=None, warmup_al
     early_warning: the bundle's early_warning block (C-8) -> m["early_warning"] (event level, B-18 definitions).
     Every AUROC / AUPRC here is pre-failure windows vs NORMAL windows: error-state windows outside the pre-failure
     window are neither (until 2026-09-29 they counted as negatives - history.md §14)."""
-    normal = (val["label"] == 0) & (val["error_active"] == 0)
+    normal = (val["label"] == 0) & (val["error_active"] == 0) & ~confirmed_mask(val)  # D-12: confirmed = neither
     pre = val["label"] == 1
     y, s = pre.values.astype(int), scores
     scored = (normal | pre).values
@@ -988,17 +1060,21 @@ def test_files_in(test_dir):
 
 def evaluate_test(model, feat_cols, model_cols, window, threshold, sustain, files, score_dir=None, tag="", gate=None,
                   gn=None, label_window=None, warmup_alarms=True, restart=None, critical_sustain=None,
-                  rule_per_code=RULE_PER_CODE, early_warning=None):
+                  rule_per_code=RULE_PER_CODE, early_warning=None, feedback=None):
     """Window + score the preprocessed test files with the frozen model/threshold (+ the bundle's gun
     normalisation) and run the same evaluation as for validation. Optionally writes per-file score
-    CSVs (time, score, alarm, threshold, ...)."""
+    CSVs (time, score, alarm, threshold, ...). feedback (D-12, load_feedback): m["feedback"] = feedback_counts, and
+    with a confirmed window also m["before_feedback"] = the same evaluation of the same scores without it."""
     ws, cs = [], []
+    marked = bool(feedback and any(feedback["confirmed"].values()))
     norm_cols = gun_norm_columns(feat_cols, gn.get("columns")) if gn else None
     for i, f in enumerate(files, 1):
         df = pd.read_parquet(f)
         w, calib = window_file(df, window, feat_cols, gn, norm_cols)
         if label_window:
             w = relabel(w, label_window)
+        if marked:
+            w = mark_confirmed(w, feedback["confirmed"].get(os.path.splitext(os.path.basename(f))[0], []))
         ws.append(w)
         if calib is not None:
             cs.append(calib)
@@ -1010,6 +1086,12 @@ def evaluate_test(model, feat_cols, model_cols, window, threshold, sustain, file
     rh = restart_flags(test_w, restart)
     m = evaluate(test_w, scores, threshold, sustain, gate, gun_thr, warmup_alarms, restart, critical_sustain,
                  rule_per_code, restart_held=rh, early_warning=early_warning)
+    if feedback is not None:
+        m["feedback"] = feedback_counts(test_w, feedback)
+        if confirmed_mask(test_w).any():
+            m["before_feedback"] = evaluate(test_w.drop(columns=["confirmed"]), scores, threshold, sustain, gate, gun_thr,
+                                            warmup_alarms, restart, critical_sustain, rule_per_code, restart_held=rh,
+                                            early_warning=early_warning)
     m["files"] = [os.path.basename(f) for f in files]
     m["file_class"] = {f: str(c) for f, c in test_w.groupby("file")["class"].first().items()}
     m["class_source"] = "inferred by preprocess.py from the terminal code in the last 10 min"
@@ -1107,6 +1189,9 @@ def main():
     ap.add_argument("--eval-out", default=None,
                     help="with --evaluate: write the metrics JSON here instead of "
                          "<model-dir>/baseline_<model>_test_metrics.json")
+    ap.add_argument("--feedback", default=None,
+                    help="JSON of operator verdicts (D-12 model loop): confirmed / false_alarm -> file -> [[start, end], "
+                         "...]; the windows of a confirmed span are not normal data")
     ap.add_argument("--model-dir", default=os.path.join(PROJECT_ROOT, "models"))
     ap.add_argument("--model", choices=["iforest", "pca", "ensemble"], default="ensemble",
                     help="ensemble = IsolationForest + LightGBM, the production model (needs lightgbm; history.md "
@@ -1178,6 +1263,7 @@ def main():
                 "hold_s": int(round(args.restart_hold_min * 60))} if args.restart_hold_min > 0 else None)
     if restart and "weld_duty_10min" in (args.drop_features or []):
         raise SystemExit("the restart hold reads weld_duty_10min: keep the feature or pass --restart-hold-min 0")
+    feedback = load_feedback(args.feedback, args.window) if args.feedback else None
     test_dir = args.test_dir or os.path.join(args.data_dir, "test")
     test_files = [] if args.no_test else test_files_in(test_dir)
     if args.evaluate:
@@ -1189,6 +1275,8 @@ def main():
         if not os.path.exists(bundle_path):
             raise SystemExit(f"{bundle_path} not found - train first")
         b = load_bundle(bundle_path)
+        if args.feedback:  # the windows here are the bundle's, whatever --window says
+            feedback = load_feedback(args.feedback, b["window"])
         print(f"evaluating {bundle_path} (window {b['window']}s, threshold {b['threshold']:.4f}, "
               f"sustain {b['sustain']}) on {len(test_files)} "
               f"{'listed' if args.eval_files_from else 'test'} files")
@@ -1200,7 +1288,9 @@ def main():
                           warmup_alarms=b.get("warmup_alarms", True), restart=b.get("restart_hold"),
                           critical_sustain=b.get("critical_sustain"),
                           rule_per_code=bool((b.get("rule") or {}).get("per_code", False)),
-                          early_warning=b.get("early_warning"))
+                          early_warning=b.get("early_warning"), feedback=feedback)
+        fb_extra = {k: m.pop(src) for k, src in (("test_no_feedback", "before_feedback"), ("feedback", "feedback"))
+                    if src in m}
         print_metrics("test", m)
         dst = args.eval_out or os.path.join(args.model_dir, f"baseline_{args.model}_test_metrics.json")
         os.makedirs(os.path.dirname(os.path.abspath(dst)), exist_ok=True)
@@ -1208,6 +1298,7 @@ def main():
             json.dump({"bundle": bundle_path, "created": b.get("created"), "threshold": b["threshold"],
                        "window": b["window"], "sustain": b["sustain"],
                        "alarm_max_non_welding": b.get("alarm_max_non_welding"), "gun_norm": b.get("gun_norm"), "test": m,
+                       **fb_extra,
                        "evaluated": dt.datetime.now().isoformat(timespec="seconds")}, f, indent=2, default=str)
         print(f"saved {dst}")
         return
@@ -1233,6 +1324,7 @@ def main():
 
     t0 = time.time()
     feat_cols, gn_cols, parts, calibs = None, None, {}, {}
+    marked = bool(feedback and any(feedback["confirmed"].values()))  # D-12: the column only when it says something
     for i, f in enumerate(files, 1):
         df = pd.read_parquet(f)
         feat_cols = feat_cols or feature_columns(df, args.drop_features)
@@ -1242,6 +1334,8 @@ def main():
         w, calib = window_file(df, args.window, feat_cols, gn, gn_cols)
         if args.label_window:
             w = relabel(w, args.label_window)
+        if marked:
+            w = mark_confirmed(w, feedback["confirmed"].get(os.path.splitext(os.path.basename(f))[0], []))
         parts[f] = w
         if calib is not None:
             calibs[f] = calib
@@ -1255,7 +1349,7 @@ def main():
         tr = pd.concat([parts[f] for f in tr_files])
         # the warm-up windows stay in the fit at the GLOBAL scale on purpose: warm-up windows are scored that way
         # online, and without them the normal alarm rate triples (val 1.0 -> 3.2 %, test 0.5 -> 1.5 %; history.md §11)
-        normal = (tr["label"] == 0) & (tr["error_active"] == 0)
+        normal = (tr["label"] == 0) & (tr["error_active"] == 0) & ~confirmed_mask(tr)  # D-12
         if args.exclude_non_welding:
             normal &= tr["non_welding"] == 0
         fit = tr[normal]
@@ -1286,7 +1380,7 @@ def main():
         return model, X, s_tr, thr, m_val, s_va
 
     # C-8: the early-warning windows of some files (index = window start, as early_warning_flags expects)
-    ew_cols = ["file", "class", "ttf_s", "error_active", "terminal_any", "non_welding", "warmup"] + TERM_FLAGS
+    ew_cols = ["file", "class", "ttf_s", "error_active", "terminal_any", "non_welding", "warmup", "confirmed"] + TERM_FLAGS
 
     def ew_frame(fs):
         return pd.concat([parts[f][[c for c in ew_cols if c in parts[f].columns]] for f in fs])
@@ -1360,6 +1454,10 @@ def main():
 
     metrics = {"train": {"n_fit_windows": int(len(X)), "threshold": threshold,
                          "score_mean": float(train_scores.mean()), "score_std": float(train_scores.std())}}
+    if feedback is not None:
+        metrics["feedback"] = feedback_counts(pd.concat([w[[c for c in [*ew_cols, "label"] if c in w.columns]]
+                                                         for w in parts.values()]), feedback)
+        print(f"feedback: {metrics['feedback']}")
     if cv:
         metrics["cv"] = cv
     if m_val is not None:
@@ -1401,7 +1499,7 @@ def main():
         "preprocess_config": json.load(open(config_path, encoding="utf-8")) if os.path.exists(config_path) else None,
         "train_files": [os.path.basename(f) for f in train_files],
         "val_files": [os.path.basename(f) for f in val_files],
-        "metrics": metrics, "args": vars(args), "created": dt.datetime.now().isoformat(timespec="seconds"),
+        "metrics": metrics, "args": bundle_args(args), "created": dt.datetime.now().isoformat(timespec="seconds"),
     }
     path = os.path.join(args.model_dir, f"baseline_{args.model}.joblib")
     joblib.dump(bundle, path, compress=3)

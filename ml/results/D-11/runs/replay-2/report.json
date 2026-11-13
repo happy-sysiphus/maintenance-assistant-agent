@@ -1,0 +1,417 @@
+{
+ "registry": "C:\\Users\\a0106\\Desktop\\maintenance-assistant-agent\\ml\\models\\registry",
+ "config": {
+  "initial_min_files": 16,
+  "train_min_new": 5,
+  "shadow_min_files": 5,
+  "seeds": [
+   42,
+   43,
+   44
+  ],
+  "fa_ratio_max": 1.2,
+  "fa_cap": 24.0,
+  "auroc_margin": 0.0,
+  "gates": [
+   "auroc_margin",
+   "ew_hits",
+   "fa_cap"
+  ],
+  "recipe": [
+   "--model",
+   "ensemble",
+   "--ensemble-components",
+   "iforest,lgbm",
+   "--lgbm-weight",
+   "0.5",
+   "--window",
+   "60",
+   "--val-frac",
+   "0.25",
+   "--threshold-q",
+   "0.99",
+   "--sustain",
+   "3",
+   "--critical-sustain",
+   "10",
+   "--restart-hold-min",
+   "30",
+   "--restart-idle-windows",
+   "30",
+   "--alarm-max-non-welding",
+   "0.5",
+   "--exclude-non-welding",
+   "--drop-features",
+   "c19",
+   "--gun-norm",
+   "center",
+   "--warmup-hours",
+   "6",
+   "--cv",
+   "4",
+   "--early-warning-rule",
+   "model_ng_k1",
+   "--early-warning-q",
+   "0.975",
+   "--early-warning-cooldown-min",
+   "60"
+  ]
+ },
+ "champion": "v003",
+ "challenger": "v005",
+ "test_files": 8,
+ "note": null,
+ "ticks": [
+  {
+   "at": "2021-08-23T00:00:00",
+   "actions": [
+    "wait_first:3"
+   ]
+  },
+  {
+   "at": "2021-08-30T00:00:00",
+   "actions": [
+    "wait_first:5"
+   ]
+  },
+  {
+   "at": "2021-09-06T00:00:00",
+   "actions": [
+    "first:v001"
+   ]
+  },
+  {
+   "at": "2021-09-13T00:00:00",
+   "actions": [
+    "train:v002"
+   ]
+  },
+  {
+   "at": "2021-09-20T00:00:00",
+   "actions": [
+    "keep:v001|v002",
+    "train:v003"
+   ]
+  },
+  {
+   "at": "2021-09-27T00:00:00",
+   "actions": [
+    "defer:1"
+   ]
+  },
+  {
+   "at": "2021-10-04T00:00:00",
+   "actions": [
+    "swap:v001>v003",
+    "train:v004"
+   ]
+  },
+  {
+   "at": "2021-10-11T00:00:00",
+   "actions": [
+    "defer:3"
+   ]
+  },
+  {
+   "at": "2021-10-18T00:00:00",
+   "actions": [
+    "confirm:v003",
+    "keep:v003|v004",
+    "train:v005"
+   ]
+  },
+  {
+   "at": "2021-10-25T00:00:00",
+   "actions": [
+    "defer:3"
+   ]
+  },
+  {
+   "at": "2021-11-01T00:00:00",
+   "actions": [
+    "defer:4"
+   ]
+  }
+ ],
+ "versions": {
+  "v001": {
+   "cutoff": "2021-09-06T00:00:00",
+   "status": "retired",
+   "created": "2026-11-12T14:43:10",
+   "n_train_files": 16,
+   "by_class": {
+    "E01": 5,
+    "E02": 4,
+    "E03": 0,
+    "E04": 7
+   },
+   "test": {
+    "auroc": 0.5984785703768126,
+    "auroc_gun_mean": 0.6251711749747745,
+    "ew_recall": 0.0,
+    "ew_chance": 0.0625,
+    "ew_false_alarms_per_gun_day": 1.755915317559153
+   }
+  },
+  "v002": {
+   "cutoff": "2021-09-13T00:00:00",
+   "status": "rejected",
+   "created": "2026-11-12T14:47:36",
+   "n_train_files": 33,
+   "by_class": {
+    "E01": 8,
+    "E02": 6,
+    "E03": 6,
+    "E04": 13
+   },
+   "test": {
+    "auroc": 0.6149716445073449,
+    "auroc_gun_mean": 0.6602875674896949,
+    "ew_recall": 0.5,
+    "ew_chance": 0.24999999999999997,
+    "ew_false_alarms_per_gun_day": 12.366127023661269
+   }
+  },
+  "v003": {
+   "cutoff": "2021-09-20T00:00:00",
+   "status": "champion",
+   "created": "2026-11-12T14:58:26",
+   "n_train_files": 40,
+   "by_class": {
+    "E01": 8,
+    "E02": 8,
+    "E03": 9,
+    "E04": 15
+   },
+   "test": {
+    "auroc": 0.6277767037395247,
+    "auroc_gun_mean": 0.6682035521060823,
+    "ew_recall": 0.25,
+    "ew_chance": 0.08333333333333333,
+    "ew_false_alarms_per_gun_day": 3.399750933997509
+   }
+  },
+  "v004": {
+   "cutoff": "2021-10-04T00:00:00",
+   "status": "rejected",
+   "created": "2026-11-12T15:08:27",
+   "n_train_files": 45,
+   "by_class": {
+    "E01": 8,
+    "E02": 10,
+    "E03": 12,
+    "E04": 15
+   },
+   "test": {
+    "auroc": 0.6108131964402429,
+    "auroc_gun_mean": 0.6420331790436983,
+    "ew_recall": 0.375,
+    "ew_chance": 0.2708333333333333,
+    "ew_false_alarms_per_gun_day": 16.88667496886675
+   }
+  },
+  "v005": {
+   "cutoff": "2021-10-18T00:00:00",
+   "status": "challenger",
+   "created": "2026-11-12T15:21:35",
+   "n_train_files": 60,
+   "by_class": {
+    "E01": 18,
+    "E02": 10,
+    "E03": 15,
+    "E04": 17
+   },
+   "test": {
+    "auroc": 0.6297376474713373,
+    "auroc_gun_mean": 0.6202360471380368,
+    "ew_recall": 0.375,
+    "ew_chance": 0.16666666666666666,
+    "ew_false_alarms_per_gun_day": 7.733499377334993
+   }
+  }
+ },
+ "decisions": [
+  {
+   "at": "2021-09-20T00:00:00",
+   "champion": "v001",
+   "challenger": "v002",
+   "shadow_files": [
+    "E02_9",
+    "E04_8",
+    "E04_10",
+    "E03_14",
+    "E02_10",
+    "E03_11",
+    "E03_12"
+   ],
+   "values": {
+    "auroc_a": 0.7111209104330429,
+    "auroc_b": 0.7091363783456738,
+    "noise": 0.10507720066561876,
+    "files_b_ge_a": 2,
+    "files_compared": 7,
+    "hits_a": 3,
+    "hits_b": 4,
+    "fa_a": 5.320785449280609,
+    "fa_b": 32.07673513709167
+   },
+   "checks": {
+    "auroc_margin": false,
+    "file_majority": false,
+    "ew_hits": true,
+    "fa_ratio": false,
+    "fa_cap": false
+   },
+   "gates": [
+    "auroc_margin",
+    "ew_hits",
+    "fa_cap"
+   ],
+   "above_noise": false,
+   "swap": false,
+   "reason": "auroc_margin(B-A -0.0020 <= 0.0000), fa_cap(B 32.08 > 24.0); B-A -0.0020는 우연 폭 안(폭 0.1051); 참고(판정에 쓰지 않음): file_majority(B>=A 2/7), fa_ratio(B 32.08 > A 5.32 x 1.2)"
+  },
+  {
+   "at": "2021-10-04T00:00:00",
+   "champion": "v001",
+   "challenger": "v003",
+   "shadow_files": [
+    "E02_12",
+    "E02_17",
+    "E03_2",
+    "E03_13",
+    "E03_6"
+   ],
+   "values": {
+    "auroc_a": 0.700197661677559,
+    "auroc_b": 0.72186474979933,
+    "noise": 0.1000109377215006,
+    "files_b_ge_a": 2,
+    "files_compared": 5,
+    "hits_a": 0,
+    "hits_b": 1,
+    "fa_a": 2.827618369701284,
+    "fa_b": 5.372474902432439
+   },
+   "checks": {
+    "auroc_margin": true,
+    "file_majority": false,
+    "ew_hits": true,
+    "fa_ratio": false,
+    "fa_cap": true
+   },
+   "gates": [
+    "auroc_margin",
+    "ew_hits",
+    "fa_cap"
+   ],
+   "above_noise": false,
+   "swap": true,
+   "reason": "조건 1 · 3 · 5 만족; B-A +0.0217는 우연 폭 안(폭 0.1000); 참고(판정에 쓰지 않음): file_majority(B>=A 2/5), fa_ratio(B 5.37 > A 2.83 x 1.2)"
+  },
+  {
+   "at": "2021-10-18T00:00:00",
+   "champion": "v003",
+   "challenger": "v004",
+   "shadow_files": [
+    "E04_5",
+    "E01_15",
+    "E01_7",
+    "E01_11",
+    "E01_1",
+    "E03_10",
+    "E01_3",
+    "E01_4",
+    "E01_6",
+    "E03_9",
+    "E03_5",
+    "E01_14",
+    "E01_12",
+    "E01_17",
+    "E04_13"
+   ],
+   "values": {
+    "auroc_a": 0.6895672982108486,
+    "auroc_b": 0.6260066228528303,
+    "noise": 0.03066651368101414,
+    "files_b_ge_a": 5,
+    "files_compared": 15,
+    "hits_a": 3,
+    "hits_b": 4,
+    "fa_a": 3.614946413053973,
+    "fa_b": 5.442281962509828
+   },
+   "checks": {
+    "auroc_margin": false,
+    "file_majority": false,
+    "ew_hits": true,
+    "fa_ratio": false,
+    "fa_cap": true
+   },
+   "gates": [
+    "auroc_margin",
+    "ew_hits",
+    "fa_cap"
+   ],
+   "above_noise": false,
+   "swap": false,
+   "reason": "auroc_margin(B-A -0.0636 <= 0.0000); B-A -0.0636는 우연 폭보다 크게 낮음(폭 0.0307); 참고(판정에 쓰지 않음): file_majority(B>=A 5/15), fa_ratio(B 5.44 > A 3.61 x 1.2)"
+  }
+ ],
+ "history": [
+  {
+   "at": "2021-09-06T00:00:00",
+   "champion": "v001",
+   "by": "first"
+  },
+  {
+   "at": "2021-10-04T00:00:00",
+   "champion": "v003",
+   "by": "decision"
+  }
+ ],
+ "provisional": null,
+ "probations": [
+  {
+   "at": "2021-10-18T00:00:00",
+   "version": "v003",
+   "previous": "v001",
+   "files": [
+    "E04_5",
+    "E01_15",
+    "E01_7",
+    "E01_11",
+    "E01_1",
+    "E03_10",
+    "E01_3",
+    "E01_4",
+    "E01_6",
+    "E03_9",
+    "E03_5",
+    "E01_14",
+    "E01_12",
+    "E01_17",
+    "E04_13"
+   ],
+   "by": "auto",
+   "values": {
+    "auroc_prev": 0.6724684647616246,
+    "auroc_new": 0.6895672982108486,
+    "noise": 0.1397393131170166,
+    "hits_prev": 3,
+    "hits_new": 3,
+    "fa_prev": 2.0954771789955724,
+    "fa_new": 3.614946413053973
+   },
+   "revert": false,
+   "reason": "확정: 새 모델 - 이전 모델 +0.0171, 폭 0.1397보다 크게 낮지 않음"
+  }
+ ],
+ "first_vs_final": {
+  "first": "v001",
+  "final": "v003",
+  "first_auroc_gun_mean": 0.6251711749747745,
+  "final_auroc_gun_mean": 0.6682035521060823,
+  "diff": 0.04303237713130781
+ }
+}

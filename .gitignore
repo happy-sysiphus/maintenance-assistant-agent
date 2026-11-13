@@ -37,3 +37,6 @@ chroma/
 Thumbs.db
 .vscode/
 .idea/
+
+#extra
+schema v.11.12.png

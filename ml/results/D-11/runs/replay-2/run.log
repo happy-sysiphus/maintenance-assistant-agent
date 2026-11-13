@@ -1,0 +1,50 @@
+=== 2026-11-12T08:49:43Z replay-2: relaxed rule, models reused from replay-1
+=== 2026-11-12T08:49:43Z replay --end 2021-09-07 (first model)
+2021-08-23T00:00:00  wait_first:3
+2021-08-30T00:00:00  wait_first:5
+--- v001: already trained on these files, kept
+2021-09-06T00:00:00  first:v001
+=== 2026-11-12T08:49:49Z server started on the registry
+server serves v001
+test_0: 3,519 rows, 60 requests, 60 windows, 0 critical events (0 rule triggers, 0 repeats), 0 early warnings (0 handed off), max score 0.966, final gun_norm warming_up, 10s
+=== 2026-11-12T08:50:01Z replay --end 2021-10-05 --server-url (first two judgements)
+--- v002: already trained on these files, kept
+--- v002\seeds\s43: already trained on these files, kept
+--- v002\seeds\s44: already trained on these files, kept
+2021-09-13T00:00:00  train:v002
+--- v003: already trained on these files, kept
+--- v003\seeds\s43: already trained on these files, kept
+--- v003\seeds\s44: already trained on these files, kept
+2021-09-20T00:00:00  keep:v001|v002  train:v003
+2021-09-27T00:00:00  defer:1
+server: {'changed': True, 'version': 'v003', 'previous': 'v001', 'created': '2026-11-12T14:58:26'}
+--- v004: already trained on these files, kept
+--- v004\seeds\s43: already trained on these files, kept
+--- v004\seeds\s44: already trained on these files, kept
+2021-10-04T00:00:00  swap:v001>v003  train:v004
+server: {'changed': False, 'version': 'v003'}
+server serves v003
+server /model/loop: loaded v003 in_sync True champion v003 challenger v004 provisional v003 probations []
+test_0: 900 rows, 15 requests, 15 windows, 0 critical events (0 rule triggers, 0 repeats), 0 early warnings (0 handed off), max score 0.954, final gun_norm warming_up, 4s
+=== 2026-11-12T08:50:10Z replay to the end --server-url
+2021-10-11T00:00:00  defer:3
+--- v005: already trained on these files, kept
+--- v005\seeds\s43: already trained on these files, kept
+--- v005\seeds\s44: already trained on these files, kept
+2021-10-18T00:00:00  confirm:v003  keep:v003|v004  train:v005
+2021-10-25T00:00:00  defer:3
+2021-11-01T00:00:00  defer:4
+server: {'changed': False, 'version': 'v003'}
+server serves v003
+server /model/loop: loaded v003 in_sync True champion v003 challenger v005 provisional None probations [('v003', 'confirmed', 'auto')]
+test_0: 899 rows, 15 requests, 15 windows, 0 critical events (0 rule triggers, 0 repeats), 0 early warnings (0 handed off), max score 0.955, final gun_norm warming_up, 4s
+=== 2026-11-12T08:50:19Z report
+wrote results/D-11/runs/replay-2\report.md
+=== 2026-11-12T08:50:20Z server log: reload calls and problems
+INFO:     127.0.0.1:49808 - "POST /model/reload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49809 - "POST /model/reload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49832 - "POST /model/reload HTTP/1.1" 200 OK
+champion    v003  trained at 2021-09-20T00:00:00 on 40 files
+challenger  v005  trained at 2021-10-18T00:00:00 on 60 files
+last tick   2021-11-01T00:00:00
+last judged 2021-10-18T00:00:00  v003 vs v004: keep - auroc_margin(B-A -0.0636 <= 0.0000); B-A -0.0636는 우연 폭보다 크게 낮음(폭 0.0307); 참고(판정에 쓰지 않음): file_majority(B>=A 5/15), fa_ratio(B 5.44 > A 3.61 x 1.2)

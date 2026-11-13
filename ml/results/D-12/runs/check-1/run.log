@@ -1,0 +1,113 @@
+=== 2026-11-12T15:52:25Z D-12 check-1: operator verdict from the api into the model loop (gun E02_1)
+=== 2026-11-12T15:52:25Z api on :9011 (temp DB, ML_URL :8012)
+=== 2026-11-12T15:52:25Z ML server on :8012 (default serving bundle, early-warning handoffs pushed to the api)
+{"schema_version":"1.0","items":[]}
+ML serves None 2026-11-01T18:46:47
+=== 2026-11-12T15:52:31Z stream train/E02_1.csv hours 0..6
+E02_1: 21,076 rows, 360 requests, 360 windows, 0 critical events (0 rule triggers, 0 repeats), 0 early warnings (0 handed off), max score 0.928, final gun_norm warming_up, 56s
+early-warning cases of E02_1: []
+=== 2026-11-12T15:53:34Z stream train/E02_1.csv hours 6..12
+E02_1: 21,169 rows, 360 requests, 360 windows, 0 critical events (0 rule triggers, 0 repeats), 0 early warnings (0 handed off), max score 0.920, final gun_norm gun, 62s
+early-warning cases of E02_1: []
+=== 2026-11-12T15:54:43Z stream train/E02_1.csv hours 12..18
+E02_1: 20,025 rows, 344 requests, 344 windows, 0 critical events (0 rule triggers, 0 repeats), 1 early warnings (1 handed off), max score 0.965, final gun_norm gun, 62s
+early-warning cases of E02_1: [('CASE-0001', 'new', '2019-12-19T06:15:59Z')]
+=== 2026-11-12T15:55:52Z close the case: abnormal check, approved log, legacy /close (resolved)
+PUT /checks -> 200
+PUT /log -> 200
+POST /close -> 200
+GET /api/ml/feedback: schema 1.0, 1 items
+  CASE-0001: outcome resolved, checks {'abnormal': 1, 'normal': 0, 'unchecked': 0}, resolution_status not_linked, selected None, 1 events, first window_start 2019-12-19T06:15:00Z, gun E02_1
+=== 2026-11-12T15:55:55Z model_loop.py feedback pull into models/registry-d12
+feedback: 1 new, 0 changed, 0 same, 0 skipped (1 cases) <- http://127.0.0.1:9011
+no registry at C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry-d12\registry.json
+feedback    1 cases, pulled 2026-11-12T15:55:57Z: confirmed 1, false_alarm 0, unknown 0, unmatched 0
+=== 2026-11-12T15:55:58Z api log: anything sent outside (Aura, Claude, OpenAI)? lines with neo4j / anthropic / openai / delivery
+0
+=== 2026-11-12T15:55:58Z servers stopped
+=== 2026-11-12T15:56:14Z replay --start 2021-08-16 --end 2021-09-07 --registry models/registry-d12 (first model, with the verdict)
+2021-08-23T00:00:00  wait_first:3
+2021-08-30T00:00:00  wait_first:5
+--- training v001 on 16 files (seed 42), with operator verdicts
+train files 12, val files 4
+[1/16] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/16] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/16] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/16] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[5/16] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[6/16] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[7/16] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[8/16] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[9/16] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[10/16] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[11/16] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[12/16] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[13/16] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[14/16] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[15/16] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[16/16] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 22s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+cv fold 1/4: AUROC 0.873  recall 0.135  alarm@normal 0.012  (5 guns)
+cv fold 2/4: AUROC 0.718  recall 0.008  alarm@normal 0.003  (4 guns)
+cv fold 3/4: AUROC 0.640  recall 0.037  alarm@normal 0.029  (4 guns)
+cv fold 4/4: AUROC 0.882  recall 0.061  alarm@normal 0.010  (3 guns)
+cv 4-fold: AUROC 0.778 +- 0.103 (per gun 0.792 +- 0.111)  recall 0.060 +- 0.047  alarm@normal 0.013 +- 0.009  operating point 0/16 guns
+fitting ensemble on the normal windows of 12 files x 46 features
+fitted on 99,357 normal windows, threshold 0.9437
+early warning: model_ng_k1 threshold 0.9465163350105286 (cv4_out_of_fold), val exceed rate 0.00560880666359717
+feedback: {'spans': 1, 'windows_excluded': 60, 'windows_already_not_normal': 0, 'false_alarm_conflicts': 0}
+val: AUROC 0.890 (per gun mean 0.876, > 10 min before failure 0.869)  AUPRC 0.095  alarm@normal 0.003  recall@pre-failure 0.140  (32,316 windows, 692 alarms held by the non-welding gate; per-file alarm@normal 0.002..0.003 sd 0.001; 4 files gun-normalised, 4 with a gun threshold)
+  E01: AUROC 0.816  recall 0.311  alarm@normal 0.002
+  E02: AUROC 0.873  recall 0.131  alarm@normal 0.003
+  E04: AUROC 0.903  recall 0.058  alarm@normal 0.003
+  operating point (lead >= 30 min, false runs <= 1/day): 0/4 files (lead ok 0, false runs ok 4); final run in 3 files (median lead 9.3 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 4/4 files hit, median lead 9.6 min; false triggers 0.04/day/file (1 files with any, 4 files <= 1/day); 0 repeats not critical (0 in the pre-failure window), 0.04/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry-d12\v001\baseline_ensemble.joblib (3.3 MB) in 155s
+2021-09-06T00:00:00  first:v001
+
+real	2m43.454s
+user	0m0.015s
+sys	0m0.046s
+=== 2026-11-12T15:59:28Z control: the same replay without a verdict store (models/registry-d12-plain), to compare with replay-1
+2021-08-23T00:00:00  wait_first:3
+2021-08-30T00:00:00  wait_first:5
+--- training v001 on 16 files (seed 42)
+train files 12, val files 4
+[1/16] E01_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[2/16] E01_10.parquet: 603,566 rows -> 10,060 windows (gun-normalised)
+[3/16] E01_5.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[4/16] E01_8.parquet: 604,484 rows -> 10,075 windows (gun-normalised)
+[5/16] E01_9.parquet: 603,100 rows -> 10,052 windows (gun-normalised)
+[6/16] E02_1.parquet: 558,854 rows -> 9,314 windows (gun-normalised)
+[7/16] E02_11.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[8/16] E02_13.parquet: 524,474 rows -> 8,742 windows (gun-normalised)
+[9/16] E02_14.parquet: 125,026 rows -> 2,084 windows (gun-normalised)
+[10/16] E04_0.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[11/16] E04_1.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[12/16] E04_16.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[13/16] E04_17.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[14/16] E04_3.parquet: 605,203 rows -> 10,087 windows (gun-normalised)
+[15/16] E04_6.parquet: 605,401 rows -> 10,090 windows (gun-normalised)
+[16/16] E04_9.parquet: 602,667 rows -> 10,044 windows (gun-normalised)
+windowed in 18s, gun-norm center on ['welds_delta', 'pos_delta', 'welds_10min', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18']
+cv fold 1/4: AUROC 0.903  recall 0.109  alarm@normal 0.022  (5 guns)
+cv fold 2/4: AUROC 0.725  recall 0.033  alarm@normal 0.014  (4 guns)
+cv fold 3/4: AUROC 0.759  recall 0.237  alarm@normal 0.179  (4 guns)
+cv fold 4/4: AUROC 0.882  recall 0.061  alarm@normal 0.010  (3 guns)
+cv 4-fold: AUROC 0.817 +- 0.076 (per gun 0.827 +- 0.088)  recall 0.110 +- 0.078  alarm@normal 0.056 +- 0.071  operating point 0/16 guns
+fitting ensemble on the normal windows of 12 files x 46 features
+fitted on 99,414 normal windows, threshold 0.9542
+early warning: model_ng_k1 threshold 0.9789456129074097 (cv4_out_of_fold), val exceed rate 0.0020091247750198818
+val: AUROC 0.900 (per gun mean 0.885, > 10 min before failure 0.880)  AUPRC 0.074  alarm@normal 0.002  recall@pre-failure 0.153  (32,316 windows, 834 alarms held by the non-welding gate; per-file alarm@normal 0.000..0.003 sd 0.001; 4 files gun-normalised, 4 with a gun threshold)
+  E01: AUROC 0.801  recall 0.295  alarm@normal 0.002
+  E02: AUROC 0.816  recall 0.066  alarm@normal 0.000
+  E04: AUROC 0.958  recall 0.125  alarm@normal 0.002
+  operating point (lead >= 30 min, false runs <= 1/day): 0/4 files (lead ok 0, false runs ok 4); final run in 3 files (median lead 9.3 min)
+  terminal-code rule (any code, episode start, 30 min cooldown): 4/4 files hit, median lead 9.6 min; false triggers 0.04/day/file (1 files with any, 4 files <= 1/day); 0 repeats not critical (0 in the pre-failure window), 0.04/day counting them
+no test files in C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\preprocessed\test - skipped test evaluation
+saved C:\Users\a0106\Desktop\maintenance-assistant-agent\ml\models\registry-d12-plain\v001\baseline_ensemble.joblib (3.3 MB) in 108s
+2021-09-06T00:00:00  first:v001
+registry-replay-1    n_fit 99414 threshold 0.9542333546890804 ew 0.9789456129074097 calib n 116280 cv gun auroc 0.8272 val files ['E01_9.parquet', 'E02_14.parquet', 'E04_0.parquet']
+registry-d12-plain   n_fit 99414 threshold 0.9542333546890804 ew 0.9789456129074097 calib n 116280 cv gun auroc 0.8272 val files ['E01_9.parquet', 'E02_14.parquet', 'E04_0.parquet']
+registry-d12         n_fit 99357 threshold 0.9436971583085475 ew 0.9465163350105286 calib n 116220 cv gun auroc 0.7916 val files ['E01_9.parquet', 'E02_14.parquet', 'E04_0.parquet']

@@ -30,6 +30,7 @@ results/*/cache/
 state/
 # D-11 모델 등록부 (py -3.11 .py/model_loop.py; 기록으로 남길 것은 results/D-11/runs/의 보고서)
 models/registry/
+models/registry-*/
 
 # Python / 도구 캐시
 __pycache__/

@@ -1,0 +1,27 @@
+{
+ "schema_version": "1.0",
+ "items": [
+  {
+   "case_id": "CASE-0001",
+   "outcome": "resolved",
+   "closed_at": "2026-11-12T15:55:54.604638Z",
+   "resolution_status": "not_linked",
+   "selected_event_id": null,
+   "checks": {
+    "abnormal": 1,
+    "normal": 0,
+    "unchecked": 0
+   },
+   "events": [
+    {
+     "event_id": "8f1026ac6481f05498a61b387c5b9e3a",
+     "representative": true,
+     "gun_id": "E02_1",
+     "window_start": "2019-12-19T06:15:00Z",
+     "detected_at": "2019-12-19T06:15:59Z",
+     "detector_created": "2026-11-01T18:46:47"
+    }
+   ]
+  }
+ ]
+}

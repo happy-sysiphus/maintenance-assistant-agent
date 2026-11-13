@@ -1695,8 +1695,13 @@ def model_reload(request: Request) -> dict[str, Any]:
 @app.get("/model/loop")
 def model_loop_status(request: Request, limit: int = Query(10, ge=1, le=100)) -> dict[str, Any]:
     """D-11: what the model loop has done - the loaded version, the registry's champion and challenger, the last
-    tick and the latest `limit` decisions with their numbers. in_sync false = the registry's champion changed and
-    this server has not reloaded yet. {"registry": null} when the server runs without a registry."""
+    tick and the latest `limit` decisions with their numbers. provisional: the champion a decision swapped in and
+    the loop has not confirmed yet (null when there is none); probations: how the latest provisional swaps ended
+    (confirmed, or taken back by the loop or by a person). in_sync false = the registry's champion changed and
+    this server has not reloaded yet. {"registry": null} when the server runs without a registry.
+    D-12: champion / challenger carry `feedback` (the operator verdicts the version was trained with), decisions
+    carry `feedback`, `values_before` and `swap_before`, probations `feedback`, `values_before` and `revert_before`
+    (the figures and the conclusion without the verdicts) - as the registry holds them, null without verdicts."""
     reg = request.app.state.registry
     if reg is None:
         return {"registry": None}

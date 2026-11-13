@@ -1,0 +1,1405 @@
+{
+ "note": "what-if on the replay of 2026-11-12; no training, the registry's decisions are unchanged",
+ "pairs": {
+  "2021-09-20 v001 vs v002": {
+   "shadow_files": 7,
+   "failed_now": [
+    "1",
+    "2",
+    "4",
+    "5"
+   ],
+   "gain": -0.0019845320873691508,
+   "noise": 0.10507720066561876,
+   "wins": 2,
+   "files": 7,
+   "hits_a": 3,
+   "hits_b": 4,
+   "fa_a": 5.320785449280609,
+   "fa_b": 32.07673513709167,
+   "fa_ratio": 6.028571428571428
+  },
+  "2021-10-04 v001 vs v003": {
+   "shadow_files": 5,
+   "failed_now": [
+    "1",
+    "2",
+    "4"
+   ],
+   "gain": 0.021667088121770983,
+   "noise": 0.1000109377215006,
+   "wins": 2,
+   "files": 5,
+   "hits_a": 0,
+   "hits_b": 1,
+   "fa_a": 2.827618369701284,
+   "fa_b": 5.372474902432439,
+   "fa_ratio": 1.9
+  },
+  "2021-10-04 v002 vs v003": {
+   "shadow_files": 5,
+   "failed_now": [
+    "1"
+   ],
+   "gain": -0.05724160220917218,
+   "noise": 0.1000109377215006,
+   "wins": 3,
+   "files": 5,
+   "hits_a": 1,
+   "hits_b": 1,
+   "fa_a": 10.815640264107412,
+   "fa_b": 5.372474902432439,
+   "fa_ratio": 0.4967320261437908
+  },
+  "2021-10-18 v001 vs v004": {
+   "shadow_files": 15,
+   "failed_now": [
+    "1",
+    "2",
+    "4"
+   ],
+   "gain": -0.04646184190879432,
+   "noise": 0.03066651368101414,
+   "wins": 6,
+   "files": 15,
+   "hits_a": 3,
+   "hits_b": 4,
+   "fa_a": 2.0954771789955724,
+   "fa_b": 5.442281962509828,
+   "fa_ratio": 2.5971563981042656
+  },
+  "2021-10-18 v002 vs v004": {
+   "shadow_files": 15,
+   "failed_now": [
+    "1",
+    "2"
+   ],
+   "gain": -0.03573423151145494,
+   "noise": 0.03066651368101414,
+   "wins": 6,
+   "files": 15,
+   "hits_a": 2,
+   "hits_b": 4,
+   "fa_a": 7.200099311714644,
+   "fa_b": 5.442281962509828,
+   "fa_ratio": 0.7558620689655172
+  },
+  "2021-10-18 v003 vs v004": {
+   "shadow_files": 15,
+   "failed_now": [
+    "1",
+    "2",
+    "4"
+   ],
+   "gain": -0.06356067535801835,
+   "noise": 0.03066651368101414,
+   "wins": 5,
+   "files": 15,
+   "hits_a": 3,
+   "hits_b": 4,
+   "fa_a": 3.614946413053973,
+   "fa_b": 5.442281962509828,
+   "fa_ratio": 1.5054945054945055
+  }
+ },
+ "variants": [
+  {
+   "check1": "> 우연 폭",
+   "check2": "과반",
+   "check4": "1.2배",
+   "changed": 0,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭",
+   "check2": "과반",
+   "check4": "1.5배",
+   "changed": 1,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭",
+   "check2": "과반",
+   "check4": "2.0배",
+   "changed": 1,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "2"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭",
+   "check2": "과반",
+   "check4": "끔",
+   "changed": 1,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "2"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭",
+   "check2": "끔",
+   "check4": "1.2배",
+   "changed": 1,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭의 절반",
+   "check2": "과반",
+   "check4": "1.2배",
+   "changed": 1,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 0",
+   "check2": "과반",
+   "check4": "1.2배",
+   "changed": 1,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "2",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> -우연 폭",
+   "check2": "과반",
+   "check4": "1.2배",
+   "changed": 1,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "2",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭",
+   "check2": "끔",
+   "check4": "1.5배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭",
+   "check2": "끔",
+   "check4": "2.0배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭",
+   "check2": "끔",
+   "check4": "끔",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭의 절반",
+   "check2": "과반",
+   "check4": "1.5배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭의 절반",
+   "check2": "과반",
+   "check4": "2.0배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "2"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭의 절반",
+   "check2": "과반",
+   "check4": "끔",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "2"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭의 절반",
+   "check2": "끔",
+   "check4": "1.2배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 0",
+   "check2": "과반",
+   "check4": "1.5배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "2",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 0",
+   "check2": "과반",
+   "check4": "2.0배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "2"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 0",
+   "check2": "과반",
+   "check4": "끔",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "2"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 0",
+   "check2": "끔",
+   "check4": "1.2배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> -우연 폭",
+   "check2": "과반",
+   "check4": "1.5배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "2",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> -우연 폭",
+   "check2": "과반",
+   "check4": "2.0배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "2",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "2"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> -우연 폭",
+   "check2": "과반",
+   "check4": "끔",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "2",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "2"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "2"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> -우연 폭",
+   "check2": "끔",
+   "check4": "1.2배",
+   "changed": 2,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭의 절반",
+   "check2": "끔",
+   "check4": "1.5배",
+   "changed": 3,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭의 절반",
+   "check2": "끔",
+   "check4": "2.0배",
+   "changed": 3,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 우연 폭의 절반",
+   "check2": "끔",
+   "check4": "끔",
+   "changed": 3,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "1"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 0",
+   "check2": "끔",
+   "check4": "1.5배",
+   "changed": 3,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> -우연 폭",
+   "check2": "끔",
+   "check4": "1.5배",
+   "changed": 3,
+   "swaps": 0,
+   "final": "v001",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": false,
+     "failed": [
+      "4"
+     ]
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v001",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1",
+      "4"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 0",
+   "check2": "끔",
+   "check4": "2.0배",
+   "changed": 3,
+   "swaps": 1,
+   "final": "v003",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": true,
+     "failed": []
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v003",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> 0",
+   "check2": "끔",
+   "check4": "끔",
+   "changed": 3,
+   "swaps": 1,
+   "final": "v003",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "1",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": true,
+     "failed": []
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v003",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> -우연 폭",
+   "check2": "끔",
+   "check4": "2.0배",
+   "changed": 3,
+   "swaps": 1,
+   "final": "v003",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "4",
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": true,
+     "failed": []
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v003",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1"
+     ]
+    }
+   ]
+  },
+  {
+   "check1": "> -우연 폭",
+   "check2": "끔",
+   "check4": "끔",
+   "changed": 3,
+   "swaps": 1,
+   "final": "v003",
+   "steps": [
+    {
+     "at": "2021-09-20",
+     "champion": "v001",
+     "challenger": "v002",
+     "swap": false,
+     "failed": [
+      "5"
+     ]
+    },
+    {
+     "at": "2021-10-04",
+     "champion": "v001",
+     "challenger": "v003",
+     "swap": true,
+     "failed": []
+    },
+    {
+     "at": "2021-10-18",
+     "champion": "v003",
+     "challenger": "v004",
+     "swap": false,
+     "failed": [
+      "1"
+     ]
+    }
+   ]
+  }
+ ]
+}

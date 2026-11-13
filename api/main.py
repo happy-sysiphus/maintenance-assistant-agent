@@ -33,6 +33,7 @@ import guidance
 from rag.documents import manuals, manual_path
 from rag.warning_catalog import validate_manual_selection
 from rag.warning_input import analyze_warning, timestamp
+import ml_feedback
 import store
 import warning_bridge
 
@@ -72,6 +73,7 @@ async def lifespan(app):
 
 
 app = FastAPI(title="RSW 정비 지원 api", lifespan=lifespan)
+app.include_router(ml_feedback.router)  # GET /api/ml/feedback (D-12, 읽기 전용)
 
 
 def now() -> str:

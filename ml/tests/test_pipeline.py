@@ -1989,6 +1989,66 @@ def test_18d_loop_options_absent(workspace):
     assert (d / "scores" / "test_0_iforest.csv").exists()
 
 
+def loop_feedback_file(workspace, path, name="E04_0", empty=False):
+    """A --feedback file with one confirmed span on `name`: minutes 10 to 20 of the 2 h file - normal windows, clear
+    of the cap dressing, the gap, the E003 block and the pre-failure window (D-12)."""
+    start = pd.Timestamp(pd.read_csv(workspace["pre"] / "manifest.csv").set_index("file").loc[name, "start"])
+    span = [(start + pd.Timedelta(minutes=10)).isoformat(), (start + pd.Timedelta(minutes=20)).isoformat()]
+    path.write_text(json.dumps({"confirmed": {} if empty else {name: [span]}, "false_alarm": {}}), encoding="utf-8")
+    return path
+
+
+def loop_evaluate(workspace, tmp_path, tag, *extra):
+    lst = loop_list(tmp_path / f"shadow_{tag}.txt", ["E04_0", "E04_1"])
+    out = tmp_path / "eval" / f"{tag}.json"
+    (tmp_path / "no_test").mkdir(exist_ok=True)
+    run(os.path.join(PY, "train.py"), "--data-dir", workspace["pre"], "--test-dir", tmp_path / "no_test",
+        "--model-dir", workspace["ws"] / "models_loop", "--model", "iforest", "--evaluate", "--eval-files-from", lst,
+        "--eval-out", out, *extra)
+    return json.load(open(out, encoding="utf-8"))
+
+
+def test_18e_loop_feedback_evaluate(workspace, tmp_path):
+    """--evaluate --feedback (D-12): the windows of a confirmed span are not normal; the figures without them and
+    with them are both written, from one scoring."""
+    e = loop_evaluate(workspace, tmp_path, "fb", "--feedback", loop_feedback_file(workspace, tmp_path / "fb.json"))
+    fb = e["feedback"]
+    assert fb == {"spans": 1, "windows_excluded": 10, "windows_already_not_normal": 0, "false_alarm_conflicts": 0}
+    assert e["test"]["n_normal"] == e["test_no_feedback"]["n_normal"] - fb["windows_excluded"]
+    assert e["test"]["n_pre_failure"] == e["test_no_feedback"]["n_pre_failure"]
+    assert e["test_no_feedback"]["early_warning"]["per_file"].keys() == {"E04_0", "E04_1"}
+    assert "before_feedback" not in e["test"]
+
+
+def test_18f_loop_feedback_empty_is_same(workspace, tmp_path):
+    """A feedback file without a confirmed span changes nothing."""
+    plain = loop_evaluate(workspace, tmp_path, "plain")
+    e = loop_evaluate(workspace, tmp_path, "empty", "--feedback",
+                      loop_feedback_file(workspace, tmp_path / "empty.json", empty=True))
+    assert e["test"] == plain["test"]
+    assert "test_no_feedback" not in e and "test_no_feedback" not in plain
+    assert e["feedback"] == {"spans": 0, "windows_excluded": 0, "windows_already_not_normal": 0,
+                             "false_alarm_conflicts": 0}
+    assert "feedback" not in plain
+
+
+def test_18g_loop_feedback_train(workspace, tmp_path):
+    """Training with --feedback: the metrics say how many windows were taken out of the normal data."""
+    d = tmp_path / "models_fb"
+    names = ["E01_0", "E01_1", "E02_0", "E02_1", "E03_0", "E03_1"]
+    run(os.path.join(PY, "train.py"), "--data-dir", workspace["pre"], "--model-dir", d, "--model", "iforest",
+        "--val-frac", "0.5", "--warmup-hours", "0.5", "--no-test", "--files-from",
+        loop_list(tmp_path / "train.txt", names), "--feedback",
+        loop_feedback_file(workspace, tmp_path / "fb.json", name="E01_0"))
+    m = json.load(open(d / "baseline_iforest_metrics.json", encoding="utf-8"))
+    assert m["metrics"]["feedback"] == {"spans": 1, "windows_excluded": 10, "windows_already_not_normal": 0,
+                                        "false_alarm_conflicts": 0}
+    plain = json.load(open(workspace["ws"] / "models_loop" / "baseline_iforest_metrics.json", encoding="utf-8"))
+    assert "feedback" not in plain["metrics"], "test_18 trained without --feedback"
+    assert "feedback" not in plain["args"] and str(m["args"]["feedback"]).endswith("fb.json"), \
+        "no verdicts: the recorded args are those from before D-12"
+
+
 @pytest.fixture(scope="module")
 def append_ws(workspace, tmp_path_factory):
     """A copy of the preprocessed train folder that the --split append tests may change (they run in order on it),
@@ -2146,8 +2206,10 @@ def test_20_loop_replay_end_to_end(workspace, loop_ws):
     assert set(d["values"]) == {"auroc_a", "auroc_b", "noise", "files_b_ge_a", "files_compared", "hits_a", "hits_b",
                                 "fa_a", "fa_b"}
     assert all(isinstance(d["values"][k], float) for k in ("auroc_a", "auroc_b", "noise")), d
-    assert d["values"]["files_compared"] == 1 and len(d["checks"]) == 5 and d["swap"] == all(d["checks"].values())
+    assert d["values"]["files_compared"] == 1 and len(d["checks"]) == 5
+    assert d["gates"] == ["auroc_margin", "ew_hits", "fa_cap"] and d["swap"] == all(d["checks"][k] for k in d["gates"])
     assert d["swap"] == (judged == "swap:v001>v002") and reg["champion"] == ("v002" if d["swap"] else "v001")
+    assert (reg["provisional"] or {}).get("version") == ("v002" if d["swap"] else None), "a swap is provisional"
     for v in ("v001", "v002", "v003"):
         assert reg["versions"][v]["bundle"] == f"{v}/baseline_ensemble.joblib"
         b = joblib.load(root / v / "baseline_ensemble.joblib")
@@ -2199,6 +2261,72 @@ def test_20c_loop_report(workspace, loop_ws):
     loop_cli("report", "--out", out_dir, *loop_ws["common"])
     assert (root / "v001" / "test_metrics.json").stat().st_mtime_ns == stamp, "the test scores are computed once"
     assert "v003" in loop_cli("status", "--registry", root)
+
+
+def loop_feedback_store(workspace, root):
+    """A verdict store (D-12) in a new registry folder: on the file that ends first, one case closed as resolved with
+    an abnormal check and one closed as a false alarm. (file, the confirmed warning's id)."""
+    man = pd.read_csv(workspace["pre"] / "manifest.csv").sort_values("end")
+    name, start = man["file"].iloc[0], pd.Timestamp(man["start"].iloc[0])
+
+    def case(eid, minutes, outcome, abnormal):
+        ws = (start + pd.Timedelta(minutes=minutes)).isoformat() + "Z"
+        return {"case_id": "CASE-0001", "outcome": outcome, "closed_at": "2026-11-12T08:00:00+00:00",
+                "resolution_status": "not_linked", "selected_event_id": None,
+                "checks": {"abnormal": abnormal, "normal": 0, "unchecked": 0},
+                "events": [{"event_id": eid, "representative": True, "gun_id": name, "window_start": ws,
+                            "detected_at": ws, "detector_created": "2026-11-01T18:46:47"}]}
+
+    root.mkdir()
+    (root / "feedback.json").write_text(json.dumps(
+        {"schema_version": 1, "source": "test", "pulled_at": "2026-11-12T09:00:00Z",
+         "cases": {"ev-yes": case("ev-yes", 10, "resolved", 1), "ev-no": case("ev-no", 5, "false_alarm", 0)}}),
+        encoding="utf-8")
+    return name
+
+
+def test_20d_loop_feedback_end_to_end(workspace, loop_ws):
+    """D-12 with real training: an operator verdict in the store reaches train.py and the version's record."""
+    pytest.importorskip("lightgbm")
+    root = loop_ws["reg"].parent / "registry_fb"
+    name = loop_feedback_store(workspace, root)
+    common = ["--registry", root, "--data-dir", workspace["pre"]]
+    out = loop_cli("replay", "--start", "2021-09-01", "--end", "2021-09-07", "--interval-days", "1", *common,
+                   *loop_ws["settings"])
+    assert "2021-09-07T00:00:00  first:v001" in out
+    reg = json.load(open(root / "registry.json", encoding="utf-8"))
+    fb = reg["versions"]["v001"]["feedback"]
+    assert name in reg["versions"]["v001"]["train_files"]
+    assert (fb["confirmed"], fb["false_alarm"], fb["unknown"], fb["unmatched"]) == (1, 1, 0, 0)
+    assert fb["event_ids"] == ["ev-yes"] and fb["spans"] == 1 and fb["false_alarm_conflicts"] == 0
+    assert fb["windows_excluded"] >= 1 and fb["windows_excluded"] + fb["windows_already_not_normal"] <= 60
+    spans = json.load(open(root / "v001" / "feedback.json", encoding="utf-8"))
+    assert list(spans["confirmed"]) == [name] and list(spans["false_alarm"]) == [name]
+    m = json.load(open(root / "v001" / "baseline_ensemble_metrics.json", encoding="utf-8"))
+    assert m["metrics"]["feedback"] == {k: fb[k] for k in ("spans", "windows_excluded", "windows_already_not_normal",
+                                                           "false_alarm_conflicts")}
+    status = loop_cli("status", *common)
+    assert "confirmed 1" in status and "false_alarm 1" in status
+
+
+def test_20e_loop_feedback_resume_and_judge(workspace, loop_ws):
+    """The same registry to the end: v001 is not trained again, the challenger gets the verdict too, and the decision
+    says that there was no confirmed span on its shadow file."""
+    pytest.importorskip("lightgbm")
+    root = loop_ws["reg"].parent / "registry_fb"
+    stamp = (root / "v001" / "baseline_ensemble.joblib").stat().st_mtime_ns
+    out = loop_cli("replay", "--start", "2021-09-01", "--interval-days", "1", "--registry", root, "--data-dir",
+                   workspace["pre"], *loop_ws["settings"])
+    assert "first:" not in out and "train:v002" in out
+    assert (root / "v001" / "baseline_ensemble.joblib").stat().st_mtime_ns == stamp
+    reg = json.load(open(root / "registry.json", encoding="utf-8"))
+    assert reg["versions"]["v002"]["feedback"]["confirmed"] == 1 and (root / "v002" / "feedback.json").exists()
+    assert (root / "v002" / "seeds" / "s43" / "feedback.json").exists(), "the noise model sees the same spans"
+    d, = reg["decisions"]
+    assert d["shadow_files"] == ["E04_1"]
+    assert d["feedback"] == {"confirmed": 0, "false_alarm": 0, "unknown": 0, "unmatched": 0, "event_ids": []}
+    assert (d["values_before"], d["swap_before"]) == (None, None)
+    assert not list((root / "v002" / "eval").glob("*.feedback.json")), "no span on the shadow file: the old cache key"
 
 
 LOOP_NEW = "2099-01-01T00:00:00"  # `created` of the second bundle in loop_registry
@@ -2336,9 +2464,11 @@ def test_21a_loop_server_reads_registry(workspace, tmp_path, monkeypatch, caplog
         loop = client.get("/model/loop").json()
         assert loop == {"registry": reg.root, "loaded": {"version": "v001", "created": h["model"]["created"]},
                         "in_sync": True,
-                        "champion": {"version": "v001", "cutoff": "2021-09-06T00:00:00", "train_files": 1},
-                        "challenger": {"version": "v002", "cutoff": "2021-09-13T00:00:00", "train_files": 2},
-                        "last_tick": None, "decisions": []}
+                        "champion": {"version": "v001", "cutoff": "2021-09-06T00:00:00", "train_files": 1,
+                                     "feedback": None},
+                        "challenger": {"version": "v002", "cutoff": "2021-09-13T00:00:00", "train_files": 2,
+                                       "feedback": None},
+                        "last_tick": None, "decisions": [], "provisional": None, "probations": []}
         assert client.get("/model/loop?limit=0").status_code == 422
         assert {"/model/reload", "/model/loop"} <= set(client.get("/openapi.json").json()["paths"])
     monkeypatch.setenv("RSW_MODEL_PATH", str(workspace["models"] / "baseline_iforest.joblib"))

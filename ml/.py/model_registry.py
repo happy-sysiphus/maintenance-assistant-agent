@@ -4,7 +4,9 @@ Model registry of the D-11 model loop (docs/superpowers/specs/2026-11-11-model-l
 One folder:
 
     registry.json     versions, champion (the serving model), challenger (trained, not serving yet),
-                      decisions (every A/B judgement with its numbers), history (champion changes), ticks
+                      decisions (every A/B judgement with its numbers), history (champion changes), ticks,
+                      provisional (a champion swapped in by a decision and not checked yet) and probations
+                      (how each provisional swap ended: confirmed, or taken back)
     v001/, v002/ ...  one folder per version with its bundle (written by train.py)
 
 model_loop.py writes the registry; main.py reads it when RSW_MODEL_REGISTRY names the folder. Only the standard
@@ -22,6 +24,8 @@ from typing import Any, Iterator
 
 SCHEMA = 1
 STATUSES = ("champion", "challenger", "retired", "rejected")
+# settings that came after the first registries: a registry without one was made with this value (D-12)
+CONFIG_DEFAULTS = {"feedback_span_s": 3600}
 FILE, LOCK = "registry.json", "registry.lock"
 
 
@@ -45,6 +49,8 @@ class Registry:
             raise RegistryError(f"cannot read {self.path}: {e}") from e
         if not isinstance(data, dict) or data.get("schema") != SCHEMA:
             raise RegistryError(f"{self.path} is not a schema-{SCHEMA} model registry")
+        data.setdefault("provisional", None)  # a registry written before 2026-11-12 has neither
+        data.setdefault("probations", [])
         return data
 
     def init(self, config: dict[str, Any]) -> dict[str, Any]:
@@ -55,8 +61,9 @@ class Registry:
             data = empty(config)
             self.save(data)
             return data
-        if data["config"] != config:
-            keys = sorted(k for k in set(data["config"]) | set(config) if data["config"].get(k) != config.get(k))
+        stored, given = {**CONFIG_DEFAULTS, **data["config"]}, {**CONFIG_DEFAULTS, **config}
+        if stored != given:
+            keys = sorted(k for k in set(stored) | set(given) if stored.get(k) != given.get(k))
             raise RegistryError(f"{self.path} was created with other settings (differs in: {', '.join(keys)}); "
                                 "pass the same settings or use a new --registry folder")
         return data
@@ -108,7 +115,7 @@ class Registry:
 
 def empty(config: dict[str, Any]) -> dict[str, Any]:
     return {"schema": SCHEMA, "config": config, "last_tick": None, "champion": None, "challenger": None,
-            "versions": {}, "decisions": [], "history": [], "ticks": []}
+            "versions": {}, "decisions": [], "history": [], "ticks": [], "provisional": None, "probations": []}
 
 
 def _number(version: str) -> int:
@@ -126,19 +133,23 @@ def next_version(data: dict[str, Any]) -> str:
 
 
 def add_version(data: dict[str, Any], version: str, *, cutoff: str, train_files: list[str], seed: int, created: str,
-                bundle: str, status: str) -> None:
+                bundle: str, status: str, feedback: dict[str, Any] | None = None) -> None:
     """cutoff: the tick the version was trained at; created: the bundle's own timestamp (what the server reports);
-    bundle: path below the registry folder, with forward slashes."""
+    bundle: path below the registry folder, with forward slashes; feedback: the operator verdicts on its training
+    files (D-12: counts per verdict, the warnings whose spans were left out of the normal data, what train.py did
+    with them), None when there was no verdict store."""
     if version in data["versions"]:
         raise ValueError(f"version {version} is already registered")
     if status not in STATUSES:
         raise ValueError(f"unknown status {status!r}")
     data["versions"][version] = {"cutoff": cutoff, "train_files": list(train_files), "seed": seed, "created": created,
-                                 "bundle": bundle, "status": status}
+                                 "bundle": bundle, "status": status, "feedback": feedback}
 
 
-def set_champion(data: dict[str, Any], version: str, *, at: str, by: str) -> None:
-    """by: "first" | "decision" | "rollback". The champion before it becomes "retired"."""
+def set_champion(data: dict[str, Any], version: str, *, at: str, by: str, who: str | None = None,
+                 reason: str | None = None) -> None:
+    """by: "first" | "decision" | "rollback" (a person) | "probation" (a provisional swap taken back by the loop).
+    who / reason: the person and the words of a rollback, when given. The champion before it becomes "retired"."""
     if version not in data["versions"]:
         raise ValueError(f"unknown version {version}")
     old = data["champion"]
@@ -148,7 +159,27 @@ def set_champion(data: dict[str, Any], version: str, *, at: str, by: str) -> Non
     data["champion"] = version
     if data["challenger"] == version:
         data["challenger"] = None
-    data["history"].append({"at": at, "champion": version, "by": by})
+    entry = {"at": at, "champion": version, "by": by}
+    if who:
+        entry["who"] = who
+    if reason:
+        entry["reason"] = reason
+    data["history"].append(entry)
+
+
+def set_provisional(data: dict[str, Any], version: str, *, previous: str, since: str, shadow_files: list[str]) -> None:
+    """The champion that a decision has just swapped in. It stays provisional until the files that end after the
+    decision confirm it or take it back; shadow_files: the files the decision was made on (no new evidence)."""
+    data["provisional"] = {"version": version, "previous": previous, "since": since,
+                           "shadow_files": list(shadow_files)}
+
+
+def clear_provisional(data: dict[str, Any]) -> None:
+    data["provisional"] = None
+
+
+def record_probation(data: dict[str, Any], probation: dict[str, Any]) -> None:
+    data["probations"].append(probation)
 
 
 def set_challenger(data: dict[str, Any], version: str | None) -> None:
@@ -182,10 +213,13 @@ def _brief(data: dict[str, Any], version: str | None) -> dict[str, Any] | None:
     if version is None:
         return None
     v = data["versions"][version]
-    return {"version": version, "cutoff": v["cutoff"], "train_files": len(v["train_files"])}
+    return {"version": version, "cutoff": v["cutoff"], "train_files": len(v["train_files"]),
+            "feedback": v.get("feedback")}
 
 
 def summary(data: dict[str, Any], limit: int = 10) -> dict[str, Any]:
-    """What GET /model/loop shows of the registry: champion, challenger, last tick, the latest decisions."""
+    """What GET /model/loop shows of the registry: champion, challenger, last tick, the latest decisions, the
+    provisional swap that is still open and how the latest ones ended."""
     return {"champion": _brief(data, data["champion"]), "challenger": _brief(data, data["challenger"]),
-            "last_tick": data["last_tick"], "decisions": data["decisions"][-limit:]}
+            "last_tick": data["last_tick"], "decisions": data["decisions"][-limit:],
+            "provisional": data.get("provisional"), "probations": data.get("probations", [])[-limit:]}

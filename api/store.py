@@ -93,6 +93,14 @@ def warning_delivery_for_case(case_id):
     return {"event_id": row[0], "status": row[1]} if row else None
 
 
+def warning_deliveries() -> dict[str, dict[str, Any]]:
+    """warning_delivery_for_case를 모든 케이스에 대해 한 번에: {case_id: {"event_id", "status"}}.
+    읽기 전용이다 (ML 판정 조회 GET /api/ml/feedback가 닫힌 케이스마다 DB를 열지 않으려고 쓴다)."""
+    with _lock, _conn() as c:
+        rows = c.execute("SELECT case_id, event_id, status FROM warning_outbox").fetchall()
+    return {r[0]: {"event_id": r[1], "status": r[2]} for r in rows}
+
+
 def warning_pending(pattern_key):
     if pattern_key is None:
         return False

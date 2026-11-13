@@ -1,0 +1,24 @@
+=== 2026-11-13T04:20:49Z control a: E02_1 from 2019-12-20T11:15:00 for 60 min, registry models/registry-d12-ctl-a (free memory 1.35 GB)
+store: {'new': 1, 'changed': 0, 'same': 0, 'skipped': 0} E02_1 2019-12-20T11:15:00
+early warning: model_ng_k1 threshold 0.9860175251960754 (cv4_out_of_fold), val exceed rate 0.0011301326859486835
+feedback: {'spans': 1, 'windows_excluded': 60, 'windows_already_not_normal': 0, 'false_alarm_conflicts': 0}
+2021-09-06T00:00:00  first:v001
+replay exit 0 after 132 s
+figures: {'n_fit_windows': 99357, 'threshold': 0.94479209871309, 'ew_threshold': 0.9860175251960754, 'ew_calibration_windows': 116220, 'cv_auroc_gun_mean': 0.8228300284262425, 'val_auroc_gun_mean': 0.8612306527070296}
+feedback: {'confirmed': 1, 'false_alarm': 0, 'unknown': 0, 'unmatched': 0, 'event_ids': ['control-a'], 'spans': 1, 'windows_excluded': 60, 'windows_already_not_normal': 0, 'false_alarm_conflicts': 0}
+=== 2026-11-13T04:23:11Z control b: E01_10 from 2021-08-28T06:15:00 for 60 min, registry models/registry-d12-ctl-b (free memory 1.76 GB)
+store: {'new': 1, 'changed': 0, 'same': 0, 'skipped': 0} E01_10 2021-08-28T06:15:00
+early warning: model_ng_k1 threshold 0.9534452557563782 (cv4_out_of_fold), val exceed rate 0.003474111590138546
+feedback: {'spans': 1, 'windows_excluded': 60, 'windows_already_not_normal': 0, 'false_alarm_conflicts': 0}
+2021-09-06T00:00:00  first:v001
+replay exit 0 after 150 s
+figures: {'n_fit_windows': 99357, 'threshold': 0.9539732298604285, 'ew_threshold': 0.9534452557563782, 'ew_calibration_windows': 116220, 'cv_auroc_gun_mean': 0.7921314238452418, 'val_auroc_gun_mean': 0.8896703951208335}
+feedback: {'confirmed': 1, 'false_alarm': 0, 'unknown': 0, 'unmatched': 0, 'event_ids': ['control-b'], 'spans': 1, 'windows_excluded': 60, 'windows_already_not_normal': 0, 'false_alarm_conflicts': 0}
+=== 2026-11-13T04:25:44Z control c: E04_9 from 2021-09-01T10:15:00 for 60 min, registry models/registry-d12-ctl-c (free memory 1.57 GB)
+store: {'new': 1, 'changed': 0, 'same': 0, 'skipped': 0} E04_9 2021-09-01T10:15:00
+early warning: model_ng_k1 threshold 0.9820634126663208 (cv4_out_of_fold), val exceed rate 0.0010882759198024361
+feedback: {'spans': 1, 'windows_excluded': 60, 'windows_already_not_normal': 0, 'false_alarm_conflicts': 0}
+2021-09-06T00:00:00  first:v001
+replay exit 0 after 153 s
+figures: {'n_fit_windows': 99357, 'threshold': 0.9477265105674069, 'ew_threshold': 0.9820634126663208, 'ew_calibration_windows': 116220, 'cv_auroc_gun_mean': 0.7924282823936475, 'val_auroc_gun_mean': 0.8875267959344986}
+feedback: {'confirmed': 1, 'false_alarm': 0, 'unknown': 0, 'unmatched': 0, 'event_ids': ['control-c'], 'spans': 1, 'windows_excluded': 60, 'windows_already_not_normal': 0, 'false_alarm_conflicts': 0}
