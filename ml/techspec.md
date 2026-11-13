@@ -8,7 +8,8 @@
 
 **2026-11-01 추가**: 몇십 분 전은 정밀도가 낮은 조기 경보로 운영에 넣었다(B-20 운영점, C-8 서빙; `history.md` 42·43절).
 - 사용자 결정으로 미탐 우선이고 오경보 ~16회/건·일을 감수한다.
-- 핸드오프 v1.4 `event_type: "early_warning"`은 플래그(`RSW_EARLY_WARNING_HANDOFFS`)로만 나간다.
+- 핸드오프 v1.4 `event_type: "early_warning"`은 기본으로 나간다(C-9, 2026-11-13; `RSW_EARLY_WARNING_HANDOFFS=0`으로 끈다. 그 전에는 플래그를 켤 때만).
+- C-9(2026-11-13, `history.md` 52절): 모델 알람만으로는 critical이 되지 않는다. critical은 종료 코드 규칙뿐이고, 모델 신호는 조기 경보로만 하류에 간다.
 - 운영 번들은 교체했다(2026-11-01).
 - 남은 것: api·RAG가 `event_type`으로 구분해 받는 일(`docs/early-warning-handoff.md`, 다른 담당).
 

@@ -25,7 +25,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, ".py"))
 os.environ["RSW_STATE_DIR"] = tempfile.mkdtemp(prefix="rsw_examples_")
 os.environ.pop("RSW_RAG_URL", None)
-os.environ.pop("RSW_EARLY_WARNING_HANDOFFS", None)  # the critical examples come from the default (off)
+os.environ["RSW_EARLY_WARNING_HANDOFFS"] = "0"  # the critical examples: no early-warning handoffs (on by default since C-9)
 import main  # noqa: E402
 import rag_mapping  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

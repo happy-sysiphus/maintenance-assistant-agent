@@ -150,7 +150,7 @@ E01~E04를 정답으로 삼는 분류는 하지 않는다(LightGBM도 "고장 �
 
 이상탐지 신호가 나온 다음 단계다. **ML 쪽(1~2번과 핸드오프)은 구현되어 있다. 3~4번(매뉴얼 검색·LLM 안내)은 RAG 담당이 구현했다(2026-10-28). 핸드오프는 api가 받아 종료 코드로 RAG를 부른다(5.10절).**
 
-1. 필터링된 강한 이상 시그널이 탐지되면 Root Cause Agent로 전달 → **구현됨**: `severity: critical`(종료 코드 에피소드 시작, 또는 모델 알람이 10분 이상 지속 — C-5)이 트리거 기준. 몇십 분 전 조기 경보(C-8)는 `event_type: early_warning`으로 따로, 플래그를 켤 때만 보낸다
+1. 필터링된 강한 이상 시그널이 탐지되면 Root Cause Agent로 전달 → **구현됨**: `severity: critical`(종료 코드 에피소드 시작 — C-9, 2026-11-13부터 모델 알람만으로는 critical이 되지 않는다)이 트리거 기준. 몇십 분 전 조기 경보(C-8)는 `event_type: early_warning`으로 따로 보낸다(C-9부터 기본 켜짐)
 2. Agent가 이상 감지 시점 앞뒤의 센서 수치·로그 스트림을 모아 컨텍스트 구성 → **구현됨**: critical 이벤트마다 **핸드오프 문서**(센서 편차 소견, 종료 코드, 고장 유형, 시각 피처를 뺀 상위 피처 3개, 이벤트 1분의 초당 원시값)를 만든다(`.py/rag_mapping.py`, 5.10절)
 3. 감지된 에러 코드에 맞는 정비 지침서를 Vector DB에서 RAG로 검색 → **구현됨(RAG 담당)**: api가 핸드오프의 `trigger.rule_code`(없으면 `fault_class.terminal_code`)로 RAG를 부른다. RAG 입력은 E012·E016·E028·E029뿐이다
 4. LLM이 이상 패턴과 검색된 매뉴얼을 융합해 원인·영향도·조치 가이드를 자연어로 요약 → **구현됨(RAG 담당)**: 케이스 상세를 처음 열 때 api가 RAG 답을 만들어 저장한다. 센서는 쓰지 않고, 답은 ML로 오지 않는다(5.10.6절)
@@ -162,9 +162,9 @@ E01~E04를 정답으로 삼는 분류는 하지 않는다(LightGBM도 "고장 �
 
 설계상 유의점:
 
-- **알람 피로도.** 너무 예민하면 무시당한다. 그래서 임계값을 오탐률 1% 설계로 잡고, 모델 단독으로는 **10분 연속 초과일 때만** critical(핸드오프)을 내며(3분 연속은 warning의 "지속 알람"), 30분 이상 쉬었다가 재가동한 직후 30분은 모델 알람을 보류한다(C-5, 5.6~5.7절). 종료 코드 규칙은 그대로 즉시 critical.
+- **알람 피로도.** 너무 예민하면 무시당한다. 그래서 임계값을 오탐률 1% 설계로 잡고, 모델 단독으로는 critical(핸드오프)을 내지 않으며(C-9, 2026-11-13; 그 전 C-5는 10분 연속 초과일 때 냈고 `RSW_MODEL_CRITICAL=1`로 되살린다. 3분 연속은 warning의 "지속 알람"), 30분 이상 쉬었다가 재가동한 직후 30분은 모델 알람을 보류한다(C-5, 5.6~5.7절). 종료 코드 규칙은 그대로 즉시 critical.
   - 예외는 몇십 분 전 조기 경보(C-8)다. 사용자 결정으로 미탐 우선이라 오경보 ~16회/건·일을 감수한다.
-  - 그래서 `severity`와 따로 두고(`early_warning*` 필드), 핸드오프는 플래그(`RSW_EARLY_WARNING_HANDOFFS=1`)를 켤 때만 보낸다. 같은 건에는 60분에 한 번이다(5.10.2).
+  - 그래서 `severity`와 따로 두고(`early_warning*` 필드), 핸드오프는 기본으로 보낸다(C-9부터; `RSW_EARLY_WARNING_HANDOFFS=0`으로 끈다). 같은 건에는 60분에 한 번이다(5.10.2).
 - **매뉴얼 RAG 구성.** RAG는 고장 유형(E01~E04)이 아니라 종료 코드(E012·E016·E028·E029)별로 매뉴얼 4종을 찾는다. 원인 후보, 고정 점검 9개(`E012-K1` 등)와 그 기준, 조치를 인용과 함께 낸다. 숫자 기준은 없다. 문서에 조치가 없는 E012·E028은 조치를 비워 둔다(`ui/docs/09-rag-development-reply.md` 3절).
 
 ---
@@ -679,7 +679,7 @@ RAG 핸드오프 엔드포인트(`/handoffs`, `/handoffs/{event_id}`, `/handoffs
 
 출력 `AnomalyResult` — 하류와의 **계약**(필드 삭제·의미 변경 금지, 추가는 자유):
 
-아래는 모양 예시다(값은 IsolationForest 단독 번들 — `critical_sustain`이 없어 180초에 critical). 운영 앙상블 응답은 `docs/anomaly_result.example.json`.
+아래는 모양 예시다(값은 IsolationForest 단독 번들, C-9 전 — `critical_sustain`이 없어 180초에 critical. 지금 기본 설정에서는 모델 알람만으로 critical이 되지 않는다). 운영 앙상블 응답은 `docs/anomaly_result.example.json`.
 
 ```json
 {"gun_id": "G0", "status": "ok", "window_start": "...", "window_end": "...", "n_samples": 60, "history_s": 1809,
@@ -699,7 +699,7 @@ RAG 핸드오프 엔드포인트(`/handoffs`, `/handoffs/{event_id}`, `/handoffs
 
 - `threshold`: **이 윈도우를 판정한 임계값** — 워밍업이 끝난 건은 `gun_threshold`, 그 전·글로벌 건은 `model.threshold`(글로벌). `gun_norm`은 `warming_up` / `gun` / `global`.
 - `rule_triggered` / `severity_source`: 이 요청의 행에서 종료 코드(E012/E016/E028/E029) **에피소드가 시작**되고(`model.rule_per_code`면 코드가 바뀌어도 새 발화, 쿨다운은 코드별 — C-6) 건의 쿨다운(30분, `model.rule_cooldown_s`)이 지났으면 모델과 무관하게 `severity=critical`. 코드가 떠 있는 동안 계속 critical이 아니다 — E029는 E01~E03 건에서도 고장 며칠 전부터 수 시간씩 떠 있다(테스트 test_0 16시간). `rule_code`·`rule_class_hint`는 발화시킨 코드와 그 클래스(윈도우 끝에서는 코드가 이미 사라졌을 수 있으므로 하류는 `context.known_code_class_hint`가 아니라 이것을 쓴다). `rule_code_active`는 최신 코드가 종료 코드인지(상태). `severity_source`는 `model`(지속 알람) / `rule` / `model+rule` / `none`. 보장되는 선행은 마지막 ~10분. **`rule_repeat`**: 같은 코드가 이 건에서 24h(`model.rule_repeat_s`) 안에 이미 발화했으면 `rule_triggered=true`이지만 critical이 아니라 `warning`이고 핸드오프도 없다(`critical_in_request=false`) — 학습·테스트 80건에서 반복 발화는 18회 중 17회가 오트리거였다. critical 오트리거는 테스트 평균 0.18회/일/건(강등 전 0.25)
-- `severity`: `normal`(임계 미만 또는 보류) / `warning`(초과; `sustain × window` = 180초 이상 이어지면 `sustained_alarm`) / `critical`(임계 초과가 `critical_sustain × window` = 600초 이상 연속, `alarm_duration_s` — C-5, 2026-10-06; 이 필드가 없는 구 번들은 180초) — 3절 알람 피로도의 기준(핸드오프는 critical에만; 조기 경보는 `early_warning*` 필드로 따로, 핸드오프는 플래그로 — 5.10.2). **시간 기준**이라 클라이언트 호출 주기와 무관하다(1초마다 호출해도 3초 만에 critical이 되지 않는다). `critical_in_request`는 청크 중간 윈도우가 critical이었던 경우까지 포함하므로 하류 트리거는 이 필드를 본다. 그 근거는 `critical_source`(요청 단위; `severity_source`는 최신 윈도우 기준이라 청크 안에서 끝난 지속 알람이면 `none`)
+- `severity`: `normal`(임계 미만 또는 보류) / `warning`(초과; `sustain × window` = 180초 이상 이어지면 `sustained_alarm`) / `critical`(종료 코드 규칙으로만 — C-9, 2026-11-13. `RSW_MODEL_CRITICAL=1`로 켠 서버에서만 임계 초과가 `critical_sustain × window` = 600초 이상 연속이면 critical, `alarm_duration_s` — C-5, 2026-10-06; 이 필드가 없는 구 번들은 180초) — 3절 알람 피로도의 기준(핸드오프는 critical에만; 조기 경보는 `early_warning*` 필드로 따로, 핸드오프도 기본으로 나간다 — 5.10.2). **시간 기준**이라 클라이언트 호출 주기와 무관하다(1초마다 호출해도 3초 만에 critical이 되지 않는다). `critical_in_request`는 청크 중간 윈도우가 critical이었던 경우까지 포함하므로 하류 트리거는 이 필드를 본다. 그 근거는 `critical_source`(요청 단위; `severity_source`는 최신 윈도우 기준이라 청크 안에서 끝난 지속 알람이면 `none`)
 - `alarm_held`: 윈도우의 `non_welding_share`가 번들의 `alarm_max_non_welding`(0.5)을 넘으면 `true`. 이때 `is_anomaly`·점수는 그대로 주되 `severity`는 `normal`, `consecutive_alarms`는 0으로 리셋된다(비용접 중 점수는 신뢰하지 않는다). `hold_reason`에 이유가 들어간다.
 - `contributing_features`: 피처 하나를 정상 기준값(`feature_reference`)으로 치환했을 때의 점수 감소량, 상위 8개. 모델 무관 방식
 - `known_code_class_hint`: 최신 error 코드가 종료 코드면 그 클래스. 모델과 무관한 안전장치
@@ -755,7 +755,7 @@ python .py/replay.py test/test_0.csv --speed 60               # 60배속
 - 읽는 규칙은 `docs/handoff_sensor_features_for_rag.md`에 있다. 예시는 `docs/rag_handoff.example.json`, `docs/rag_handoff_early_warning.example.json`, `docs/handoff_sensor_features_typical.example.json`이다.
 
 **v1.3 (2026-11-01, C-8 — 1.2와 호환, 필드 추가만)**: `event_type`(`critical` | `early_warning`)과 `early_warning` 블록을 추가했다.
-- `RSW_EARLY_WARNING_HANDOFFS=1`일 때 조기 경보 에피소드의 시작도 핸드오프로 나간다.
+- 조기 경보 에피소드의 시작도 핸드오프로 나간다(C-9, 2026-11-13부터 기본; `RSW_EARLY_WARNING_HANDOFFS=0`이면 나가지 않는다).
   - 그 문서는 `event_type: "early_warning"`, `trigger.source: "early_warning"`이다.
   - `trigger.rule_code`·`fault_class`가 없다. 아직 종료 코드가 없기 때문이다.
   - `early_warning`에는 시작 시각, 규칙·임계값, 오프라인 정확도(`expected`), 건 프로파일의 후보 유형·코드가 들어 있다. 후보는 진단이 아니다.
@@ -788,7 +788,7 @@ ML(이상탐지)과 하류(api·RAG: 원인·점검·매뉴얼·안내)를 **따
 - critical 에피소드의 **첫 요청**(직전 요청은 critical 아님 → 이번 `critical_in_request=true`)에 1회.
 - 종료 코드 규칙이 발화할 때마다(`rule_triggered=true`; 코드가 시작할 때마다 1회 — E016→E029 같은 전환도 새 발화, 30분 쿨다운은 코드별, C-6 번들 `rule.per_code`; 구 번들은 에피소드 시작 1회 + 건 공통 쿨다운). 한 요청에 발화가 둘이면 핸드오프도 둘이다(응답에는 하나만). 단 반복 발화(`rule_repeat=true`, 같은 코드가 이 건에서 24h 안에 이미 발화)는 critical이 아니므로 넘기지 않는다. 같은 요청에서 모델이 critical이면 모델 이벤트로 넘어가되, 반복 발화는 규칙 근거로 쓰지 않는다(`trigger.rule_code = null`, `fault_class.basis`는 `latest_error_code`).
 - `replay.py`도 이벤트를 찍는다(`fault_class=E0x | 요약`). 응답마다 한 줄이라, 한 요청에 발화가 둘(E016→E029)이면 핸드오프·`/stats`는 2건, replay는 1건이다. 조기 경보 핸드오프는 끝 요약에 수만 센다.
-- **조기 경보(C-8, v1.3)**: `RSW_EARLY_WARNING_HANDOFFS=1`일 때만 넘긴다(기본 끔 — 지금 api는 모든 핸드오프를 critical 케이스로 받는다).
+- **조기 경보(C-8, v1.3)**: 기본으로 넘긴다(C-9, 2026-11-13; `RSW_EARLY_WARNING_HANDOFFS=0`으로 끈다). api는 `event_type`이 `early_warning`이면 WARNING 케이스로 받는다.
   - 시점: 조기 경보 에피소드가 시작된 요청에서 1회(`early_warning_onset=true`). 같은 건에서는 60분 쿨다운이 있다(번들 `early_warning.cooldown_s`).
   - 같은 요청에 critical 이벤트·종료 코드가 있으면 보내지 않는다. 직전 요청이 critical이어도 마찬가지다. 사유는 `early_warning_handoff_suppressed`(`critical` / `terminal_code` / `cooldown` / `handoffs_off`)에 남는다.
   - 멱등 키는 critical과 겹치지 않는다(`gun|window_end|early_warning|since`).

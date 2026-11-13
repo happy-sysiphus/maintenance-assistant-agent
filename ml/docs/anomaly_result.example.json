@@ -173,6 +173,7 @@
     "rule_repeat_s": 86400,
     "warmup_alarms": false,
     "critical_sustain": 10,
+    "model_critical": false,
     "restart_hold_s": 1800,
     "restart_idle_windows": 30,
     "early_warning_rule": "model_ng_k1",
