@@ -2074,7 +2074,7 @@ async def push_handoff(app: FastAPI, rec: HandoffRecord) -> None:
     try:
         async with httpx.AsyncClient(timeout=RAG_TIMEOUT_S, transport=app.state.rag_transport) as client:
             # model_dump_json writes NaN / inf as null; httpx's json= refuses them, which failed every attempt (C-7)
-            r = await client.post(app.state.rag_url, content=rec.handoff.model_dump_json(),
+            r = await client.post(app.state.rag_url, content=rec.handoff.model_dump_json(exclude_none=False),
                                   headers={"Idempotency-Key": rec.handoff.event_id,
                                            "Content-Type": "application/json"})
         code = r.status_code

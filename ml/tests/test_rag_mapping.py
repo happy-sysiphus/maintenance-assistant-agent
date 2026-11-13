@@ -110,7 +110,8 @@ def test_schema_keys_match_main():
     r["contributing_features"] = [feat("c5", "mean", -3.1)]
     h = rm.build_handoff(r)
     assert set(h) == {"schema_version", "event_type", "event_id", "gun_id", "detected_at", "window_start", "trigger",
-                      "summary_ko", "sensor_findings", "fault_class", "context", "detector", "caveats", "early_warning"}
+                      "summary_ko", "sensor_findings", "fault_class", "context", "detector", "caveats", "early_warning",
+                      "error_timeline", "sensor_trend", "contributing_features", "sensor_features"}
     assert set(h["sensor_findings"][0]) == {"sensor", "sensor_name", "sensor_name_ko", "group", "statistic",
                                             "direction", "deviation_z", "share", "text_ko"}
     assert set(h["fault_class"]) == {"code", "name_en", "name_ko", "terminal_code", "definition", "basis"}
@@ -269,3 +270,65 @@ def test_block_whole_floats_become_ints():
     assert b["channels"]["c14"] == [[0, 2500]] and type(b["channels"]["c14"][0][1]) is int
     assert b["channels"]["c10"] == [[0, 1]] and type(b["channels"]["c10"][0][1]) is int
     assert b["channels"]["c7"] == [[0, 157.8632812]] and type(b["channels"]["c7"][0][1]) is float
+
+
+def test_common_fields_for_critical_and_warning_before_pydantic():
+    """The mapper itself supplies the wire field set, including null optional blocks."""
+    critical = rm.build_handoff(copy.deepcopy(BASE), "critical-event")
+    warning = rm.build_handoff(copy.deepcopy(BASE), "warning-event", early_warning={"onset_at": "2021-09-05T02:23:20Z"})
+    assert set(critical) == set(warning)
+    assert critical["event_type"] == "critical" and critical["trigger"]["rule_code"] == "E012"
+    assert critical["early_warning"] is None
+    assert warning["event_type"] == "early_warning" and warning["trigger"]["rule_code"] is None
+    assert warning["trigger"]["rule_trigger_time"] is None and warning["fault_class"] is None
+    assert set(critical["trigger"]) == set(warning["trigger"])
+    for doc in (critical, warning):
+        assert doc["sensor_features"] is None
+        for field in ("error_timeline", "sensor_trend", "contributing_features"):
+            assert doc[field] == []
+    # A caller filling one event cannot leak its minute into the next event.
+    critical["contributing_features"].append({"sensor": "c2"})
+    assert warning["contributing_features"] == []
+
+
+def test_push_keeps_nulls_and_same_keys_for_both_event_types():
+    """Verify the actual HTTP body without loading a model or calling an external RAG."""
+    import asyncio
+    import importlib.util
+    import json
+    from datetime import timezone
+    from pathlib import Path
+    from types import SimpleNamespace
+    import httpx
+
+    spec = importlib.util.spec_from_file_location("handoff_contract_main", Path(ROOT) / "main.py")
+    main = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = main
+    spec.loader.exec_module(main)
+    seen = []
+
+    def receive(request):
+        body = json.loads(request.content)
+        assert request.headers["Idempotency-Key"] == body["event_id"]
+        seen.append(body)
+        return httpx.Response(200, json={"status": "ok"})
+
+    app = SimpleNamespace(state=SimpleNamespace(
+        rag_url="http://api.test/api/ml/handoffs", rag_transport=httpx.MockTransport(receive),
+        outbox=main.Outbox(None), rag_backoff_s=(.05,), rag_max_attempts=3))
+    for filename in ("rag_handoff.example.json", "rag_handoff_early_warning.example.json"):
+        doc = json.loads((Path(ROOT) / "docs" / filename).read_text(encoding="utf-8"))
+        # Filling optional fields is the sender's job, not a special case in the receiver.
+        doc.pop("sensor_features", None)
+        doc.pop("contributing_features", None)
+        handoff = main.RagHandoff(**doc)
+        now = datetime.now(timezone.utc)
+        record = main.HandoffRecord(handoff=handoff, created_at=now, delivery="pending", next_attempt_at=now)
+        asyncio.run(main.push_handoff(app, record))
+        assert record.delivery == "delivered"
+    critical, warning = seen
+    assert set(critical) == set(warning)
+    assert critical["event_type"] == "critical" and critical["early_warning"] is None
+    assert warning["event_type"] == "early_warning"
+    assert warning["trigger"]["rule_code"] is None and warning["fault_class"] is None
+    assert all(d["sensor_features"] is None and d["contributing_features"] == [] for d in seen)
