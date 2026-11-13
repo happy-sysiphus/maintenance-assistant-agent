@@ -153,15 +153,17 @@ python .py/replay.py test/test_1.csv --start-hours 156 --chunk-s 600
 
 | 설정 | 주는 곳 | 주지 않으면 | 주면 |
 |---|---|---|---|
-| `RSW_EARLY_WARNING_HANDOFFS=1` | ML 서버 환경 변수 | 조기 경보를 계산만 하고 보내지 않음 | 조기 경보가 api로 가서 WARNING 케이스가 생김 |
+| `RSW_EARLY_WARNING_HANDOFFS=0` | ML 서버 환경 변수 | (11/13부터 기본 켜짐) 조기 경보가 api로 가서 WARNING 케이스가 생김 | 조기 경보를 계산만 하고 보내지 않음 |
+| `RSW_MODEL_CRITICAL=1` | ML 서버 환경 변수 | 모델 알람만으로는 CRITICAL이 되지 않음 (CRITICAL = 종료 코드뿐) | 예전 동작: 모델 알람이 10분 이어지면 코드 없는 CRITICAL. 비교·재현용 |
 | `RAG_WARNING_NAMESPACE` | `rag/.env` | 조기 경보 해결 기록을 저장하지 못함 | 팀이 같은 값을 쓰면 해결 이력을 함께 씀 |
 | `RAG_WARNING_EQUIPMENT_SCOPE` | `rag/.env` | 해결 기록은 쌓이지만 자동 카드가 뜨지 않음 | 현장 설비 범위(예: `cpx-weld-2g-sa`)에 맞는 사례가 2건부터 자동 카드로 뜸 |
 | `RSW_MODEL_REGISTRY=models/registry` | ML 서버 환경 변수 | 모델 파일 하나를 고정해서 씀 | 모델 등록부의 현재 모델을 쓰고, 루프가 교체하면 다시 켜지 않아도 바뀜 |
 | `FIELD_MEMORY=1` | api 서버 환경 변수 | 닫힌 케이스 기록을 보여 주지 않음 | 같은 설비·코드로 닫힌 케이스를 "이전 기록"으로 보여 줌 |
 
 ```bash
-RSW_EARLY_WARNING_HANDOFFS=1 uvicorn main:app --port 8000               # bash
-$env:RSW_EARLY_WARNING_HANDOFFS='1'; uvicorn main:app --port 8000       # PowerShell
+uvicorn main:app --port 8000                                            # 조기 경보 전송 켜짐 (기본)
+RSW_EARLY_WARNING_HANDOFFS=0 uvicorn main:app --port 8000               # 끄기 (bash)
+$env:RSW_EARLY_WARNING_HANDOFFS='0'; uvicorn main:app --port 8000       # 끄기 (PowerShell)
 ```
 
 ### 테스트
