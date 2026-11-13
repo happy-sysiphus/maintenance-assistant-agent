@@ -195,7 +195,9 @@ def interpret(result: dict[str, Any]) -> dict[str, Any]:
 
 def build_handoff(result: dict[str, Any], event_id: str | None = None,
                   early_warning: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Full handoff document (schema v1.4) for one critical event. `result` = AnomalyResult.model_dump(mode='json').
+    """One common v1.4 field set for CRITICAL and WARNING.
+    Scalar/block values that do not apply remain None; empty collections remain [].
+    Full handoff document for one critical event. `result` = AnomalyResult.model_dump(mode='json').
     With `early_warning` (main.early_warning_info, C-8): an event_type "early_warning" document - trigger.source
     "early_warning", no rule code, no fault class (nothing has fired yet), its own summary and caveats."""
     ctx = result.get("context") or {}
@@ -231,4 +233,10 @@ def build_handoff(result: dict[str, Any], event_id: str | None = None,
         "detector": {"name": model.get("name"), "created": model.get("created"), "window_s": model.get("window_s")},
         "caveats": CAVEATS_EARLY_WARNING if ew else CAVEATS,
         "early_warning": early_warning,
+        # Both event types start with every v1.4 field present. main.attach_handoff
+        # fills these from the selected event minute; failures retain these defaults.
+        "error_timeline": [],
+        "sensor_trend": [],
+        "contributing_features": [],
+        "sensor_features": None,
     }
