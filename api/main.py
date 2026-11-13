@@ -150,6 +150,9 @@ def ingest(handoff: dict[str, Any]) -> str:
             same = None
         if same:
             same.setdefault("repeats", []).append({"event_id": eid, "detected_at": handoff["detected_at"], "handoff": handoff})
+            # An episode can begin as WARNING and later acquire a controller fault.
+            # Keep its original event for feedback/history, but never hide that escalation.
+            same["severity"] = case_severity(same)
             store.put(same)
             store.mark_seen(eid, same["case_id"])
             return "repeat"
@@ -210,13 +213,21 @@ def force_sync():
 # ---- 케이스 ----
 
 
+def case_severity(d: dict[str, Any]) -> str:
+    if warning_bridge.is_timeseries(d) and any(
+            event.get("event_type") == "critical" for event in warning_bridge.case_events(d)):
+        return "critical"
+    return d["severity"]
+
+
 def summary(d: dict[str, Any]) -> dict[str, Any]:
-    e = d["event"]
+    # Display the newest reported controller code without replacing stored event IDs.
+    e = warning_bridge.preferred_event(d) if warning_bridge.is_timeseries(d) else d["event"]
     fc = e.get("fault_class")
     return {
         "case_id": d["case_id"],
         "status": d["status"],
-        "severity": d["severity"],
+        "severity": case_severity(d),
         "assignee": d["assignee"],
         "event": {
             "event_id": e["event_id"],
@@ -236,6 +247,8 @@ def load(case_id: str) -> dict[str, Any]:
     d = store.get(case_id)
     if d is None:
         raise HTTPException(404, "not found")
+    # Existing SQLite cases created before this fix also expose the correct severity.
+    d["severity"] = case_severity(d)
     return guidance.attach_criteria(d)
 
 
