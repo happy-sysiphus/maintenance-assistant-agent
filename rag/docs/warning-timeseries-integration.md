@@ -6,16 +6,18 @@ RAG는 장비가 보고한 E코드, 과거 해결 사례, 매뉴얼 검색 순�
 
 이상 에피소드의 첫 이벤트를 RAG에 보낸다. ML의 10분 지속 조건이나 기존 `event_type`은 RAG의 안내 경로에 사용되지 않는다. 같은 에피소드에서 장비가 E코드를 뒤늦게 보고하면, 같은 `episode_id`에 **새 `event_id`**를 발급해 보낸다. API는 열려 있는 같은 에피소드 케이스에 이벤트를 추가하고 새 E코드 안내를 요청한다. 정비 완료 때 실제 판단에 사용한 이벤트 ID를 보낸다.
 
-아래는 시연용 축약 입력이다. 실운영에서는 ML이 확보한 전체 채널의 원본 블록을 전달한다.
+아래는 RAG CLI의 `register --input`에 사용하는 시연용 축약 입력이다. ML이 `POST /api/ml/handoffs`로 전송할 때는 바깥의 `handoff` 키 없이 그 객체를 요청 본문으로 보낸다. 실운영에서는 ML이 확보한 전체 채널의 원본 블록을 전달한다.
 
 ```json
 {
   "handoff": {
     "schema_version": "1.4",
+    "event_type": "early_warning",
     "event_id": "alert-20261113-001",
     "episode_id": "episode-20261113-001",
     "gun_id": "gun-1",
     "detected_at": "2026-11-13T00:00:59Z",
+    "early_warning": {"onset_at": "2026-11-13T00:00:59Z"},
     "contributing_features": [
       {"feature": "c10_std", "sensor": "c10"},
       {"feature": "error_share_10min_std", "sensor": "error_share_10min"}
@@ -84,7 +86,7 @@ API는 `WarningAssessment(WarningMemory(driver, database=..., namespace=...), eq
 | `route=manual, status=uncertain` | 채널 부족·이력 충돌·서비스 장애 등 `reason`을 안내한다. 매뉴얼 검색으로 이동하거나 판단을 재시도할 수 있다. |
 | `route=manual, status=unsupported_code` | 관측 코드와 KG 미등록 상태를 표시하고 매뉴얼 검색으로 연결한다. |
 
-선택 가능한 카드와 PDF 출처는 API가 해당 이벤트 응답에서 보존한다. UI는 그중 카드 ID 또는 근거 ID를 선택하고, API는 보존한 데이터와 선택을 대조한다. 검토된 카드를 골랐다면 `manual_case_id`를, 새 후보나 수동 검색 근거를 골랐다면 해당 응답의 `source` 객체를 `manual_source`로 전달한다.
+선택 가능한 카드와 PDF 출처는 API가 해당 이벤트 응답에서 보존한다. UI는 `POST /api/cases/{case_id}/warning/select`에 `event_id`와 함께, 검토된 카드면 `manual_case_id`, 새 후보나 수동 검색 근거면 `evidence_id`를 보낸다. API는 이 ID를 이전에 반환한 자료와 대조하고 PDF 출처는 서버에 보존한 `source`를 사용한다. 아래 예시는 선택·종료를 처리한 API가 RAG의 `close`를 호출할 때 전달하는 값이다.
 
 ```json
 {

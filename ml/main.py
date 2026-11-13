@@ -1861,9 +1861,11 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
                   else None if request.app.state.ew_handoffs else "handoffs_off")
         result.early_warning_handoff_suppressed = reason
         if reason is None:
-            info = early_warning_info(d, g, result, onset.w.index[-1], since=onset.ew_since)
-            attach_handoff(request, result, g, early_warning=info, window=(onset.w, onset_vec),
-                           episode_id=warning_episode_id(req.gun_id, info["since"]))
+            onset_time = onset.w.index[-1]
+            # The v1.4 since field follows the latest scored window. Group the emitted onset separately.
+            episode_start = onset.ew_since if onset.ew_since is not None else onset_time
+            attach_handoff(request, result, g, early_warning=early_warning_info(d, g, result, onset_time),
+                           window=(onset.w, onset_vec), episode_id=warning_episode_id(req.gun_id, episode_start))
             g.ew_last_handoff = onset.w.index[-1]
             count(g, result.window_end, early_warning_handoffs=1)
     g.was_critical = critical
@@ -1965,13 +1967,12 @@ def handoff_event_id(result: AnomalyResult, early_warning: dict[str, Any] | None
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:32]
 
 
-def early_warning_info(d: Detector, g: "GunState", result: AnomalyResult, onset_t: pd.Timestamp,
-                       *, since: pd.Timestamp | None = None) -> dict[str, Any]:
+def early_warning_info(d: Detector, g: "GunState", result: AnomalyResult, onset_t: pd.Timestamp) -> dict[str, Any]:
     """The handoff's early_warning block (C-8): the run, the rule, the offline evidence and the gun profile as
     candidates (not a diagnosis - no fault_class)."""
     e = d.early_warning
     ev = e.get("evidence") or {}
-    since = since or result.early_warning_since or onset_t.to_pydatetime()
+    since = result.early_warning_since or onset_t.to_pydatetime()
     profile = list(g.profile) if g.profile else None
     return {"since": rag_mapping.utc_iso(pd.Timestamp(since).isoformat()),
             "onset_at": rag_mapping.utc_iso(pd.Timestamp(onset_t).isoformat()),

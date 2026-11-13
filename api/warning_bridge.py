@@ -199,11 +199,12 @@ def without_rejected(result, state):
         cleaned.pop("selection")
     if "shown_cards" in cleaned:
         cleaned["shown_cards"] = {key: card for key, card in cleaned["shown_cards"].items() if key != rejected}
-    if "generate_candidates" in cleaned:
-        cleaned["generate_candidates"] = without_rejected(cleaned["generate_candidates"], state)
-    for key in ("history_candidates", "candidates"):
+    for key in ("generate_candidates", "search_manuals"):
         if key in cleaned:
-            cleaned[key] = [card for card in cleaned[key] if card["manual_case_id"] != rejected]
+            cleaned[key] = without_rejected(cleaned[key], state)
+    for key in ("history_candidates", "candidates", "cards"):
+        if key in cleaned:
+            cleaned[key] = [card for card in cleaned[key] if card.get("manual_case_id") != rejected]
     if (cleaned.get("automatic_card") or {}).get("manual_case_id") == rejected:
         cleaned.update(automatic_card=None, status="candidates")
     if (cleaned.get("card") or {}).get("manual_case_id") == rejected:

@@ -1,6 +1,7 @@
 """RAG-only entry points for early warnings, manual review and field reuse."""
 import argparse
 import json
+import logging
 import os
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from .warning_catalog import (case_is_current, initial_catalog, reviewed_case,
 from .warning_input import analyze_warning, required_text, timestamp
 from .warning_memory import WarningMemory
 
+log = logging.getLogger(__name__)
 MEMORY_ERRORS = (DriverError, Neo4jError)
 CANDIDATE_PROMPT = """당신은 조기 경보에서 매뉴얼의 확인 후보를 찾습니다.
 ML이 경보를 감지했으며 센서 요약은 관측 사실입니다. 정상 범위를 판단하거나 센서로 고장을 확정하지 마세요.
@@ -67,6 +69,7 @@ def _claude(prompt, context, model, *, allowed_field, allowed_ids):
             messages=[{"role": "user", "content": json.dumps(context, ensure_ascii=False)}],
         )
     if response.stop_reason != "end_turn":
+        log.warning("Claude warning response ended with stop_reason=%s", response.stop_reason)
         raise RuntimeError("warning generation did not complete")
     return model.model_validate_json("".join(b.text for b in response.content if b.type == "text"))
 
@@ -218,16 +221,24 @@ class EarlyWarningRag:
                 result["hits"].append({"source": ref, "review_needed": row["review_needed"],
                                        "manual_case_ids": [key for key, case in catalog.items()
                                                            if source_matches_evidence(case["source"], row)]})
-            if explain and result["hits"]:
+        except Exception as exc:
+            log.warning("Manual evidence search failed (%s)", type(exc).__name__)
+            return {**result, "status": "search_error", "error": type(exc).__name__}
+        if not result["hits"]:
+            return {**result, "status": "no_evidence"}
+        if explain:
+            try:
                 hits = {h["source"]["evidence_id"]: h["source"] for h in result["hits"]}
                 reply = _claude(MANUAL_PROMPT, {"question": question, "history": history,
                                                 "observations": analysis["observations"], "sources": list(hits.values())},
                                 _ManualReply, allowed_field="evidence_id", allowed_ids=hits)
                 result["notes"] = [{"text": note.text, "source": hits[note.evidence_id]}
                                    for note in reply.notes]
-            return {**result, "status": "ok" if result["hits"] else "no_evidence"}
-        except Exception as exc:
-            return {**result, "status": "search_error", "error": type(exc).__name__}
+            except Exception as exc:
+                log.warning("Manual explanation failed after retrieving %s sources (%s)",
+                            len(result["hits"]), type(exc).__name__)
+                return {**result, "status": "retrieval_only", "error": type(exc).__name__}
+        return {**result, "status": "ok"}
 
     def _verify_manual_hit(self, selection):
         evidence_id = selection["evidence_id"]

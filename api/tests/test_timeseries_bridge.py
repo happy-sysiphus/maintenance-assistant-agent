@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import store
 import warning_bridge
+from rag.warning_catalog import initial_catalog, source_ref
 from test_warning_bridge import close_body, path, warning
 
 
@@ -58,3 +59,32 @@ def test_closed_timeseries_case_opens_the_event_the_worker_used(api, monkeypatch
     case["status"] = "resolved"
     store.put(case, warning_delivery={"handoff": first, "pattern_key": None})
     assert api.get(f"/api/cases/{case['case_id']}").json()["preferred_event_id"] == "used"
+
+
+def test_rejected_timeseries_card_leaves_new_pdf_evidence_selectable(api, monkeypatch):
+    monkeypatch.setenv("RAG_WARNING_TIMESERIES", "1")
+    card = initial_catalog()["manual:E012-C1"]
+    source = source_ref("manual82", 44, "The drive can drift due to leakage.", evidence_id="drift")
+    candidate = {"evidence_id": "drift", "source": source, "excerpt": source["quote"],
+                 "title": "위치 유지 확인", "reason": "위치가 이동했습니다.", "step_kind": "check"}
+    rag = Mock()
+    rag.read_decision.return_value = None
+    rag.assess.return_value = {"event_id": "seen-event", "route": "history", "status": "seen", "card": card}
+    rag.manual_candidates.return_value = {"status": "ok", "candidates": [candidate]}
+    rag.manual_search.return_value = {"status": "ok", "cards": [card], "hits": [{"source": source}]}
+    monkeypatch.setattr(warning_bridge, "assessment_service", lambda *a, **k: rag)
+
+    event = {"event_id": "seen-event"}
+    assert api.post("/api/ml/handoffs", json=warning(event["event_id"])).json()["result"] == "new"
+    case_id = store.all_cases()[0]["case_id"]
+    assert api.post(path(case_id, "/assess"), json=event).json()["status"] == "seen"
+    assert api.post(path(case_id, "/reject"), json=event).json()["status"] == "rejected"
+    assert api.post(path(case_id, "/candidates"), json=event).json()["candidates"] == [candidate]
+    search = api.post(path(case_id, "/manual"), json={**event, "question": "위치가 밀릴 때 확인할 사항"}).json()
+    assert search["cards"] == []
+    assert search["hits"] == [{"source": source}]
+    refreshed = api.get(path(case_id)).json()
+    assert refreshed["card"] is None
+    assert refreshed["generate_candidates"]["candidates"] == [candidate]
+    assert api.post(path(case_id, "/select"), json={**event, "evidence_id": "drift"}).json() == {"manual_source": source}
+    assert api.post(path(case_id, "/select"), json={**event, "manual_case_id": card["manual_case_id"]}).status_code == 422

@@ -44,6 +44,7 @@ const states: Record<string, string> = {
   invalid_input: '이 경보의 센서 데이터 형식을 확인해 주세요. v1.4 원본이 필요합니다.',
   no_evidence: '맞는 매뉴얼 근거가 부족합니다. 직접 검색해 주세요.',
   generation_error: '후보를 생성하지 못했습니다. 다시 시도하거나 직접 검색해 주세요.',
+  retrieval_only: 'AI 설명을 완성하지 못했습니다. 아래에서 찾은 PDF 근거와 점검 카드를 확인할 수 있습니다.',
   search_error: '매뉴얼을 검색하지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.',
 }
 const recordingStates: Record<string, string> = {
@@ -111,6 +112,8 @@ export default function WarningPage() {
   const busy = mutation.isPending
   const generated = w?.generate_candidates
   const search = w?.search_manuals
+  // Older saved results used search_error even when PDF retrieval had succeeded.
+  const searchStatus = search?.status === 'search_error' && search.hits?.length ? 'retrieval_only' : search?.status
   const allCards = [...(w?.cards ?? []), ...(w?.history_candidates ?? []), ...(generated?.history_candidates ?? []),
     ...(generated?.candidates ?? []).filter((c): c is Card => 'manual_case_id' in c), ...(search?.cards ?? [])]
   const cards = [...new Map(allCards.map(c => [c.manual_case_id, c])).values()]
@@ -208,7 +211,7 @@ export default function WarningPage() {
             <textarea id="warning-question" className={input} value={question} maxLength={2000} onChange={e => setQuestion(e.target.value)} placeholder="현장에서 확인한 증상을 입력하세요" />
             <button className={btn} disabled={busy || !question.trim()}>검색</button>
           </form>}
-          {search && <p role="status" className="text-sm text-sub">{search.status === 'ok' ? '검색된 PDF 근거' : states[search.status] ?? search.status}</p>}
+          {searchStatus && <p role="status" className="text-sm text-sub">{searchStatus === 'ok' ? '검색된 PDF 근거' : states[searchStatus] ?? searchStatus}</p>}
           {search?.notes?.map((n, i) => <p key={i} className="text-sm">{n.text} · {cite(n.source)}</p>)}
           {cards.filter(c => c.manual_case_id !== historyCard?.manual_case_id).map(c => renderCard(c))}
           {search?.hits?.map((h, i) => <article key={h.source.evidence_id ?? i} className="rounded-lg border border-line-soft p-3 text-sm">

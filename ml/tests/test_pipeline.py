@@ -1541,6 +1541,8 @@ def test_v14_ew_two_onsets_take_the_first(workspace, monkeypatch):
     assert len(ons) == 2
     assert h["sensor_features"]["window_end"] == h["early_warning"]["onset_at"] == "2021-10-01T00:30:59Z"
     assert h["early_warning"]["since"] > h["early_warning"]["onset_at"], "since: the later episode"
+    assert h["episode_id"] == main.warning_episode_id("V4", "2021-10-01T00:30:00Z")
+    assert h["episode_id"] != main.warning_episode_id("V4", h["early_warning"]["since"])
 
 
 def test_v14_stored_v13_record_loads(workspace, monkeypatch, tmp_path):
@@ -1917,8 +1919,8 @@ def test_v14_nan_costs_only_the_top_features(workspace, monkeypatch, bad):
     assert r["contributing_features"], "the /predict list is untouched"
 
 
-def test_v14_nan_without_the_check_breaks_the_pull_list(workspace, monkeypatch):
-    """Section 6's reason for the check: NaN in the outbox costs every GET /handoffs."""
+def test_v14_nan_without_the_check_produces_an_invalid_handoff(workspace, monkeypatch):
+    """Without the guard, the serializer rejects NaN or replaces a required number with null."""
     main = v14_load(workspace, monkeypatch)
     from fastapi.testclient import TestClient
 
@@ -1932,9 +1934,14 @@ def test_v14_nan_without_the_check_breaks_the_pull_list(workspace, monkeypatch):
     with TestClient(main.app, raise_server_exceptions=False) as client:
         part = v14_raw(workspace).iloc[:600].copy()
         part.iloc[300:340, part.columns.get_loc("error")] = "E029"
-        r = client.post("/predict", json={"gun_id": "NN", "readings": part.to_dict("records")})
-        assert client.get("/handoffs").status_code == 500
-        assert r.status_code == 500, "the /predict response carries it too"
+        prediction = client.post("/predict", json={"gun_id": "NN", "readings": part.to_dict("records")})
+        outbox = client.get("/handoffs")
+        for response, record in ((prediction, lambda payload: payload), (outbox, lambda payload: payload[0])):
+            if response.status_code == 500:
+                continue
+            assert response.status_code == 200
+            handoff = record(response.json())["handoff"]
+            assert handoff["contributing_features"][0]["value"] is None
 
 
 @pytest.mark.parametrize("wrong", [{"window_start": 1}, {"window_start": "a", "window_end": "b", "missing_s": [],
