@@ -4,8 +4,8 @@
 
 요약: ML이 몇십 분 전 **조기 경보**를 낸다.
 - **critical 이벤트와 구분**: 핸드오프로 보낼 때는 `event_type: "early_warning"`을 단다. 종료 코드와 고장 유형이 없다.
-- **ML 기본값은 보내지 않음**: 서버를 `RSW_EARLY_WARNING_HANDOFFS=1`로 켜야 나간다.
-- **api를 고치기 전에는 켜지 말 것**: 지금 api는 받은 핸드오프를 모두 "긴급" 케이스로 만든다.
+- **ML 기본값은 보냄(C-9, 2026-11-13부터)**: `RSW_EARLY_WARNING_HANDOFFS=0`으로 끈다. 그 전에는 `=1`로 켜야 나갔다.
+- **api는 WARNING 케이스로 받는다(2026-11-13 기준)**: `event_type`이 `early_warning`이면 `severity: warning` 케이스가 된다(`api/main.py ingest`). 4절은 api가 구분하기 전(2026-11-06)의 기록이다.
 
 ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
 
@@ -35,7 +35,7 @@ ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
 - 조기 경보 에피소드가 시작된 `/predict` 요청에서 한 번 온다(`early_warning_onset=true`).
 - 같은 건은 마지막 조기 경보 핸드오프 뒤 60분 동안 다시 보내지 않는다. 쿨다운은 번들 `early_warning.cooldown_s`이고 재시작해도 유지된다.
 - 다음 경우에는 보내지 않는다. 사유는 응답의 `early_warning_handoff_suppressed`에 남는다.
-  - `critical`: 같은 요청에 critical 이벤트(모델 10분 지속, 종료 코드 규칙)가 있거나, 직전 요청이 critical이었다.
+  - `critical`: 같은 요청에 critical 이벤트(종료 코드 규칙; `RSW_MODEL_CRITICAL=1`이면 모델 10분 지속도)가 있거나, 직전 요청이 critical이었다.
   - `terminal_code`: 요청 안에 종료 코드가 있었다(반복·프로파일 밖 발화 포함).
   - `cooldown`: 60분 안에 이미 보냈다.
   - `handoffs_off`: 플래그가 꺼져 있다.
@@ -100,7 +100,7 @@ v1.4의 두 필드(`contributing_features`, `sensor_features`)에 필요한 일�
   - 조기경보에는 E 코드가 없어 `enrich`가 RAG를 호출하지 않는다(`api/guidance.py:19-20`, `:80-91`).
   - 조기경보는 코드가 `null`인 열린 케이스에 합쳐지고, 이때 `event_id`와 `detected_at`만 남아 블록이 버려진다(`api/main.py:110-112`). 같은 건, 같은 코드의 치명도 열린 케이스가 있으면 마찬가지다.
   - 케이스가 2시간, 4시간, 8시간, 24시간 뒤에 닫힌다고 가정하면 조기경보 블록이 남는 비율은 69%, 52%, 37%, 18%다. 치명 20건은 같은 가정에서 모두 남는다. 코드로 발생한 치명은 같은 코드가 24시간 안에 다시 뜨면 반복이라 치명이 아니고, 모델 단독 1건은 `rule_code`가 없어 코드 케이스에 합쳐지지 않는다.
-  - 조기경보 핸드오프는 api가 처리할 때까지 꺼 둔다(`RSW_EARLY_WARNING_HANDOFFS`). 치명 핸드오프는 플래그와 상관없이 두 필드를 싣는다. api는 받은 문서를 그대로 저장하므로 크기만 늘고 동작은 바뀌지 않는다.
+  - 조기경보 핸드오프는 C-9(2026-11-13)부터 기본으로 나간다(그 전에는 api가 처리할 때까지 꺼 두었다, `RSW_EARLY_WARNING_HANDOFFS`). 치명 핸드오프는 플래그와 상관없이 두 필드를 싣는다. api는 받은 문서를 그대로 저장하므로 크기만 늘고 동작은 바뀌지 않는다.
   - 줄 번호는 origin/main 기준이다.
 
 ## 5. 얼마나 오나

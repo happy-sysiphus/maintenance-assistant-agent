@@ -22,6 +22,7 @@
   "rule_repeat_s": 86400,
   "warmup_alarms": false,
   "critical_sustain": 10,
+  "model_critical": false,
   "restart_hold_s": 1800,
   "restart_idle_windows": 30,
   "early_warning_rule": "model_ng_k1",
@@ -36,8 +37,8 @@
   "window_end": "2020-01-02T05:55:59",
   "anomaly_score": 0.9871505965133038,
   "threshold": 0.9457997090865815,
-  "severity": "critical",
-  "severity_source": "model",
+  "severity": "warning",
+  "severity_source": "none",
   "contributing_features": [
    {
     "feature": "error_share_10min_mean",
@@ -193,12 +194,6 @@
    "kind": "rule",
    "code": "E016",
    "class_hint": "E02"
-  },
-  {
-   "time": "2020-01-02T05:55:59",
-   "kind": "critical_start",
-   "code": null,
-   "class_hint": null
   }
  ],
  "points": [
@@ -7396,7 +7391,7 @@
    "alarm": true,
    "held": false,
    "sustained": true,
-   "critical": true,
+   "critical": false,
    "early_warning": true,
    "non_welding_share": 0.0,
    "error_codes": [],

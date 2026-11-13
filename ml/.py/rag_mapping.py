@@ -1,8 +1,8 @@
 """
 ML -> downstream handoff mapping: turns one /predict result (AnomalyResult as a dict) into the document FE's api
 receives on a critical event (POST /api/ml/handoffs; schema `rag_handoff` v1.4) - or, since C-8, on an early-warning
-start (event_type "early_warning": no terminal code, no fault class; main.py sends it only with
-RSW_EARLY_WARNING_HANDOFFS=1).
+start (event_type "early_warning": no terminal code, no fault class; main.py sends it by default since C-9,
+RSW_EARLY_WARNING_HANDOFFS=0 turns it off).
 
 Scope (2026-10-21, D-003 / D-004 decided):
     ML (this module)   what is unusual: trigger, terminal code and fault class (E01..E04, from the data: the code a
