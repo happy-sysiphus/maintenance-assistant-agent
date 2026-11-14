@@ -1,7 +1,5 @@
 # RAG 개발 보고 및 실행 안내
 
-19채널 시계열 RAG를 사용하려면 [시계열 연동과 실행 설정](docs/warning-timeseries-integration.md)을 확인하세요. 장비 E코드 안내, 과거 해결 카드, 매뉴얼 후보의 화면 흐름은 [통합 보고서](../docs/timeseries-rag-integration-report.md)에 있습니다. [50건 평가](evaluation/timeseries_report.md)에는 자동 후보와 해결 카드의 Precision·Recall을 기록했습니다.
-
 2026-11-11 버전의 변경과 검증 결과는 [RAG 변경 보고서](docs/rag-release-20261111.md)에 정리했습니다. 팀원의 조기 경보 실행과 검증은 [공용 Aura 실행 안내](docs/early-warning-integration.md#공용-aura에서-실행하기), 화면 작업은 [UI 개발 안내](../ui/docs/10-early-warning-rag-ui.md)를 참고하세요.
 
 2026-11-04 · E 코드 기반 정비 안내 RAG

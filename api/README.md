@@ -1,4 +1,4 @@
-> 새 v1.4 케이스에 시계열 안내를 적용하는 설정과 요청 형식은 [시계열 RAG 연동](../rag/docs/warning-timeseries-integration.md)을 확인하세요. 기존 WARNING API 계약은 [11월 11일 안내](docs/warning-api-20261111.md)에 있습니다.
+> WARNING API·UI는 공용 Aura의 해결 이력을 사용합니다. [기능·계약·실행 설정](docs/warning-api-20261111.md)
 
 # 정비 지원 API
 

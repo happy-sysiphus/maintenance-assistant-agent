@@ -72,7 +72,6 @@ import hashlib
 import json
 import logging
 import os
-from pathlib import Path
 import sys
 import threading
 import time
@@ -422,7 +421,6 @@ class RagHandoff(BaseModel):
         "critical", description="critical: a critical model alarm or a terminal-code rule trigger; early_warning: a "
                                 "low-precision warning tens of minutes ahead (C-8; only with RSW_EARLY_WARNING_HANDOFFS)")
     event_id: str
-    episode_id: str | None = Field(None, description="groups a warning and controller codes observed in the same episode")
     gun_id: str
     detected_at: str
     window_start: str
@@ -1076,7 +1074,6 @@ class Detector:
                         f">= {int(self.restart_hold['idle_windows'])} windows (the rule still fires)")
             held = hold is not None
             alarm = is_anomaly and not held
-            prior_warning_since = g.ew.get("since") if g.ew_active else None
             ew_active = ew_onset = False
             if self.early_warning is not None and fresh:
                 # C-8: train.early_warning_condition / early_warning_step on the window's clock label, as
@@ -1104,9 +1101,7 @@ class Detector:
             v = Verdict(w, float(sc), float(threshold), is_anomaly, held, alarm, duration,
                         duration >= self.sustain * self.window, nw_share, hold,
                         critical=self.model_critical and duration >= self.critical_sustain * self.window,
-                        ew_active=ew_active, ew_onset=ew_onset,
-                        ew_since=g.ew.get("since") if ew_active else None,
-                        prior_warning_since=prior_warning_since)
+                        ew_active=ew_active, ew_onset=ew_onset)
             # trace: non-overlapping windows only, so the ring covers TRACE_WINDOWS minutes whatever the request cadence
             if fresh and (not g.trace or g.trace[-1]["window_end"] < w.index[0]):
                 if v.critical and not (g.trace and g.trace[-1]["critical"]):
@@ -1173,8 +1168,6 @@ class Verdict:
     critical: bool = False  # alarm run >= critical_sustain x window: the model alone is critical (C-5)
     ew_active: bool = False  # C-8: in an early-warning episode
     ew_onset: bool = False  # C-8: the episode started at this window
-    ew_since: pd.Timestamp | None = None
-    prior_warning_since: pd.Timestamp | None = None
 
 
 class GunState:
@@ -1568,13 +1561,6 @@ def resolve_model(registry_dir: str | None, model_path: str) -> tuple[str, str |
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if os.environ.get("RSW_DEMO_REPLAY") == "1":
-        app.state.demo_replay = True
-        configure_handoff_delivery(app, state_dir=None)
-        async with handoff_delivery(app):
-            yield
-        return
-    app.state.demo_replay = False
     registry_dir = os.environ.get(REGISTRY_ENV) or None
     if registry_dir and os.environ.get("RSW_MODEL_PATH"):
         log.warning("RSW_MODEL_PATH is ignored: %s (%s) names the model", REGISTRY_ENV, registry_dir)
@@ -1598,22 +1584,6 @@ async def lifespan(app: FastAPI):
     app.state.store = GunStore(state_dir, d.info.created)
     app.state.guns: dict[str, GunState] = app.state.store.load(d.gun_norm is not None)
     app.state.guns_lock = threading.Lock()
-    configure_handoff_delivery(app, state_dir)
-    # C-8: early-warning episodes become handoffs (event_type "early_warning") only on request
-    # C-9 (11/13): on by default - the model's signal reaches the RAG only as an early warning now (the api handles
-    # event_type "early_warning" as a WARNING case). RSW_EARLY_WARNING_HANDOFFS=0 turns it off.
-    app.state.ew_handoffs = os.environ.get("RSW_EARLY_WARNING_HANDOFFS", "1").strip().lower() not in ("0", "false", "off", "no")
-    if app.state.ew_handoffs and d.early_warning is None:
-        log.warning("RSW_EARLY_WARNING_HANDOFFS is on, but %s has no early warning (retrain with the current train.py)",
-                    model_path)
-    if os.environ.get("RSW_RAG_SENSOR_URL"):  # the D-6 per-minute push was removed (history.md 37)
-        log.warning("RSW_RAG_SENSOR_URL is ignored: ML no longer pushes the per-minute sensor document - it is in "
-                    "the /predict response (sensor_features) and at GET /guns/{id}/sensor-features")
-    async with handoff_delivery(app):
-        yield
-
-
-def configure_handoff_delivery(app: FastAPI, state_dir: str | None) -> None:
     app.state.outbox = Outbox(state_dir)
     app.state.outbox.load(datetime.now(timezone.utc))
     app.state.rag_url = os.environ.get("RSW_RAG_URL", RAG_URL or "") or None
@@ -1621,17 +1591,23 @@ def configure_handoff_delivery(app: FastAPI, state_dir: str | None) -> None:
         if os.environ.get("RSW_RAG_BACKOFF_S") else RAG_BACKOFF_S
     app.state.rag_max_attempts = int(os.environ.get("RSW_RAG_MAX_ATTEMPTS", RAG_MAX_ATTEMPTS))
     app.state.outbox_poll_s = float(os.environ.get("RSW_OUTBOX_POLL_S", OUTBOX_POLL_S))
+    # C-8: early-warning episodes become handoffs (event_type "early_warning") only on request
+    # C-9 (11/13): on by default - the model's signal reaches the RAG only as an early warning now (the api handles
+    # event_type "early_warning" as a WARNING case). RSW_EARLY_WARNING_HANDOFFS=0 turns it off.
+    app.state.ew_handoffs = os.environ.get("RSW_EARLY_WARNING_HANDOFFS", "1").strip().lower() not in ("0", "false", "off", "no")
+    if app.state.ew_handoffs and d.early_warning is None:
+        log.warning("RSW_EARLY_WARNING_HANDOFFS is on, but %s has no early warning (retrain with the current train.py)",
+                    model_path)
     if not hasattr(app.state, "rag_transport"):
-        app.state.rag_transport = None
-
-
-@asynccontextmanager
-async def handoff_delivery(app: FastAPI):
-    worker = asyncio.create_task(outbox_worker(app)) if app.state.rag_url else None
+        app.state.rag_transport = None  # httpx transport override (tests route the push to an in-process mock)
+    if os.environ.get("RSW_RAG_SENSOR_URL"):  # the D-6 per-minute push was removed (history.md 37)
+        log.warning("RSW_RAG_SENSOR_URL is ignored: ML no longer pushes the per-minute sensor document - it is in "
+                    "the /predict response (sensor_features) and at GET /guns/{id}/sensor-features")
+    workers = [asyncio.create_task(outbox_worker(app))] if app.state.rag_url else []
     try:
         yield
     finally:
-        if worker is not None:
+        for worker in workers:
             worker.cancel()
             try:
                 await worker
@@ -1641,15 +1617,6 @@ async def handoff_delivery(app: FastAPI):
 
 app = FastAPI(title="RSW gun anomaly detection", version="0.1.0", lifespan=lifespan,
               description="Real-time anomaly scoring of resistance-spot-welding gun sensor streams.")
-
-
-@app.middleware("http")
-async def restrict_demo_routes(request: Request, call_next):
-    if getattr(request.app.state, "demo_replay", False):
-        path = request.url.path
-        if path not in ("/health", "/handoffs") and not path.startswith(("/handoffs/", "/demo/handoffs/")):
-            return JSONResponse(status_code=404, content={"detail": "synthetic handoff replay mode"})
-    return await call_next(request)
 
 
 @app.exception_handler(RequestValidationError)
@@ -1665,8 +1632,6 @@ async def validation_error(request: Request, exc: RequestValidationError) -> JSO
 # ============================================================ endpoints
 @app.get("/health")
 async def health(request: Request) -> dict[str, Any]:
-    if getattr(request.app.state, "demo_replay", False):
-        return {"status": "ok", "mode": "synthetic_handoff_replay"}
     d: Detector = request.app.state.detector
     ob = request.app.state.outbox.all()
     return {"status": "ok", "model_path": d.path, "model": d.info.model_dump(),
@@ -1835,8 +1800,7 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
         count(g, h.time, rule_triggers=1, rule_repeats=h.repeat, rule_out_of_profile=h.out_of_profile and not h.repeat)
     critical_sent = False
     if (critical and not g.was_critical) or (rule is not None and rule.critical):
-        attach_handoff(request, result, g, window=critical_window(verdicts, vecs, rule),
-                       episode_id=controller_episode_id(req.gun_id, verdicts, rule))
+        attach_handoff(request, result, g, window=critical_window(verdicts, vecs, rule))
         count(g, result.window_end, critical_events=1)
         critical_sent = True
     for h in hits:  # the other triggers of this request (e.g. E016 then E029): a handoff each now, not later
@@ -1846,8 +1810,7 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
         if h.critical:
             attach_handoff(request,
                            build_result(d, g, req.gun_id, feats.f, f, verdicts, score, contribs, h, vecs[-1]), g,
-                           window=critical_window(verdicts, vecs, h),
-                           episode_id=controller_episode_id(req.gun_id, verdicts, h))
+                           window=critical_window(verdicts, vecs, h))
             count(g, result.window_end, critical_events=1)
             critical_sent = True
     onset, onset_vec = next(((v, x) for v, x in zip(verdicts, vecs) if v.ew_onset), (None, None))
@@ -1861,11 +1824,8 @@ def score_request(req: PredictRequest, request: Request, g: GunState) -> Anomaly
                   else None if request.app.state.ew_handoffs else "handoffs_off")
         result.early_warning_handoff_suppressed = reason
         if reason is None:
-            onset_time = onset.w.index[-1]
-            # The v1.4 since field follows the latest scored window. Group the emitted onset separately.
-            episode_start = onset.ew_since if onset.ew_since is not None else onset_time
-            attach_handoff(request, result, g, early_warning=early_warning_info(d, g, result, onset_time),
-                           window=(onset.w, onset_vec), episode_id=warning_episode_id(req.gun_id, episode_start))
+            attach_handoff(request, result, g, early_warning=early_warning_info(d, g, result, onset.w.index[-1]),
+                           window=(onset.w, onset_vec))
             g.ew_last_handoff = onset.w.index[-1]
             count(g, result.window_end, early_warning_handoffs=1)
     g.was_critical = critical
@@ -1940,21 +1900,6 @@ def record_focus(g: GunState, result: AnomalyResult | None, rule: RuleHit | None
         g.focus = {"window_end": result.window_end, "anomaly_score": result.anomaly_score, "threshold": result.threshold,
                    "severity": result.severity, "severity_source": result.severity_source,
                    "contributing_features": result.contributing_features}
-
-
-def warning_episode_id(gun_id: str, since: str | datetime) -> str:
-    start = pd.Timestamp(since)
-    start = start.tz_localize("UTC") if start.tzinfo is None else start.tz_convert("UTC")
-    return hashlib.sha256(f"{gun_id}|{start.isoformat()}".encode()).hexdigest()[:32]
-
-
-def controller_episode_id(gun_id: str, verdicts: list[Verdict], rule: RuleHit | None) -> str | None:
-    if rule is None or not rule.critical:
-        return None
-    # A later onset in a batch cannot claim an earlier controller code.
-    verdict = next((v for v in verdicts if rule.time.value <= v.w.index[-1].value), verdicts[-1])
-    since = verdict.prior_warning_since
-    return warning_episode_id(gun_id, since) if since is not None and since.value <= rule.time.value else None
 
 
 def handoff_event_id(result: AnomalyResult, early_warning: dict[str, Any] | None = None) -> str:
@@ -2064,7 +2009,7 @@ def handoff_top_features(d: Detector, vec: np.ndarray) -> list[dict[str, Any]]:
 
 def attach_handoff(request: Request, result: AnomalyResult, g: "GunState | None" = None,
                    early_warning: dict[str, Any] | None = None,
-                   window: tuple[pd.DataFrame, np.ndarray] | None = None, episode_id: str | None = None) -> None:
+                   window: tuple[pd.DataFrame, np.ndarray] | None = None) -> None:
     """ML -> RAG handoff (same events replay.py prints) into the outbox; the push worker delivers it when
     RSW_RAG_URL is set. A mapping error is logged and leaves the response without a handoff: the scored state is
     already committed, so a 500 here would turn the client's retry into a resend that never produces the handoff.
@@ -2074,7 +2019,6 @@ def attach_handoff(request: Request, result: AnomalyResult, g: "GunState | None"
     try:
         doc = rag_mapping.build_handoff(result.model_dump(mode="json"), handoff_event_id(result, early_warning),
                                         early_warning=early_warning)
-        doc["episode_id"] = episode_id
         if g is not None:  # v1.1 context (techspec D-3); a failure here must not cost the event
             d = request.app.state.detector
             try:
@@ -2097,53 +2041,11 @@ def attach_handoff(request: Request, result: AnomalyResult, g: "GunState | None"
     except Exception:
         log.exception("handoff mapping failed for %s at %s", result.gun_id, result.window_end)
         return
-    queue_handoff(request.app, result.handoff)
-
-
-def queue_handoff(app: FastAPI, handoff: RagHandoff) -> HandoffRecord:
     now = datetime.now(timezone.utc)
-    push = app.state.rag_url is not None
-    return app.state.outbox.add(HandoffRecord(handoff=handoff, created_at=now,
-                                            delivery="pending" if push else "pull_only",
-                                            next_attempt_at=now if push else None))
-
-
-@app.post("/demo/handoffs/{event_id}", response_model=HandoffRecord, status_code=202)
-def queue_demo_handoff(event_id: str, request: Request):
-    if not getattr(request.app.state, "demo_replay", False):
-        raise HTTPException(404, "not found")
-    previous = request.app.state.outbox.get(event_id)
-    if previous is not None:
-        return previous
-    dataset = Path(__file__).resolve().parents[1] / "rag/demo/timeseries/dataset.json"
-    entry = next((item for item in json.loads(dataset.read_text(encoding="utf-8"))["events"]
-                  if item["handoff"]["event_id"] == event_id), None)
-    if entry is None:
-        raise HTTPException(404, "unknown synthetic event")
-    doc = entry["handoff"]
-    block = doc["sensor_features"]
-    # Shift the fixture to the current minute so a repair made in the UI can precede the next event.
-    end_at = datetime.now(timezone.utc).replace(microsecond=0)
-    start_at = end_at - timedelta(seconds=59)
-    shift = start_at.second
-    block.update(window_start=start_at.isoformat(), window_end=end_at.isoformat(),
-                 missing_s=[(sec + shift) % 60 for sec in block["missing_s"]])
-    for changes in (*block["channels"].values(), block["error"]):
-        for point in changes:
-            point[0] = (point[0] + shift) % 60
-    end = block["window_end"]
-    doc.update(window_start=block["window_start"], detected_at=end, summary_ko=entry["title"],
-               trigger={"source": "early_warning", "rule_code": None, "rule_trigger_time": None,
-                        "anomaly_score": None, "threshold": None, "score_z": None,
-                        "alarm_duration_s": 0, "sustained": False},
-               sensor_findings=[], fault_class=None, caveats=["합성 시연 입력"],
-               context={"latest_error_code": None, "error_active_share": None, "non_welding_share": None,
-                        "welds_in_window": None, "welds_10min": None, "alarm_held": False, "gun_norm": None},
-               detector={"name": "synthetic replay", "created": None, "window_s": 60},
-               early_warning={"since": end, "onset_at": end, "active_min": 1, "rule": "demo replay",
-                              "sustain_windows": 1, "threshold": 0, "horizon_min": [],
-                              "note_ko": "사전에 준비한 센서 구간 재생"})
-    return queue_handoff(request.app, RagHandoff.model_validate(doc))
+    push = request.app.state.rag_url is not None
+    request.app.state.outbox.add(HandoffRecord(handoff=result.handoff, created_at=now,
+                                               delivery="pending" if push else "pull_only",
+                                               next_attempt_at=now if push else None))
 
 
 async def outbox_worker(app: FastAPI) -> None:

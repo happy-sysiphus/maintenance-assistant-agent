@@ -2,8 +2,6 @@
 
 2026-11-01 · ML (C-8, 핸드오프 v1.4)
 
-시계열 통합 브랜치에서는 같은 이상 상황의 조기 경보와 후속 장비 코드를 `episode_id`로 연결합니다. RAG는 기존 19채널 원본을 사용합니다. [시계열 연동 명세](../../rag/docs/warning-timeseries-integration.md)
-
 요약: ML이 몇십 분 전 **조기 경보**를 낸다.
 - **critical 이벤트와 구분**: 핸드오프로 보낼 때는 `event_type: "early_warning"`을 단다. 종료 코드와 고장 유형이 없다.
 - **ML 기본값은 보냄(C-9, 2026-11-13부터)**: `RSW_EARLY_WARNING_HANDOFFS=0`으로 끈다. 그 전에는 `=1`로 켜야 나갔다.
@@ -51,7 +49,6 @@ ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
 |---|---|---|
 | `schema_version` | `"1.4"` | `"1.4"` |
 | `event_type` | `"critical"` | `"early_warning"` |
-| `episode_id` | 코드가 발생할 때 연결 가능한 조기 경보가 있으면 그 ID, 없으면 `null` | 실제 발행한 조기 경보의 시작 시각과 설비 ID로 계산 |
 | `trigger.source` | `model` / `rule` / `model+rule` | `"early_warning"` |
 | `trigger.rule_code`, `rule_trigger_time` | 규칙 발화면 코드 | 항상 `null` |
 | `fault_class` | 규칙 또는 최근 코드의 유형 | 항상 `null` |
@@ -72,8 +69,6 @@ ML 쪽 코드만 바뀌었다. api·RAG·UI는 손대지 않았다.
 | `expected` | 오프라인 정확도: recall 0.488, chance 0.343, 오경보 16.4회/건·일(B-20) |
 | `candidate_fault_classes`, `candidate_terminal_codes` | 건 프로파일이 있으면 그 유형과 종료 코드(예: `["E04"]`, `["E029"]`), 없으면 `null` |
 | `note_ko` | 화면용 한 줄 |
-
-한 요청에서 조기 경보가 두 번 시작되면, 기존 `since`는 최신 창을 기준으로 하고 `episode_id`는 실제 발행한 첫 경보를 기준으로 한다. 각 핸드오프의 `event_id`는 기존 멱등 키로 계속 사용한다.
 
 ## 4. 지금 api가 그대로 받으면 (플래그를 켰을 때)
 

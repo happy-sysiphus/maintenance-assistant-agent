@@ -1,7 +1,6 @@
 """RAG-only entry points for early warnings, manual review and field reuse."""
 import argparse
 import json
-import logging
 import os
 from pathlib import Path
 
@@ -16,7 +15,6 @@ from .warning_catalog import (case_is_current, initial_catalog, reviewed_case,
 from .warning_input import analyze_warning, required_text, timestamp
 from .warning_memory import WarningMemory
 
-log = logging.getLogger(__name__)
 MEMORY_ERRORS = (DriverError, Neo4jError)
 CANDIDATE_PROMPT = """당신은 조기 경보에서 매뉴얼의 확인 후보를 찾습니다.
 ML이 경보를 감지했으며 센서 요약은 관측 사실입니다. 정상 범위를 판단하거나 센서로 고장을 확정하지 마세요.
@@ -57,7 +55,7 @@ def _claude(prompt, context, model, *, allowed_field, allowed_ids):
 
     load_environment()
     schema = model.model_json_schema()
-    for definition in (schema, *schema.get("$defs", {}).values()):
+    for definition in schema.get("$defs", {}).values():
         properties = definition.get("properties", {})
         if allowed_field in properties:
             properties[allowed_field] = {"type": "string", "enum": sorted(allowed_ids)}
@@ -69,7 +67,6 @@ def _claude(prompt, context, model, *, allowed_field, allowed_ids):
             messages=[{"role": "user", "content": json.dumps(context, ensure_ascii=False)}],
         )
     if response.stop_reason != "end_turn":
-        log.warning("Claude warning response ended with stop_reason=%s", response.stop_reason)
         raise RuntimeError("warning generation did not complete")
     return model.model_validate_json("".join(b.text for b in response.content if b.type == "text"))
 
@@ -204,41 +201,29 @@ class EarlyWarningRag:
 
     def search_manuals(self, handoff, question, *, history=None, explain=False):
         analysis = analyze_warning(handoff)
-        return self._search_manuals(analysis, question, _search_query(analysis), history=history, explain=explain)
-
-    def _search_manuals(self, analysis, question, sensor_query, *, history=None, explain=False, reference_code=None):
         question = required_text(question, "question", 2000)
         history = normalize_history(history)
-        query = question + "\n" + sensor_query
+        query = question + "\n" + _search_query(analysis)
         result = {"event_id": analysis["event_id"], "hits": [], "notes": []}
         try:
-            options = {"error_code": reference_code} if reference_code else {}
             evidence = retrieve(query, history=history, use_vectors=self.use_vectors,
-                                database=self.memory.database, **options)["evidence"]
+                                database=self.memory.database)["evidence"]
             catalog = self._catalog(allow_unavailable=True)
             for row in evidence:
                 ref = source_ref(row["doc"], row["page"], row["text"][:2400], evidence_id=row["id"])
                 result["hits"].append({"source": ref, "review_needed": row["review_needed"],
                                        "manual_case_ids": [key for key, case in catalog.items()
                                                            if source_matches_evidence(case["source"], row)]})
-        except Exception as exc:
-            log.warning("Manual evidence search failed (%s)", type(exc).__name__)
-            return {**result, "status": "search_error", "error": type(exc).__name__}
-        if not result["hits"]:
-            return {**result, "status": "no_evidence"}
-        if explain:
-            try:
+            if explain and result["hits"]:
                 hits = {h["source"]["evidence_id"]: h["source"] for h in result["hits"]}
                 reply = _claude(MANUAL_PROMPT, {"question": question, "history": history,
                                                 "observations": analysis["observations"], "sources": list(hits.values())},
                                 _ManualReply, allowed_field="evidence_id", allowed_ids=hits)
                 result["notes"] = [{"text": note.text, "source": hits[note.evidence_id]}
                                    for note in reply.notes]
-            except Exception as exc:
-                log.warning("Manual explanation failed after retrieving %s sources (%s)",
-                            len(result["hits"]), type(exc).__name__)
-                return {**result, "status": "retrieval_only", "error": type(exc).__name__}
-        return {**result, "status": "ok"}
+            return {**result, "status": "ok" if result["hits"] else "no_evidence"}
+        except Exception as exc:
+            return {**result, "status": "search_error", "error": type(exc).__name__}
 
     def _verify_manual_hit(self, selection):
         evidence_id = selection["evidence_id"]
