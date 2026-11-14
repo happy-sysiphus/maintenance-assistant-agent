@@ -40,7 +40,7 @@ def clock_seconds(block, onset):
     return [(start + timedelta(seconds=i)).second for i in range(int(duration) + 1)]
 
 
-def channel_observation(channel, changes, seconds, missing):
+def expand_channel(channel, changes, seconds, missing, *, state_channels=STATE_CHANNELS):
     if not isinstance(changes, list):
         raise ValueError(f"{channel}: expected a list of change points")
     positions = {second: index for index, second in enumerate(seconds)}
@@ -51,7 +51,7 @@ def channel_observation(channel, changes, seconds, missing):
         second, value = point
         if (type(second) is not int or second not in positions or second in missing
                 or type(value) not in (int, float) or not isfinite(value)
-                or (channel in STATE_CHANNELS and value not in (0, 1))):
+                or (channel in state_channels and value not in (0, 1))):
             raise ValueError(f"{channel}: invalid change point")
         index = positions[second]
         if index in indexed:
@@ -63,7 +63,11 @@ def channel_observation(channel, changes, seconds, missing):
         value = indexed.get(index, value)
         if value is not None and second not in missing:
             observed[index] = value
+    return observed
 
+
+def channel_observation(channel, changes, seconds, missing):
+    observed = expand_channel(channel, changes, seconds, missing)
     third = len(seconds) // 3
     first = [v for i, v in observed.items() if i < third]
     last = [v for i, v in observed.items() if i >= len(seconds) - third]
