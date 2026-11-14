@@ -1461,7 +1461,6 @@ def test_v14_ew_basic(workspace, monkeypatch):
     r = next(x for x in res if (x["handoff"] or {}).get("event_type") == "early_warning")
     h, b, cf = r["handoff"], r["handoff"]["sensor_features"], r["handoff"]["contributing_features"]
     assert h["schema_version"] == "1.4" and b["window_end"] == h["early_warning"]["onset_at"]
-    assert h["episode_id"] == main.warning_episode_id("V1", h["early_warning"]["since"])
     assert set(b["channels"]) == {f"c{i}" for i in range(1, 20)}
     assert 0 < len(cf) <= 3 and all(c["contribution"] > 0 for c in cf) and not any(c["sensor"][:5] == "hour_" for c in cf)
     assert r["windows_scored"] == 1 and cf == v14_filter(r["contributing_features"])
@@ -1541,8 +1540,6 @@ def test_v14_ew_two_onsets_take_the_first(workspace, monkeypatch):
     assert len(ons) == 2
     assert h["sensor_features"]["window_end"] == h["early_warning"]["onset_at"] == "2021-10-01T00:30:59Z"
     assert h["early_warning"]["since"] > h["early_warning"]["onset_at"], "since: the later episode"
-    assert h["episode_id"] == main.warning_episode_id("V4", "2021-10-01T00:30:00Z")
-    assert h["episode_id"] != main.warning_episode_id("V4", h["early_warning"]["since"])
 
 
 def test_v14_stored_v13_record_loads(workspace, monkeypatch, tmp_path):
@@ -1832,25 +1829,6 @@ def test_v14_critical_window_unit():
     assert main.critical_window(between, vecs[:2], gap)[0].index[0].minute == 3, "between two windows: the later one"
 
 
-def test_controller_code_keeps_the_warning_active_at_its_window():
-    from types import SimpleNamespace
-
-    sys.path.insert(0, ROOT)
-    main = importlib.import_module("main")
-    first = pd.Timestamp("2021-10-01T00:00:00")
-    second = first + pd.Timedelta(minutes=4)
-    windows = [
-        SimpleNamespace(w=pd.DataFrame(index=pd.DatetimeIndex([first + pd.Timedelta(minutes=1)])),
-                        prior_warning_since=first),
-        SimpleNamespace(w=pd.DataFrame(index=pd.DatetimeIndex([second + pd.Timedelta(minutes=1)])),
-                        prior_warning_since=second),
-    ]
-    hit = main.RuleHit(first + pd.Timedelta(seconds=52), "E012", False)
-    assert main.controller_episode_id("gun", windows, hit) == main.warning_episode_id("gun", first)
-    assert main.controller_episode_id("gun", windows, main.RuleHit(hit.time.tz_localize("UTC"), "E012", False)) == main.warning_episode_id("gun", first)
-    assert main.controller_episode_id("gun", windows, main.RuleHit(first - pd.Timedelta(seconds=1), "E012", False)) is None
-
-
 def test_v14_window_choice_failure_keeps_the_event(workspace, monkeypatch):
     """A rule time that cannot be compared with the window index: the latest window, and the event stays."""
     main = v14_load(workspace, monkeypatch)
@@ -1919,8 +1897,8 @@ def test_v14_nan_costs_only_the_top_features(workspace, monkeypatch, bad):
     assert r["contributing_features"], "the /predict list is untouched"
 
 
-def test_v14_nan_without_the_check_produces_an_invalid_handoff(workspace, monkeypatch):
-    """Without the guard, the serializer rejects NaN or replaces a required number with null."""
+def test_v14_nan_without_the_check_breaks_the_pull_list(workspace, monkeypatch):
+    """Section 6's reason for the check: NaN in the outbox costs every GET /handoffs."""
     main = v14_load(workspace, monkeypatch)
     from fastapi.testclient import TestClient
 
@@ -1934,14 +1912,9 @@ def test_v14_nan_without_the_check_produces_an_invalid_handoff(workspace, monkey
     with TestClient(main.app, raise_server_exceptions=False) as client:
         part = v14_raw(workspace).iloc[:600].copy()
         part.iloc[300:340, part.columns.get_loc("error")] = "E029"
-        prediction = client.post("/predict", json={"gun_id": "NN", "readings": part.to_dict("records")})
-        outbox = client.get("/handoffs")
-        for response, record in ((prediction, lambda payload: payload), (outbox, lambda payload: payload[0])):
-            if response.status_code == 500:
-                continue
-            assert response.status_code == 200
-            handoff = record(response.json())["handoff"]
-            assert handoff["contributing_features"][0]["value"] is None
+        r = client.post("/predict", json={"gun_id": "NN", "readings": part.to_dict("records")})
+        assert client.get("/handoffs").status_code == 500
+        assert r.status_code == 500, "the /predict response carries it too"
 
 
 @pytest.mark.parametrize("wrong", [{"window_start": 1}, {"window_start": "a", "window_end": "b", "missing_s": [],

@@ -161,28 +161,6 @@ def test_memory_unavailable_can_still_search_manuals(monkeypatch):
     assert response["hits"][0]["manual_case_ids"] == []
 
 
-def test_manual_search_keeps_pdf_hits_when_explanation_fails(monkeypatch):
-    memory = Mock(database="neo4j")
-    memory.catalog.return_value = []
-    service = ew.EarlyWarningRag(memory)
-    event = warning("x", "gun-x")
-    evidence = {"doc": "festo", "page": 94, "text": "Cause: No compressed air supply",
-                "review_needed": False, "id": "selected-source"}
-    search = Mock(return_value={"evidence": [evidence]})
-    monkeypatch.setattr(ew, "retrieve", search)
-    monkeypatch.setattr(ew, "_claude", Mock(side_effect=RuntimeError("warning generation did not complete")))
-
-    response = service.search_manuals(event, "실린더가 움직이지 않아요", explain=True)
-    assert response["status"] == "retrieval_only"
-    assert response["notes"] == []
-    assert [hit["source"]["evidence_id"] for hit in response["hits"]] == ["selected-source"]
-
-    search.side_effect = RuntimeError("manual search unavailable")
-    failed = service.search_manuals(event, "실린더가 움직이지 않아요", explain=True)
-    assert failed["status"] == "search_error"
-    assert failed["hits"] == []
-
-
 @pytest.fixture
 def graph_service():
     uri = os.environ.get("RAG_WARNING_TEST_BOLT")

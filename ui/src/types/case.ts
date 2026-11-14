@@ -48,7 +48,6 @@ export interface CaseSummary {
   case_id: string
   status: CaseStatus
   severity: Severity
-  rag_mode?: 'timeseries'
   /** 담당자. 로그인이 없어 null */
   assignee: string | null
   event: CaseEvent
@@ -373,7 +372,6 @@ export interface FieldRecent {
 /** GET /api/cases/:id 응답 */
 export interface CaseDetail extends Omit<CaseSummary, 'event'> {
   event: HandoffEvent
-  preferred_event_id?: string
   score_trace: ScorePoint[]
   guidance: Guidance
   records: CaseRecords

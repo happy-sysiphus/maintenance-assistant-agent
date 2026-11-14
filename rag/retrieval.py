@@ -85,7 +85,7 @@ def evidence_parts(row):
     return result
 
 
-def retrieve(question, error_code=None, history=None, *, use_vectors=True, database=None, exact_code_only=False):
+def retrieve(question, error_code=None, history=None, *, use_vectors=True, database=None):
     history = history or []
     query, terms = search_context(question,error_code,history)
     search = " OR ".join('"' + term.replace('"', '') + '"' for term in terms)
@@ -93,7 +93,7 @@ def retrieve(question, error_code=None, history=None, *, use_vectors=True, datab
     embedding_tokens = 0
     model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
     # External calls are optional: no-LLM mode uses exact graph/fulltext only.
-    if use_vectors and not exact_code_only:
+    if use_vectors:
         with openai_client() as client:
             response = client.embeddings.create(model=model, input=query + "\n" + " ".join(terms))
             vector = response.data[0].embedding
@@ -117,7 +117,7 @@ def retrieve(question, error_code=None, history=None, *, use_vectors=True, datab
             for row in rows:
                 by_id[row["id"]] = row
                 required.append(row["id"])
-        if search and not exact_code_only:
+        if search:
             rows = session.run(f"""CALL db.index.fulltext.queryNodes('{TEXT_INDEX}', $search, {{limit:64}})
                 YIELD node,score WHERE node:Rag AND node.searchable=true
                 RETURN node.id AS id,node.doc AS doc,node.page_number AS page,

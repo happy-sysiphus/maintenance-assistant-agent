@@ -26,14 +26,11 @@ class WarningMemory:
     def initialize(self):
         """Run explicitly on the intended DB, before the application starts."""
         with self._session() as session:
-            for label in ("WarningPattern", "WarningResolution", "WarningManualCase",
-                          "WarningEvent", "WarningSensorWindow"):
+            for label in ("WarningPattern", "WarningResolution", "WarningManualCase"):
                 session.run(f"CREATE CONSTRAINT warning_{label.lower()}_id IF NOT EXISTS "
                             f"FOR (n:{label}) REQUIRE n.id IS UNIQUE").consume()
             session.run("CREATE INDEX warning_case_namespace IF NOT EXISTS "
                         "FOR (c:WarningManualCase) ON (c.namespace)").consume()
-            session.run("CREATE INDEX warning_event_scope IF NOT EXISTS "
-                        "FOR (e:WarningEvent) ON (e.namespace, e.equipment_scope)").consume()
 
     def _id(self, key):
         return stable_key(self.namespace, key)
@@ -60,17 +57,13 @@ class WarningMemory:
             MERGE (r)-[:USED_WARNING_CASE]->(c)""", record_id=record_id, case_id=case_id,
         ).consume()
 
-    def record(self, resolution, case=None, *, require_event=False):
+    def record(self, resolution, case=None):
         """A retry can repeat an identical close, but cannot change its evidence."""
         record_id = self._id(resolution["event_id"])
         payload = canonical(resolution)
-        pattern = resolution.get("pattern_key")
+        pattern = resolution["pattern_key"]
 
         def write(tx):
-            if require_event:
-                found = tx.run("MATCH (e:WarningEvent {id:$id}) RETURN e.id AS id", id=record_id).single()
-                if not found:
-                    raise ValueError("register the event before closing")
             row = tx.run(
                 """MERGE (r:WarningResolution {id:$id})
                 ON CREATE SET r.namespace=$namespace, r.payload=$payload
@@ -94,8 +87,6 @@ class WarningMemory:
                 ).consume()
             if case:
                 self._attach_case(tx, record_id, self.namespace, case)
-            if require_event:
-                self._link_resolution(tx, record_id)
 
         with self._session() as session:
             session.execute_write(write)
@@ -119,8 +110,6 @@ class WarningMemory:
             if row["manual_case"] and row["manual_case"] != canonical(case):
                 raise ValueError("manual resolution already reviewed with a different case")
             self._attach_case(tx, record_id, self.namespace, case)
-            tx.run("""MATCH (r:WarningResolution {id:$id})
-                SET r.reviewed_at = coalesce(r.reviewed_at, datetime())""", id=record_id).consume()
 
         with self._session() as session:
             session.execute_write(write)
@@ -173,80 +162,6 @@ class WarningMemory:
                 id=self._id(pattern_key),
             ).data())
         return [self._decode(row) for row in rows]
-
-    @staticmethod
-    def _link_resolution(tx, key):
-        tx.run("""MATCH (e:WarningEvent {id:$id}), (r:WarningResolution {id:$id})
-            MERGE (e)-[:HAS_WARNING_RESOLUTION]->(r)""", id=key).consume()
-
-    def register_event(self, event):
-        """Store the exact ML window and link any prior resolution for the same event."""
-        key = self._id(event["event_id"])
-        payload = canonical({k: v for k, v in event.items() if k != "sensor_features"})
-        block = event["sensor_features"]
-        window_hash = stable_key(block)
-
-        def write(tx):
-            row = tx.run("""MERGE (e:WarningEvent {id:$id})
-                ON CREATE SET e.namespace=$namespace, e.payload=$payload,
-                    e.equipment_scope=$scope, e.event_at=datetime($event_at), e.window_hash=$window_hash
-                RETURN e.payload AS event, e.window_hash AS window_hash""",
-                id=key, namespace=self.namespace, payload=payload,
-                scope=event["equipment_scope"], event_at=event["event_at"], window_hash=window_hash).single(strict=True)
-            previous = json.loads(row["event"])
-            # Older event payloads included a derived list from the initial three-channel design.
-            previous.pop("comparison_channels", None)
-            if canonical(previous) != payload or row["window_hash"] != window_hash:
-                raise ValueError("event_id already has a different handoff")
-            if block is not None:
-                tx.run("""MATCH (e:WarningEvent {id:$id})
-                    MERGE (s:WarningSensorWindow {id:$id})
-                    ON CREATE SET s.namespace=$namespace, s.payload=$block
-                    MERGE (e)-[:HAS_SENSOR_WINDOW]->(s)""",
-                    id=key, namespace=self.namespace, block=canonical(block)).consume()
-            self._link_resolution(tx, key)
-
-        with self._session() as session:
-            session.execute_write(write)
-
-    def event(self, event_id):
-        with self._session() as session:
-            row = session.execute_read(lambda tx: tx.run(
-                """MATCH (e:WarningEvent {id:$id})
-                OPTIONAL MATCH (e)-[:HAS_SENSOR_WINDOW]->(s:WarningSensorWindow)
-                RETURN e.payload AS payload, s.payload AS window""",
-                id=self._id(event_id)).single())
-        if row is None:
-            raise ValueError("event is not registered")
-        return {**json.loads(row["payload"]),
-                "sensor_features": json.loads(row["window"]) if row["window"] else None}
-
-    def comparison_history(self, event):
-        with self._session() as session:
-            rows = session.execute_read(lambda tx: tx.run(
-                """MATCH (e:WarningEvent {namespace:$namespace, equipment_scope:$scope})
-                WHERE e.event_at < datetime($event_at)
-                MATCH (e)-[:HAS_SENSOR_WINDOW]->(s:WarningSensorWindow)
-                MATCH (e)-[:HAS_WARNING_RESOLUTION]->(r:WarningResolution)-[:USED_WARNING_CASE]->(c:WarningManualCase)
-                WHERE r.reviewed_at IS NULL OR r.reviewed_at <= datetime($event_at)
-                RETURN e.payload AS event, s.payload AS window, r.payload AS payload,
-                       c.payload AS manual_case, r.counterexample_reviewed AS counterexample_reviewed""",
-                namespace=self.namespace, scope=event["equipment_scope"], event_at=event["event_at"]).data())
-        return [{**self._decode(row), "event": json.loads(row["event"]),
-                 "sensor_features": json.loads(row["window"])} for row in rows]
-
-    def save_decision(self, event_id, decision):
-        with self._session() as session:
-            session.execute_write(lambda tx: tx.run(
-                """MATCH (e:WarningEvent {id:$id}) SET e.decision=$decision, e.decided_at=datetime()""",
-                id=self._id(event_id), decision=canonical(decision)).consume())
-
-    def decision(self, event_id):
-        with self._session() as session:
-            row = session.execute_read(lambda tx: tx.run(
-                """MATCH (e:WarningEvent {id:$id}) RETURN e.decision AS decision""",
-                id=self._id(event_id)).single())
-        return json.loads(row["decision"]) if row and row["decision"] else None
 
     def catalog(self):
         with self._session() as session:

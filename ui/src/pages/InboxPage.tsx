@@ -202,7 +202,7 @@ function CaseRow({ item }: { item: CaseSummary }) {
         )}
       </td>
       <td className={td} title={event.fault_class ? `데이터셋 클래스 ${event.fault_class.code} 기준 추정` : undefined}>
-        {event.fault_class?.name_ko ?? (item.rag_mode === 'timeseries' ? event.summary_ko : null) ?? <span className="text-sub">{EMPTY}</span>}
+        {event.fault_class?.name_ko ?? <span className="text-sub">{EMPTY}</span>}
       </td>
       <td className={td} title={formatUtc(occurredAt) ?? undefined}>
         {formatKst(occurredAt) ?? <span className="text-sub">{EMPTY}</span>}
