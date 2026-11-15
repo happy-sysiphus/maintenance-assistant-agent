@@ -9,6 +9,8 @@
 
 [10-card-order-early-warning.md](10-card-order-early-warning.md)의 "조기 경보" 부분(11/08)은 이 문서로 바뀌었다. R2 부분은 그대로 유효하다.
 
+main 반영 범위(11/15, PR #7 시계열 RAG 미포함)와 바꾼 파일 목록은 9절.
+
 ## 1. 화면 흐름
 
 ```
@@ -72,3 +74,73 @@
 
 - 작업함 조기 경보의 상태 글자("새 고장")를 바꿀지.
 - 시연 때 namespace `team-rag`로 바꿀지, 시연용 경보를 써도 되는지 팀 확인.
+
+## 9. main 반영 범위 — 11/15
+
+커밋 `4814397` "feat(ui): 조기 경보 화면을 상황 화면 흐름으로 다시 구성"을 main에 바로 올렸다(PR 없음). 이 절은 **무엇을 기준으로 올렸고, 무엇이 안 들어갔고, 어디를 바꿨는지**만 적는다.
+
+### 9.1 기준
+
+- **main `25e4377` 위에 올렸다.** 그 시점 main에 있던 것만 기준으로 했다.
+  - 들어 있던 것: PR #5(WARNING api · 공용 Aura 해결 이력), ML 루프 D-11 · D-12(`GET /api/ml/feedback`), C-9(코드 없는 CRITICAL은 케이스로 만들지 않음)
+- 확인: api pytest 58 통과 · 1 건너뜀, `tsc -b` · `oxlint` · `npm run test:warning`(EarlyFlow 2개) 통과.
+
+### 9.2 안 들어간 것
+
+| 무엇 | 상태 | 이 화면과의 관계 |
+|---|---|---|
+| **PR #7 시계열 RAG** (구동열, `feat/timeseries-rag-demo`) | 11/14 머지 → 9분 뒤 PR #8로 되돌림. 지금 main에 없다 | 반영하지 않았다. 9.3 |
+| 11/12 멘토링 중간 결과 표시 (Seen/Unseen, 비교한 과거 사례, 근거 충분 여부) | 안 함 | 필요한 데이터가 PR #7 api에 있다 |
+| 코드 있는 CRITICAL 화면 정리 | 안 함 | 11/12 합의 "ML은 조기 경보만"과 함께 남길지 팀 확인 필요 |
+
+### 9.3 PR #7과 겹치는 곳
+
+PR #7은 예전 `WarningPage`(한 화면) 위에 기능을 더했다. 이번 커밋은 그 `WarningPage`를 **지웠다**. PR #7을 다시 넣으면 아래 파일이 충돌한다.
+
+- `ui/src/pages/case/WarningPage.tsx` (이쪽은 삭제, PR #7은 수정)
+- `ui/src/pages/InboxPage.tsx`, `ui/src/pages/case/OverviewPage.tsx`, `ui/src/types/case.ts`
+- `api/main.py` (둘 다 `/warning/*` 근처를 고침)
+
+다시 넣는다면 **api · RAG는 PR #7 것, 화면은 이번 `Early*` 구조**로 맞추고, PR #7이 화면에 쓰던 값을 `Early*`로 옮긴다.
+
+| PR #7 값 | 옮길 곳 (안) |
+|---|---|
+| `status` `seen` · `unseen` · `uncertain` · `awaiting_assessment`, `POST /warning/assess` | 상황 화면 오른쪽 칸 맨 위 상태 한 줄 |
+| `candidate_comparisons` | 후보 목록 아래 "비교한 사례 보기" 접기 |
+| `route` (`error_code` · `history` · `manual`), `card.origin === 'error_code'` | 후보 카드 위 작은 라벨 |
+| `card.repair` (경보 · 해결 시각) | 사례 카드의 지난 조치 줄 |
+| `preferred_event_id`, `rag_mode: 'timeseries'` | 반복 경보 고르기 옆 안내 한 줄, 판단 중 자동 새로고침 |
+
+### 9.4 바꾼 곳
+
+#### ui
+
+| 파일 | 바꾼 것 |
+|---|---|
+| `pages/case/WarningPage.tsx`, `tests/WarningPage.test.tsx` | **삭제** (PR #5의 한 화면) |
+| `pages/case/EarlyPanel.tsx` (새) | 상황 화면 오른쪽 칸: 사례 카드 / 첫 화면 / 후보 목록 중 하나, 해결 뒤 "해결 기록 n/2" |
+| `pages/case/EarlySteps.tsx` (새) | 조기 경보의 점검 · 조치 · 정비일지. 점검이 모두 정상이면 [다음 원인 보기] |
+| `pages/case/EarlyManual.tsx` (새) | 수동 모드: 케이스 안 챗봇 모양 매뉴얼 검색, 앞 대화 이어서 |
+| `lib/warning.ts` (새) | `/warning/*` 요청 · 타입, 반복 경보 중 고른 경보(`activeEventId`) |
+| `pages/InboxPage.tsx` | 긴급 / 조기 경보 탭(`?tab=early`), 탭별 새 건수와 새 줄 점, 조기 경보는 "N회 · 처음~마지막" 한 줄, 버튼 "확인하기" |
+| `pages/case/OverviewPage.tsx` | 조기 경보도 긴급과 같은 틀(왼쪽 그래프 + 오른쪽 `EarlyPanel`), 경보 1분 센서 ↑↓ 한 줄 |
+| `pages/case/CheckPage.tsx` · `ActionPage.tsx` · `LogPage.tsx` · `ManualModePage.tsx` | 조기 경보면 `Early*`로 넘김. 긴급은 R2로 순서를 바꾼 이유 · 안내 생성 실패 문구 |
+| `pages/case/CaseLayout.tsx`, `pages/case/parts.tsx`, `lib/caseFlow.ts` | 조기 경보 단계(3단계), "코드 없음" 대신 "조기 경보" |
+| `types/case.ts` | 조기 경보 · `last_detected_at` 타입 |
+| `package.json` | `test:warning` → `tests/EarlyFlow.test.tsx` |
+| `tests/EarlyFlow.test.tsx` (새) | 첫 화면 → 후보 → 점검 → 조치 → 정비일지 → 해결 / 후보 → 수동 모드 → 근거 선택 |
+| `docs/10-card-order-early-warning.md`, `docs/11-early-warning-screens.md` (새) | 화면 흐름 · 결정 |
+
+#### api
+
+| 파일 | 바꾼 것 |
+|---|---|
+| `main.py` | `/warning/resolve` · `/warning/draft`에 `cause`(직접 찾은 근거로 해결하면 필수, 없으면 422), `/warning/manual`에 `history`, 케이스 요약에 `last_detected_at` |
+| `field_memory.py` | 조기 경보 `alarm_key`를 `설비|early_warning`으로 따로 묶음 |
+| `tests/test_warning_bridge.py`, `tests/warning_demo_server.py` | 위 변경 시험, `RAG_WARNING_EQUIPMENT_SCOPE`를 빈 값으로 고정(PC마다 `rag/.env` 때문에 결과가 달랐다) |
+
+### 9.5 남은 것
+
+- PR #7을 되돌린 이유와 다시 넣을 계획 확인 (종혁 · 동열).
+- 수동 검색에서 PDF 근거는 찾았는데 Claude 설명만 실패하면 RAG가 `search_error`를 준다. 지금 `EarlyManual`은 이때 "찾지 못했어요"만 보여 준다. 찾은 근거는 보여 주도록 고칠 것(PR #7 화면의 `retrieval_only` 처리 참고).
+- 브라우저에서 해결까지 끝까지 누른 확인.
