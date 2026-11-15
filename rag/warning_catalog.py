@@ -37,9 +37,9 @@ def _with_cite(item):
     return result
 
 
-def initial_catalog():
+def initial_catalog(*, situations=None):
     cases = {}
-    for item in mapping().values():
+    for item in mapping().values() if situations is None else situations:
         for cause in item["causes"]:
             primary = source_ref(**cause["cite"])
             checks = [_with_cite(x) for x in cause["checks"]]
@@ -52,6 +52,8 @@ def initial_catalog():
             cases[key] = {"manual_case_id": key, "title": cause["name"], "basis": cause["why"],
                           "source": primary, "checks": checks, "actions": actions,
                           "equipment_scope": scope, "coverage_note": item["coverage_note"]}
+    if situations is not None:
+        return cases
     # A separately reviewed source row outside the four E codes. No sensor-to-case rule.
     key = "manual:festo:main-cylinder-us2-load-voltage"
     source = source_ref("festo", 94, "Cause: US2 load voltage off | Remedy: Switch on the load voltage")

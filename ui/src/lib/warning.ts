@@ -26,10 +26,21 @@ export type WarningCard = {
   resolved_cases?: number
   /** 그중 지금 설비 적용 범위에 맞는 수 (2 이상이면 자동 카드) */
   applicable_cases?: number
+  repair?: { event_id: string; actual_action: string; closed_at: string }
   repairs?: { case_id: string; actual_action: string }[]
 }
-export type Observation = { channel: string; name: string; direction: 'up' | 'down' | null; observed_seconds: number }
+export type Observation = { channel: string; name: string; direction?: 'up' | 'down' | null; observed_seconds: number; first?: number; last?: number }
+export type PdfCandidate = { evidence_id: string; title: string; reason: string; excerpt: string; source: WarningSource; step_kind: 'check' | 'action' }
+export type WarningResult = { status: string; candidates?: (WarningCard | PdfCandidate)[]; history_candidates?: WarningCard[]; cards?: WarningCard[] }
 export type WarningState = {
+  route?: 'error_code' | 'history' | 'manual'
+  reason?: string
+  model_reason?: string
+  definition?: string
+  observed_error?: { code: string; observed_at: string } | null
+  card?: WarningCard | null
+  cards?: WarningCard[]
+  candidate_comparisons?: { event_id: string; score: number; channels?: { channel: string; overlap_seconds: number }[] }[]
   event_id: string
   /** automatic · candidates · new_pattern · insufficient_channels · pending · conflict · counterexample · memory_unavailable … */
   status: string
@@ -40,7 +51,7 @@ export type WarningState = {
   rejected_auto_case_id?: string
   selection?: { manual_case_id?: string; manual_source?: WarningSource }
   /** 원인 후보 보기 결과 (api가 보존) */
-  generate_candidates?: { status: string; candidates?: WarningCard[]; history_candidates?: WarningCard[] }
+  generate_candidates?: WarningResult
   /** 이 경보에서 화면에 보여 준 카드 (고를 수 있는 것은 이것뿐) */
   shown_cards?: Record<string, WarningCard>
   /** 점검 · 조치 임시 저장 */
@@ -63,7 +74,7 @@ export function activeEventId(d: CaseDetail, want?: string | null) {
   const ids = warningEvents(d).map((e) => e.event_id)
   if (want && ids.includes(want)) return want
   const states = (d as CaseDetail & { warning_events?: Record<string, { selection?: unknown }> }).warning_events ?? {}
-  return [...ids].reverse().find((id) => states[id]?.selection) ?? d.event.event_id
+  return [...ids].reverse().find((id) => states[id]?.selection) ?? d.preferred_event_id ?? d.event.event_id
 }
 
 /**
@@ -88,10 +99,24 @@ export function addCleared(caseId: string, eventId: string, manualCaseId: string
 }
 /** 이 경보에서 화면에 나온 후보 (사례 카드 · 이전 해결 사례 + 매뉴얼 후보, 거절한 카드 제외) */
 export function candidateIds(w: WarningState) {
-  const gen = w.generate_candidates
-  const auto = w.automatic_card ? [w.automatic_card] : []
-  const ids = [...auto, ...(gen?.history_candidates ?? []), ...(w.history_candidates ?? []), ...(gen?.candidates ?? [])].map((c) => c.manual_case_id)
+  const ids = warningCards(w).map((c) => c.manual_case_id)
   return [...new Set(ids)].filter((id) => id !== w.rejected_auto_case_id)
+}
+
+
+/** API가 실제로 등록한 카드와 PDF 후보를 구분한다. PDF에 임의의 manual_case_id를 만들지 않는다. */
+export function warningCards(w: WarningState): WarningCard[] {
+  const gen = w.generate_candidates
+  const all = [w.automatic_card, w.card, ...(w.cards ?? []), ...(gen?.cards ?? []), ...(gen?.history_candidates ?? []), ...(w.history_candidates ?? []), ...(gen?.candidates ?? [])]
+  return [...new Map(all.filter((c): c is WarningCard => !!c && 'manual_case_id' in c).map((c) => [c.manual_case_id, c])).values()]
+    .filter((c) => c.manual_case_id !== w.rejected_auto_case_id)
+}
+export function pdfCandidates(w: WarningState): PdfCandidate[] {
+  return (w.generate_candidates?.candidates ?? []).filter((c): c is PdfCandidate => 'evidence_id' in c && !('manual_case_id' in c))
+}
+export const automaticCard = (w: WarningState) => {
+  const c = w.automatic_card ?? w.card
+  return c?.manual_case_id !== w.rejected_auto_case_id ? c : null
 }
 
 /** 고른 원인: 사례 카드면 카드, 직접 찾은 근거면 근거 (수동 모드) */
@@ -119,7 +144,7 @@ export function useWarning(caseId: string, eventId: string) {
     queryKey: ['warning', caseId, eventId],
     queryFn: () => apiGet<WarningState>(`/cases/${caseId}/warning?event_id=${encodeURIComponent(eventId)}`),
     // 해결 기록을 공용 이력에 반영하는 중이면 다시 읽는다
-    refetchInterval: (q) => (q.state.data?.recording_status === 'pending' || q.state.data?.status === 'pending' ? 2000 : false),
+    refetchInterval: (q) => (q.state.data?.recording_status === 'pending' || q.state.data?.recording_status === 'pending_review' || q.state.data?.status === 'pending' ? 2000 : false),
     refetchOnWindowFocus: false,
     // 422 = 센서 원본이 없는 옛 경보. 다시 불러도 같으니 재시도하지 않는다 (ui/docs/10 2.1)
     retry: (n, e) => n < 1 && !(e instanceof ApiError && e.status === 422),
@@ -129,7 +154,7 @@ export function useWarning(caseId: string, eventId: string) {
 export function useWarningAction(caseId: string, eventId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ path, body }: { path: 'candidates' | 'select' | 'reject' | 'draft' | 'resolve'; body?: object }) =>
+    mutationFn: ({ path, body }: { path: 'assess' | 'candidates' | 'select' | 'reject' | 'draft' | 'resolve'; body?: object }) =>
       // draft만 PUT (점검 · 조치 임시 저장), 나머지는 POST
       apiSend<unknown>(path === 'draft' ? 'PUT' : 'POST', `/cases/${caseId}/warning/${path}`, { event_id: eventId, ...body }),
     onSuccess: async () => {

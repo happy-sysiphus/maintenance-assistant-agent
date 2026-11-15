@@ -9,7 +9,7 @@ import { DotTag } from '../../components/Tag'
 import { btn, btnLarge, btnPrimary, btnQuiet, card as cardBox, input, label } from '../../components/ui'
 import { docFromParam, MANUAL_SHORT, type ManualDoc } from '../../lib/api'
 import { formatKst } from '../../lib/time'
-import { activeEventId, addCleared, candidateIds, EARLY_STEPS, readCleared, selectedOf, useWarning, useWarningAction, type WarningCheck, type WarningDraft } from '../../lib/warning'
+import { activeEventId, automaticCard, addCleared, candidateIds, EARLY_STEPS, readCleared, selectedOf, warningEvents, useWarning, useWarningAction, type WarningCheck, type WarningDraft } from '../../lib/warning'
 import { ACTION_KINDS, type CheckResult } from '../../types/case'
 import { useCaseDetail } from './context'
 import { BackLink, SideDivider, SideLabel, sideCard, Steps, TwoColumns } from './parts'
@@ -23,7 +23,8 @@ const fromApi = (r: WarningCheck | undefined): CheckResult | undefined => (r ===
 function useEarlyWork() {
   const d = useCaseDetail()
   // 원인을 고른 경보 (반복 경보를 보고 정비했으면 그 경보로 저장 · 종료)
-  const eventId = activeEventId(d)
+  const [eventParams] = useSearchParams()
+  const eventId = activeEventId(d, eventParams.get('event'))
   const q = useWarning(d.case_id, eventId)
   const act = useWarningAction(d.case_id, eventId)
   const { card, source } = selectedOf(q.data)
@@ -87,7 +88,7 @@ export function EarlyCheck() {
   const submit = (next: boolean) =>
     save({ checks: asApi(), ...(card ? {} : { cause: cause.trim() }) }, () => {
       if (!next) return
-      if (anyAbnormal || items.length === 0) navigate('../action')
+      if (anyAbnormal || items.length === 0) navigate(`../action?event=${encodeURIComponent(eventId)}`)
       else setNoIssue(true)
     })
   // 이상 없음 다음 (흐름도 "맞는 후보가 있나?"):
@@ -95,7 +96,7 @@ export function EarlyCheck() {
   //  · 아직 안 본 후보가 있으면 후보 목록으로 (방금 원인은 "점검함 · 이상 없음", 다음 원인이 골라져 있다)
   //  · 후보를 다 봤으면 목록을 거치지 않고 바로 수동 모드
   const w = q.data
-  const fromAuto = !w.generate_candidates && card?.manual_case_id === w.automatic_card?.manual_case_id
+  const fromAuto = !w.generate_candidates && card?.manual_case_id === automaticCard(w)?.manual_case_id
   const checked = new Set([...readCleared(d.case_id, eventId), ...(card ? [card.manual_case_id] : [])])
   const remaining = candidateIds(w).filter((id) => !checked.has(id))
   const toManual = !fromAuto && remaining.length === 0
@@ -103,14 +104,14 @@ export function EarlyCheck() {
   const nextCause = () => {
     if (card) addCleared(d.case_id, eventId, card.manual_case_id)
     if (toManual) return navigate(manualPath)
-    if (!fromAuto) return navigate('..')
+    if (!fromAuto) return navigate(`..?event=${encodeURIComponent(eventId)}`)
     // 사례 카드로 들어왔으면 후보를 받는다 (사례 카드는 거절하지 않고 목록 맨 위에 남는다. 거절은 다른 원인을 고를 때)
     act.mutate(
       { path: 'candidates' },
       {
         onSuccess: (res) => {
           const r = res as { candidates?: unknown[] }
-          navigate((r.candidates?.length ?? 0) > 0 ? '..' : manualPath)
+          navigate((r.candidates?.length ?? 0) > 0 ? `..?event=${encodeURIComponent(eventId)}` : manualPath)
         },
       },
     )
@@ -118,7 +119,7 @@ export function EarlyCheck() {
 
   return (
     <>
-      <BackLink to=".." />
+      <BackLink to={`..?event=${encodeURIComponent(eventId)}`} />
       <Steps current="점검" steps={EARLY_STEPS} />
       <TwoColumns
         wide={manual.page !== null}
@@ -269,7 +270,7 @@ function splitAction(text: string) {
 }
 
 export function EarlyAction() {
-  const { q, act, card, source, draft, save } = useEarlyWork()
+  const { q, act, card, source, draft, save, eventId } = useEarlyWork()
   const navigate = useNavigate()
   const manual = useManualParam()
   const [form, setForm] = useState<{ kind: string; did: string; worker: string } | null>(null)
@@ -284,12 +285,12 @@ export function EarlyAction() {
   const submit = () => {
     setTried(true)
     if (!ok) return
-    save({ worker: v.worker.trim(), actual_action: `${v.kind} — ${v.did.trim()}` }, () => navigate('../log'))
+    save({ worker: v.worker.trim(), actual_action: `${v.kind} — ${v.did.trim()}` }, () => navigate(`../log?event=${encodeURIComponent(eventId)}`))
   }
 
   return (
     <>
-      <BackLink to="../check" />
+      <BackLink to={`../check?event=${encodeURIComponent(eventId)}`} />
       <Steps current="조치" steps={EARLY_STEPS} />
       <TwoColumns
         wide={manual.page !== null}
@@ -342,7 +343,7 @@ export function EarlyAction() {
             <span className="text-xs font-medium text-sub">원인</span>
             <b className="font-semibold">{card?.title ?? (draft.cause || '직접 찾은 근거')}</b>
             <div className="grow" />
-            <Link to=".." className={btnQuiet}>
+            <Link to={`..?event=${encodeURIComponent(eventId)}`} className={btnQuiet}>
               바꾸기
             </Link>
           </div>
@@ -391,7 +392,7 @@ export function EarlyAction() {
 // ---------------- 정비일지 ----------------
 
 export function EarlyLog() {
-  const { d, q, act, card, source, draft } = useEarlyWork()
+  const { d, q, act, card, source, draft, eventId } = useEarlyWork()
   const navigate = useNavigate()
   const [fixed, setFixed] = useState(false)
   if (!q.data) return <Loading q={q} />
@@ -401,7 +402,7 @@ export function EarlyLog() {
   const abnormal = (card?.checks ?? []).filter((c, i) => draft.checks[c.id ?? String(i)] === 'abnormal').map((c) => c.text)
   const missed = (card?.checks ?? []).filter((c, i) => (draft.checks[c.id ?? String(i)] ?? 'unchecked') === 'unchecked').map((c) => c.text)
   const rows: [string, string][] = [
-    ['문제', `조기 경보 발생 (데이터 시각 ${formatKst(d.event.detected_at) ?? '—'})`],
+    ['문제', `${q.data.observed_error ? `${q.data.observed_error.code} 발생` : '조기 경보 발생'} (데이터 시각 ${formatKst(warningEvents(d).find((e) => e.event_id === eventId)?.detected_at ?? d.event.detected_at) ?? '—'})`],
     ['원인', [card?.title ?? (source ? `${draft.cause || '원인 미입력'} (직접 찾은 근거 · ${MANUAL_SHORT[source.doc]} ${source.page}쪽)` : '—'), abnormal.length ? `${abnormal.join(', ')} 이상` : ''].filter(Boolean).join(' — ')],
     ['조치', draft.actual_action || '—'],
     ['작업자', draft.worker || '—'],
@@ -412,12 +413,12 @@ export function EarlyLog() {
     act.mutate(
       { path: 'resolve', body: { ...draft, worker_confirmed: true, log_approved: true } },
       // 닫으면 상황 화면: 이 해결이 다음 경보에 어떻게 쓰이는지(피드백 루프)를 보여 준다
-      { onSuccess: () => navigate('..') },
+      { onSuccess: () => navigate(`..?event=${encodeURIComponent(eventId)}`) },
     )
 
   return (
     <>
-      {!closed && <BackLink to="../action" />}
+      {!closed && <BackLink to={`../action?event=${encodeURIComponent(eventId)}`} />}
       {!closed && <Steps current="정비일지" steps={EARLY_STEPS} />}
       <TwoColumns>
         <section className={`${cardBox} flex flex-col gap-3.5 p-[26px]`}>
@@ -438,7 +439,7 @@ export function EarlyLog() {
               {!ready && (
                 <p className="text-sm text-sub">
                   {!card && !draft.cause?.trim() ? '원인이 비어 있어요.' : '조치와 작업자가 비어 있어요.'}{' '}
-                  <Link to={!card && !draft.cause?.trim() ? '../check' : '../action'} className="font-medium text-primary-ink hover:underline">
+                  <Link to={`${!card && !draft.cause?.trim() ? '../check' : '../action'}?event=${encodeURIComponent(eventId)}`} className="font-medium text-primary-ink hover:underline">
                     {!card && !draft.cause?.trim() ? '원인 적기' : '조치 적기'}
                   </Link>
                 </p>

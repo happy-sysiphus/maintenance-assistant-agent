@@ -39,6 +39,7 @@ export default function CaseLayout() {
   const { data, isPending, isError, refetch } = useCase()
   // 매뉴얼 PDF가 열려도 최대 폭은 그대로 둔다 (10/29): 폭을 풀면 단계를 넘길 때마다 화면 비율이 바뀌었다.
   // PDF 칸만 380 → 540px로 넓어진다 (TwoColumns wide). 더 크게는 PDF의 "새 창"
+  const display = data?.display_event ?? data?.event
   const wide = false
   const { pathname } = useLocation()
 
@@ -53,10 +54,10 @@ export default function CaseLayout() {
           <>
             {/* 어떤 고장을 처리 중인지 모든 단계에서 보이게. 설비 이름은 화면에서 빼고 읽어 주기용으로만 남긴다 (10/23) */}
             <h1
-              className={`text-base font-semibold ${data.event.trigger.rule_code ? 'text-alarm' : isEarly(data.event) ? 'text-warn' : 'text-sub'}`}
+              className={`text-base font-semibold ${display?.trigger.rule_code ? 'text-alarm' : isEarly(data.event) ? 'text-warn' : 'text-sub'}`}
             >
               <span className="sr-only">{data.event.gun_id} </span>
-              {data.event.trigger.rule_code ?? (isEarly(data.event) ? '조기 경보' : '코드 없음')}
+              {display?.trigger.rule_code ?? (isEarly(data.event) ? '조기 경보' : '코드 없음')}
             </h1>
             <StatusTag status={data.status} />
             <div className="grow" />

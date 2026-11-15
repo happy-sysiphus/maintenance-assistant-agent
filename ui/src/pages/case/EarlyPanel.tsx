@@ -1,13 +1,13 @@
 // 조기 경보 상황 화면의 오른쪽 칸 (11/11 회의 흐름도, 11/12 시안).
 // 화면마다 할 일 하나: A 사례 카드(맞아요/아니에요) · B 첫 화면(원인 후보 보기) · C 후보 목록(원인 하나 고르기).
 // 닫힌 경보는 해결 기록이 몇 건 쌓였는지(피드백 루프)를 보여 준다.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Select } from '../../components/Select'
 import { btn, btnLarge, btnPrimary, btnQuiet } from '../../components/ui'
 import { ApiError } from '../../lib/api'
 import { formatKst } from '../../lib/time'
-import { activeEventId, AUTO_CARD_AT, readCleared, sensorKo, warningEvents, useWarning, useWarningAction, type WarningCard, type WarningState } from '../../lib/warning'
+import { activeEventId, automaticCard, pdfCandidates, warningCards, AUTO_CARD_AT, readCleared, sensorKo, warningEvents, useWarning, useWarningAction, type WarningCard, type WarningState } from '../../lib/warning'
 import { isClosed, type CaseDetail } from '../../types/case'
 import { FalseAlarmButton, SideLabel } from './parts'
 
@@ -16,7 +16,7 @@ const ARROW = { up: '↑', down: '↓' } as const
 /** 상황 화면에서 볼 경보 (?event=). 반복 경보가 있으면 고를 수 있다. 정비가 시작되면 그 경보가 기본 */
 function useChosenEvent(d: CaseDetail) {
   const [params, setParams] = useSearchParams()
-  const id = activeEventId(d, params.get('event'))
+  const id = activeEventId(d, params.get('event') ?? d.preferred_event_id)
   const choose = (v: string) =>
     setParams(
       (prev) => {
@@ -41,7 +41,7 @@ export function ObservationRow({ d }: { d: CaseDetail }) {
       {obs.map((o) => (
         <span key={o.channel} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-fill px-3 text-sm font-medium text-ink-2">
           {sensorKo(o)}
-          <b className={o.direction ? 'text-ink' : 'font-normal text-sub'}>{o.direction ? ARROW[o.direction] : '–'}</b>
+          <b className={o.direction ? 'text-ink' : 'font-normal text-sub'}>{o.direction ? ARROW[o.direction] : o.first !== undefined && o.last !== undefined ? `${o.first} → ${o.last}` : '–'}</b>
         </span>
       ))}
     </div>
@@ -69,13 +69,14 @@ export function EarlyPanel({ d }: { d: CaseDetail }) {
   if (isClosed(d.status)) return <Closed d={d} w={w} />
 
   const gen = w.generate_candidates
-  const auto = w.automatic_card && w.automatic_card.manual_case_id !== w.rejected_auto_case_id ? w.automatic_card : null
+  const auto = automaticCard(w)
   const asking = act.isPending && act.variables?.path === 'candidates'
 
   const events = warningEvents(d)
   return (
     <>
-      <Header />
+      <Header critical={d.severity === 'critical'} />
+      {d.rag_mode === 'timeseries' && <AssessmentSummary caseId={d.case_id} eventId={eventId} w={w} />}
       {/* 같은 설비에서 여러 번 울렸으면 어느 경보를 보고 정비할지 (정비 중에는 바꾸지 않는다) */}
       {events.length > 1 && (
         <label className="flex items-center gap-3">
@@ -91,10 +92,10 @@ export function EarlyPanel({ d }: { d: CaseDetail }) {
           />
         </label>
       )}
-      {asking || gen ? (
+      {asking || gen || (w.cards?.length ?? 0) > 0 ? (
         <CandidateList w={w} act={act} asking={asking} eventId={eventId} caseId={d.case_id} />
       ) : auto ? (
-        <AutoCard card={auto} act={act} selected={w.selection?.manual_case_id} />
+        <AutoCard eventId={eventId} card={auto} act={act} selected={w.selection?.manual_case_id} timeseries={d.rag_mode === 'timeseries'} />
       ) : (
         <First w={w} onAsk={() => act.mutate({ path: 'candidates' })} />
       )}
@@ -104,14 +105,14 @@ export function EarlyPanel({ d }: { d: CaseDetail }) {
   )
 }
 
-function Header() {
+function Header({ critical }: { critical: boolean }) {
   return (
     <div className="flex flex-col gap-1">
       <span className="inline-flex items-center gap-[7px] text-sm font-semibold text-warn">
         <span className="size-[7px] rounded-full bg-warn-dot" />
-        주의 · 확정 아님
+        {critical ? '긴급 · 제어기 고장 코드 발생' : '주의 · 확정 아님'}
       </span>
-      <p className="text-sm text-ink-2">10~60분 안에 고장이 날 수 있다는 신호예요.</p>
+      <p className="text-sm text-ink-2">{critical ? '제어기가 보고한 코드와 매뉴얼 근거를 확인해 주세요.' : '10~60분 안에 고장이 날 수 있다는 신호예요.'}</p>
     </div>
   )
 }
@@ -132,17 +133,17 @@ function First({ w, onAsk }: { w: WarningState; onAsk: () => void }) {
 }
 
 /** A. 사례 카드: 같은 신호 패턴을 2번 이상 고친 방법. 할 일은 맞아요 / 아니에요 */
-function AutoCard({ card, act, selected }: { card: WarningCard; act: Act; selected?: string }) {
-  const last = card.repairs?.[0]?.actual_action
+function AutoCard({ card, act, selected, timeseries, eventId }: { eventId: string; card: WarningCard; act: Act; selected?: string; timeseries: boolean }) {
+  const last = card.repair?.actual_action ?? card.repairs?.[0]?.actual_action
   return (
     <>
       <div className="flex flex-col gap-2 rounded-lg border border-primary px-4 py-3.5 ring-1 ring-primary">
         <SideLabel>이전에 고친 방법</SideLabel>
         <b className="text-lg font-semibold tracking-[-0.015em]">{card.title}</b>
-        <p className="text-sm font-medium text-primary-ink">이 신호 패턴에서 {card.applicable_cases ?? card.resolved_cases}번 해결했어요</p>
+        <p className="text-sm font-medium text-primary-ink">{timeseries ? '센서 시계열을 비교해 찾은 이전 해결 사례예요. 적용 여부를 확인해 주세요.' : `이 신호 패턴에서 ${card.applicable_cases ?? card.resolved_cases}번 해결했어요`}</p>
         {last && <p className="line-clamp-2 text-sm text-sub">지난 조치 · {last}</p>}
       </div>
-      <Picked card={card} act={act} selected={selected} label="이 방법으로 점검" />
+      <Picked eventId={eventId} card={card} act={act} selected={selected} label="이 방법으로 점검" />
       <button
         type="button"
         className={btn}
@@ -161,9 +162,9 @@ function AutoCard({ card, act, selected }: { card: WarningCard; act: Act; select
 function CandidateList({ w, act, asking, eventId, caseId }: { w: WarningState; act: Act; asking: boolean; eventId: string; caseId: string }) {
   const gen = w.generate_candidates
   // 이전에 고친 방법(사례 카드 · 이력)이 맨 위 추천, 그 아래 매뉴얼 후보 (11/12)
-  const auto = w.automatic_card && w.automatic_card.manual_case_id !== w.rejected_auto_case_id ? w.automatic_card : null
-  const all = [...(auto ? [auto] : []), ...(gen?.history_candidates ?? []), ...(w.history_candidates ?? []), ...(gen?.candidates ?? [])]
-  const cards = [...new Map(all.map((c) => [c.manual_case_id, c])).values()].filter((c) => c.manual_case_id !== w.rejected_auto_case_id)
+  const auto = automaticCard(w)
+  const cards = warningCards(w)
+  const pdf = pdfCandidates(w)
   // 점검했더니 이상이 없던 원인 (점검 화면 "다음 원인 보기"가 기록). 지금 고른 원인의 임시 점검이 모두 정상이어도 같다
   const draftChecks = Object.values(w.draft?.checks ?? {})
   const cleared = new Set([
@@ -180,7 +181,7 @@ function CandidateList({ w, act, asking, eventId, caseId }: { w: WarningState; a
   return (
     <>
       <SideLabel>확인할 원인</SideLabel>
-      {cards.length === 0 && (
+      {cards.length === 0 && pdf.length === 0 && (
         <p className="text-sm text-sub">
           {gen?.status === 'generation_error' ? '원인 후보를 만들지 못했어요.' : '이 신호에 맞는 매뉴얼 근거를 찾지 못했어요.'}
         </p>
@@ -207,14 +208,16 @@ function CandidateList({ w, act, asking, eventId, caseId }: { w: WarningState; a
               {done && <span className="text-sm text-sub">점검함 · 이상 없음</span>}
               {!!past && !done && <span className="text-sm font-medium text-primary-ink">이전에 {past}번 고친 방법</span>}
               {/* 이유는 고른 원인만, 두 줄까지 (긴 설명은 점검 화면에서) */}
+              <span className="text-xs text-sub">{c.origin === 'error_code' ? '제어기 코드 근거' : c.origin === 'history' ? '과거 해결 이력' : '매뉴얼 후보'}</span>
               {on && c.reason && <span className="line-clamp-2 text-sm text-sub">{c.reason}</span>}
             </span>
           </button>
         )
       })}
+      {pdf.map((c) => <PdfChoice eventId={eventId} key={c.evidence_id} candidate={c} act={act} autoId={auto?.manual_case_id} />)}
       {allCleared && <p className="text-sm text-sub">후보를 모두 점검했는데 이상이 없었어요. 매뉴얼에서 직접 찾아보세요.</p>}
       {current && (
-        <Picked card={current} act={act} selected={keep ?? undefined} autoId={auto?.manual_case_id} label={`${cards.indexOf(current) + 1}번 원인으로 점검`} />
+        <Picked eventId={eventId} card={current} act={act} selected={keep ?? undefined} autoId={auto?.manual_case_id} label={`${cards.indexOf(current) + 1}번 원인으로 점검`} />
       )}
       {/* 흐름도: 맞는 후보가 없으면 수동 모드. 후보가 없거나 다 점검했으면 이게 할 일이라 파란 버튼 */}
       <Link
@@ -231,11 +234,11 @@ function CandidateList({ w, act, asking, eventId, caseId }: { w: WarningState; a
  * 파란 큰 버튼: 이 원인을 고르고 점검으로. 이미 고른 원인이면 고르기 없이 "이어서 점검".
  * 사례 카드(autoId)가 있는데 다른 원인을 고르면 그때 사례 카드를 거절로 남긴다: 다른 사례로 해결되면 RAG가 반례로 쓴다
  */
-function Picked({ card, act, label, selected, autoId }: { card: WarningCard; act: Act; label: string; selected?: string; autoId?: string }) {
+function Picked({ card, act, label, selected, autoId, eventId }: { eventId: string; card: WarningCard; act: Act; label: string; selected?: string; autoId?: string }) {
   const navigate = useNavigate()
   if (selected === card.manual_case_id)
     return (
-      <button type="button" className={`${btnPrimary} ${btnLarge}`} onClick={() => navigate('check')}>
+      <button type="button" className={`${btnPrimary} ${btnLarge}`} onClick={() => navigate(`check?event=${encodeURIComponent(eventId)}`)}>
         이어서 점검
       </button>
     )
@@ -245,7 +248,7 @@ function Picked({ card, act, label, selected, autoId }: { card: WarningCard; act
       className={`${btnPrimary} ${btnLarge}`}
       disabled={act.isPending}
       onClick={() => {
-        const select = () => act.mutate({ path: 'select', body: { manual_case_id: card.manual_case_id } }, { onSuccess: () => navigate('check') })
+        const select = () => act.mutate({ path: 'select', body: { manual_case_id: card.manual_case_id } }, { onSuccess: () => navigate(`check?event=${encodeURIComponent(eventId)}`) })
         if (autoId && autoId !== card.manual_case_id) act.mutate({ path: 'reject' }, { onSuccess: select })
         else select()
       }}
@@ -259,6 +262,10 @@ function Picked({ card, act, label, selected, autoId }: { card: WarningCard; act
 function Closed({ d, w }: { d: CaseDetail; w: WarningState }) {
   if (d.status !== 'resolved')
     return <p className="text-sm text-sub">오알람으로 닫았어요. 해결 기록에는 들어가지 않아요.</p>
+  if (d.rag_mode === 'timeseries') return <div className="flex flex-col gap-2">
+    <b className="text-lg font-semibold">✓ 해결로 닫았어요</b>
+    <p className="text-sm text-sub">{w.recording_status === 'pending' ? '해결 기록을 공용 이력에 반영하는 중이에요.' : w.recording_status === 'pending_review' ? '직접 찾은 근거라 검토 뒤에 다음 경보에 쓰여요.' : w.recording_status === 'saved' ? '해결 기록을 저장했어요. 이후 경보와 시계열을 비교해 재사용 여부를 판단해요.' : '공용 이력 전송 상태를 확인해 주세요.'}</p>
+  </div>
   const id = w.selection?.manual_case_id
   const card = [w.automatic_card, ...(w.history_candidates ?? [])].find((c) => c && c.manual_case_id === id)
   // 조회 결과의 해결 수는 이 경보 자신을 빼고 센다 → 이 해결을 더한다
@@ -285,4 +292,50 @@ function Closed({ d, w }: { d: CaseDetail; w: WarningState }) {
       ) : null}
     </div>
   )
+}
+
+
+const assessmentLabels: Record<string, string> = {
+  awaiting_assessment: '이전 해결 이력과 센서 시계열을 비교할 준비가 됐어요.',
+  seen: 'Seen · 비교할 수 있는 이전 해결 사례를 찾았어요.',
+  unseen: 'Unseen · 적용할 이전 해결 사례를 찾지 못했어요.',
+  uncertain: '판단 보류 · 매뉴얼에서 점검 근거를 확인해 주세요.',
+  unsupported_code: '등록되지 않은 코드예요. 매뉴얼에서 직접 확인해 주세요.',
+  rejected: '이전 사례를 이번 경보에 적용하지 않아요.',
+  ok: '장비가 보고한 코드의 매뉴얼 근거를 찾았어요.',
+}
+function AssessmentSummary({ caseId, eventId, w }: { caseId: string; eventId: string; w: WarningState }) {
+  const act = useWarningAction(caseId, eventId)
+  const attempted = useRef(new Set<string>())
+  const assess = act.mutate
+  useEffect(() => {
+    if (w.status === 'awaiting_assessment' && !attempted.current.has(eventId)) {
+      attempted.current.add(eventId)
+      assess({ path: 'assess' })
+    }
+  }, [w.status, eventId, assess])
+  return <div className="flex flex-col gap-2 rounded-lg bg-canvas px-3.5 py-3 text-sm">
+    <b>{act.isPending ? '센서 시계열과 이전 해결 이력을 확인하는 중이에요…' : assessmentLabels[w.status] ?? '매뉴얼 근거를 확인해 주세요.'}</b>
+    {w.observed_error && <span>제어기 코드 · {w.observed_error.code}</span>}
+    {w.definition && <p>{w.definition}</p>}
+    {w.model_reason && <p>{w.model_reason}</p>}
+    {!!w.candidate_comparisons?.length && <details><summary className="cursor-pointer">비교한 과거 사례 보기</summary>
+      {w.candidate_comparisons.map((c) => <p key={c.event_id} className="mt-2 break-all">{c.event_id} · 검색 점수 {c.score.toFixed(3)}{c.channels?.length ? ` · ${c.channels.map((v) => v.channel).join(', ')}` : ''}</p>)}
+    </details>}
+    {(act.isError || w.status === 'uncertain' || w.status === 'awaiting_assessment') && <button type="button" className={btn} disabled={act.isPending} onClick={() => act.mutate({ path: 'assess' })}>이력 판단 다시 시도</button>}
+    {act.isError && <p role="alert" className="text-alarm">이력 판단을 완료하지 못했어요. 다시 시도하거나 매뉴얼을 검색해 주세요.</p>}
+  </div>
+}
+function PdfChoice({ candidate: c, act, autoId, eventId }: { eventId: string; candidate: ReturnType<typeof pdfCandidates>[number]; act: Act; autoId?: string }) {
+  const navigate = useNavigate()
+  const choose = () => {
+    const select = () => act.mutate({ path: 'select', body: { evidence_id: c.evidence_id } }, { onSuccess: () => navigate(`check?event=${encodeURIComponent(eventId)}`) })
+    if (autoId) act.mutate({ path: 'reject' }, { onSuccess: select })
+    else select()
+  }
+  return <div className="flex flex-col gap-2 rounded-lg border border-line px-3.5 py-3">
+    <SideLabel>PDF 근거 · 원문 확인 필요</SideLabel><b>{c.title}</b><p className="text-sm text-sub">{c.reason}</p>
+    <p className="text-sm">{c.excerpt}</p><span className="text-xs text-sub">{c.source.doc} {c.source.page}쪽</span>
+    <button type="button" className={btnPrimary} disabled={act.isPending} onClick={choose}>이 근거로 점검</button>
+  </div>
 }

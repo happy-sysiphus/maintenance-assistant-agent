@@ -9,7 +9,7 @@ import { checkCounts, fieldLead, pickCandidate } from '../../lib/caseFlow'
 import { askAboutCause } from '../../lib/guidance'
 import { addPhotos, MAX_PHOTOS } from '../../lib/photo'
 import { useCaseMutation } from '../../lib/useCase'
-import { isEarly, type CheckRecord } from '../../types/case'
+import { usesWarningFlow, type CheckRecord } from '../../types/case'
 import { useCaseDetail } from './context'
 import { EarlyCheck } from './EarlySteps'
 import { BackLink, CauseList, FieldLeadTag, FieldOrderNote, SideLabel, StepPanel, Steps, TwoColumns } from './parts'
@@ -24,7 +24,7 @@ import { BackLink, CauseList, FieldLeadTag, FieldOrderNote, SideLabel, StepPanel
 
 export default function CheckPage() {
   // 조기 경보는 고른 사례 카드로 점검한다 (EarlySteps, 11/12)
-  return isEarly(useCaseDetail().event) ? <EarlyCheck /> : <CriticalCheck />
+  return usesWarningFlow(useCaseDetail()) ? <EarlyCheck /> : <CriticalCheck />
 }
 
 function CriticalCheck() {

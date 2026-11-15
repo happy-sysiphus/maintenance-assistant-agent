@@ -5,7 +5,7 @@ import { btn, btnLarge, btnPrimary, card, input, label } from '../../components/
 import { latestJudgment, resolvedCandidate, resolvedCauseName } from '../../lib/caseFlow'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
-import { isEarly, MANUAL_CAUSE, RECURRENCE, type CaseDetail, type Closure, type LogInput } from '../../types/case'
+import { usesWarningFlow, isEarly, MANUAL_CAUSE, RECURRENCE, type CaseDetail, type Closure, type LogInput } from '../../types/case'
 import { Select } from '../../components/Select'
 import { useCaseDetail } from './context'
 import { EarlyLog } from './EarlySteps'
@@ -70,7 +70,7 @@ function tidySaved<T extends { problem: string; worker_gun: string }>(log: T, gu
 
 export default function LogPage() {
   // 조기 경보: 임시 저장한 점검 · 조치로 일지를 보여 주고 "해결 확인 + 승인"으로 닫는다 (EarlySteps, 11/12)
-  return isEarly(useCaseDetail().event) ? <EarlyLog /> : <CriticalLog />
+  return usesWarningFlow(useCaseDetail()) ? <EarlyLog /> : <CriticalLog />
 }
 
 function CriticalLog() {

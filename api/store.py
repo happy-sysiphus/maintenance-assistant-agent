@@ -60,14 +60,16 @@ def all_cases() -> list[dict[str, Any]]:
     return [json.loads(r[0]) for r in rows]
 
 
-def group_key(e: dict[str, Any]) -> str | None:
+def group_key(e: dict[str, Any], *, timeseries=False) -> str | None:
     """Group warnings separately from code-less critical alarms for the same equipment."""
-    return "early_warning" if e.get("event_type") == "early_warning" else e["trigger"].get("rule_code")
+    if timeseries and e.get("episode_id"):
+        return f"episode:{e['episode_id']}"
+    return "early_warning" if e.get("event_type") == "early_warning" else (e.get("trigger") or {}).get("rule_code")
 
 
 def put(d: dict[str, Any], *, warning_delivery=None) -> None:
     e = d["event"]
-    code = group_key(e)
+    code = group_key(e, timeseries=d.get("rag_mode") == "timeseries")
     with _lock, _conn() as c:
         c.execute(
             "INSERT OR REPLACE INTO cases VALUES (?, ?, ?, ?, ?, ?)",
