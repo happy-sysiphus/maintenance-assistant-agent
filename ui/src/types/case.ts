@@ -33,7 +33,6 @@ export interface FaultClass {
 
 /** ML 핸드오프 중 작업함이 쓰는 부분 */
 export interface CaseEvent {
-  event_type?: string
   event_id: string
   gun_id: string
   /** ML이 판정한 데이터 시각 (UTC) */
@@ -41,7 +40,13 @@ export interface CaseEvent {
   trigger: CaseTrigger
   fault_class: FaultClass | null
   summary_ko: string | null
+  /** 핸드오프 v1.3+: critical = 고장 알림, early_warning = 조기 경보(수십 분 안 고장 가능성, 확정 아님).
+   *  api는 조기 경보를 severity "warning"(주의)으로 받고 같은 설비 반복을 한 케이스에 쌓는다 (11/08). 옛 알림은 없음 */
+  event_type?: 'critical' | 'early_warning'
 }
+
+/** 조기 경보인지 (코드 · 고장 유형이 없고 매뉴얼 안내도 없다) */
+export const isEarly = (e: { event_type?: string }) => e.event_type === 'early_warning'
 
 /** GET /api/cases 의 목록 한 줄 */
 export interface CaseSummary {
@@ -51,6 +56,10 @@ export interface CaseSummary {
   /** 담당자. 로그인이 없어 null */
   assignee: string | null
   event: CaseEvent
+  /** 같은 케이스에 묶인 반복 알림 수 (처음 온 알림은 빼고) */
+  repeat_count?: number
+  /** 마지막 반복 알림의 데이터 시각. 반복이 없으면 null */
+  last_detected_at?: string | null
 }
 
 /** GET /api/cases 응답 */
@@ -97,6 +106,29 @@ export interface HandoffEvent extends CaseEvent {
   caveats: string[]
   error_timeline: ErrorSpan[]
   sensor_trend: SensorTrend[]
+  /** 조기 경보 블록 (event_type early_warning일 때만, ml/docs/early-warning-handoff.md 3절) */
+  early_warning?: { since: string; onset_at: string; score: number; threshold: number; horizon_min: [number, number]; note_ko?: string } | null
+  /** 핸드오프 v1.4: 이 1분에 영향이 큰 신호 최대 3개 (시각 피처 제외) */
+  contributing_features?: ContributingFeature[]
+}
+
+export interface ContributingFeature {
+  feature: string
+  sensor_name_ko: string
+  /** mean = 평균, std = 1분 안의 흔들림 */
+  statistic: string
+}
+
+/** 같은 케이스에 묶인 반복 알림. 조기 경보면 api(PR #5, 11/12)가 핸드오프 원본 전체를 handoff에 남긴다.
+ *  score · summary_ko 등 아래 칸은 FE 11/08 api가 쓰던 것으로, 지금 api는 채우지 않는다 */
+export interface CaseRepeat {
+  event_id: string
+  detected_at: string
+  handoff?: unknown
+  score?: number | null
+  threshold?: number | null
+  summary_ko?: string | null
+  contributing_features?: ContributingFeature[]
 }
 
 /** api가 핸드오프를 받을 때 복사해 둔 ML trace의 이상 점수 (1분 창 시작 시각) */
@@ -323,6 +355,9 @@ export interface CaseRecords {
 }
 
 /** 오알람 사유 칩 (11/04 FE 초안, 팀 확정 전). 현장 기억 "이전 기록"에 그대로 보인다 */
+/** 조기 경보를 확인하고 닫을 때 고르는 결과 (FE 초안). 닫힘은 오알람(false_alarm)으로 저장된다 */
+export const EARLY_CHECK_REASONS = ['이상 없음', '설비 정지 · 전원 꺼짐', '정상 작업 중 변동', '센서 · 신호 문제', '기타'] as const
+
 export const FALSE_ALARM_REASONS = ['설비 정지 · 전원 꺼짐', '정상 작업 중 변동', '센서 · 신호 문제', '기타'] as const
 
 /** 닫힌 케이스(해결 종료 · 오알람)는 읽기 전용. 미해결 · 도움 요청은 작업함에 남아 이어서 한다 */
@@ -345,7 +380,8 @@ export interface FieldMemory {
   alarm_key: string
   /** 같은 설비 · 코드에서 오알람으로 닫은 수 / 해결 종료(고장 확인) 수 */
   alarm: { false_alarm: number; real: number }
-  /** ["R1"] = 오알람이 고장 확인보다 많아 "오알람인지부터 확인" 문장을 씀. 아니면 [] */
+  /** "R1" = 오알람이 고장 확인보다 많아 "오알람인지부터 확인" 문장을 씀.
+   *  "R2" = 현장 기록으로 카드 점검 순서를 바꿈 (field_order.lead가 카드의 첫 점검일 때). 해당 없으면 [] */
   applied: string[]
   /** 화면용 참고 문장. 기록이 없으면 null */
   note_ko: string | null
@@ -375,8 +411,21 @@ export interface CaseDetail extends Omit<CaseSummary, 'event'> {
   score_trace: ScorePoint[]
   guidance: Guidance
   records: CaseRecords
+  /** 같은 설비 · 코드(조기 경보면 같은 설비)로 이 케이스에 묶인 반복 알림, 온 순서대로 */
+  repeats?: CaseRepeat[]
   /** 현장 기억. api를 FIELD_MEMORY=1로 켰을 때만 온다 */
   field_memory?: FieldMemory
+  /** R2: 케이스가 생길 때 현장 기록으로 점검 순서를 바꿨으면 그 결정 (DB에 저장, 플래그를 꺼도 남음).
+   *  lead = 맨 앞에 둔 점검 id, counts = 점검 id별 '이상' 기록 수, guns = lead가 나온 설비 수 */
+  field_order?: FieldOrder
+}
+
+/** R2 순서 결정 (ml/docs/card-order-requests.md). note_ko는 점검 id가 든 개발용 문장이라 화면에 쓰지 않는다 */
+export interface FieldOrder {
+  lead: string
+  counts: Record<string, number>
+  guns: number
+  note_ko: string
 }
 
 /** GET /api/history 의 한 줄: 해결 종료했거나 미해결로 저장한 케이스 */

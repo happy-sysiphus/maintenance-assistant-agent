@@ -206,6 +206,8 @@ def summary(d: dict[str, Any]) -> dict[str, Any]:
             "summary_ko": e.get("summary_ko"),
         },
         "repeat_count": len(d.get("repeats", [])),
+        # 마지막으로 다시 온 시각 (반복이 없으면 null). 작업함의 "N회 · 처음~마지막" (FE 11/08)
+        "last_detected_at": d["repeats"][-1]["detected_at"] if d.get("repeats") else None,
     }
 
 
@@ -565,6 +567,8 @@ class WarningEventInput(BaseModel):
 class WarningSearchInput(WarningEventInput):
     question: str = Field(min_length=1, max_length=2000)
     explain: bool = False
+    # 수동 모드 대화 이력 (FE 11/12): [{role: user|assistant, text}], 최근 8개만 RAG가 쓴다 (rag/service.normalize_history)
+    history: list[dict[str, Any]] | None = Field(default=None, max_length=20)
 
 
 class WarningSelectInput(WarningEventInput):
@@ -574,6 +578,8 @@ class WarningSelectInput(WarningEventInput):
 
 class WarningResolveInput(WarningEventInput):
     actual_action: str = Field(min_length=1, max_length=3000)
+    # 작업자가 적은 원인 (FE 11/12). 직접 찾은 근거(manual_source)로 해결할 때는 필수, 사례 카드면 카드 제목을 쓴다
+    cause: str = Field(default='', max_length=200)
     worker: str = Field(min_length=1, max_length=200)
     worker_confirmed: bool
     log_approved: bool
@@ -617,7 +623,7 @@ def warning_candidates(case_id: str, body: WarningEventInput):
 
 @app.post('/api/cases/{case_id}/warning/manual')
 def warning_manual(case_id: str, body: WarningSearchInput):
-    return warning_result(case_id, body.event_id, 'search_manuals', question=body.question, explain=body.explain)
+    return warning_result(case_id, body.event_id, 'search_manuals', question=body.question, explain=body.explain, history=body.history)
 
 
 @app.post('/api/cases/{case_id}/warning/select')
@@ -699,6 +705,8 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
     if rejected and rejected == selection.get('manual_case_id'):
         raise HTTPException(422, 'choose another case after rejecting the automatic card')
     if 'manual_source' in selection:
+        if not body.cause.strip():
+            raise HTTPException(422, 'cause required when resolving with a manually found source')
         try:
             source = validate_manual_selection(selection['manual_source'])
             if state.get('shown_sources', {}).get(source['evidence_id']) != source:
@@ -727,8 +735,8 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
             **selection,
         },
     }
-    title = (state.get('shown_cards', {}).get(selection.get('manual_case_id')) or {}).get('title', '수동 매뉴얼 근거 적용')
-    state['draft'] = {'worker': body.worker.strip(), 'actual_action': body.actual_action.strip(),
+    title = (state.get('shown_cards', {}).get(selection.get('manual_case_id')) or {}).get('title') or body.cause.strip() or '수동 매뉴얼 근거 적용'
+    state['draft'] = {'worker': body.worker.strip(), 'actual_action': body.actual_action.strip(), 'cause': body.cause.strip(),
                       'checks': body.checks, 'selection': selection, 'saved_at': t}
     r = d['records']
     sid = selection.get('manual_case_id', 'MANUAL')
@@ -753,6 +761,7 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
 
 class WarningDraftInput(WarningEventInput):
     worker: str = Field(default='', max_length=200)
+    cause: str = Field(default='', max_length=200)
     actual_action: str = Field(default='', max_length=3000)
     checks: dict[str, Literal['normal', 'abnormal', 'unchecked']] = Field(default_factory=dict)
 

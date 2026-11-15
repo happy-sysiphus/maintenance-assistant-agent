@@ -8,6 +8,8 @@ _temp = tempfile.TemporaryDirectory(prefix='warning-ui-test-')
 os.environ['API_DB']=str(Path(_temp.name)/'api.db')
 os.environ['RAG_WARNING_FEEDBACK']='0'
 os.environ['RAG_WARNING_NAMESPACE']='test-ui'
+# 빈 값으로 둔다: 지우면 rag/.env의 개인 설정(예: cpx-weld-2g-sa)이 다시 읽혀 테스트 결과가 PC마다 달라진다 (FE 11/12)
+os.environ['RAG_WARNING_EQUIPMENT_SCOPE']=''
 import main, store, warning_bridge
 from warning_test_memory import TestWarningMemory
 from rag import early_warning as ew

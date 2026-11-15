@@ -1,21 +1,17 @@
 import { useState } from 'react'
-import WarningPage from './WarningPage'
 import { Link } from 'react-router'
 import { SignalChart } from '../../components/SignalChart'
 import { btnLarge, btnPrimary, card } from '../../components/ui'
-import { checkCounts, currentCandidate, signalLabel } from '../../lib/caseFlow'
+import { checkCounts, currentCandidate, orderPinned, signalLabel } from '../../lib/caseFlow'
 import { firstSentence, stripCites } from '../../lib/guidance'
-import { isClosed } from '../../types/case'
+import { isClosed, isEarly } from '../../types/case'
 import { useCaseDetail } from './context'
-import { BackLink, CaseFacts, CauseList, FalseAlarmButton, FieldMemoryNote } from './parts'
+import { EarlyPanel, ObservationRow } from './EarlyPanel'
+import { BackLink, CaseFacts, CauseList, FalseAlarmButton, FieldMemoryNote, FieldOrderNote } from './parts'
 
-// 상황 (wireframe/boards/V2Case.dc.html): 고장 전후 30분 그래프 + 확인할 원인
+// 상황 (wireframe/boards/V2Case.dc.html): 고장 전후 30분 그래프 + 확인할 원인.
+// 조기 경보도 같은 틀: 왼쪽 그래프는 같고 오른쪽 칸만 EarlyPanel (11/12. PR #5의 WarningPage를 대신함)
 export default function OverviewPage() {
-  const d = useCaseDetail()
-  return d.event.event_type === 'early_warning' ? <WarningPage /> : <CriticalOverview />
-}
-
-function CriticalOverview() {
   const d = useCaseDetail()
   const trends = d.event.sensor_trend
   // ML은 sensor_trend를 이번 고장에 기여가 큰 신호부터 준다 → 첫 번째를 먼저 보여준다
@@ -25,6 +21,7 @@ function CriticalOverview() {
   const started = Object.keys(d.records.checks).length > 0 || d.records.judgments.length > 0
   const noGuide = d.guidance.candidates.length === 0
   const closed = isClosed(d.status)
+  const early = isEarly(d.event)
   const summary = d.guidance.sections?.summary ? firstSentence(stripCites(d.guidance.sections.summary)) : null
 
   return (
@@ -34,7 +31,7 @@ function CriticalOverview() {
         <section className={`${card} flex flex-col gap-3.5 p-6`}>
           <div className="flex items-baseline gap-3">
             <h2 className="text-lg font-semibold tracking-[-0.015em]">
-              {d.event.trigger.rule_code ? `${d.event.trigger.rule_code} 발생 전후` : '모델 이상 신호 전후'}
+              {d.event.trigger.rule_code ? `${d.event.trigger.rule_code} 발생 전후` : early ? '조기 경보 전후' : '모델 이상 신호 전후'}
             </h2>
             <div className="grow" />
             <span className="text-sm text-sub">최근 30분</span>
@@ -67,6 +64,8 @@ function CriticalOverview() {
               {howTo ? '설명 접기' : '그래프 읽는 법'}
             </button>
           </div>
+          {/* 조기 경보: 경보 1분 동안 변한 센서 ↑↓ (RAG 센서 소견). 그래프 신호와 센서가 달라 따로 한 줄 */}
+          {early && <ObservationRow d={d} />}
           {/* 글을 줄이려고 설명 · ML 요약은 눌렀을 때만 보여준다 (10/23) */}
           {howTo && (
             <div className="flex flex-col gap-1 rounded-lg bg-canvas px-3.5 py-3 text-sm text-ink-2">
@@ -80,14 +79,25 @@ function CriticalOverview() {
           </div>
         </section>
 
+        {early ? (
+          // 조기 경보: 사례 카드 / 원인 후보 보기 / 후보 목록 중 하나만 (11/11 흐름도)
+          <section className={`${card} flex flex-col gap-3.5 p-[22px]`}>
+            <EarlyPanel d={d} />
+          </section>
+        ) : (
         <section className={`${card} flex flex-col gap-3.5 p-[22px]`}>
           <span className="text-xs font-medium text-sub">확인할 원인</span>
-          {/* 이전 기록: 같은 설비 · 코드를 사람이 어떻게 닫았는지 (현장 기억). 카드 순서는 바꾸지 않는다 */}
+          {/* 이전 기록: 같은 설비 · 코드를 사람이 어떻게 닫았는지 (현장 기억) */}
           <FieldMemoryNote d={d} />
-          {/* RAG 안내 생성 실패: api는 기본 점검 항목(매핑)만 남긴다. 다시 열면 다시 만든다 */}
+          {/* 순서를 바꾼 이유: api R2가 현장 기록으로 첫 점검을 앞당겼을 때만 (카드 순서는 R2 케이스만 바뀐다) */}
+          <FieldOrderNote d={d} />
+          {/* RAG 안내 생성 실패: api는 기본 점검 항목(매핑)만 남긴다. 다시 열면 다시 만든다.
+              단 R2로 순서를 정하고 판단 · 조치 · 결과를 기록한 케이스는 api가 카드를 다시 만들지 않는다 */}
           {!noGuide && (d.guidance.status === 'error' || d.guidance.status === 'needs_citation_review') && (
             <p role="status" className="rounded-lg border border-warn-dot/30 bg-warn-soft px-3.5 py-3 text-sm text-warn">
-              매뉴얼 안내를 만들지 못해 기본 점검 항목만 보여줘요. 잠시 뒤 새로고침하면 다시 만들어요.
+              {orderPinned(d)
+                ? '매뉴얼 안내를 만들지 못해 기본 점검 항목만 보여줘요. 이미 기록한 내용이 있어 이 고장은 이 항목으로 이어서 해요.'
+                : '매뉴얼 안내를 만들지 못해 기본 점검 항목만 보여줘요. 잠시 뒤 새로고침하면 다시 만들어요.'}
             </p>
           )}
           {noGuide ? (
@@ -118,6 +128,7 @@ function CriticalOverview() {
           )}
           {!closed && <FalseAlarmButton />}
         </section>
+        )}
       </div>
     </>
   )

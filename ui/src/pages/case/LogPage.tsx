@@ -5,9 +5,10 @@ import { btn, btnLarge, btnPrimary, card, input, label } from '../../components/
 import { latestJudgment, resolvedCandidate, resolvedCauseName } from '../../lib/caseFlow'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
-import { MANUAL_CAUSE, RECURRENCE, type CaseDetail, type Closure, type LogInput } from '../../types/case'
+import { isEarly, MANUAL_CAUSE, RECURRENCE, type CaseDetail, type Closure, type LogInput } from '../../types/case'
 import { Select } from '../../components/Select'
 import { useCaseDetail } from './context'
+import { EarlyLog } from './EarlySteps'
 import { BackLink, RecordTab, SideDivider, SideLabel, sideCard, TwoColumns } from './parts'
 
 // 정비일지 (wireframe/boards/V2Log.dc.html 승인 전, V2LogDone.dc.html 승인 후).
@@ -45,7 +46,7 @@ function draft(d: CaseDetail): FormValues {
     work_time: action ? `${hhmm(action.started_at)} ~ ${hhmm(action.ended_at)}` : '',
     // 칸 이름은 api 호환을 위해 worker_gun 그대로, 설비는 위에 이미 있어서 작업자만 채운다
     worker_gun: action?.worker ?? '',
-    problem: [`${e.trigger.rule_code ?? '모델 이상 신호'} 발생 (데이터 시각 ${occurred ?? '—'}).`, e.summary_ko && `ML 요약: ${e.summary_ko}`]
+    problem: [`${e.trigger.rule_code ?? (isEarly(e) ? '조기 경보' : '모델 이상 신호')} 발생 (데이터 시각 ${occurred ?? '—'}).`, e.summary_ko && `ML 요약: ${e.summary_ko}`]
       .filter(Boolean)
       .join('\n'),
     cause: causeName ? [causeName, abnormal.join(', ')].filter(Boolean).join(' — ') : '',
@@ -68,6 +69,11 @@ function tidySaved<T extends { problem: string; worker_gun: string }>(log: T, gu
 }
 
 export default function LogPage() {
+  // 조기 경보: 임시 저장한 점검 · 조치로 일지를 보여 주고 "해결 확인 + 승인"으로 닫는다 (EarlySteps, 11/12)
+  return isEarly(useCaseDetail().event) ? <EarlyLog /> : <CriticalLog />
+}
+
+function CriticalLog() {
   const d = useCaseDetail()
   const navigate = useNavigate()
   const saveLog = useCaseMutation<LogInput & { approved: boolean }>('PUT', '/log')

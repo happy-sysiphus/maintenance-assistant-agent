@@ -1,5 +1,6 @@
 // 케이스 기록으로 "지금 어느 원인을 보고 있나"를 계산한다.
-// 원인 후보는 ML이 준 순서(rank)대로 하나씩 본다. 마지막 판단이 "아니에요"이거나,
+// 원인 후보는 카드(guidance)의 순서대로 하나씩 본다. 보통 RAG 순서이고, api 현장 기억(R2)이 순서를 바꾼 케이스는
+// 그 순서다(field_order, fieldLead). 마지막 판단이 "아니에요"이거나,
 // 마지막 판단 뒤에 결과에서 "다음 원인"을 고른 후보는 제외된다. 다시 판단하면 되살아난다.
 import { MANUAL_CAUSE, type Candidate, type CaseDetail, type CheckRecord, type Judgment } from '../types/case'
 import { MANUAL_SHORT, type ManualDoc } from './api'
@@ -16,6 +17,23 @@ function isExcluded(d: CaseDetail, sid: string) {
 /** 주소의 ?cause=S01 로 원인을 지정하면 그 원인, 없으면 지금 원인 */
 export function pickCandidate(d: CaseDetail, cause: string | null): Candidate | null {
   return (cause && d.guidance.candidates.find((c) => c.situation_id === cause)) || currentCandidate(d)
+}
+
+/**
+ * R2: 현장 기록으로 맨 앞에 둔 점검. 카드의 첫 점검(첫 원인의 첫 점검)이 field_order.lead일 때만 준다.
+ * api가 조치 보호로 순서를 못 바꾼 카드면 null (api field_memory.first_check와 같은 기준)
+ */
+export function fieldLead(d: CaseDetail): { id: string; title: string; count: number; guns: number } | null {
+  const o = d.field_order
+  const first = d.guidance.candidates[0]?.checks[0]
+  if (!o || !first || first.id !== o.lead) return null
+  return { id: o.lead, title: first.title, count: o.counts[o.lead] ?? 0, guns: o.guns }
+}
+
+/** R2로 순서를 정한 케이스에 판단 · 조치 · 결과가 있으면 api가 카드를 다시 만들지 않는다 (api field_memory.order_pinned) */
+export function orderPinned(d: CaseDetail) {
+  const r = d.records
+  return !!d.field_order && r.judgments.length + r.actions.length + r.results.length > 0
 }
 
 /** 아직 제외되지 않은 첫 원인. 모두 제외됐으면 null */

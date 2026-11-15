@@ -6,7 +6,7 @@ import { TopBar } from '../../components/TopBar'
 import { btn, card, page } from '../../components/ui'
 import { formatKst } from '../../lib/time'
 import { useCase } from '../../lib/useCase'
-import { isClosed, type CaseDetail } from '../../types/case'
+import { isClosed, isEarly, type CaseDetail } from '../../types/case'
 
 /**
  * 닫힌 케이스(해결 종료 · 오알람)는 읽기 전용 (11/04, hitl-loop.md ④ 요청 4).
@@ -52,9 +52,11 @@ export default function CaseLayout() {
         {data && (
           <>
             {/* 어떤 고장을 처리 중인지 모든 단계에서 보이게. 설비 이름은 화면에서 빼고 읽어 주기용으로만 남긴다 (10/23) */}
-            <h1 className={`text-base font-semibold ${data.event.trigger.rule_code ? 'text-alarm' : 'text-sub'}`}>
+            <h1
+              className={`text-base font-semibold ${data.event.trigger.rule_code ? 'text-alarm' : isEarly(data.event) ? 'text-warn' : 'text-sub'}`}
+            >
               <span className="sr-only">{data.event.gun_id} </span>
-              {data.event.trigger.rule_code ?? '코드 없음'}
+              {data.event.trigger.rule_code ?? (isEarly(data.event) ? '조기 경보' : '코드 없음')}
             </h1>
             <StatusTag status={data.status} />
             <div className="grow" />

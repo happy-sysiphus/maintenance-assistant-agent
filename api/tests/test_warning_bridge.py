@@ -13,6 +13,7 @@ import warning_bridge as bridge
 from warning_test_memory import TestWarningMemory
 from rag import early_warning as ew
 from rag.config import graph_driver, load_environment
+from rag.service import normalize_history
 from rag.warning_catalog import initial_catalog, source_ref
 from rag.warning_memory import WarningMemory
 
@@ -38,7 +39,8 @@ def memory(monkeypatch):
 @pytest.fixture
 def app(api, monkeypatch, memory):
     monkeypatch.delenv('RAG_WARNING_FEEDBACK', raising=False)
-    monkeypatch.delenv('RAG_WARNING_EQUIPMENT_SCOPE', raising=False)
+    # 지우지 않고 빈 값: 지우면 load_environment()가 rag/.env의 개인 설정(예: cpx-weld-2g-sa)을 다시 읽는다 (FE 11/12)
+    monkeypatch.setenv('RAG_WARNING_EQUIPMENT_SCOPE', '')
     monkeypatch.delenv('RAG_WARNING_REVIEW_TOKEN', raising=False)
     monkeypatch.setenv('RAG_WARNING_NAMESPACE', 'test-history')
     source = initial_catalog()[CASE]['source']
@@ -271,6 +273,26 @@ def test_no_scope_prevents_automatic_reuse(app, monkeypatch):
     assert app.get(path(cid)).json()['automatic_card'] is None
 
 
+def test_manual_search_passes_chat_history(app, monkeypatch):
+    # 수동 모드는 챗봇 모양이라 앞 질문 · 답을 이어서 찾는다 (FE 11/12)
+    seen = {}
+
+    def fake(self, handoff, question, *, history=None, explain=False):
+        normalize_history(history)  # 진짜 search_manuals와 같은 검사
+        seen.update(question=question, history=history, explain=explain)
+        return {'event_id': 'w1', 'status': 'no_evidence', 'hits': [], 'notes': []}
+
+    monkeypatch.setattr(ew.EarlyWarningRag, 'search_manuals', fake)
+    cid = ingest(app)
+    history = [{'role': 'user', 'text': '전극 위치가 올라가요'}, {'role': 'assistant', 'text': '전극 감시를 확인하세요'}]
+    body = {'event_id': 'w1', 'question': '그럼 캡은요?', 'explain': True, 'history': history}
+    assert app.post(path(cid, '/manual'), json=body).status_code == 200
+    assert seen == {'question': '그럼 캡은요?', 'history': history, 'explain': True}
+    # 이력 모양이 틀리면 RAG가 거부하고 api는 422
+    bad = {**body, 'history': [{'role': 'system', 'text': 'x'}]}
+    assert app.post(path(cid, '/manual'), json=bad).status_code == 422
+
+
 def test_manual_search_selection_close_and_review(app, monkeypatch, memory):
     cid = ingest(app)
     case = initial_catalog()[CASE]
@@ -278,7 +300,10 @@ def test_manual_search_selection_close_and_review(app, monkeypatch, memory):
     monkeypatch.setattr(ew.EarlyWarningRag, 'search_manuals', lambda *a, **k: {'event_id': 'w1', 'status': 'ok', 'hits': [{'source': source}], 'notes': []})
     assert app.post(path(cid, '/manual'), json={'event_id': 'w1', 'question': '압력 확인'}).status_code == 200
     assert app.post(path(cid, '/select'), json={'event_id': 'w1', 'evidence_id': 'proof'}).status_code == 200
-    assert app.post(path(cid, '/resolve'), json=close_body()).status_code == 200
+    # 직접 찾은 근거로 해결할 때는 작업자가 원인을 적어야 한다 (FE 11/12)
+    assert app.post(path(cid, '/resolve'), json=close_body()).status_code == 422
+    assert app.post(path(cid, '/resolve'), json={**close_body(), 'cause': 'MPYD 케이블 접촉 불량'}).status_code == 200
+    assert store.get(cid)['records']['log']['cause'] == 'MPYD 케이블 접촉 불량'
     assert app.get(path(cid)).json()['recording_status'] == 'pending'
     assert bridge.deliver_next()
     row = memory.resolution('w1')

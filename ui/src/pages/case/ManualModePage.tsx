@@ -8,8 +8,9 @@ import { ResultSeg } from '../../components/ResultSeg'
 import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../components/ui'
 import { apiGet, docFromParam, MANUAL_NAME, type ManualDoc } from '../../lib/api'
 import { useCaseMutation } from '../../lib/useCase'
-import type { ManualCheck, ManualHit } from '../../types/case'
+import { isEarly, type ManualCheck, type ManualHit } from '../../types/case'
 import { useCaseDetail } from './context'
+import { EarlyManual } from './EarlyManual'
 import { BackLink, FalseAlarmButton, SideLabel, sideCard, TwoColumns } from './parts'
 
 // 수동 모드 (wireframe/boards/V2NoGuide.dc.html): 맞는 매뉴얼 안내가 없을 때.
@@ -25,6 +26,11 @@ interface FormValues {
 const EMPTY_ROW: Row = { title: '', result: '', memo: '' }
 
 export default function ManualModePage() {
+  // 조기 경보는 케이스 안 챗봇 모양 검색 (EarlyManual, 11/12 방식 c)
+  return isEarly(useCaseDetail().event) ? <EarlyManual /> : <CriticalManualMode />
+}
+
+function CriticalManualMode() {
   const d = useCaseDetail()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()

@@ -5,8 +5,9 @@ import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../c
 import { docFromParam, MANUAL_SHORT, type ManualDoc } from '../../lib/api'
 import { activeCause, latestJudgment, manualAction } from '../../lib/caseFlow'
 import { useCaseMutation } from '../../lib/useCase'
-import { ACTION_KINDS, type ActionInput, type ActionKind } from '../../types/case'
+import { ACTION_KINDS, isEarly, type ActionInput, type ActionKind } from '../../types/case'
 import { useCaseDetail } from './context'
+import { EarlyAction } from './EarlySteps'
 import { BackLink, ManualActionPanel, Steps, TwoColumns } from './parts'
 
 // 조치 (wireframe/boards/V2Action.dc.html): 사람이 실제로 한 일만 적는다. 정비일지에는 여기 적은 내용만 들어간다.
@@ -31,6 +32,11 @@ function localNow() {
 }
 
 export default function ActionPage() {
+  // 조기 경보는 조치를 글 한 칸으로 임시 저장한다 (EarlySteps, 11/12)
+  return isEarly(useCaseDetail().event) ? <EarlyAction /> : <CriticalAction />
+}
+
+function CriticalAction() {
   const d = useCaseDetail()
   const navigate = useNavigate()
   const save = useCaseMutation<ActionInput>('POST', '/actions')

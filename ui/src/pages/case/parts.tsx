@@ -4,20 +4,21 @@ import { Link, useNavigate } from 'react-router'
 import { BackIcon, DocIcon } from '../../components/Icons'
 import { DocButton } from '../../components/ManualPanel'
 import { DotTag } from '../../components/Tag'
-import { btn, card, input } from '../../components/ui'
+import { btn, btnLarge, btnPrimary, card, input } from '../../components/ui'
 import { MANUAL_SHORT, type ManualDoc } from '../../lib/api'
-import { candidateState, checkCounts, latestJudgment, signalLabel } from '../../lib/caseFlow'
+import { candidateState, checkCounts, fieldLead, latestJudgment, signalLabel } from '../../lib/caseFlow'
 import { askAboutCause } from '../../lib/guidance'
 import { formatKst } from '../../lib/time'
 import { useCaseMutation } from '../../lib/useCase'
-import { FALSE_ALARM_REASONS, type Candidate, type CaseDetail, type CheckCriterion, type Closure } from '../../types/case'
+import { EARLY_CHECK_REASONS, FALSE_ALARM_REASONS, type Candidate, type CaseDetail, type CheckCriterion, type Closure, isEarly } from '../../types/case'
 
 // 케이스 화면들이 같이 쓰는 조각: 진행 표시, 오른쪽 칸 틀, 고장 정보 · 원인 목록 · 기록
 
 const STEPS = ['점검', '판단', '조치', '결과'] as const
 export type Step = (typeof STEPS)[number]
 
-export function Steps({ current }: { current: Step }) {
+export function Steps<S extends string = Step>({ current, steps = STEPS as unknown as readonly S[] }: { current: S; steps?: readonly S[] }) {
+  const STEPS = steps
   const at = STEPS.indexOf(current)
   return (
     <nav aria-label="진행 단계" className="flex items-center gap-3">
@@ -254,7 +255,9 @@ export function CaseFacts({ d }: { d: CaseDetail }) {
   return (
     <dl className="grid grid-cols-[88px_minmax(0,1fr)] items-baseline gap-x-3 gap-y-[9px] text-sm">
       <dt className="text-sm text-faint">고장 코드</dt>
-      <dd className="font-semibold">{e.trigger.rule_code ?? <span className="font-normal text-sub">없음 · 모델 이상 신호</span>}</dd>
+      <dd className="font-semibold">
+        {e.trigger.rule_code ?? <span className="font-normal text-sub">{isEarly(e) ? '없음 · 조기 경보' : '없음 · 모델 이상 신호'}</span>}
+      </dd>
       <dt className="text-sm text-faint">발생</dt>
       <dd>
         {formatKst(e.trigger.rule_trigger_time ?? e.detected_at)}
@@ -283,7 +286,8 @@ const RECENT_OUTCOME = { false_alarm: '오알람', resolved: '해결' }
 /**
  * 이전 기록: 같은 설비 · 코드를 사람이 어떻게 닫았나 (api FIELD_MEMORY=1, ml/docs/hitl-loop.md ④ 요청 1).
  * api의 긴 문장(note_ko) 대신 최근 3건(날짜 · 결과 · 원인 또는 사유)만 보인다 (11/04).
- * 사람 판정이라 매뉴얼 근거와 모양을 다르게: 회색 바탕, 쪽 칩 없음. 원인 카드 순서는 바꾸지 않는다.
+ * 사람 판정이라 매뉴얼 근거와 모양을 다르게: 회색 바탕, 쪽 칩 없음. 이 목록은 순서를 바꾸지 않는다
+ * (순서는 api R2가 케이스를 만들 때 한 번 정하고, 이유는 FieldOrderNote가 보인다).
  * 기록이 없으면 아무것도 그리지 않는다.
  */
 export function FieldMemoryNote({ d }: { d: CaseDetail }) {
@@ -316,6 +320,30 @@ export function FieldMemoryNote({ d }: { d: CaseDetail }) {
       </ul>
     </div>
   )
+}
+
+/**
+ * 순서를 바꾼 이유 (api R2, ml/docs/card-order-requests.md 요청 11). 카드의 첫 점검이 현장 기록으로 앞당겨졌을 때만.
+ * 이전 기록과 같은 모양(회색 바탕, 쪽 칩 없음): 사람 판정이라 매뉴얼 순서로 읽히면 안 된다.
+ * api 문장(field_order.note_ko · field_memory.note_ko)은 점검 id가 들어 있어 쓰지 않고 이름으로 다시 쓴다.
+ */
+export function FieldOrderNote({ d }: { d: CaseDetail }) {
+  const lead = fieldLead(d)
+  if (!lead) return null
+  return (
+    <div role="note" aria-label="점검 순서" className="flex flex-col gap-1 rounded-lg bg-canvas px-3.5 py-3 text-sm">
+      <span className="text-xs font-medium text-sub">현장 기록으로 순서를 바꿨어요</span>
+      <p className="text-ink-2">
+        지난 해결 기록에서 ‘{lead.title}’이 이상으로 나온 게 {lead.count}건(설비 {lead.guns}대)이라 이 점검을 먼저 보여요. 점검 내용은
+        매뉴얼 그대로예요.
+      </p>
+    </div>
+  )
+}
+
+/** 현장 기록으로 앞당긴 점검 항목에 붙이는 표시 (점검 화면) */
+export function FieldLeadTag() {
+  return <span className="shrink-0 rounded-md bg-fill px-2 py-0.5 text-xs font-medium text-sub">현장 기록으로 먼저</span>
 }
 
 /** 원인 목록. viewing을 주면(점검 · 판단 화면) 그 원인을 파랗게 가리킨다. 없으면 아직 제외되지 않은 첫 원인 */
@@ -412,7 +440,25 @@ const reasonChip = (on: boolean) =>
  * (11/04, hitl-loop.md ④ 요청 3). 닫으면 되돌릴 수 없어서(읽기 전용) 화면 가운데 팝업으로 분명하게 묻는다.
  * Esc · 바깥 클릭 · 취소로 닫힌다. 사유는 현장 기억 "이전 기록"의 오알람 줄에 그대로 보인다.
  */
-export function FalseAlarmButton() {
+/** 닫기 팝업 문구. 기본은 오알람, 조기 경보는 "확인하고 닫기" (11/08). 둘 다 오알람(false_alarm) + 사유로 저장한다 */
+const CLOSE_COPY = {
+  false_alarm: {
+    button: '오알람으로 닫기',
+    title: '왜 오알람인가요?',
+    note: '닫으면 다시 바꿀 수 없어요. 고른 사유는 다음 같은 알림의 이전 기록에 보여요.',
+    reasons: FALSE_ALARM_REASONS as readonly string[],
+  },
+  early: {
+    // 11/11 흐름도: 오알람이면 닫고 끝 (해결 기록에는 안 들어감)
+    button: '오알람으로 닫기',
+    title: '확인해 보니 어땠나요?',
+    note: '닫으면 다시 바꿀 수 없어요.',
+    reasons: EARLY_CHECK_REASONS as readonly string[],
+  },
+}
+
+export function FalseAlarmButton({ kind = 'false_alarm', primary = false }: { kind?: keyof typeof CLOSE_COPY; primary?: boolean }) {
+  const copy = CLOSE_COPY[kind]
   const navigate = useNavigate()
   const close = useCaseMutation<{ outcome: Closure; reason: string; note?: string }>('POST', '/close')
   const dialog = useRef<HTMLDialogElement>(null)
@@ -425,8 +471,8 @@ export function FalseAlarmButton() {
   }
   return (
     <>
-      <button type="button" className={btn} onClick={() => dialog.current?.showModal()}>
-        오알람으로 닫기
+      <button type="button" className={primary ? `${btnPrimary} ${btnLarge}` : btn} onClick={() => dialog.current?.showModal()}>
+        {copy.button}
       </button>
       {/* body로 빼서 그린다: 수동 모드에서는 이 버튼이 <form> 안이라, 메모에서 Enter를 치면 바깥 폼이 제출된다 */}
       {createPortal(
@@ -441,12 +487,12 @@ export function FalseAlarmButton() {
           <div className="flex flex-col gap-4 p-6">
             <div className="flex flex-col gap-1">
               <h2 id="false-alarm-title" className="text-lg font-semibold tracking-[-0.015em]">
-                왜 오알람인가요?
+                {copy.title}
               </h2>
-              <p className="text-sm text-sub">닫으면 다시 바꿀 수 없어요. 고른 사유는 다음 같은 알림의 이전 기록에 보여요.</p>
+              <p className="text-sm text-sub">{copy.note}</p>
             </div>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="오알람 사유">
-              {FALSE_ALARM_REASONS.map((r) => (
+            <div className="flex flex-wrap gap-2" role="group" aria-label="닫는 사유">
+              {copy.reasons.map((r) => (
                 <button key={r} type="button" aria-pressed={reason === r} className={reasonChip(reason === r)} onClick={() => setReason(r)}>
                   {r}
                 </button>
@@ -457,7 +503,7 @@ export function FalseAlarmButton() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="메모 (선택)"
-              aria-label="오알람 메모"
+              aria-label="메모"
             />
             {close.isError && <span className="text-sm text-alarm">저장하지 못했습니다</span>}
             <div className="flex justify-end gap-2">
@@ -476,7 +522,7 @@ export function FalseAlarmButton() {
                   )
                 }
               >
-                오알람으로 닫기
+                {copy.button}
               </button>
             </div>
           </div>

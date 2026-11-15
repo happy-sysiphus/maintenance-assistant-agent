@@ -5,13 +5,14 @@ import { ResultSeg } from '../../components/ResultSeg'
 import { CameraIcon } from '../../components/Icons'
 import { btn, btnLarge, btnPrimary, card, input } from '../../components/ui'
 import { docFromParam, MANUAL_NAME, MANUAL_SHORT, type ManualDoc } from '../../lib/api'
-import { checkCounts, pickCandidate } from '../../lib/caseFlow'
+import { checkCounts, fieldLead, pickCandidate } from '../../lib/caseFlow'
 import { askAboutCause } from '../../lib/guidance'
 import { addPhotos, MAX_PHOTOS } from '../../lib/photo'
 import { useCaseMutation } from '../../lib/useCase'
-import type { CheckRecord } from '../../types/case'
+import { isEarly, type CheckRecord } from '../../types/case'
 import { useCaseDetail } from './context'
-import { BackLink, CauseList, SideLabel, StepPanel, Steps, TwoColumns } from './parts'
+import { EarlyCheck } from './EarlySteps'
+import { BackLink, CauseList, FieldLeadTag, FieldOrderNote, SideLabel, StepPanel, Steps, TwoColumns } from './parts'
 
 // 점검 (wireframe/boards/V2Check.dc.html)
 // 항목마다 정상 / 이상 / 건너뜀. "이상"이면 메모 칸이 열린다 (측정값 · 단위 · 기준값 칸은 두지 않음, 10/8 결정)
@@ -22,6 +23,11 @@ import { BackLink, CauseList, SideLabel, StepPanel, Steps, TwoColumns } from './
 // (10/23) 현장 확인 입력을 여기로 합쳤다: 항목마다 사진(최대 4장)을 붙인다. 인쇄는 정비일지에만 둔다.
 
 export default function CheckPage() {
+  // 조기 경보는 고른 사례 카드로 점검한다 (EarlySteps, 11/12)
+  return isEarly(useCaseDetail().event) ? <EarlyCheck /> : <CriticalCheck />
+}
+
+function CriticalCheck() {
   const d = useCaseDetail()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
@@ -36,6 +42,8 @@ export default function CheckPage() {
   // 앞 원인 (원인 2부터): "이전"은 그 원인의 판단 화면으로, 머리글에서 그 원인의 점검으로 바로 갈 수 있다
   const prev = index > 1 ? d.guidance.candidates[index - 2] : null
   const counts = checkCounts(cand, checks)
+  // 현장 기록(R2)으로 맨 앞에 둔 점검. 카드 첫 점검이 그것일 때만
+  const lead = fieldLead(d)
   // 점검 항목이 없는 원인(RAG 근거만)은 할 일이 근거를 읽는 것뿐이라 첫 근거 PDF를 처음부터 열어 둔다 (10/29).
   // 닫으면 ?manual=0 으로 닫힌 채 둔다
   const firstEvidence = cand.checks.length === 0 ? cand.evidence[0] : undefined
@@ -148,6 +156,12 @@ export default function CheckPage() {
               </Link>
             </div>
           )}
+          {/* 순서를 바꾼 이유 (api R2): 앞당긴 점검이 든 원인(첫 원인)에서만 */}
+          {lead && index === 1 && (
+            <div className="border-b border-line-soft px-[22px] py-3">
+              <FieldOrderNote d={d} />
+            </div>
+          )}
           <ol>
             {cand.checks.map((item, i) => {
               const rec = checks[item.id]
@@ -166,6 +180,7 @@ export default function CheckPage() {
                       {i + 1}
                     </span>
                     <span className="min-w-0 grow text-base">{item.title}</span>
+                    {index === 1 && i === 0 && lead?.id === item.id && <FieldLeadTag />}
                     {/* 결과를 고른 항목에만 사진을 붙인다 (사진만 붙여서 '건너뜀'으로 기록되지 않게) */}
                     {rec && (rec.photos?.length ?? 0) < MAX_PHOTOS && (
                       <label

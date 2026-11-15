@@ -15,7 +15,12 @@ def enabled() -> bool:
 
 
 def alarm_key(event: dict[str, Any]) -> str:
-    """이전 기록을 묶는 단위: 설비 | 규칙 코드 (모델 신호만이면 코드 자리가 빈다)."""
+    """이전 기록을 묶는 단위: 설비 | 규칙 코드 (모델 신호만이면 코드 자리가 빈다).
+
+    조기 경보(event_type early_warning)는 "설비|early_warning"으로 따로 묶는다. 모델 단독 critical과 섞지 않는다 (11/08 FE).
+    """
+    if event.get("event_type") == "early_warning":
+        return f"{event['gun_id']}|early_warning"
     return f"{event['gun_id']}|{(event.get('trigger') or {}).get('rule_code') or ''}"
 
 
