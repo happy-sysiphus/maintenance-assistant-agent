@@ -205,7 +205,7 @@ const TABS: { key: Tab; label: string; dot: string; fresh: string }[] = [
   { key: 'critical', label: '긴급', dot: 'bg-alarm-dot', fresh: 'bg-alarm-soft text-alarm' },
   { key: 'early', label: '조기 경보', dot: 'bg-warn-dot', fresh: 'bg-warn-soft text-warn' },
 ]
-const tabOf = (c: CaseSummary): Tab => (isEarly(c.event) ? 'early' : 'critical')
+const tabOf = (c: CaseSummary): Tab => (c.severity === 'warning' ? 'early' : 'critical')
 
 /** 조기 경보가 마지막으로 울린 시각 (반복이 없으면 처음 시각) */
 const lastAt = (c: CaseSummary) => c.last_detected_at ?? c.event.detected_at

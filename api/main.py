@@ -33,6 +33,7 @@ import guidance
 from rag.documents import manuals, manual_path
 from rag.warning_catalog import validate_manual_selection
 from rag.warning_input import analyze_warning, timestamp
+from rag.warning_series import parse_event
 import ml_feedback
 import store
 import warning_bridge
@@ -123,18 +124,35 @@ def codeless_critical(handoff: dict[str, Any]) -> bool:
 
 def ingest(handoff: dict[str, Any]) -> str:
     """알림을 케이스로 만든다. 같은 설비와 경보 그룹의 열린 케이스에 반복 경보를 붙인다."""
+    eid = handoff["event_id"]
+    timeseries = warning_bridge.timeseries_enabled(handoff)
+    if timeseries and not store.seen(eid):
+        try:
+            parse_event(handoff, warning_bridge.scope())
+            if not handoff.get("gun_id") or not handoff.get("detected_at"):
+                raise ValueError("gun_id and detected_at are required for API cases")
+            warning_bridge.assessment_service().register(handoff)
+        except (ValueError, TypeError, KeyError) as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (RuntimeError, *warning_bridge.MEMORY_ERRORS):
+            # The case store keeps the original handoff for retry on assessment or closure.
+            pass
     # 알림은 한 번에 하나씩 처리한다. 반복을 붙이는 저장이 같은 케이스의 닫기 · 기록과 겹치지 않게도 한다
     with _WRITE_LOCK:
-        eid = handoff["event_id"]
         if store.seen(eid):
             return "duplicate"
-        if codeless_critical(handoff):
+        if not timeseries and codeless_critical(handoff):
             # 다시 당겨 와도(sync_from_ml) 매번 무시만 하도록 본 것으로 표시한다. 케이스는 만들지 않는다
             store.mark_seen(eid, None)
             return "ignored_codeless_critical"
-        same = store.open_case(handoff["gun_id"], store.group_key(handoff))
+        same = store.open_case(handoff["gun_id"], store.group_key(handoff, timeseries=timeseries))
+        if same and timeseries != warning_bridge.is_timeseries(same):
+            same = None
         if same:
             same.setdefault("repeats", []).append({"event_id": eid, "detected_at": handoff["detected_at"], "handoff": handoff})
+            # An episode can begin as WARNING and later acquire a controller fault.
+            # Keep its original event for feedback/history, but never hide that escalation.
+            same["severity"] = case_severity(same)
             store.put(same)
             store.mark_seen(eid, same["case_id"])
             return "repeat"
@@ -149,6 +167,8 @@ def ingest(handoff: dict[str, Any]) -> str:
             "records": {"checks": {}, "judgments": [], "actions": [], "results": [], "field": [], "handovers": []},
             "repeats": [],
         }
+        if timeseries:
+            d["rag_mode"] = "timeseries"
         store.put(d)
         store.mark_seen(eid, d["case_id"])
         return "new"
@@ -169,7 +189,12 @@ def sync_from_ml(force: bool = False) -> dict[str, int]:
         return {}  # ML이 꺼져 있어도 저장된 케이스는 보여준다
     counts: dict[str, int] = {}
     for r in sorted(records, key=lambda r: r["handoff"]["detected_at"]):
-        k = ingest(r["handoff"])
+        try:
+            k = ingest(r["handoff"])
+        except HTTPException as exc:
+            if exc.status_code != 422:
+                raise
+            k = "invalid_handoff"
         counts[k] = counts.get(k, 0) + 1
     return counts
 
@@ -188,26 +213,36 @@ def force_sync():
 # ---- 케이스 ----
 
 
+def case_severity(d: dict[str, Any]) -> str:
+    if warning_bridge.is_timeseries(d) and any(
+            event.get("event_type") == "critical" for event in warning_bridge.case_events(d)):
+        return "critical"
+    return d["severity"]
+
+
 def summary(d: dict[str, Any]) -> dict[str, Any]:
-    e = d["event"]
+    # Display the newest reported controller code without replacing stored event IDs.
+    e = warning_bridge.preferred_event(d) if warning_bridge.is_timeseries(d) else d["event"]
+    observed = e.get("observed_error") or {}
     fc = e.get("fault_class")
     return {
         "case_id": d["case_id"],
         "status": d["status"],
-        "severity": d["severity"],
+        "severity": case_severity(d),
         "assignee": d["assignee"],
         "event": {
             "event_id": e["event_id"],
             "gun_id": e["gun_id"],
             "detected_at": e["detected_at"],
             "event_type": e.get("event_type") or "critical",
-            "trigger": {k: e["trigger"].get(k) for k in ("source", "rule_code", "rule_trigger_time")},
+            "trigger": {**{k: (e.get("trigger") or {}).get(k) for k in ("source", "rule_code", "rule_trigger_time")},
+                        **({"rule_code": observed["code"], "rule_trigger_time": observed["observed_at"]} if observed else {})},
             "fault_class": {"code": fc["code"], "name_ko": fc["name_ko"]} if fc else None,
             "summary_ko": e.get("summary_ko"),
         },
         "repeat_count": len(d.get("repeats", [])),
-        # 마지막으로 다시 온 시각 (반복이 없으면 null). 작업함의 "N회 · 처음~마지막" (FE 11/08)
         "last_detected_at": d["repeats"][-1]["detected_at"] if d.get("repeats") else None,
+        **({"rag_mode": "timeseries"} if warning_bridge.is_timeseries(d) else {}),
     }
 
 
@@ -215,6 +250,8 @@ def load(case_id: str) -> dict[str, Any]:
     d = store.get(case_id)
     if d is None:
         raise HTTPException(404, "not found")
+    # Existing SQLite cases created before this fix also expose the correct severity.
+    d["severity"] = case_severity(d)
     return guidance.attach_criteria(d)
 
 
@@ -266,6 +303,8 @@ def list_cases():
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str):
     current = load(case_id)
+    if warning_bridge.is_timeseries(current):
+        return {**current, 'preferred_event_id': warning_bridge.preferred_event(current)['event_id'], 'display_event': summary(current)['event']}
     if current['event'].get('event_type') == 'early_warning':
         try:
             result = warning_bridge.inspect(current)
@@ -382,6 +421,8 @@ def put_log(case_id: str, body: dict[str, Any]):
 @locked
 def close(case_id: str, body: dict[str, Any]):
     d = load_open(case_id)
+    if warning_bridge.is_timeseries(d) and body["outcome"] == "resolved":
+        raise HTTPException(409, "use the assessment resolution flow for this case")
     if body["outcome"] == "resolved" and not (d["records"].get("log") or {}).get("approved_at"):
         raise HTTPException(409, "log not approved")
     closure = {"outcome": body["outcome"], "at": now()}
@@ -434,7 +475,7 @@ def post_handover(case_id: str, body: dict[str, Any]):
 def cause_name(d: dict[str, Any]) -> str | None:
     """맞다고 판단한 원인 이름 (ui/src/lib/caseFlow.ts resolvedCauseName과 같은 규칙)."""
     r = d["records"]
-    if d['event'].get('event_type') == 'early_warning' and r.get('closure', {}).get('outcome') == 'resolved':
+    if (warning_bridge.is_timeseries(d) or d['event'].get('event_type') == 'early_warning') and r.get('closure', {}).get('outcome') == 'resolved':
         return (r.get('log') or {}).get('cause')
     manual = (r.get("manual") or {}).get("cause") or None
     last = next((x for x in reversed(r["results"]) if x["outcome"] == "resolved"), None)
@@ -567,7 +608,6 @@ class WarningEventInput(BaseModel):
 class WarningSearchInput(WarningEventInput):
     question: str = Field(min_length=1, max_length=2000)
     explain: bool = False
-    # 수동 모드 대화 이력 (FE 11/12): [{role: user|assistant, text}], 최근 8개만 RAG가 쓴다 (rag/service.normalize_history)
     history: list[dict[str, Any]] | None = Field(default=None, max_length=20)
 
 
@@ -578,8 +618,7 @@ class WarningSelectInput(WarningEventInput):
 
 class WarningResolveInput(WarningEventInput):
     actual_action: str = Field(min_length=1, max_length=3000)
-    # 작업자가 적은 원인 (FE 11/12). 직접 찾은 근거(manual_source)로 해결할 때는 필수, 사례 카드면 카드 제목을 쓴다
-    cause: str = Field(default='', max_length=200)
+    cause: str = Field(default="", max_length=200)
     worker: str = Field(min_length=1, max_length=200)
     worker_confirmed: bool
     log_approved: bool
@@ -587,11 +626,18 @@ class WarningResolveInput(WarningEventInput):
 
 
 def warning_result(case_id, event_id, operation, **kwargs):
-    event = warning_bridge.event_for(load_open(case_id), event_id)
-    if operation == 'generate_candidates':
-        kwargs['pending'] = store.warning_pending(analyze_warning(event)['pattern_key'])
+    case = load_open(case_id)
+    event = warning_bridge.event_for(case, event_id)
     try:
-        result = getattr(warning_bridge.service(), operation)(event, **kwargs)
+        if warning_bridge.is_timeseries(case):
+            rag = warning_bridge.assessment_service()
+            rag.register(event)
+            method = rag.manual_candidates if operation == 'generate_candidates' else rag.manual_search
+            result = method(event_id, **kwargs)
+        else:
+            if operation == 'generate_candidates':
+                kwargs['pending'] = store.warning_pending(analyze_warning(event)['pattern_key'])
+            result = getattr(warning_bridge.service(), operation)(event, **kwargs)
     except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(422, str(exc)) from exc
     except Exception:
@@ -608,11 +654,32 @@ def warning_result(case_id, event_id, operation, **kwargs):
 def warning_inspect(case_id: str, event_id: str | None = None):
     current = load(case_id)
     result = warning_bridge.inspect(current, event_id)
+    if warning_bridge.is_timeseries(current):
+        return result
     with _WRITE_LOCK:
         latest = load(case_id)
         if latest['status'] not in CLOSED:
             result = warning_bridge.snapshot(latest, result['event_id'], result, 'inspection')
             store.put(latest)
+    return result
+
+
+@app.post('/api/cases/{case_id}/warning/assess')
+def warning_assess(case_id: str, body: WarningEventInput):
+    case = load_open(case_id)
+    if not warning_bridge.is_timeseries(case):
+        raise HTTPException(409, 'time-series case required')
+    event = warning_bridge.event_for(case, body.event_id)
+    try:
+        result = warning_bridge.assess(event, retry=True)
+    except (RuntimeError, *warning_bridge.MEMORY_ERRORS) as exc:
+        raise HTTPException(503, 'shared warning history is unavailable') from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    with _WRITE_LOCK:
+        latest = load_open(case_id)
+        result = warning_bridge.snapshot(latest, body.event_id, result, 'inspection')
+        store.put(latest)
     return result
 
 
@@ -659,7 +726,8 @@ def warning_reject(case_id: str, body: WarningEventInput):
     d = load_open(case_id)
     warning_bridge.event_for(d, body.event_id)
     state = d.get('warning_events', {}).get(body.event_id, {})
-    card = state.get('inspection', {}).get('automatic_card')
+    assessment = state.get('inspection', {})
+    card = assessment.get('card') if warning_bridge.is_timeseries(d) else assessment.get('automatic_card')
     if not card:
         raise HTTPException(409, 'no displayed automatic card')
     state['rejected_auto_case_id'] = card['manual_case_id']
@@ -694,8 +762,11 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
     if not selection:
         raise HTTPException(422, 'select a displayed case or manual source first')
     t = now()
-    analysis = analyze_warning(event)
-    if timestamp(t, 'closed_at') < timestamp(analysis['onset_at'], 'onset_at'):
+    timeseries = warning_bridge.is_timeseries(d)
+    equipment_scope = warning_bridge.scope()
+    analysis = parse_event(event, equipment_scope)[0] if timeseries else analyze_warning(event)
+    event_at = analysis['event_at'] if timeseries else analysis['onset_at']
+    if timestamp(t, 'closed_at') < timestamp(event_at, 'event time'):
         raise HTTPException(422, 'closed_at precedes the warning onset')
     card = state.get('shown_cards', {}).get(selection.get('manual_case_id'), {})
     allowed = {step.get('id', str(i)) for i, step in enumerate(card.get('checks', []))}
@@ -713,7 +784,6 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
                 raise ValueError('source was not returned by the event search')
         except (ValueError, TypeError, KeyError) as exc:
             raise HTTPException(422, str(exc)) from exc
-    equipment_scope = warning_bridge.scope()
     if equipment_scope and card.get('equipment_scope') not in (None, equipment_scope):
         raise HTTPException(422, 'the selected case does not apply to the equipment scope')
     try:
@@ -722,7 +792,7 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
         raise HTTPException(503, 'shared warning history configuration is missing or invalid') from exc
     delivery = {
         'target': target,
-        'pattern_key': analysis['pattern_key'],
+        'pattern_key': analysis.get('pattern_key'),
         'handoff': event,
         'resolution': {
             # Different APIs can show the same CASE-0001. The representative ML event is stable.
@@ -735,6 +805,9 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
             **selection,
         },
     }
+    if timeseries:
+        delivery['rag_mode'] = 'timeseries'
+        delivery['resolution'].pop('rejected_auto_case_id')
     title = (state.get('shown_cards', {}).get(selection.get('manual_case_id')) or {}).get('title') or body.cause.strip() or '수동 매뉴얼 근거 적용'
     state['draft'] = {'worker': body.worker.strip(), 'actual_action': body.actual_action.strip(), 'cause': body.cause.strip(),
                       'checks': body.checks, 'selection': selection, 'saved_at': t}
@@ -744,7 +817,7 @@ def warning_resolve(case_id: str, body: WarningResolveInput):
     r['actions'].append({'situation_id': sid, 'kind': '기타', 'did': body.actual_action.strip(), 'parts': [],
                          'worker': body.worker.strip(), 'started_at': t, 'ended_at': t, 'at': t})
     r['results'].append({'situation_id': sid, 'outcome': 'resolved', 'event_id': body.event_id, 'at': t})
-    r['log'] = {'date': datetime.fromisoformat(t.replace('Z', '+00:00')).astimezone(timezone(timedelta(hours=9))).date().isoformat(), 'work_time': '', 'worker_gun': body.worker.strip(), 'problem': '조기 경보 · 원인 미확정',
+    r['log'] = {'date': datetime.fromisoformat(t.replace('Z', '+00:00')).astimezone(timezone(timedelta(hours=9))).date().isoformat(), 'work_time': '', 'worker_gun': body.worker.strip(), 'problem': ('제어기 ' + analysis['observed_error']['code'] + ' 발생') if timeseries and analysis.get('observed_error') else '조기 경보 · 원인 미확정',
                 'cause': title, 'action': body.actual_action.strip(), 'missed_checks': '', 'recurrence': '모름',
                 'saved_at': t, 'approved_at': t}
     r['closure'] = {'outcome': 'resolved', 'at': t}

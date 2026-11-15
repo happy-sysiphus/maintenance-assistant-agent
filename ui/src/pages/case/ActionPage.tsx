@@ -5,7 +5,7 @@ import { btn, btnLarge, btnPrimary, btnQuiet, card, input, label } from '../../c
 import { docFromParam, MANUAL_SHORT, type ManualDoc } from '../../lib/api'
 import { activeCause, latestJudgment, manualAction } from '../../lib/caseFlow'
 import { useCaseMutation } from '../../lib/useCase'
-import { ACTION_KINDS, isEarly, type ActionInput, type ActionKind } from '../../types/case'
+import { ACTION_KINDS, usesWarningFlow, type ActionInput, type ActionKind } from '../../types/case'
 import { useCaseDetail } from './context'
 import { EarlyAction } from './EarlySteps'
 import { BackLink, ManualActionPanel, Steps, TwoColumns } from './parts'
@@ -33,7 +33,7 @@ function localNow() {
 
 export default function ActionPage() {
   // 조기 경보는 조치를 글 한 칸으로 임시 저장한다 (EarlySteps, 11/12)
-  return isEarly(useCaseDetail().event) ? <EarlyAction /> : <CriticalAction />
+  return usesWarningFlow(useCaseDetail()) ? <EarlyAction /> : <CriticalAction />
 }
 
 function CriticalAction() {

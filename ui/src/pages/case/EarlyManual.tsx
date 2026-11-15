@@ -8,12 +8,13 @@ import { ChatIcon, SendIcon } from '../../components/Icons'
 import { DocButton, ManualPanel } from '../../components/ManualPanel'
 import { card as cardBox } from '../../components/ui'
 import { apiSend, docFromParam, MANUAL_SHORT, type ManualDoc } from '../../lib/api'
-import { activeEventId, sensorKo, useWarning, useWarningAction, type WarningSource } from '../../lib/warning'
+import { activeEventId, automaticCard, sensorKo, useWarning, useWarningAction, type WarningCard, type WarningSource } from '../../lib/warning'
 import { useCaseDetail } from './context'
 import { BackLink, SideDivider, SideLabel, sideCard, TwoColumns } from './parts'
 
 type SearchResult = {
   status: 'ok' | 'no_evidence' | 'search_error' | string
+  cards?: WarningCard[]
   hits: { source: WarningSource & { evidence_id: string }; review_needed?: boolean }[]
   notes: { text: string; source: WarningSource }[]
 }
@@ -74,9 +75,9 @@ export function EarlyManual() {
     }
   }
   // 직접 찾은 근거로 정비: 사례 카드가 있었으면 그때 거절로 남긴다 (반례, Picked와 같은 규칙)
-  const choose = (evidence_id: string) => {
-    const select = () => act.mutate({ path: 'select', body: { evidence_id } }, { onSuccess: () => navigate('../check') })
-    if (w?.automatic_card && w.automatic_card.manual_case_id !== w.rejected_auto_case_id) act.mutate({ path: 'reject' }, { onSuccess: select })
+  const choose = (evidence_id?: string, manual_case_id?: string) => {
+    const select = () => act.mutate({ path: 'select', body: manual_case_id ? { manual_case_id } : { evidence_id } }, { onSuccess: () => navigate(`../check?event=${encodeURIComponent(eventId)}`) })
+    if (w && automaticCard(w)) act.mutate({ path: 'reject' }, { onSuccess: select })
     else select()
   }
   // 처음 화면의 질문 예: 이 경보에서 방향이 뚜렷한 센서로
@@ -134,7 +135,7 @@ export function EarlyManual() {
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary-ink">
                     <ChatIcon size={18} />
                   </span>
-                  <Answer m={m} onRetry={() => ask(m.q)} onOpen={open} onChoose={choose} choosing={act.isPending} />
+                  <Answer m={m} onRetry={() => ask(m.q)} onOpen={open} onChoose={choose} onChooseCard={(id) => choose(undefined, id)} choosing={act.isPending} />
                 </div>
               </div>
             ))}
@@ -183,12 +184,14 @@ function Answer({
   onRetry,
   onOpen,
   onChoose,
+  onChooseCard,
   choosing,
 }: {
   m: Msg
   onRetry: () => void
   onOpen: (p: number, doc: ManualDoc) => void
   onChoose: (evidenceId: string) => void
+  onChooseCard: (manualCaseId: string) => void
   choosing: boolean
 }) {
   if (m.state === 'pending')
@@ -197,7 +200,7 @@ function Answer({
         매뉴얼에서 찾는 중…
       </p>
     )
-  if (m.state === 'error' || m.res?.status === 'search_error')
+  if (m.state === 'error' || (m.res?.status === 'search_error' && !m.res.hits.length))
     return (
       <div className="flex items-center gap-3 pt-1 text-sm" role="alert">
         <span className="text-alarm">찾지 못했어요.</span>
@@ -207,14 +210,20 @@ function Answer({
       </div>
     )
   const res = m.res!
-  if (res.hits.length === 0) return <p className="pt-1 text-base text-ink-2">맞는 매뉴얼 근거를 찾지 못했어요. 다르게 물어봐 주세요.</p>
+  if (res.hits.length === 0 && !res.cards?.length) return <p className="pt-1 text-base text-ink-2">맞는 매뉴얼 근거를 찾지 못했어요. 다르게 물어봐 주세요.</p>
   return (
     <div className="flex min-w-0 grow flex-col gap-3">
+      {(res.status === 'retrieval_only' || res.status === 'search_error') && <p className="text-sm text-sub">AI 설명을 완성하지 못했어요. 찾은 PDF 근거를 확인해 주세요.</p>}
       {res.notes.map((n, i) => (
         <p key={i} className="text-base leading-relaxed">
           {n.text}
         </p>
       ))}
+      {res.cards?.map((c) => <div key={c.manual_case_id} className="flex flex-col gap-2 rounded-lg border border-line px-3.5 py-3">
+        <b>{c.title}</b><p className="text-sm">{c.source.quote}</p>
+        <DocButton page={c.source.page} label={`${MANUAL_SHORT[c.source.doc]} ${c.source.page}쪽`} on={false} onOpen={(p) => onOpen(p, c.source.doc)} />
+        <button type="button" disabled={choosing} onClick={() => onChooseCard(c.manual_case_id)} className="min-h-9 rounded-lg border border-primary px-3 text-sm font-semibold text-primary-ink">이 사례로 점검</button>
+      </div>)}
       {/* 근거 카드: 쪽 열기 · 발췌 · 이 근거로 정비. 원문 확인이 필요한 근거는 표시 (ui/docs/10 2.3) */}
       {res.hits.slice(0, 4).map((h) => (
         <div key={h.source.evidence_id} className="flex flex-col gap-2 rounded-lg border border-line px-3.5 py-3">

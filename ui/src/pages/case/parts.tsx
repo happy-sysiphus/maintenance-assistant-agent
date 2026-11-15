@@ -249,7 +249,7 @@ function NoActionHelp({ cand, onOpen }: { cand: Candidate | null; onOpen?: (page
 }
 
 export function CaseFacts({ d }: { d: CaseDetail }) {
-  const e = d.event
+  const e = { ...d.event, ...d.display_event }
   const span = e.error_timeline.at(-1)
   const signals = e.sensor_trend.filter((t) => t.sensor.startsWith('c')).map(signalLabel)
   return (

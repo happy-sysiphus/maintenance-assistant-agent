@@ -137,3 +137,108 @@ test('맞는 원인이 없으면 수동 모드에서 근거를 골라 점검으�
   const s = await (await fetch(`${base}/cases/CASE-0002/warning?event_id=EW-DEMO-0002`)).json()
   expect(s.selection.manual_source.evidence_id).toBe('demo-proof')
 }, 30000)
+
+
+async function seedSeries(kind: 'code' | 'unseen' | 'seen') {
+  const response = await fetch(`${base}/__test/timeseries?kind=${kind}`, { method: 'POST' })
+  expect(response.ok).toBe(true)
+  return (await response.json()).case_id as string
+}
+
+test('같은 에피소드의 후속 CRITICAL → 새 화면 점검·조치·정비일지로 해결', async () => {
+  const user = userEvent.setup()
+  const cid = await seedSeries('code')
+  const original = await state(cid)
+  expect(original.rag_mode).toBe('timeseries')
+  expect(original.severity).toBe('critical')
+  expect(original.preferred_event_id).toBe(`${cid}-critical`)
+  mount(`/cases/${cid}`)
+  await screen.findByText('긴급 · 제어기 고장 코드 발생')
+  await user.click(await screen.findByRole('button', { name: '1번 원인으로 점검' }))
+  await user.click((await screen.findAllByRole('radio', { name: /이상/ }))[0])
+  await user.click(screen.getByRole('button', { name: '다음' }))
+  await user.click(await screen.findByRole('button', { name: '교체' }))
+  await user.type(screen.getByPlaceholderText('실제로 한 작업을 적어 주세요'), '공급 계통 정비 완료')
+  await user.type(screen.getByPlaceholderText('이름'), '시계열 작업자')
+  await user.click(screen.getByRole('button', { name: '다음' }))
+  await user.click(await screen.findByLabelText('조치 후 정상으로 돌아온 것을 확인했어요'))
+  await user.click(screen.getByRole('button', { name: '일지 승인하고 해결 종료' }))
+  await waitFor(async () => expect((await state(cid)).status).toBe('resolved'))
+  const closed = await state(cid)
+  expect(closed.records.results.at(-1).event_id).toBe(`${cid}-critical`)
+  expect(closed.records.log.action).toContain('공급 계통 정비 완료')
+  await screen.findByText('✓ 해결로 닫았어요')
+}, 30000)
+
+test('Unseen PDF 후보는 evidence_id로 선택하고 원인 입력을 보존한다', async () => {
+  const user = userEvent.setup()
+  const cid = await seedSeries('unseen')
+  mount(`/cases/${cid}`)
+  await screen.findByText('Unseen · 적용할 이전 해결 사례를 찾지 못했어요.')
+  await user.click(await screen.findByRole('button', { name: '원인 후보 보기' }))
+  await user.click(await screen.findByRole('button', { name: '이 근거로 점검' }))
+  const cause = await screen.findByLabelText('원인')
+  await user.type(cause, '공급 계통 접촉 불량')
+  await user.click(screen.getByRole('button', { name: '임시 저장' }))
+  await waitFor(async () => {
+    const w = await (await fetch(`${base}/cases/${cid}/warning`)).json()
+    expect(w.draft.cause).toBe('공급 계통 접촉 불량')
+    expect(w.selection.manual_source.evidence_id).toBe('series-proof')
+  })
+}, 30000)
+
+test('Seen 판정과 비교 사례를 새 화면에서 보여 준다', async () => {
+  const user = userEvent.setup()
+  const cid = await seedSeries('seen')
+  mount(`/cases/${cid}`)
+  await screen.findByText('Seen · 비교할 수 있는 이전 해결 사례를 찾았어요.')
+  await user.click(screen.getByText('비교한 과거 사례 보기'))
+  expect(screen.getByText(/prior-repair · 검색 점수/)).toBeTruthy()
+  await user.click(screen.getByRole('button', { name: '이 방법으로 점검' }))
+  await screen.findByRole('navigation', { name: '진행 단계' })
+}, 30000)
+
+test('시계열 수동 검색의 AI 설명 실패 시 PDF 근거를 계속 선택할 수 있다', async () => {
+  const user = userEvent.setup()
+  const cid = await seedSeries('unseen')
+  mount(`/cases/${cid}/manual`)
+  await user.type(await screen.findByLabelText('질문'), '공급 계통 확인{Enter}')
+  await screen.findByText('AI 설명을 완성하지 못했어요. 찾은 PDF 근거를 확인해 주세요.')
+  await user.click(screen.getByRole('button', { name: '이 근거로 정비' }))
+  await screen.findByLabelText('원인')
+}, 30000)
+
+
+test('시계열 수동 검색에서 찾은 등록 사례는 원래 사례 ID로 점검한다', async () => {
+  const user = userEvent.setup()
+  const cid = await seedSeries('unseen')
+  mount(`/cases/${cid}/manual`)
+  await user.type(await screen.findByLabelText('질문'), 'E012 점검 근거{Enter}')
+  await user.click(await screen.findByRole('button', { name: '이 사례로 점검' }))
+  await screen.findByRole('navigation', { name: '진행 단계' })
+  const w = await (await fetch(`${base}/cases/${cid}/warning`)).json()
+  expect(w.selection.manual_case_id).toBe('manual:E012-C2')
+  expect(w.selection.manual_source).toBeUndefined()
+}, 30000)
+
+
+test('후속 코드를 고른 뒤 이전 경보를 명시적으로 골라도 그 경보에 저장한다', async () => {
+  const user = userEvent.setup()
+  const cid = await seedSeries('code')
+  const view = mount(`/cases/${cid}`)
+  await user.click(await screen.findByRole('button', { name: '1번 원인으로 점검' }))
+  await screen.findByRole('navigation', { name: '진행 단계' })
+  view.unmount()
+  mount(`/cases/${cid}?event=${cid}-warning`)
+  await screen.findByText('Unseen · 적용할 이전 해결 사례를 찾지 못했어요.')
+  await user.click(screen.getByRole('button', { name: '원인 후보 보기' }))
+  await user.click(await screen.findByRole('button', { name: '이 근거로 점검' }))
+  await user.type(await screen.findByLabelText('원인'), '이전 조기경보 점검')
+  await user.click(screen.getByRole('button', { name: '임시 저장' }))
+  await waitFor(async () => {
+    const original = await (await fetch(`${base}/cases/${cid}/warning?event_id=${cid}-warning`)).json()
+    expect(original.draft.cause).toBe('이전 조기경보 점검')
+  })
+  const later = await (await fetch(`${base}/cases/${cid}/warning?event_id=${cid}-critical`)).json()
+  expect(later.draft).toBeUndefined()
+}, 30000)

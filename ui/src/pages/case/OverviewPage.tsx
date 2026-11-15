@@ -4,7 +4,7 @@ import { SignalChart } from '../../components/SignalChart'
 import { btnLarge, btnPrimary, card } from '../../components/ui'
 import { checkCounts, currentCandidate, orderPinned, signalLabel } from '../../lib/caseFlow'
 import { firstSentence, stripCites } from '../../lib/guidance'
-import { isClosed, isEarly } from '../../types/case'
+import { isClosed, usesWarningFlow } from '../../types/case'
 import { useCaseDetail } from './context'
 import { EarlyPanel, ObservationRow } from './EarlyPanel'
 import { BackLink, CaseFacts, CauseList, FalseAlarmButton, FieldMemoryNote, FieldOrderNote } from './parts'
@@ -13,6 +13,7 @@ import { BackLink, CaseFacts, CauseList, FalseAlarmButton, FieldMemoryNote, Fiel
 // 조기 경보도 같은 틀: 왼쪽 그래프는 같고 오른쪽 칸만 EarlyPanel (11/12. PR #5의 WarningPage를 대신함)
 export default function OverviewPage() {
   const d = useCaseDetail()
+  const display = d.display_event ?? d.event
   const trends = d.event.sensor_trend
   // ML은 sensor_trend를 이번 고장에 기여가 큰 신호부터 준다 → 첫 번째를 먼저 보여준다
   const [selected, setSelected] = useState(trends[0]?.feature ?? '')
@@ -21,7 +22,7 @@ export default function OverviewPage() {
   const started = Object.keys(d.records.checks).length > 0 || d.records.judgments.length > 0
   const noGuide = d.guidance.candidates.length === 0
   const closed = isClosed(d.status)
-  const early = isEarly(d.event)
+  const early = usesWarningFlow(d)
   const summary = d.guidance.sections?.summary ? firstSentence(stripCites(d.guidance.sections.summary)) : null
 
   return (
@@ -31,7 +32,7 @@ export default function OverviewPage() {
         <section className={`${card} flex flex-col gap-3.5 p-6`}>
           <div className="flex items-baseline gap-3">
             <h2 className="text-lg font-semibold tracking-[-0.015em]">
-              {d.event.trigger.rule_code ? `${d.event.trigger.rule_code} 발생 전후` : early ? '조기 경보 전후' : '모델 이상 신호 전후'}
+              {display.trigger.rule_code ? `${display.trigger.rule_code} 발생 전후` : early ? '조기 경보 전후' : '모델 이상 신호 전후'}
             </h2>
             <div className="grow" />
             <span className="text-sm text-sub">최근 30분</span>

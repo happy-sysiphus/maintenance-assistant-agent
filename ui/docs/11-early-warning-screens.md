@@ -9,7 +9,7 @@
 
 [10-card-order-early-warning.md](10-card-order-early-warning.md)의 "조기 경보" 부분(11/08)은 이 문서로 바뀌었다. R2 부분은 그대로 유효하다.
 
-main 반영 범위(11/15, PR #7 시계열 RAG 미포함)와 바꾼 파일 목록은 9절.
+9절은 원본 main의 반영 이력이다. 이 통합본은 PR #7의 API·RAG를 새 Early* 화면에 연결했다. 현재 동작은 10절과 [통합 안내](../../docs/timeseries-main-integration-20261115.md)를 참고한다.
 
 ## 1. 화면 흐름
 
@@ -144,3 +144,16 @@ PR #7은 예전 `WarningPage`(한 화면) 위에 기능을 더했다. 이번 커
 - PR #7을 되돌린 이유와 다시 넣을 계획 확인 (종혁 · 동열).
 - 수동 검색에서 PDF 근거는 찾았는데 Claude 설명만 실패하면 RAG가 `search_error`를 준다. 지금 `EarlyManual`은 이때 "찾지 못했어요"만 보여 준다. 찾은 근거는 보여 주도록 고칠 것(PR #7 화면의 `retrieval_only` 처리 참고).
 - 브라우저에서 해결까지 끝까지 누른 확인.
+
+
+## 10. 시계열 RAG 통합본 — 11/15
+
+9절은 통합 전 main의 기록이며, 이 통합본에서는 PR #7의 API·RAG와 ML episode_id를 반영했다.
+WarningPage는 복원하지 않는다. EarlyPanel에서 /warning/assess를 호출하고 Seen/Unseen/판단 보류,
+제어기 코드 카드와 비교 이력을 보여 준다. EarlyManual은 PDF 근거와 등록 사례를 구분해 선택한다.
+EarlySteps는 기존 점검·조치·정비일지 화면을 유지하며 선택한 event_id를 URL로 다음 단계까지 전달한다.
+rag_mode=timeseries인 CRITICAL도 같은 흐름으로 처리하고, 작업함의 긴급 분류는 severity를 따른다.
+
+원인(cause), 수동 검색 대화 이력(history), 반복 시각(last_detected_at), R2 현장 기록,
+ML 공통 JSON 필드와 SQLite 저장은 main의 구현을 보존했다.
+새 시계열 케이스는 RAG_WARNING_TIMESERIES=1일 때만 생성되며 기존 케이스는 원래 처리 방식을 유지한다.

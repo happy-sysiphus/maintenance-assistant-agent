@@ -34,6 +34,57 @@ event.update(event_id='EW-DEMO-0001',gun_id='DEMO-GUN-01')
 event['sensor_features']['channels']={'c3':[[0,10],[40,12]],'c5':[[0,4.5],[30,3.2]],'c10':[[0,0],[40,1]]}
 event['contributing_features']=[{'sensor':c,'feature':c+'_mean'} for c in ('c3','c5','c10')]
 if not store.all_cases(): main.ingest(event)
+
+# Only this isolated acceptance server exposes synthetic setup; api/main.py does not.
+from copy import deepcopy
+class SyntheticAssessment:
+    def __init__(self):
+        self.events = {}
+        self.decisions = {}
+    def register(self, event):
+        self.events[event['event_id']] = event
+    def read_decision(self, event_id):
+        return self.decisions.get(event_id)
+    def assess(self, event_id):
+        current = self.events[event_id]
+        card = {**initial_catalog()[case_id], 'origin': 'error_code' if current.get('observed_error') else 'history',
+                'repair': {'event_id': 'prior-repair', 'actual_action': '공급 계통을 정비함', 'closed_at': '2021-01-01T00:00:00Z'}}
+        kind = current.get('test_kind')
+        result = {'event_id': event_id, 'route': 'manual', 'status': 'unseen', 'card': None, 'cards': [],
+                  'observations': [{'channel': 'c3', 'name': 'position', 'observed_seconds': 60, 'first': 10, 'last': 12}]}
+        if kind == 'code' and current.get('observed_error'):
+            result.update(route='error_code', status='ok', cards=[card], observed_error=current['observed_error'])
+        elif kind == 'seen':
+            result.update(route='history', status='seen', card=card,
+                          candidate_comparisons=[{'event_id': 'prior-repair', 'score': .95, 'channels': [{'channel': 'c3', 'overlap_seconds': 60}]}])
+        self.decisions[event_id] = result
+        return result
+    def manual_candidates(self, event_id):
+        return {'event_id': event_id, 'status': 'ok', 'candidates': [{
+            'title': '공급 계통 원문 확인', 'reason': '센서 변화에 관련된 PDF 근거예요.', 'step_kind': 'check',
+            'excerpt': source['quote'], 'source': {**source, 'evidence_id': 'series-proof'}, 'evidence_id': 'series-proof'}]}
+    def manual_search(self, event_id, question, **kwargs):
+        return {'event_id': event_id, 'status': 'retrieval_only', 'cards': [{**initial_catalog()[case_id], 'origin': 'manual'}], 'hits': [{'source': {**source, 'evidence_id': 'series-proof'}}], 'notes': []}
+    def close(self, event_id, **kwargs):
+        return {'status': 'saved'}
+assessment = SyntheticAssessment()
+warning_bridge.assessment_service = lambda *args, **kwargs: assessment
+@main.app.post('/api/__test/timeseries')
+def seed_timeseries(kind: str = 'code'):
+    sample = deepcopy(event)
+    number = store.next_id()
+    sample.update(event_id=f'{number}-warning', gun_id=f'{number}-gun', episode_id=f'{number}-episode', test_kind=kind)
+    os.environ['RAG_WARNING_TIMESERIES'] = '1'
+    try:
+        main.ingest(sample)
+        if kind == 'code':
+            critical = {**sample, 'event_id': f'{number}-critical', 'event_type': 'critical', 'early_warning': None,
+                        'observed_error': {'code': 'E012', 'observed_at': sample['detected_at']}}
+            main.ingest(critical)
+    finally:
+        os.environ['RAG_WARNING_TIMESERIES'] = '0'
+    return {'case_id': number}
+
 if __name__=='__main__':
     import uvicorn
     uvicorn.run(main.app,host='127.0.0.1',port=int(os.getenv('WARNING_TEST_PORT','19017')),log_level='warning')

@@ -49,7 +49,10 @@ export interface CaseEvent {
 export const isEarly = (e: { event_type?: string }) => e.event_type === 'early_warning'
 
 /** GET /api/cases 의 목록 한 줄 */
+export const usesWarningFlow = (d: { rag_mode?: string; event: { event_type?: string } }) => d.rag_mode === 'timeseries' || isEarly(d.event)
+
 export interface CaseSummary {
+  rag_mode?: 'timeseries'
   case_id: string
   status: CaseStatus
   severity: Severity
@@ -407,6 +410,8 @@ export interface FieldRecent {
 
 /** GET /api/cases/:id 응답 */
 export interface CaseDetail extends Omit<CaseSummary, 'event'> {
+  display_event?: CaseEvent
+  preferred_event_id?: string
   event: HandoffEvent
   score_trace: ScorePoint[]
   guidance: Guidance
