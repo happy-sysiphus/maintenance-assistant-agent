@@ -184,26 +184,6 @@ SQLite에 경보가 저장된다는 것은 모든 센서 스트림이 재학습 
 
 기준 자료는 공개 데이터의 테스트 8건, 매뉴얼 질문 50개, 정답을 정해 둔 합성 경보 50건입니다. 실제 설비에서 잰 수치는 없습니다.
 
-## 구현 상태
-
-| 항목 | 상태 | 위치 |
-|---|---|---|
-| 실시간 이상 탐지와 종료 코드 규칙 | 구현 | `ml/main.py`, `ml/.py/train.py` |
-| 조기 경보 (고장 10~60분 전) | 구현 | `ml/main.py` |
-| 이상 신호 작성, 보관, 전달 | 구현 | `ml/.py/rag_mapping.py`, `ml/main.py` |
-| E 코드 그래프 RAG (코드 4개) | 구현 | `rag/service.py`, `rag/retrieval.py`, `rag/response.py` |
-| 19채널 시계열 RAG와 해결 이력 재사용 | 구현, 설정으로 활성화 | `rag/warning_assessment.py`, `rag/warning_series.py`, `rag/warning_memory.py`, `api/warning_bridge.py` |
-| 챗봇과 매뉴얼 검색 | 구현 | `api/assistant.py`, `rag/retrieval.py` |
-| 케이스 저장과 화면 연결 | 구현 | `api/main.py`, `api/store.py` |
-| 작업함, 케이스 처리, 조기 경보 화면, 챗봇 | 구현 | `ui/src/pages/` |
-| ML 피드백 루프: 재학습, A/B 테스트(섀도 비교), 모델 교체 | 구현 | `ml/.py/model_loop.py`, `ml/.py/model_registry.py`, `ml/main.py` |
-| ML 피드백 루프: 받은 센서 값 저장 (계획: InfluxDB) | 미구현 | |
-| 벡터 색인을 Qdrant로 분리 | 미구현 (계획). 지금은 Neo4j의 벡터 색인을 씀 | `rag/retrieval.py` |
-| ML 피드백 루프: 현장의 해결·오알람 반영 | 구현, 수동 수집 실행 | `api/ml_feedback.py`, `ml/.py/model_feedback.py`, `ml/.py/model_loop.py` |
-| AWS 서빙 | 미구현 (계획, 서비스 종류 미정) | |
-
-ML 모델 파일과 Neo4j 데이터는 구현되어 있지만 저장소 밖에 있습니다. 모델은 [ml/README.md](ml/README.md)의 드라이브 링크에서 받고, 그래프는 팀 공용 Neo4j Aura를 씁니다.
-
 ## 구성 요소
 
 | 구성 요소 | 기술 | 역할 | 기본 포트 |
